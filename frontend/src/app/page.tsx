@@ -1463,6 +1463,10 @@ export default function Home() {
                         </div>
                       ))
                     )}
+                  </div>
+                </div>
+              )}
+
               {/* TAB 6: ASK EXPERT CONSOLE (Sprint 1 UI Shell) */}
               {activeTab === 'console' && (
                 <div className="space-y-6">
