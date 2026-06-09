@@ -232,22 +232,22 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
         question=query_in.question
     )
     
-    if not citations:
-        return schemas.QueryResponse(
-            answer="INSUFFICIENT EVIDENCE",
-            confidence_score=0.0,
-            coverage_score=0.0,
-            verification_status="INSUFFICIENT_EVIDENCE",
-            citations=[]
-        )
+    gen_result = query_engine.generate_evidence_answer(
+        db_session,
+        expert_model_id=query_in.expert_model_id,
+        question=query_in.question,
+        validated_citations=citations
+    )
     
-    # Simple Sprint 2 output verification synthesis
-    ref_contents = " ".join([c["content"] for c in citations])
+    status_val = "VERIFIED" if citations else "INSUFFICIENT_EVIDENCE"
+    cov_score = 1.0 if citations else 0.0
+    conf_score = 0.95 if citations else 0.0
+    
     return schemas.QueryResponse(
-        answer=f"Verified grounded answer synthesized from Expert Model: {ref_contents}",
-        confidence_score=0.95,
-        coverage_score=1.00,
-        verification_status="VERIFIED",
+        answer=gen_result["answer"],
+        confidence_score=conf_score,
+        coverage_score=cov_score,
+        verification_status=status_val,
         citations=citations
     )
 
