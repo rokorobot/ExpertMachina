@@ -1,74 +1,86 @@
-# Provenance Verification & Traceability
+# Knowledge Chain of Custody & Traceability
 
-In ExpertMachina, **provenance preservation** is built directly into every layer of the system. We guarantee that any piece of knowledge used by a compiled agent can be traced back to its exact document source page, section, and cryptographic block hash.
+ExpertMachina treats knowledge as a governed asset with a verifiable chain of custody, rather than as unstructured text retrieved from a vector database. We guarantee that any piece of knowledge used by a compiled agent can be traced back to its exact document source page, section, cryptographic block hash, and the explicit governance action that approved it.
 
 ---
 
-## 1. The Provenance Chain
+## 1. Knowledge Chain of Custody
 
-Every knowledge asset created in ExpertMachina carries a complete citation trace object:
+The complete chain of custody spans from initial upload to final evidence-backed interaction:
 
 ```text
 Document (Name, Cryptographic SHA256 Hash)
     ↓
 Chunk (Line Reference, Page Range, Section Title)
     ↓
-Asset (UUID, Extracted Fact, Quality Score Metrics)
+Knowledge Asset (UUID, Extracted Fact, Quality Metrics)
     ↓
 Expert Model (Aggregated Approved Assets)
     ↓
-Agent Package Manifest (Serialized Metadata & Signatures)
+Agent Package (Serialized Metadata, Sorted Manifest & Signatures)
+    ↓
+Evidence-Backed Answer (Future interactive console query session)
 ```
 
 ---
 
-## 2. Granular Trace Metadata Fields
+## 2. Granular Trace & Governance Metadata
 
-Each asset object in the database and compiled package contains the following fields:
+Each asset object in the database and compiled package contains full provenance details alongside governance approval indicators:
 
-- **`source_document`**: The filename or database ID of the original source document (e.g. `SOP-001_Deviation_Management.pdf`).
+- **`source_document`**: The filename or database ID of the original source document (e.g., `SOP-001_Deviation_Management.pdf`).
 - **`source_page`**: The specific page number or range where the raw text is located.
-- **`source_section`**: The closest header or structural section identified during Docling layout parsing (e.g. `Section 4.2: Handling Critical Outages`).
+- **`source_section`**: The closest header or structural section identified during Docling layout parsing (e.g., `Section 4.2: Handling Critical Outages`).
 - **`source_hash`**: A SHA256 cryptographic hash generated from the raw chunk text content. This ensures block-level integrity and prevents silent tampering.
-- **`extraction_method`**: A categorization marker indicating how the asset was derived:
-  - `MOCK_RULE_BASED`
-  - `LOCAL_RULE_BASED`
-  - `LLM_ASSISTED`
-  - `HUMAN_CREATED`
+- **`extraction_method`**: A categorization marker indicating how the asset was derived (`MOCK_RULE_BASED`, `LOCAL_RULE_BASED`, `LLM_ASSISTED`, `HUMAN_CREATED`).
+- **`asset_status`**: The state-machine validation state of the asset (must be `APPROVED` to cross the compilation boundary).
+- **`approval_timestamp`** (`approved_at`): The timestamp when the governance operator approved the asset.
+- **`approved_by`**: The identity of the operator who executed the approval.
+
+*Why this is important:* When auditors ask why specific knowledge was available to the agent, the system can provide the exact timestamp, status, and operator signature that approved it.
 
 ---
 
-## 3. Serialization inside Agent Package Manifests
+## 3. Formal Integrity Rule
 
-When an Expert Model is compiled into an **Agent Package**, all approved assets are bundled into a standardized, deterministic JSON manifest file.
+A Knowledge Chain of Custody is considered **valid** if and only if all of the following conditions are met:
 
-### Deterministic & Reproducible Compilations
-To verify that identical assets always produce identical expert packages (critical for reproducibility audits), the compilation logic:
-1. Filters and extracts only `APPROVED` assets.
-2. Sorts the asset records lexicographically by their unique UUID.
-3. Serializes the sorted asset array together with their provenance fields into the JSON payload.
-4. Generates a deterministic package digest hash.
+1. **Document Existence**: The `source_document` exists and is tracked in the active system.
+2. **Hash Alignment**: The `source_hash` exactly matches the SHA256 hash of the original parsed text chunk.
+3. **Governance Validation**: The `asset_status` is explicitly set to `APPROVED`.
+4. **Model Membership**: The asset is present in the database configuration of the associated Expert Model.
+5. **Package Alignment**: The asset's serialized uuid and hash match the entries in the immutable Agent Package manifest.
 
-### Sample Manifest Entry:
+> [!CAUTION]
+> If any link in this chain cannot be programmatically verified, the chain of custody is considered **broken**, and the asset must be blocked immediately from entering expert models or generating evidence-backed responses.
+
+---
+
+## 4. Future Answer Traceability
+
+In MVP 0.3, the chain of custody extends directly to interactive query sessions:
+
+```text
+Question ──> Retrieved Asset ──> Source Document ──> Source Page ──> Source Hash ──> Answer
+```
+
+Every response generated by the system will return a citation payload mapping assertions to their validated assets:
+
 ```json
 {
-  "package_id": "pkg_9a3f8c-231b-4cd1",
-  "version": "0.1.0",
-  "compiled_at": "2026-06-10T00:30:00Z",
-  "assets": [
+  "answer": "Deviation reports must be filed within 24 hours.",
+  "citations": [
     {
       "asset_id": "asset_018b321a-4d2c-7431-a8e1-5bc4123490aa",
-      "name": "Deviation Classification Policy",
-      "content": "All critical deviations must be logged in the quality management system within 24 hours.",
-      "provenance": {
-        "source_document": "SOP-001_Deviation_Management.pdf",
-        "source_page": 3,
-        "source_section": "4.1 Classification of Deviations",
-        "source_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-        "extraction_method": "LLM_ASSISTED"
-      }
+      "source_document": "SOP-001_Deviation_Management.pdf",
+      "source_page": 3,
+      "source_section": "4.1 Classification of Deviations",
+      "source_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "asset_status": "APPROVED",
+      "approved_by": "operator_admin_02",
+      "approved_at": "2026-06-10T00:30:00Z"
     }
   ]
 }
 ```
-If any asset content or its source hash changes, the package digest hash changes, immediately alerting audit systems to a change in the knowledge footprint.
+This enables enterprise audit engines to perform end-to-end traceability verification on any response generated by the platform.
