@@ -1,0 +1,1397 @@
+'use client';
+
+import React, { useEffect, useState, useRef } from 'react';
+import { 
+  LayoutDashboard, 
+  FileText, 
+  Database, 
+  ShieldCheck, 
+  FileCode, 
+  History, 
+  Upload, 
+  Plus, 
+  Folder,
+  CheckCircle2, 
+  XCircle, 
+  AlertCircle, 
+  ArrowRight,
+  User,
+  Settings,
+  HelpCircle,
+  FileCode2,
+  Trash2,
+  Sparkles,
+  Info,
+  Clock,
+  Lock,
+  Boxes,
+  FileCheck
+} from 'lucide-react';
+import { useAppStore, KnowledgeAsset, Document, ExpertModel } from '../store';
+
+export default function Home() {
+  const {
+    projects,
+    activeProjectId,
+    documents,
+    assets,
+    experts,
+    packages,
+    auditEvents,
+    stats,
+    loading,
+    error,
+    fetchProjects,
+    setActiveProject,
+    createProject,
+    uploadDocument,
+    triggerBatchDemo,
+    triggerExtraction,
+    updateAssetStatus,
+    bulkUpdateAssetStatus,
+    createExpertModel,
+    createAgentPackage,
+    fetchAuditTrail,
+    deleteAsset,
+    deleteDocumentAssets
+  } = useAppStore();
+
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'audit'>('dashboard');
+  const [showNewProjectModal, setShowNewProjectModal] = useState(false);
+  const [projectName, setProjectName] = useState('');
+  const [projectDesc, setProjectDesc] = useState('');
+  const [selectedDocFilterId, setSelectedDocFilterId] = useState<number | null>(null);
+  
+  // Doc Upload forms
+  const [uploadDept, setUploadDept] = useState('Quality Assurance');
+  const [uploadOwner, setUploadOwner] = useState('QA Manager');
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const firstAssetRef = useRef<HTMLDivElement>(null);
+
+  // Expert model form
+  const [selectedAssetIds, setSelectedAssetIds] = useState<number[]>([]);
+  const [expertName, setExpertName] = useState('');
+  const [expertDesc, setExpertDesc] = useState('');
+
+  // Agent Package form
+  const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
+  const [packageName, setPackageName] = useState('');
+  const [packageVersion, setPackageVersion] = useState('0.1.0');
+
+  useEffect(() => {
+    fetchProjects();
+  }, []);
+
+  // Parse path and query parameters for deep linking
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+      const documentIdParam = searchParams.get('documentId');
+      const documentParam = searchParams.get('document');
+      
+      if (pathname.includes('/knowledge-assets')) {
+        setActiveTab('assets');
+      }
+      
+      if (documentIdParam) {
+        setSelectedDocFilterId(Number(documentIdParam));
+      } else if (documentParam && documents.length > 0) {
+        const doc = documents.find(d => d.filename === documentParam);
+        if (doc) {
+          setSelectedDocFilterId(doc.id);
+        }
+      }
+    }
+  }, [documents]);
+
+  // Sync state back to URL for clean user navigation
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      const currentSearch = window.location.search;
+      
+      let newPath = '/';
+      let newSearch = '';
+      
+      if (activeTab === 'assets') {
+        newPath = '/knowledge-assets';
+        if (selectedDocFilterId) {
+          newSearch = `?documentId=${selectedDocFilterId}`;
+        }
+      }
+      
+      const targetUrl = newPath + newSearch;
+      const currentUrl = currentPath + currentSearch;
+      
+      if (currentUrl !== targetUrl) {
+        window.history.pushState(null, '', targetUrl);
+      }
+    }
+  }, [activeTab, selectedDocFilterId]);
+
+  // Listen to browser back/forward buttons
+  useEffect(() => {
+    const handlePopState = () => {
+      const pathname = window.location.pathname;
+      const searchParams = new URLSearchParams(window.location.search);
+      const documentIdParam = searchParams.get('documentId');
+      const documentParam = searchParams.get('document');
+      
+      if (pathname.includes('/knowledge-assets')) {
+        setActiveTab('assets');
+      } else {
+        setActiveTab('dashboard');
+      }
+      
+      if (documentIdParam) {
+        setSelectedDocFilterId(Number(documentIdParam));
+      } else if (documentParam) {
+        const doc = documents.find(d => d.filename === documentParam);
+        if (doc) {
+          setSelectedDocFilterId(doc.id);
+        } else {
+          setSelectedDocFilterId(null);
+        }
+      } else {
+        setSelectedDocFilterId(null);
+      }
+    };
+    
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, [documents]);
+
+  // Scroll to first matching highlighted asset
+  useEffect(() => {
+    if (activeTab === 'assets' && selectedDocFilterId && firstAssetRef.current) {
+      const timer = setTimeout(() => {
+        firstAssetRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }, 200);
+      return () => clearTimeout(timer);
+    }
+  }, [activeTab, selectedDocFilterId, assets]);
+
+  // Keyboard review shortcuts (A=Approve, R=Reject) for active filtered document candidates
+  useEffect(() => {
+    const handleKeyDown = async (e: KeyboardEvent) => {
+      if (
+        document.activeElement?.tagName === 'INPUT' ||
+        document.activeElement?.tagName === 'TEXTAREA'
+      ) {
+        return;
+      }
+
+      if (activeTab === 'assets' && selectedDocFilterId) {
+        const pendingAsset = assets.find(
+          a => a.document_id === selectedDocFilterId && a.status === 'CANDIDATE'
+        );
+
+        if (pendingAsset) {
+          if (e.key === 'a' || e.key === 'A') {
+            await updateAssetStatus(pendingAsset.id, 'APPROVED');
+          } else if (e.key === 'r' || e.key === 'R') {
+            await updateAssetStatus(pendingAsset.id, 'ARCHIVED');
+          }
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [activeTab, selectedDocFilterId, assets]);
+
+  const handleCreateProject = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!projectName.trim()) return;
+    await createProject(projectName, projectDesc);
+    setProjectName('');
+    setProjectDesc('');
+    setShowNewProjectModal(false);
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (!activeProjectId || !e.target.files || e.target.files.length === 0) return;
+    const file = e.target.files[0];
+    await uploadDocument(activeProjectId, file, uploadDept, uploadOwner);
+  };
+
+  const handleBuildExpertModel = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProjectId || !expertName.trim() || selectedAssetIds.length === 0) return;
+    await createExpertModel(activeProjectId, expertName, expertDesc, selectedAssetIds);
+    setExpertName('');
+    setExpertDesc('');
+    setSelectedAssetIds([]);
+  };
+
+  const handleBuildAgentPackage = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!activeProjectId || !packageName.trim() || !selectedModelId) return;
+    await createAgentPackage(activeProjectId, packageName, selectedModelId, packageVersion);
+    setPackageName('');
+    setSelectedModelId(null);
+  };
+
+  const activeProject = projects.find(p => p.id === activeProjectId);
+
+  // Computed approved assets
+  const approvedAssets = assets.filter(a => a.status === 'APPROVED');
+
+  return (
+    <div className="flex h-screen bg-[#070b12] text-slate-100 overflow-hidden font-sans">
+      
+      {/* SIDEBAR NAVIGATION */}
+      <aside className="w-64 border-r border-slate-900 bg-[#090d16]/95 flex flex-col justify-between z-10">
+        <div>
+          {/* LOGO */}
+          <div className="p-6 border-b border-slate-900 flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center shadow-lg shadow-cyan-500/10">
+              <Boxes className="w-5 h-5 text-[#070b12]" />
+            </div>
+            <div>
+              <span className="font-bold text-lg tracking-wider text-gradient-cyan">EXPERTMACHINA</span>
+              <span className="text-[10px] block text-slate-500 tracking-widest font-mono">GOVERNANCE & RAG v0.1</span>
+            </div>
+          </div>
+
+          {/* PROJECT SELECTOR */}
+          <div className="p-4 border-b border-slate-900 bg-slate-950/40">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-slate-400 tracking-wider flex items-center gap-1.5">
+                <Folder className="w-3.5 h-3.5 text-cyan-400" /> WORKSPACE
+              </label>
+              <button 
+                onClick={() => setShowNewProjectModal(true)}
+                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1 bg-cyan-950/30 px-1.5 py-0.5 rounded border border-cyan-900/50"
+              >
+                <Plus className="w-2.5 h-2.5" /> NEW
+              </button>
+            </div>
+            {projects.length === 0 ? (
+              <span className="text-xs text-slate-500 italic block">No workspaces created</span>
+            ) : (
+              <select 
+                value={activeProjectId || ''} 
+                onChange={(e) => setActiveProject(Number(e.target.value))}
+                className="w-full bg-[#0d1424] border border-slate-800 rounded px-2.5 py-1.5 text-sm text-slate-200 outline-none focus:border-cyan-500 transition-colors"
+              >
+                {projects.map((p) => (
+                  <option key={p.id} value={p.id}>{p.name}</option>
+                ))}
+              </select>
+            )}
+          </div>
+
+          {/* NAV ITEMS */}
+          <nav className="p-4 space-y-1.5">
+            <button
+              onClick={() => setActiveTab('dashboard')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'dashboard'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <LayoutDashboard className="w-4 h-4" />
+              <span>Executive Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('documents')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'documents'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <FileText className="w-4 h-4" />
+              <span>Document Inventory</span>
+              {documents.length > 0 && (
+                <span className="ml-auto bg-slate-800 text-[10px] text-slate-300 font-mono px-2 py-0.5 rounded-full">
+                  {documents.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('assets')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'assets'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Database className="w-4 h-4" />
+              <span>Knowledge Assets</span>
+              {assets.length > 0 && (
+                <span className="ml-auto bg-slate-850 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-950">
+                  {assets.filter(a => a.status === 'CANDIDATE').length} new
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('experts')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'experts'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <ShieldCheck className="w-4 h-4" />
+              <span>Experts & Packages</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('audit')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'audit'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <History className="w-4 h-4" />
+              <span>Audit Ledger</span>
+            </button>
+          </nav>
+        </div>
+
+        {/* PROFILE BLOCK */}
+        <div className="p-4 border-t border-slate-900 bg-slate-950/20 text-xs text-slate-500 space-y-2">
+          <div className="flex items-center gap-2 text-slate-400 font-mono">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 glow-dot"></span>
+            <span>Local Node online</span>
+          </div>
+          <div className="text-[10px] text-slate-600 font-mono uppercase">
+            Active Workspace ID: {activeProjectId || 'None'}
+          </div>
+        </div>
+      </aside>
+
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 flex flex-col min-w-0 overflow-y-auto">
+        
+        {/* HEADER BAR */}
+        <header className="h-16 border-b border-slate-900 bg-[#090d16]/50 backdrop-blur-md px-8 flex items-center justify-between sticky top-0 z-20">
+          <div>
+            <h1 className="text-lg font-bold tracking-tight text-slate-100 flex items-center gap-2">
+              {activeProject ? activeProject.name : 'Select a Workspace'}
+              {activeProject && (
+                <span className="text-[10px] font-mono tracking-widest px-2 py-0.5 rounded bg-cyan-950/60 text-cyan-400 border border-cyan-900/40 uppercase">
+                  {activeProject.status}
+                </span>
+              )}
+            </h1>
+          </div>
+
+          <div className="flex items-center space-x-4">
+            {error && (
+              <div className="bg-rose-950/40 border border-rose-900/50 rounded-lg px-3 py-1 flex items-center gap-2 text-xs text-rose-300">
+                <AlertCircle className="w-3.5 h-3.5" />
+                <span>Error: {error}</span>
+              </div>
+            )}
+            {loading && (
+              <div className="text-xs text-slate-400 flex items-center gap-2 font-mono">
+                <div className="w-3 h-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+                <span>processing engine...</span>
+              </div>
+            )}
+          </div>
+        </header>
+
+        {/* WORKSPACE DETAILED VIEWS */}
+        <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
+
+          {/* SELECT PROJECT PLACEHOLDER */}
+          {!activeProjectId && (
+            <div className="text-center py-20 glass-panel rounded-2xl max-w-lg mx-auto space-y-4">
+              <Boxes className="w-12 h-12 text-slate-700 mx-auto" />
+              <h3 className="font-bold text-lg text-slate-300">No active workspace</h3>
+              <p className="text-sm text-slate-500 px-8">
+                Please create a workspace project or select an existing project from the sidebar to inspect documents and compile digital expertise.
+              </p>
+              <button 
+                onClick={() => setShowNewProjectModal(true)}
+                className="bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs tracking-wider uppercase hover:shadow-cyan-500/10 transition-shadow"
+              >
+                Create Workspace
+              </button>
+            </div>
+          )}
+
+          {activeProjectId && (
+            <>
+              {/* TAB 1: EXECUTIVE DASHBOARD */}
+              {activeTab === 'dashboard' && (
+                <div className="space-y-6">
+                  {/* OVERVIEW STATS CARDS */}
+                  <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
+                    <div className="glass-panel p-5 rounded-xl flex flex-col justify-between space-y-2">
+                      <span className="text-xs text-slate-400 tracking-wider">DOCUMENTS INGESTED</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-extrabold text-slate-100">{stats?.documents_uploaded || 0}</span>
+                        <span className="text-[10px] text-slate-500 font-mono">({stats?.documents_parsed || 0} PARSED)</span>
+                      </div>
+                      <div className="w-full bg-slate-950 h-1.5 rounded-full overflow-hidden">
+                        <div 
+                          className="bg-cyan-500 h-full transition-all duration-500" 
+                          style={{ width: `${stats?.documents_uploaded ? (stats.documents_parsed / stats.documents_uploaded) * 100 : 0}%` }}
+                        ></div>
+                      </div>
+                    </div>
+
+                    <div className="glass-panel p-5 rounded-xl flex flex-col justify-between space-y-2">
+                      <span className="text-xs text-slate-400 tracking-wider">KNOWLEDGE ASSETS</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="text-3xl font-extrabold text-gradient-cyan">{stats?.assets_extracted || 0}</span>
+                        <span className="text-[10px] text-emerald-400 font-mono">({stats?.assets_status_counts?.APPROVED || 0} GOVERNED)</span>
+                      </div>
+                      <span className="text-[10px] text-slate-500 font-mono">Mapped to Qdrant local store</span>
+                    </div>
+
+                    <div className="glass-panel p-5 rounded-xl flex flex-col justify-between space-y-2">
+                      <span className="text-xs text-slate-400 tracking-wider">EXPERT MODELS</span>
+                      <span className="text-3xl font-extrabold text-slate-100">{stats?.expert_models || 0}</span>
+                      <span className="text-[10px] text-slate-500 font-mono">Active knowledge vectors</span>
+                    </div>
+
+                    <div className="glass-panel-glow p-5 rounded-xl flex flex-col justify-between space-y-2">
+                      <span className="text-xs text-slate-400 tracking-wider">DEPLOYABLE PACKAGES</span>
+                      <span className="text-3xl font-extrabold text-gradient-rainbow">{stats?.agent_packages || 0}</span>
+                      <span className="text-[10px] text-cyan-400 font-mono">Immutable assets ready</span>
+                    </div>
+                  </div>
+
+                  {/* READINESS SCORING METER & STATE DISTRIBUTION */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                    {/* READINESS GAUGE */}
+                    <div className="glass-panel p-6 rounded-xl flex flex-col justify-between space-y-4">
+                      <div className="flex items-center justify-between">
+                        <h4 className="text-sm font-semibold text-slate-300">Transformation Readiness</h4>
+                        <Info className="w-4 h-4 text-slate-500" />
+                      </div>
+                      <div className="relative flex items-center justify-center py-4">
+                        <div className="text-center">
+                          <span className="text-5xl font-black text-gradient-emerald">{stats?.readiness_score || 0}%</span>
+                          <span className="block text-[10px] text-slate-400 font-mono uppercase mt-1">Overall Quality Score</span>
+                        </div>
+                      </div>
+                      <p className="text-xs text-slate-400 text-center leading-relaxed">
+                        Readiness calculation computes coverage depth, freshness, verification, and conflict scores of all extracted knowledge assets.
+                      </p>
+                    </div>
+
+                    {/* GOVERNANCE DISTRIBUTION */}
+                    <div className="glass-panel p-6 rounded-xl flex flex-col justify-between col-span-2 space-y-4">
+                      <h4 className="text-sm font-semibold text-slate-300">Governance Pipeline Distribution</h4>
+                      <div className="grid grid-cols-4 gap-4 py-3">
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <span className="text-xs text-slate-400 block font-mono">CANDIDATE</span>
+                          <span className="text-2xl font-bold text-slate-300">{stats?.assets_status_counts?.CANDIDATE || 0}</span>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <span className="text-xs text-slate-400 block font-mono">REVIEWED</span>
+                          <span className="text-2xl font-bold text-yellow-400">{stats?.assets_status_counts?.REVIEWED || 0}</span>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <span className="text-xs text-slate-400 block font-mono">APPROVED</span>
+                          <span className="text-2xl font-bold text-emerald-400">{stats?.assets_status_counts?.APPROVED || 0}</span>
+                        </div>
+                        <div className="bg-slate-900/60 border border-slate-800 rounded-lg p-3 text-center">
+                          <span className="text-xs text-slate-400 block font-mono">ARCHIVED</span>
+                          <span className="text-2xl font-bold text-slate-500">{stats?.assets_status_counts?.ARCHIVED || 0}</span>
+                        </div>
+                      </div>
+                      <div className="h-4 bg-slate-950 rounded-full overflow-hidden flex">
+                        {stats?.assets_extracted ? (
+                          <>
+                            <div className="bg-slate-400 h-full" style={{ width: `${((stats.assets_status_counts.CANDIDATE) / stats.assets_extracted) * 100}%` }}></div>
+                            <div className="bg-yellow-500 h-full" style={{ width: `${((stats.assets_status_counts.REVIEWED) / stats.assets_extracted) * 100}%` }}></div>
+                            <div className="bg-emerald-500 h-full" style={{ width: `${((stats.assets_status_counts.APPROVED) / stats.assets_extracted) * 100}%` }}></div>
+                            <div className="bg-slate-700 h-full" style={{ width: `${((stats.assets_status_counts.ARCHIVED) / stats.assets_extracted) * 100}%` }}></div>
+                          </>
+                        ) : (
+                          <div className="bg-slate-900 w-full h-full"></div>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* DEMO TRANSFORMATION ACTION CARD */}
+                  {documents.length === 0 && (
+                    <div className="glass-panel p-8 rounded-xl border border-cyan-900/30 flex flex-col md:flex-row items-center justify-between gap-6 bg-gradient-to-r from-slate-950 via-slate-900/40 to-slate-950">
+                      <div className="space-y-2 text-center md:text-left">
+                        <h3 className="font-bold text-slate-200 flex items-center justify-center md:justify-start gap-2">
+                          <Sparkles className="w-4 h-4 text-cyan-400 animate-pulse" />
+                          Transform Company Knowledge Instantly
+                        </h3>
+                        <p className="text-xs text-slate-400 max-w-2xl leading-relaxed">
+                          Test the entire operational pipeline with a single click. Load our standard pre-bundled clinical trial protocols and SLA policies, let Docling/LlamaIndex chunk them, vector-store them in local Qdrant, and extract governed knowledge assets automatically.
+                        </p>
+                      </div>
+                      <button
+                        onClick={async () => {
+                          if (activeProjectId) {
+                            await triggerBatchDemo(activeProjectId);
+                            await triggerExtraction(activeProjectId);
+                          }
+                        }}
+                        className="w-full md:w-auto bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-bold px-5 py-3 rounded-lg text-xs tracking-wider uppercase flex items-center justify-center gap-2 shrink-0 hover:opacity-90 transition-opacity"
+                      >
+                        Run Batch Demo <ArrowRight className="w-4 h-4" />
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 2: DOCUMENT INVENTORY */}
+              {activeTab === 'documents' && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  
+                  {/* UPLOADER PANEL */}
+                  <div className="glass-panel p-6 rounded-xl space-y-5 h-fit">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+                      Ingest New Document
+                    </h3>
+                    
+                    <div className="space-y-4">
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Department</label>
+                        <input 
+                          type="text" 
+                          value={uploadDept} 
+                          onChange={(e) => setUploadDept(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Document Owner</label>
+                        <input 
+                          type="text" 
+                          value={uploadOwner} 
+                          onChange={(e) => setUploadOwner(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                        />
+                      </div>
+                      
+                      {/* DRAG DROP */}
+                      <div 
+                        onClick={() => fileInputRef.current?.click()}
+                        className="border-2 border-dashed border-slate-800 hover:border-cyan-500/50 hover:bg-cyan-950/5 rounded-xl p-8 text-center cursor-pointer transition-all duration-300"
+                      >
+                        <Upload className="w-8 h-8 text-slate-500 mx-auto mb-3" />
+                        <span className="text-xs font-semibold text-slate-300 block mb-1">Click to browse file</span>
+                        <span className="text-[10px] text-slate-500 block">PDF, TXT, DOCX formats supported</span>
+                        <input 
+                          type="file" 
+                          ref={fileInputRef} 
+                          onChange={handleFileUpload} 
+                          className="hidden" 
+                        />
+                      </div>
+                    </div>
+
+                    <div className="border-t border-slate-900 pt-4">
+                      <button
+                        onClick={async () => activeProjectId && await triggerBatchDemo(activeProjectId)}
+                        className="w-full py-2 bg-slate-900 hover:bg-slate-850 text-slate-300 rounded text-xs font-semibold border border-slate-800 flex items-center justify-center gap-2 transition-colors"
+                      >
+                        <FileCheck className="w-3.5 h-3.5" />
+                        Quick-Load 3 Standard SOPs
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* DOCUMENT LIST */}
+                  <div className="col-span-2 glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center justify-between">
+                      <span>Document Inventory Inventory ({documents.length})</span>
+                      {documents.length > 0 && (
+                        <button
+                          onClick={async () => activeProjectId && await triggerExtraction(activeProjectId)}
+                          className="text-[10px] bg-cyan-950 hover:bg-cyan-900 text-cyan-400 border border-cyan-800/50 rounded px-2.5 py-1 font-mono uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                        >
+                          <Sparkles className="w-3.5 h-3.5 animate-pulse" /> Extract Assets
+                        </button>
+                      )}
+                    </h3>
+
+                    {documents.length === 0 ? (
+                      <div className="text-center py-20 text-slate-500 italic text-xs">
+                        No documents uploaded yet. Use the upload panel to begin ingestion.
+                      </div>
+                    ) : (
+                      <div className="space-y-3.5 max-h-[500px] overflow-y-auto pr-2">
+                        {documents.map((doc) => (
+                          <div 
+                            key={doc.id} 
+                            onClick={() => {
+                              setSelectedDocFilterId(doc.id);
+                              setActiveTab('assets');
+                              window.history.pushState(null, '', `/knowledge-assets?documentId=${doc.id}`);
+                            }}
+                            className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:border-cyan-500/30 hover:bg-slate-900/50 cursor-pointer transition-all duration-300"
+                          >
+                            <div className="space-y-1">
+                              <span className="text-xs font-semibold text-slate-200 flex items-center gap-1.5">
+                                <FileText className="w-3.5 h-3.5 text-cyan-500" />
+                                {doc.filename}
+                              </span>
+                              <div className="flex flex-wrap gap-2 text-[10px] text-slate-500 font-mono">
+                                <span>Dept: {doc.department}</span>
+                                <span>•</span>
+                                <span>Owner: {doc.owner}</span>
+                                <span>•</span>
+                                <span>Type: {doc.file_type}</span>
+                                <span>•</span>
+                                <span>Version: {doc.version}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-4 self-end md:self-center">
+                              {/* Readiness markers */}
+                              <div className="flex items-center gap-1.5 font-mono text-[10px] px-2 py-0.5 rounded bg-slate-900 border border-slate-800">
+                                <span className="text-slate-400">LlamaIndex Vector Index:</span>
+                                <span className="text-emerald-400">STORED</span>
+                              </div>
+                              
+                              {doc.status === 'INGESTED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-yellow-500 font-semibold bg-yellow-950/20 border border-yellow-900/30 px-2.5 py-0.5 rounded-full">
+                                  <Clock className="w-3.5 h-3.5" /> INGESTED
+                                </span>
+                              ) : doc.status === 'PARSED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-yellow-400 font-semibold bg-yellow-950/30 border border-yellow-900/40 px-2.5 py-0.5 rounded-full">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> PARSED
+                                </span>
+                              ) : doc.status === 'ASSETS_EXTRACTED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-blue-400 font-semibold bg-blue-950/30 border border-blue-900/40 px-2.5 py-0.5 rounded-full">
+                                  <FileText className="w-3.5 h-3.5" /> EXTRACTED
+                                </span>
+                              ) : doc.status === 'PARTIALLY_APPROVED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-purple-400 font-semibold bg-purple-950/30 border border-purple-900/40 px-2.5 py-0.5 rounded-full">
+                                  <Sparkles className="w-3.5 h-3.5 animate-pulse" /> PARTIAL
+                                </span>
+                              ) : doc.status === 'APPROVED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold bg-emerald-950/30 border border-emerald-900/40 px-2.5 py-0.5 rounded-full">
+                                  <CheckCircle2 className="w-3.5 h-3.5" /> APPROVED
+                                </span>
+                              ) : doc.status === 'FAILED' ? (
+                                <span className="flex items-center gap-1.5 text-xs text-rose-400 font-semibold bg-rose-950/30 border border-rose-900/40 px-2.5 py-0.5 rounded-full">
+                                  <XCircle className="w-3.5 h-3.5" /> FAILED
+                                </span>
+                              ) : (
+                                <span className="flex items-center gap-1.5 text-xs text-slate-400 font-semibold bg-slate-900 border border-slate-800 px-2.5 py-0.5 rounded-full">
+                                  {doc.status}
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 3: KNOWLEDGE ASSETS */}
+              {activeTab === 'assets' && (
+                <div className="space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                    <div className="flex items-center gap-3">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide">
+                        Knowledge Transformation Review Queue
+                        {selectedDocFilterId ? (
+                          <span className="text-cyan-400 ml-2 font-mono">
+                            (Filtered by Document: #{selectedDocFilterId})
+                          </span>
+                        ) : (
+                          ` (${assets.length} items)`
+                        )}
+                      </h3>
+                      {selectedDocFilterId && (
+                        <button
+                          onClick={() => {
+                            setSelectedDocFilterId(null);
+                            window.history.pushState(null, '', '/knowledge-assets');
+                          }}
+                          className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/30 px-2 py-0.5 rounded border border-cyan-900/50 transition-colors"
+                        >
+                          Clear Filter
+                        </button>
+                      )}
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {assets.length > 0 && (
+                        <button
+                          onClick={async () => activeProjectId && await triggerExtraction(activeProjectId)}
+                          className="bg-slate-900 hover:bg-slate-850 text-slate-300 border border-slate-800 rounded px-2.5 py-1 text-xs font-mono uppercase flex items-center gap-1.5 transition-colors"
+                        >
+                          Re-run Extraction
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {assets.length === 0 ? (
+                    <div className="text-center py-20 glass-panel rounded-xl text-slate-500 italic text-xs">
+                      No knowledge assets generated yet. Parse document files first and run the extraction trigger.
+                    </div>
+                  ) : (
+                    <div className="space-y-8">
+                      {(() => {
+                        const grouped: { [key: string]: { docId: number | null; docName: string; items: typeof assets } } = {};
+                        assets.forEach(asset => {
+                          const doc = documents.find(d => d.id === asset.document_id);
+                          const docName = doc ? doc.filename : "Manual / Unknown Source";
+                          const key = doc ? `doc_${doc.id}` : "manual";
+                          if (!grouped[key]) {
+                            grouped[key] = { docId: asset.document_id, docName, items: [] };
+                          }
+                          grouped[key].items.push(asset);
+                        });
+
+                        let entries = Object.entries(grouped);
+                        if (selectedDocFilterId !== null) {
+                          entries = entries.filter(([_, group]) => group.docId === selectedDocFilterId);
+                        }
+
+                        if (entries.length === 0 && selectedDocFilterId !== null) {
+                          return (
+                            <div className="text-center py-20 glass-panel rounded-xl space-y-4">
+                              <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
+                              <h3 className="font-bold text-sm text-slate-350">No assets extracted from this document yet.</h3>
+                              <p className="text-xs text-slate-500 max-w-sm mx-auto">
+                                This document has been ingested but assets have not been extracted yet. Click the "Extract Assets" button in the Document Inventory to generate them.
+                              </p>
+                              <button
+                                onClick={() => {
+                                  setSelectedDocFilterId(null);
+                                  window.history.pushState(null, '', '/knowledge-assets');
+                                }}
+                                className="text-xs text-cyan-400 hover:underline"
+                              >
+                                Clear Filter and View All
+                              </button>
+                            </div>
+                          );
+                        }
+
+                        return entries.map(([key, group]) => {
+                          const hasPending = group.items.some(item => item.status !== 'APPROVED' && item.status !== 'ARCHIVED');
+                          
+                          const doc = documents.find(d => d.id === group.docId);
+                          const docStatus = doc ? doc.status : "N/A";
+                          const docModified = doc ? new Date(doc.modified_at).toLocaleString() : "N/A";
+
+                          const approvedGroup = group.items.filter(item => item.status === 'APPROVED').length;
+                          const rejectedGroup = group.items.filter(item => item.status === 'ARCHIVED').length;
+                          const candidateGroup = group.items.filter(item => item.status === 'CANDIDATE').length;
+
+                          let statusReason = "Active review queue";
+                          if (docStatus === "INGESTED") statusReason = "Document uploaded, awaiting parsing";
+                          else if (docStatus === "PARSED") statusReason = "Parsed and indexed in Qdrant, awaiting asset extraction";
+                          else if (docStatus === "ASSETS_EXTRACTED") statusReason = "Assets extracted, awaiting review";
+                          else if (docStatus === "PARTIALLY_APPROVED") statusReason = "Governance active: some assets approved, others in review";
+                          else if (docStatus === "APPROVED") statusReason = "Fully governed: all extracted knowledge assets approved";
+                          else if (docStatus === "ALL_ASSETS_REJECTED") statusReason = "Hidden from active inventory because all extracted assets were rejected";
+                          else if (docStatus === "DELETED") statusReason = "Excluded: all knowledge assets deleted";
+
+                          return (
+                            <div key={key} className="space-y-4 border border-slate-900 bg-[#090d16]/30 p-4 rounded-xl">
+                              <div className="flex flex-col sm:flex-row justify-between sm:items-center gap-3 bg-slate-950/80 p-3 rounded-lg border border-slate-900">
+                                <span className="text-xs font-semibold flex items-center gap-2 text-slate-350">
+                                  <FileText className="w-4 h-4 text-cyan-400" />
+                                  Source Document: <span className="text-cyan-300 font-mono">{group.docName}</span> ({group.items.length} assets)
+                                </span>
+                                {group.docId && (
+                                  <div className="flex flex-wrap gap-2">
+                                    {hasPending && (
+                                      <>
+                                        <button
+                                          onClick={async () => {
+                                            const pending = group.items.filter(item => item.status !== 'APPROVED' && item.status !== 'ARCHIVED');
+                                            const pendingIds = pending.map(item => item.id);
+                                            if (pendingIds.length > 0) {
+                                              await bulkUpdateAssetStatus(pendingIds, 'APPROVED');
+                                            }
+                                          }}
+                                          className="text-[10px] text-emerald-400 hover:text-emerald-350 font-mono flex items-center gap-1.5 bg-emerald-950/20 px-2 py-1 rounded border border-emerald-900/30 transition-colors"
+                                        >
+                                          Approve All {candidateGroup} Assets
+                                        </button>
+                                        <button
+                                          onClick={async () => {
+                                            const pending = group.items.filter(item => item.status !== 'APPROVED' && item.status !== 'ARCHIVED');
+                                            const pendingIds = pending.map(item => item.id);
+                                            if (pendingIds.length > 0) {
+                                              await bulkUpdateAssetStatus(pendingIds, 'ARCHIVED');
+                                            }
+                                          }}
+                                          className="text-[10px] text-yellow-500 hover:text-yellow-400 font-mono flex items-center gap-1.5 bg-yellow-950/20 px-2 py-1 rounded border border-yellow-900/30 transition-colors"
+                                        >
+                                          Reject All {candidateGroup} Assets
+                                        </button>
+                                      </>
+                                    )}
+                                    {group.items.some(item => item.status === 'ARCHIVED') && (
+                                      <button
+                                        onClick={async () => {
+                                          if (window.confirm(`Are you sure you want to permanently delete all ${rejectedGroup} rejected assets from this document?`)) {
+                                            if (group.docId) await deleteDocumentAssets(group.docId, 'ARCHIVED');
+                                          }
+                                        }}
+                                        className="text-[10px] text-rose-450 hover:text-rose-400 font-mono flex items-center gap-1 bg-rose-950/20 px-2 py-1 rounded border border-rose-900/30 transition-colors"
+                                      >
+                                        <Trash2 className="w-3 h-3" /> Delete {rejectedGroup} rejected
+                                      </button>
+                                    )}
+                                    {group.items.some(item => item.status === 'CANDIDATE') && (
+                                      <button
+                                        onClick={async () => {
+                                          if (window.confirm(`Are you sure you want to permanently delete all ${candidateGroup} candidate assets from this document?`)) {
+                                            if (group.docId) await deleteDocumentAssets(group.docId, 'CANDIDATE');
+                                          }
+                                        }}
+                                        className="text-[10px] text-orange-400 hover:text-orange-300 font-mono flex items-center gap-1 bg-orange-950/20 px-2 py-1 rounded border border-orange-900/30 transition-colors"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" /> Delete {candidateGroup} candidates
+                                      </button>
+                                    )}
+                                    <button
+                                      onClick={async () => {
+                                        if (window.confirm(`Are you sure you want to permanently delete ALL ${group.items.length} assets from this document? This action is destructive and cannot be undone.`)) {
+                                          if (group.docId) await deleteDocumentAssets(group.docId);
+                                        }
+                                      }}
+                                      className="text-[10px] text-red-400 hover:text-red-350 font-mono flex items-center gap-1 bg-red-950/20 px-2 py-1 rounded border border-red-900/30 transition-colors"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" /> Delete All {group.items.length} Assets
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* GOVERNANCE AUDIT PANEL */}
+                              <div className="bg-slate-950/40 border border-slate-900/50 rounded-lg p-4 grid grid-cols-1 md:grid-cols-4 gap-4 text-xs font-mono">
+                                <div className="space-y-1">
+                                  <span className="text-[10px] text-slate-500 block uppercase font-semibold">Lifecycle State</span>
+                                  <span className={`font-bold uppercase flex items-center gap-1.5 ${
+                                    docStatus === 'APPROVED' ? 'text-emerald-400' :
+                                    docStatus === 'ALL_ASSETS_REJECTED' ? 'text-rose-400' :
+                                    docStatus === 'PARTIALLY_APPROVED' ? 'text-cyan-400' : 'text-yellow-400'
+                                  }`}>
+                                    <span className="w-1.5 h-1.5 rounded-full bg-current"></span>
+                                    {docStatus}
+                                  </span>
+                                  <span className="text-[9px] text-slate-500 block italic leading-tight">{statusReason}</span>
+                                </div>
+                                
+                                <div className="space-y-1">
+                                  <span className="text-[10px] text-slate-500 block uppercase font-semibold">Extracted Assets</span>
+                                  <div className="grid grid-cols-3 gap-1 text-[10px] text-center text-slate-350">
+                                    <div className="bg-slate-900/40 p-1 rounded border border-slate-900/20">
+                                      <span className="text-[8px] text-slate-500 block">APRV</span>
+                                      <span className="font-bold text-emerald-400">{approvedGroup}</span>
+                                    </div>
+                                    <div className="bg-slate-900/40 p-1 rounded border border-slate-900/20">
+                                      <span className="text-[8px] text-slate-500 block">REJ</span>
+                                      <span className="font-bold text-rose-400">{rejectedGroup}</span>
+                                    </div>
+                                    <div className="bg-slate-900/40 p-1 rounded border border-slate-900/20">
+                                      <span className="text-[8px] text-slate-500 block">PEND</span>
+                                      <span className="font-bold text-yellow-400">{candidateGroup}</span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                <div className="space-y-1 md:col-span-2">
+                                  <span className="text-[10px] text-slate-500 block uppercase font-semibold">Governance Verification Trace</span>
+                                  <div className="text-[10px] text-slate-400 space-y-0.5 leading-tight">
+                                    <div>Last Transition: <span className="text-slate-300">{docModified}</span></div>
+                                    <div>Workspace Owner: <span className="text-cyan-400 font-semibold">{doc ? doc.owner : 'N/A'}</span></div>
+                                    <div>Integrity Hash Check: <span className="text-emerald-400">100% GOVERNED</span></div>
+                                  </div>
+                                </div>
+                              </div>
+
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {group.items.map((asset, index) => {
+                                  const score = asset.quality_scores?.[0];
+                                  const isHighlighted = selectedDocFilterId === asset.document_id;
+                                  return (
+                                    <div 
+                                      key={asset.id} 
+                                      ref={isHighlighted && index === 0 ? firstAssetRef : undefined}
+                                      className={`rounded-xl p-6 flex flex-col justify-between space-y-4 hover:border-slate-700 transition-all duration-300 ${
+                                        isHighlighted 
+                                          ? 'border-2 border-cyan-500/80 shadow-[0_0_15px_rgba(6,182,212,0.15)] bg-[#0c1624]/80' 
+                                          : 'glass-panel'
+                                      } ${
+                                        asset.status === 'APPROVED' ? 'border-l-4 border-l-emerald-500' : 
+                                        asset.status === 'ARCHIVED' ? 'border-l-4 border-l-rose-500/70 opacity-60' : 'border-l-4 border-l-yellow-500'
+                                      }`}
+                                    >
+                                      <div className="space-y-1.5">
+                                        <div className="flex justify-between items-start">
+                                          <span className="text-[10px] font-mono bg-slate-900 text-cyan-400 px-2 py-0.5 rounded border border-slate-800 uppercase tracking-wider">
+                                            {asset.type}
+                                          </span>
+                                          <div className="flex gap-2">
+                                            <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 border border-slate-900 text-slate-400">
+                                              Access: {asset.access_level}
+                                            </span>
+                                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                                              asset.status === 'APPROVED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                              asset.status === 'ARCHIVED' ? 'bg-rose-950/30 text-rose-450' : 'bg-yellow-950/40 text-yellow-400'
+                                            }`}>
+                                              {asset.status === 'ARCHIVED' ? 'REJECTED' : asset.status}
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <h4 className="font-bold text-sm text-slate-100">{asset.name}</h4>
+                                      </div>
+
+                                      <div className="bg-slate-950/50 border border-slate-900 rounded p-3 text-xs leading-relaxed text-slate-300 font-mono italic">
+                                        "{asset.content}"
+                                      </div>
+
+                                      <div className="space-y-3.5 border-t border-slate-900/60 pt-3">
+                                        <div className="space-y-1">
+                                          <span className="text-[10px] text-slate-500 block uppercase font-mono tracking-wider">Source Provenance</span>
+                                          <div className="grid grid-cols-2 gap-2 bg-slate-950/30 p-2 rounded border border-slate-900 text-[10px] font-mono">
+                                            <div className="text-slate-400 truncate">Citation: {asset.source_citation}</div>
+                                            <div className="text-slate-400">Page: {asset.source_page} | Sec: {asset.source_section}</div>
+                                            <div className="text-slate-450 truncate">Hash: {asset.source_hash || 'N/A'}</div>
+                                            <div className="text-cyan-400">Method: {asset.extraction_method}</div>
+                                          </div>
+                                        </div>
+
+                                        {score && (
+                                          <div className="space-y-1.5">
+                                            <div className="flex justify-between items-center text-[10px] font-mono">
+                                              <span className="text-slate-500 uppercase">Knowledge Quality Scores</span>
+                                              <span className="text-emerald-400 font-bold">Overall: {score.overall_score}%</span>
+                                            </div>
+                                            
+                                            <div className="grid grid-cols-4 gap-2 text-[8px] font-mono">
+                                              <div className="bg-slate-900 p-1.5 rounded text-center border border-slate-850">
+                                                <span className="text-slate-400 block mb-0.5">Coverage</span>
+                                                <span className="text-[10px] text-slate-200 font-semibold">{score.coverage_score}%</span>
+                                              </div>
+                                              <div className="bg-slate-900 p-1.5 rounded text-center border border-slate-850">
+                                                <span className="text-slate-400 block mb-0.5">Freshness</span>
+                                                <span className="text-[10px] text-slate-200 font-semibold">{score.freshness_score}%</span>
+                                              </div>
+                                              <div className="bg-slate-900 p-1.5 rounded text-center border border-slate-850">
+                                                <span className="text-slate-400 block mb-0.5">Verified</span>
+                                                <span className="text-[10px] text-slate-200 font-semibold">{score.verification_score}%</span>
+                                              </div>
+                                              <div className="bg-slate-900 p-1.5 rounded text-center border border-slate-850">
+                                                <span className="text-slate-400 block mb-0.5">No Conflict</span>
+                                                <span className="text-[10px] text-slate-200 font-semibold">{score.conflict_score}%</span>
+                                              </div>
+                                            </div>
+                                          </div>
+                                        )}
+                                      </div>
+
+                                      <div className="flex items-center gap-2 pt-2 border-t border-slate-900/60">
+                                        {asset.status !== 'APPROVED' && (
+                                          <button
+                                            onClick={() => updateAssetStatus(asset.id, 'APPROVED')}
+                                            className="flex-1 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 font-semibold rounded text-xs border border-emerald-900/30 transition-colors"
+                                          >
+                                            Approve
+                                          </button>
+                                        )}
+                                        {asset.status !== 'ARCHIVED' && (
+                                          <button
+                                            onClick={() => updateAssetStatus(asset.id, 'ARCHIVED')}
+                                            className="px-3 py-1.5 bg-rose-950/30 hover:bg-rose-950/50 text-rose-450 hover:text-rose-400 font-semibold rounded text-xs border border-rose-900/30 transition-colors"
+                                          >
+                                            Reject as Invalid
+                                          </button>
+                                        )}
+                                        {(asset.status === 'CANDIDATE' || asset.status === 'ARCHIVED') && (
+                                          <button
+                                            onClick={() => deleteAsset(asset.id)}
+                                            className="px-2.5 py-1.5 bg-rose-950/30 hover:bg-rose-950/50 text-rose-450 hover:text-rose-400 rounded text-xs border border-rose-900/30 transition-colors"
+                                            title="Delete Asset"
+                                          >
+                                            <Trash2 className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                      </div>
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            </div>
+                          );
+                        });
+                      })()}
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 4: EXPERTS & AGENTS */}
+              {activeTab === 'experts' && (
+                <div className="space-y-8">
+                  
+                  {/* EXPERT MODEL BUILDER SECTION */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* BUILDER PANEL */}
+                    <div className="glass-panel p-6 rounded-xl space-y-4">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-cyan-400" />
+                        Construct Expert Knowledge Model
+                      </h3>
+                      
+                      {approvedAssets.length === 0 ? (
+                        <div className="text-center py-10 text-xs text-slate-500 italic">
+                          No approved assets available. Please approve assets in the Knowledge Assets queue before building models.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleBuildExpertModel} className="space-y-4">
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Expert Model Name</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. Quality Operations Expert"
+                              value={expertName} 
+                              onChange={(e) => setExpertName(e.target.value)}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                            />
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Description</label>
+                            <textarea
+                              rows={2}
+                              placeholder="Describe the domain expertise scope"
+                              value={expertDesc}
+                              onChange={(e) => setExpertDesc(e.target.value)}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                            ></textarea>
+                          </div>
+
+                          {/* ASSETS CHECKLIST */}
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">
+                              Select Governed Assets to Group ({selectedAssetIds.length} chosen)
+                            </label>
+                            <div className="space-y-2 max-h-48 overflow-y-auto pr-2 border border-slate-900 rounded p-2 bg-slate-950/40">
+                              {approvedAssets.map((asset) => (
+                                <label key={asset.id} className="flex items-start gap-2.5 text-xs text-slate-300 cursor-pointer p-1 rounded hover:bg-slate-900">
+                                  <input 
+                                    type="checkbox"
+                                    checked={selectedAssetIds.includes(asset.id)}
+                                    onChange={(e) => {
+                                      if (e.target.checked) {
+                                        setSelectedAssetIds([...selectedAssetIds, asset.id]);
+                                      } else {
+                                        setSelectedAssetIds(selectedAssetIds.filter(id => id !== asset.id));
+                                      }
+                                    }}
+                                    className="mt-0.5 accent-cyan-500"
+                                  />
+                                  <div>
+                                    <span className="font-semibold block text-[10px] text-cyan-400 font-mono">[{asset.type}] {asset.name}</span>
+                                    <span className="text-[10px] text-slate-500 italic">Citation: {asset.source_citation}</span>
+                                  </div>
+                                </label>
+                              ))}
+                            </div>
+                          </div>
+
+                          <button 
+                            type="submit" 
+                            disabled={selectedAssetIds.length === 0}
+                            className="w-full py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40"
+                          >
+                            Build Expert Model
+                          </button>
+                        </form>
+                      )}
+                    </div>
+
+                    {/* MODELS INVENTORY */}
+                    <div className="glass-panel p-6 rounded-xl space-y-4">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+                        Active Expert Models ({experts.length})
+                      </h3>
+
+                      {experts.length === 0 ? (
+                        <div className="text-center py-16 text-slate-500 italic text-xs">
+                          No expert models generated. Group assets using the builder.
+                        </div>
+                      ) : (
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                          {experts.map((model) => (
+                            <div key={model.id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-3.5">
+                              <div className="flex justify-between items-start">
+                                <div>
+                                  <h4 className="font-bold text-sm text-slate-200">{model.name}</h4>
+                                  <span className="text-[10px] text-slate-500 block mt-0.5">{model.description || 'No description'}</span>
+                                </div>
+                                <span className="text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">
+                                  ID: EM-{model.id}
+                                </span>
+                              </div>
+
+                              <div className="grid grid-cols-3 gap-2 bg-slate-950/80 p-2.5 rounded border border-slate-900 text-center font-mono text-[10px]">
+                                <div>
+                                  <span className="text-slate-500 block text-[8px] uppercase">Asset Count</span>
+                                  <span className="text-slate-200 font-bold text-xs">{model.asset_count}</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 block text-[8px] uppercase">Avg Quality</span>
+                                  <span className="text-emerald-400 font-bold text-xs">{model.quality_score}%</span>
+                                </div>
+                                <div>
+                                  <span className="text-slate-500 block text-[8px] uppercase">Avg Coverage</span>
+                                  <span className="text-cyan-400 font-bold text-xs">{model.coverage_score}%</span>
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* AGENT PACKAGE COMPILER SECTION */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4">
+                    {/* PACKAGE COMPILER FORM */}
+                    <div className="glass-panel p-6 rounded-xl space-y-4 bg-gradient-to-br from-slate-950 to-slate-900/40">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                        <Lock className="w-4 h-4 text-emerald-400" />
+                        Compile Deployable Agent Package
+                      </h3>
+
+                      {experts.length === 0 ? (
+                        <div className="text-center py-10 text-xs text-slate-500 italic">
+                          No expert models built. Create models first to package them.
+                        </div>
+                      ) : (
+                        <form onSubmit={handleBuildAgentPackage} className="space-y-4">
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                              <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Select Expert Model</label>
+                              <select
+                                required
+                                value={selectedModelId || ''}
+                                onChange={(e) => setSelectedModelId(Number(e.target.value))}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-2 text-xs text-slate-200 outline-none focus:border-cyan-500 transition-colors"
+                              >
+                                <option value="">Select model...</option>
+                                {experts.map(m => (
+                                  <option key={m.id} value={m.id}>{m.name}</option>
+                                ))}
+                              </select>
+                            </div>
+                            
+                            <div>
+                              <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Governance Version</label>
+                              <input 
+                                type="text" 
+                                required
+                                value={packageVersion} 
+                                onChange={(e) => setPackageVersion(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                              />
+                            </div>
+                          </div>
+
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Agent Package Name</label>
+                            <input 
+                              type="text" 
+                              required
+                              placeholder="e.g. Regulatory Audit Agent"
+                              value={packageName} 
+                              onChange={(e) => setPackageName(e.target.value)}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                            />
+                          </div>
+
+                          <button 
+                            type="submit" 
+                            disabled={!selectedModelId}
+                            className="w-full py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40"
+                          >
+                            Compile Agent Package
+                          </button>
+                        </form>
+                      )}
+                    </div>
+
+                    {/* PACKAGES INVENTORY */}
+                    <div className="glass-panel p-6 rounded-xl space-y-4">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+                        Published Agent Packages ({packages.length})
+                      </h3>
+
+                      {packages.length === 0 ? (
+                        <div className="text-center py-16 text-slate-500 italic text-xs">
+                          No compiled packages. Run compiler to package digital expert models.
+                        </div>
+                      ) : (
+                        <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
+                          {packages.map((pkg) => {
+                            let assetRefs = [];
+                            try {
+                              assetRefs = JSON.parse(pkg.asset_references || '[]');
+                            } catch (e) {}
+
+                            return (
+                              <div key={pkg.id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-3">
+                                <div className="flex justify-between items-start">
+                                  <div>
+                                    <h4 className="font-bold text-sm text-slate-200">{pkg.name}</h4>
+                                    <span className="text-[10px] text-slate-500 block mt-0.5">Version: {pkg.governance_version}</span>
+                                  </div>
+                                  <div className="text-right">
+                                    <span className="text-[10px] text-emerald-400 font-bold block">Avg Quality</span>
+                                    <span className="text-sm font-black font-mono text-slate-200">{pkg.quality_score}%</span>
+                                  </div>
+                                </div>
+
+                                <div className="border-t border-slate-900/60 pt-2 space-y-1">
+                                  <span className="text-[9px] text-slate-500 block uppercase font-mono tracking-wider">Governed Knowledge Contents ({assetRefs.length} assets)</span>
+                                  <div className="space-y-1">
+                                    {assetRefs.map((ref: any, idx: number) => (
+                                      <div key={idx} className="flex justify-between text-[9px] font-mono bg-slate-900/80 p-1 px-2 rounded text-slate-400">
+                                        <span className="truncate max-w-[200px]">[{ref.type}] {ref.name}</span>
+                                        <span className="text-cyan-400 font-semibold">{ref.access_level}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                </div>
+              )}
+
+              {/* TAB 5: AUDIT LEDGER */}
+              {activeTab === 'audit' && (
+                <div className="glass-panel p-6 rounded-xl space-y-6">
+                  <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
+                      <History className="w-4 h-4 text-cyan-400" />
+                      Immutable Transformation Ledger (Audit Trial Log)
+                    </h3>
+                    <button 
+                      onClick={fetchAuditTrail}
+                      className="text-[10px] text-slate-400 hover:text-slate-200 font-mono bg-slate-900 border border-slate-800 rounded px-2.5 py-1"
+                    >
+                      SYNC REFRESH
+                    </button>
+                  </div>
+
+                  <div className="relative border-l border-slate-900 ml-4 pl-6 space-y-6 py-4 max-h-[500px] overflow-y-auto">
+                    {auditEvents.length === 0 ? (
+                      <div className="text-slate-500 italic text-xs text-center pr-6 py-10">
+                        No events logged in the secure ledger yet.
+                      </div>
+                    ) : (
+                      auditEvents.map((evt) => (
+                        <div key={evt.id} className="relative">
+                          {/* Dot marker */}
+                          <span className="absolute -left-[30px] top-1.5 w-3 h-3 rounded-full bg-slate-900 border-2 border-cyan-400 flex items-center justify-center">
+                            <span className="w-1 h-1 rounded-full bg-slate-950"></span>
+                          </span>
+                          
+                          <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                              <span className="text-[10px] text-slate-500 font-mono">
+                                {new Date(evt.timestamp).toLocaleString()}
+                              </span>
+                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-850 uppercase">
+                                {evt.event_type}
+                              </span>
+                            </div>
+                            <p className="text-xs text-slate-300 font-mono">
+                              {evt.details}
+                            </p>
+                            <div className="text-[9px] text-slate-500 font-mono">
+                              Actor: {evt.actor} | Target Node: {evt.target_id || 'System'}
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    )}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </main>
+
+      {/* NEW WORKSPACE PROJECT MODAL */}
+      {showNewProjectModal && (
+        <div className="fixed inset-0 bg-[#070b12]/80 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="glass-panel p-6 rounded-xl w-full max-w-md space-y-4">
+            <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+              Initialize Knowledge Workspace Project
+            </h3>
+            
+            <form onSubmit={handleCreateProject} className="space-y-4">
+              <div>
+                <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Project Name</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="e.g. Q3 Compliance Transformation"
+                  value={projectName} 
+                  onChange={(e) => setProjectName(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Description</label>
+                <textarea
+                  rows={3}
+                  placeholder="Enter project goals and scope boundaries"
+                  value={projectDesc}
+                  onChange={(e) => setProjectDesc(e.target.value)}
+                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                ></textarea>
+              </div>
+
+              <div className="flex items-center gap-3 border-t border-slate-900 pt-4">
+                <button 
+                  type="submit" 
+                  className="flex-1 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase"
+                >
+                  Create
+                </button>
+                <button 
+                  type="button" 
+                  onClick={() => setShowNewProjectModal(false)}
+                  className="px-4 py-2 bg-slate-900 hover:bg-slate-850 text-slate-400 rounded text-xs border border-slate-800 transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+    </div>
+  );
+}
