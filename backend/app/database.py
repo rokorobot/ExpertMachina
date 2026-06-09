@@ -133,5 +133,23 @@ class AuditEvent(Base):
     target_id = Column(String, nullable=True)
     details = Column(Text, nullable=True)
 
+class BenchmarkQuestion(Base):
+    __tablename__ = "benchmark_questions"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    question = Column(String, nullable=False)
+    expected_claims_json = Column(Text, nullable=False) # JSON array of strings
+    expected_answer_type = Column(String, nullable=False) # FACTUAL | PROCEDURAL | POLICY | REFUSAL
+    required_citation_count = Column(Integer, default=0)
+    tags = Column(String, nullable=True) # comma-separated tags
+    severity = Column(String, nullable=False, default="MEDIUM") # LOW | MEDIUM | HIGH | CRITICAL
+    min_required_coverage = Column(Float, default=0.95)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def expected_claims(self):
+        import json
+        return json.loads(self.expected_claims_json) if self.expected_claims_json else []
+
 def init_db():
     Base.metadata.create_all(bind=engine)

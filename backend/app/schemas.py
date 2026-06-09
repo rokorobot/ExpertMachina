@@ -197,3 +197,32 @@ class QueryResponse(BaseModel):
     citations: List[CitationModel]
     unsupported_claims: Optional[List[str]] = []
 
+class BenchmarkQuestionBase(BaseModel):
+    question: str
+    expected_answer_type: str # FACTUAL | PROCEDURAL | POLICY | REFUSAL
+    required_citation_count: Optional[int] = 0
+    tags: Optional[str] = None
+    severity: Optional[str] = "MEDIUM" # LOW | MEDIUM | HIGH | CRITICAL
+    min_required_coverage: Optional[float] = 0.95
+
+class BenchmarkQuestionCreate(BenchmarkQuestionBase):
+    project_id: int
+    expected_claims: List[str]
+
+class BenchmarkQuestionUpdate(BaseModel):
+    question: Optional[str] = None
+    expected_claims: Optional[List[str]] = None
+    expected_answer_type: Optional[str] = None
+    required_citation_count: Optional[int] = None
+    tags: Optional[str] = None
+    severity: Optional[str] = None
+    min_required_coverage: Optional[float] = None
+
+class BenchmarkQuestionResponse(BenchmarkQuestionBase):
+    id: int
+    project_id: int
+    expected_claims: List[str]
+    created_at: datetime
+    class Config:
+        from_attributes = True
+

@@ -371,3 +371,51 @@ def delete_knowledge_assets_by_document(session: Session, document_id: int, stat
         update_document_lifecycle(session, document_id)
         return count
     return 0
+
+# Benchmark Questions CRUD
+def create_benchmark_question(session: Session, q_in: schemas.BenchmarkQuestionCreate) -> db.BenchmarkQuestion:
+    db_question = db.BenchmarkQuestion(
+        project_id=q_in.project_id,
+        question=q_in.question,
+        expected_claims_json=json.dumps(q_in.expected_claims),
+        expected_answer_type=q_in.expected_answer_type,
+        required_citation_count=q_in.required_citation_count,
+        tags=q_in.tags,
+        severity=q_in.severity,
+        min_required_coverage=q_in.min_required_coverage,
+        created_at=datetime.datetime.utcnow()
+    )
+    session.add(db_question)
+    session.commit()
+    session.refresh(db_question)
+    return db_question
+
+def get_benchmark_question(session: Session, question_id: int) -> db.BenchmarkQuestion:
+    return session.query(db.BenchmarkQuestion).filter(db.BenchmarkQuestion.id == question_id).first()
+
+def get_benchmark_questions(session: Session, project_id: int, limit: int = 100) -> list:
+    return session.query(db.BenchmarkQuestion).filter(db.BenchmarkQuestion.project_id == project_id).order_by(db.BenchmarkQuestion.created_at.desc()).limit(limit).all()
+
+def update_benchmark_question(session: Session, question_id: int, update: schemas.BenchmarkQuestionUpdate) -> db.BenchmarkQuestion:
+    db_question = get_benchmark_question(session, question_id)
+    if not db_question:
+        return None
+    
+    update_data = update.dict(exclude_unset=True)
+    if "expected_claims" in update_data:
+        db_question.expected_claims_json = json.dumps(update_data.pop("expected_claims"))
+        
+    for key, val in update_data.items():
+        setattr(db_question, key, val)
+        
+    session.commit()
+    session.refresh(db_question)
+    return db_question
+
+def delete_benchmark_question(session: Session, question_id: int) -> bool:
+    db_question = get_benchmark_question(session, question_id)
+    if db_question:
+        session.delete(db_question)
+        session.commit()
+        return True
+    return False

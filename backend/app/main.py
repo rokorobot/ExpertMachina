@@ -367,6 +367,33 @@ def get_dashboard_summary(project_id: int, db_session: Session = Depends(get_db)
         }
     }
 
+# Benchmark routes
+@app.get("/api/projects/{project_id}/benchmarks", response_model=List[schemas.BenchmarkQuestionResponse])
+def get_benchmarks(project_id: int, limit: int = 100, db_session: Session = Depends(get_db)):
+    return crud.get_benchmark_questions(db_session, project_id, limit=limit)
+
+@app.post("/api/projects/{project_id}/benchmarks", response_model=schemas.BenchmarkQuestionResponse)
+def create_benchmark(project_id: int, q_in: schemas.BenchmarkQuestionCreate, db_session: Session = Depends(get_db)):
+    if q_in.project_id != project_id:
+        raise HTTPException(status_code=400, detail="Project ID mismatch")
+    return crud.create_benchmark_question(db_session, q_in)
+
+@app.put("/api/projects/{project_id}/benchmarks/{benchmark_id}", response_model=schemas.BenchmarkQuestionResponse)
+def update_benchmark(project_id: int, benchmark_id: int, q_update: schemas.BenchmarkQuestionUpdate, db_session: Session = Depends(get_db)):
+    q = crud.get_benchmark_question(db_session, benchmark_id)
+    if not q or q.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Benchmark question not found")
+    updated = crud.update_benchmark_question(db_session, benchmark_id, q_update)
+    return updated
+
+@app.delete("/api/projects/{project_id}/benchmarks/{benchmark_id}")
+def delete_benchmark(project_id: int, benchmark_id: int, db_session: Session = Depends(get_db)):
+    q = crud.get_benchmark_question(db_session, benchmark_id)
+    if not q or q.project_id != project_id:
+        raise HTTPException(status_code=404, detail="Benchmark question not found")
+    deleted = crud.delete_benchmark_question(db_session, benchmark_id)
+    return {"message": "Benchmark question deleted successfully"}
+
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")
 def delete_asset(asset_id: int, actor: str = "GovernanceOfficer", db_session: Session = Depends(get_db)):
