@@ -62,31 +62,32 @@ A calculated metric representing the structural match and vector similarity stre
 
 ---
 
-## 5. Insufficient Evidence Rules
+## 5. Verification Status & Threshold Rules
 
-ExpertMachina eliminates hallucinations by enforcing a hard compliance threshold:
+ExpertMachina classifies response validity by mapping the **Coverage Score** to defined compliance states:
 
-```text
-If Coverage Score < Threshold (Default: 1.00)
-    ↓
-Block Candidate Answer
-    ↓
-Return: "INSUFFICIENT EVIDENCE"
-```
+| Coverage Score Range | Verification Status | Action |
+| :--- | :--- | :--- |
+| **0.95 – 1.00** | `VERIFIED` | Allow answer; display full verification trace. |
+| **0.80 – 0.95** | `PARTIALLY_VERIFIED` | Allow answer; warn operator of partially ungrounded claims. |
+| **< 0.80** | `INSUFFICIENT_EVIDENCE` | **Block candidate answer** and return fallback alert string. |
 
-If any single claim cannot be mathematically traced to a validated source document, the entire response is rejected, preventing the leakage of unverified model training assumptions.
+### Insufficient Evidence Action
+If the **Coverage Score** drops below `0.80`, the candidate answer is discarded entirely, preventing unverified model assumptions from leaking. The console returns:
+- **`INSUFFICIENT EVIDENCE`**
 
 ---
 
 ## 6. Verifiable Answer Schema
 
-All successful client responses return the complete verification payload:
+All successful client responses return the complete verification payload containing telemetry scores and status classifications:
 
 ```json
 {
   "answer": "Deviation reports must be filed within 24 hours.",
-  "confidence_score": 0.92,
-  "coverage_score": 1.00,
+  "confidence_score": 0.88,
+  "coverage_score": 0.92,
+  "verification_status": "PARTIALLY_VERIFIED",
   "citations": [
     {
       "asset_id": "asset_018b321a-4d2c-7431-a8e1-5bc4123490aa",
