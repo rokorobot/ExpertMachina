@@ -25,7 +25,10 @@ import {
   Clock,
   Lock,
   Boxes,
-  FileCheck
+  FileCheck,
+  MessageSquare,
+  Send,
+  AlertTriangle
 } from 'lucide-react';
 import { useAppStore, KnowledgeAsset, Document, ExpertModel } from '../store';
 
@@ -56,7 +59,7 @@ export default function Home() {
     deleteDocumentAssets
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'audit'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'audit' | 'console'>('dashboard');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -77,6 +80,122 @@ export default function Home() {
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [packageName, setPackageName] = useState('');
   const [packageVersion, setPackageVersion] = useState('0.1.0');
+
+  // Console state
+  const [selectedExpertId, setSelectedExpertId] = useState<number | null>(null);
+  const [consoleQuestion, setConsoleQuestion] = useState('');
+  const [consoleLoading, setConsoleLoading] = useState(false);
+  const [consoleStep, setConsoleStep] = useState('');
+  const [consoleResponse, setConsoleResponse] = useState<{
+    answer: string;
+    confidence_score: number;
+    coverage_score: number;
+    verification_status: 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'INSUFFICIENT_EVIDENCE';
+    citations: any[];
+  } | null>(null);
+  const [consoleHistory, setConsoleHistory] = useState<any[]>([]);
+
+  // Pre-fill model selection when entering console
+  useEffect(() => {
+    if (activeTab === 'console' && experts.length > 0 && selectedExpertId === null) {
+      setSelectedExpertId(experts[0].id);
+    }
+  }, [activeTab, experts]);
+
+  const handleConsoleQuery = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedExpertId || !consoleQuestion.trim()) return;
+
+    setConsoleResponse(null);
+    setConsoleLoading(true);
+    
+    const steps = [
+      "Initializing query context on selected Expert Model...",
+      "Retrieving matching approved knowledge assets in scope...",
+      "Stage 1 Validation: Verifying status, source hashes & provenance...",
+      "Stage 2 Verification: Checking claim coverage against source context..."
+    ];
+
+    let currentStepIdx = 0;
+    setConsoleStep(steps[0]);
+
+    const interval = setInterval(() => {
+      currentStepIdx++;
+      if (currentStepIdx < steps.length) {
+        setConsoleStep(steps[currentStepIdx]);
+      } else {
+        clearInterval(interval);
+        
+        // Mocking logic
+        const q = consoleQuestion.toLowerCase();
+        let mockResult: any = {
+          answer: "INSUFFICIENT EVIDENCE",
+          confidence_score: 0.38,
+          coverage_score: 0.42,
+          verification_status: "INSUFFICIENT_EVIDENCE",
+          citations: []
+        };
+
+        if (q.includes("deviation") || q.includes("sla threshold") || q.includes("logging")) {
+          mockResult = {
+            answer: "All critical deviations must be logged in the quality management system within 24 hours of identification, while major deviations must be logged within 72 hours. Minor deviations should be recorded within 5 business days.",
+            confidence_score: 0.96,
+            coverage_score: 1.00,
+            verification_status: "VERIFIED",
+            citations: [
+              {
+                asset_id: "asset_018b321a-4d2c-7431-a8e1-5bc4123490aa",
+                name: "Deviation Class Policy",
+                content: "All critical deviations must be logged in the quality management system within 24 hours.",
+                source_document: "SOP-001_Deviation_Management.txt",
+                source_page: 2,
+                source_section: "4.1 Classification of Deviations",
+                source_hash: "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+                asset_status: "APPROVED",
+                approved_by: "operator_admin_02",
+                approved_at: "2026-06-10T00:30:00Z"
+              }
+            ]
+          };
+        } else if (q.includes("refund") || q.includes("delivery") || q.includes("voucher")) {
+          mockResult = {
+            answer: "For deliveries exceeding the SLA deadline by more than 48 hours, customers are eligible for a 15% refund on the monthly service charge. Furthermore, customer support usually attempts to offer a complimentary voucher for goodwill, though voucher rules are unverified.",
+            confidence_score: 0.88,
+            coverage_score: 0.92,
+            verification_status: "PARTIALLY_VERIFIED",
+            citations: [
+              {
+                asset_id: "asset_018b321a-4d2c-7431-a8e5-5bc4123490bc",
+                name: "Late Delivery Refund Policy",
+                content: "For deliveries exceeding the SLA deadline by more than 48 hours, customers are eligible for a 15% refund.",
+                source_document: "SOP-002_SLA_Refund_Policy.txt",
+                source_page: 1,
+                source_section: "2.1 SLA Violations & Credits",
+                source_hash: "e4392a8321a4f00d892d131498b2c45eef723d91ca21377f2bc21a4f89d31c4b",
+                asset_status: "APPROVED",
+                approved_by: "operator_admin_02",
+                approved_at: "2026-06-10T00:31:12Z"
+              }
+            ]
+          };
+        }
+
+        setConsoleResponse(mockResult);
+        setConsoleHistory(prev => [
+          {
+            question: consoleQuestion,
+            expert_model: experts.find(e => e.id === selectedExpertId)?.name || 'Unknown Expert',
+            verification_status: mockResult.verification_status,
+            coverage_score: mockResult.coverage_score,
+            confidence_score: mockResult.confidence_score,
+            timestamp: new Date().toISOString()
+          },
+          ...prev
+        ]);
+        setConsoleLoading(false);
+      }
+    }, 600);
+  };
 
   useEffect(() => {
     fetchProjects();
@@ -341,6 +460,18 @@ export default function Home() {
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Experts & Packages</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('console')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'console'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <MessageSquare className="w-4 h-4" />
+              <span>Ask Expert Console</span>
             </button>
 
             <button
@@ -1332,7 +1463,260 @@ export default function Home() {
                         </div>
                       ))
                     )}
-                  </div>
+              {/* TAB 6: ASK EXPERT CONSOLE (Sprint 1 UI Shell) */}
+              {activeTab === 'console' && (
+                <div className="space-y-6">
+                  {experts.length === 0 ? (
+                    <div className="glass-panel p-8 rounded-xl text-center space-y-4 max-w-lg mx-auto mt-10">
+                      <HelpCircle className="w-12 h-12 text-slate-500 mx-auto" />
+                      <h4 className="font-bold text-sm text-slate-200 tracking-wide">No Expert Models Compiled Yet</h4>
+                      <p className="text-xs text-slate-400">
+                        ExpertMachina restricts queries strictly to the context of a compiled Expert Model. Build one to get started.
+                      </p>
+                      <button
+                        onClick={() => setActiveTab('experts')}
+                        className="px-4 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase transition-all hover:scale-[1.02]"
+                      >
+                        Create Expert Model
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                      
+                      {/* Left Sidebar: Controls & History */}
+                      <div className="lg:col-span-1 space-y-6">
+                        <div className="glass-panel p-5 rounded-xl space-y-4">
+                          <h4 className="font-bold text-xs text-slate-400 font-mono uppercase tracking-wider">Scoping Parameters</h4>
+                          
+                          <div className="space-y-1">
+                            <label className="block text-[10px] text-slate-500 font-mono uppercase">Target Expert Model</label>
+                            <select
+                              value={selectedExpertId || ''}
+                              onChange={(e) => setSelectedExpertId(Number(e.target.value))}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-xs text-slate-200 focus:border-cyan-500 outline-none"
+                            >
+                              {experts.map(m => (
+                                <option key={m.id} value={m.id}>{m.name}</option>
+                              ))}
+                            </select>
+                          </div>
+
+                          <div className="pt-2 border-t border-slate-900/60">
+                            <label className="block text-[10px] text-slate-500 font-mono uppercase mb-2">Sample Quick Queries</label>
+                            <div className="space-y-1.5">
+                              <button
+                                onClick={() => setConsoleQuestion("What is the deviation logging SLA threshold?")}
+                                className="w-full text-left p-2 bg-slate-950 border border-slate-900 hover:border-slate-800 rounded text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+                              >
+                                Deviation logging SLA threshold
+                              </button>
+                              <button
+                                onClick={() => setConsoleQuestion("What is the SLA refund percentage for late delivery?")}
+                                className="w-full text-left p-2 bg-slate-950 border border-slate-900 hover:border-slate-800 rounded text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+                              >
+                                SLA refund percentage for late delivery
+                              </button>
+                              <button
+                                onClick={() => setConsoleQuestion("Does clinical monitoring cover remote audits?")}
+                                className="w-full text-left p-2 bg-slate-950 border border-slate-900 hover:border-slate-800 rounded text-[11px] text-slate-400 hover:text-slate-200 transition-colors"
+                              >
+                                Clinical monitoring remote audits
+                              </button>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Query Session History */}
+                        <div className="glass-panel p-5 rounded-xl space-y-4">
+                          <h4 className="font-bold text-xs text-slate-400 font-mono uppercase tracking-wider">Session Queries</h4>
+                          <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+                            {consoleHistory.length === 0 ? (
+                              <div className="text-[11px] text-slate-500 italic py-2">No queries submitted in this session.</div>
+                            ) : (
+                              consoleHistory.map((hist, idx) => (
+                                <div key={idx} className="p-2 rounded bg-slate-950/40 border border-slate-900 space-y-1">
+                                  <div className="flex justify-between items-center text-[9px] font-mono">
+                                    <span className="text-slate-500 truncate max-w-[100px]">{hist.expert_model}</span>
+                                    <span className={`px-1 rounded ${
+                                      hist.verification_status === 'VERIFIED' ? 'text-emerald-400 bg-emerald-950/20' :
+                                      hist.verification_status === 'PARTIALLY_VERIFIED' ? 'text-amber-400 bg-amber-950/20' :
+                                      'text-rose-400 bg-rose-950/20'
+                                    }`}>
+                                      {hist.verification_status}
+                                    </span>
+                                  </div>
+                                  <p className="text-[11px] text-slate-300 truncate">{hist.question}</p>
+                                </div>
+                              ))
+                            )}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Right Panel: Chat interface & verification trace */}
+                      <div className="lg:col-span-2 space-y-6">
+                        
+                        {/* Ask input box */}
+                        <form onSubmit={handleConsoleQuery} className="glass-panel p-4 rounded-xl flex items-center gap-3">
+                          <input
+                            type="text"
+                            value={consoleQuestion}
+                            onChange={(e) => setConsoleQuestion(e.target.value)}
+                            placeholder="Ask a compliance question grounded in the selected expert model..."
+                            className="flex-1 bg-slate-950 border border-slate-850 focus:border-cyan-500 text-xs text-slate-200 px-3 py-2.5 rounded outline-none"
+                            disabled={consoleLoading}
+                          />
+                          <button
+                            type="submit"
+                            disabled={consoleLoading || !consoleQuestion.trim()}
+                            className="bg-cyan-500 hover:bg-cyan-600 disabled:opacity-50 disabled:hover:bg-cyan-500 text-slate-950 px-4 py-2.5 rounded font-bold text-xs uppercase tracking-wider flex items-center gap-1.5 transition-colors"
+                          >
+                            <Send className="w-3.5 h-3.5" />
+                            <span>Ask</span>
+                          </button>
+                        </form>
+
+                        {/* Output verification dashboard */}
+                        <div className="min-h-[300px]">
+                          {consoleLoading ? (
+                            <div className="glass-panel p-8 rounded-xl flex flex-col items-center justify-center min-h-[300px] text-center space-y-4">
+                              <div className="relative w-12 h-12">
+                                <span className="absolute inset-0 rounded-full border-2 border-cyan-950"></span>
+                                <span className="absolute inset-0 rounded-full border-t-2 border-cyan-400 animate-spin"></span>
+                              </div>
+                              <p className="text-xs text-cyan-400 font-mono tracking-wider animate-pulse">{consoleStep}</p>
+                            </div>
+                          ) : consoleResponse ? (
+                            <div className="space-y-6 animate-fade-in">
+                              
+                              {/* Answer block */}
+                              <div className={`glass-panel p-6 rounded-xl border-t-2 space-y-4 ${
+                                consoleResponse.verification_status === 'VERIFIED' ? 'border-t-emerald-500' :
+                                consoleResponse.verification_status === 'PARTIALLY_VERIFIED' ? 'border-t-amber-500' :
+                                'border-t-rose-500'
+                              }`}>
+                                <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-900/60 pb-3">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-bold text-slate-200 tracking-wide">Grounded Response</span>
+                                    <span className={`text-[10px] px-2 py-0.5 rounded font-mono font-bold tracking-wide ${
+                                      consoleResponse.verification_status === 'VERIFIED' ? 'text-emerald-400 bg-emerald-950/30 border border-emerald-900/40' :
+                                      consoleResponse.verification_status === 'PARTIALLY_VERIFIED' ? 'text-amber-400 bg-amber-950/30 border border-amber-900/40' :
+                                      'text-rose-400 bg-rose-950/30 border border-rose-900/40'
+                                    }`}>
+                                      {consoleResponse.verification_status.replace('_', ' ')}
+                                    </span>
+                                  </div>
+                                  
+                                  <div className="flex items-center gap-3">
+                                    <div className="text-right">
+                                      <span className="block text-[8px] text-slate-500 font-mono uppercase">Coverage</span>
+                                      <span className={`text-xs font-mono font-bold ${
+                                        consoleResponse.coverage_score >= 0.95 ? 'text-emerald-400' :
+                                        consoleResponse.coverage_score >= 0.80 ? 'text-amber-400' :
+                                        'text-rose-400'
+                                      }`}>
+                                        {(consoleResponse.coverage_score * 100).toFixed(0)}%
+                                      </span>
+                                    </div>
+                                    <div className="text-right">
+                                      <span className="block text-[8px] text-slate-500 font-mono uppercase">Confidence</span>
+                                      <span className="text-xs font-mono text-cyan-400 font-bold">
+                                        {(consoleResponse.confidence_score * 100).toFixed(0)}%
+                                      </span>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {consoleResponse.verification_status === 'INSUFFICIENT_EVIDENCE' ? (
+                                  <div className="p-4 rounded bg-rose-950/20 border border-rose-900/30 space-y-2">
+                                    <div className="flex items-center gap-2 text-rose-400 text-xs font-bold font-mono">
+                                      <AlertTriangle className="w-4 h-4" />
+                                      <span>COMPLIANCE BOUNDARY BLOCKED</span>
+                                    </div>
+                                    <p className="text-xs text-slate-400 leading-relaxed">
+                                      No approved evidence could be verified in the selected Expert Model to back this response. Answer generation aborted to maintain strict compliance boundaries.
+                                    </p>
+                                  </div>
+                                ) : (
+                                  <div className="space-y-4">
+                                    {consoleResponse.verification_status === 'PARTIALLY_VERIFIED' && (
+                                      <div className="flex items-start gap-2 p-3 rounded bg-amber-950/10 border border-amber-900/30 text-[11px] text-amber-400">
+                                        <AlertTriangle className="w-3.5 h-3.5 mt-0.5 shrink-0" />
+                                        <span>Warning: Paragraph matches are below 95%. Synthesized answer contains ungrounded training claims. Treat citations as primary truths.</span>
+                                      </div>
+                                    )}
+                                    <p className="text-xs text-slate-300 leading-relaxed font-sans font-medium whitespace-pre-wrap">
+                                      {consoleResponse.answer}
+                                    </p>
+                                  </div>
+                                )}
+                              </div>
+
+                              {/* Evidence list */}
+                              {consoleResponse.citations.length > 0 && (
+                                <div className="space-y-3">
+                                  <h5 className="font-bold text-xs text-slate-400 font-mono uppercase tracking-wider flex items-center gap-1.5">
+                                    <FileCheck className="w-4 h-4 text-emerald-400" />
+                                    <span>Knowledge Chain of Custody citations ({consoleResponse.citations.length})</span>
+                                  </h5>
+
+                                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {consoleResponse.citations.map((cite, idx) => (
+                                      <div key={idx} className="glass-panel p-4 rounded-lg space-y-3 relative overflow-hidden border-l-2 border-l-emerald-500">
+                                        <div className="flex justify-between items-start">
+                                          <div>
+                                            <span className="block text-[8px] text-slate-500 font-mono uppercase">Asset Citation</span>
+                                            <span className="text-xs font-bold text-slate-200">{cite.name}</span>
+                                          </div>
+                                          <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/20 text-emerald-400 border border-emerald-900/40 uppercase">
+                                            {cite.asset_status}
+                                          </span>
+                                        </div>
+
+                                        <p className="text-[11px] text-slate-400 italic font-mono bg-slate-950/30 p-2 rounded">
+                                          "{cite.content}"
+                                        </p>
+
+                                        <div className="grid grid-cols-2 gap-2 border-t border-slate-900/80 pt-2 text-[9px] font-mono text-slate-500">
+                                          <div>
+                                            <span className="block text-[8px] text-slate-600">SOURCE FILE</span>
+                                            <span className="text-slate-400">{cite.source_document}</span>
+                                          </div>
+                                          <div>
+                                            <span className="block text-[8px] text-slate-600">LOCATOR</span>
+                                            <span className="text-slate-400">Page {cite.source_page} | {cite.source_section.split(':')[0]}</span>
+                                          </div>
+                                          <div className="col-span-2">
+                                            <span className="block text-[8px] text-slate-600">BLOCK HASH</span>
+                                            <span className="text-slate-400 block truncate">{cite.source_hash}</span>
+                                          </div>
+                                          <div className="col-span-2">
+                                            <span className="block text-[8px] text-slate-600">APPROVAL LEDGER</span>
+                                            <span className="text-slate-400">Approved by {cite.approved_by} on {new Date(cite.approved_at).toLocaleString()}</span>
+                                          </div>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                            </div>
+                          ) : (
+                            <div className="glass-panel p-8 rounded-xl flex flex-col items-center justify-center min-h-[300px] text-center space-y-4">
+                              <HelpCircle className="w-10 h-10 text-slate-500" />
+                              <h4 className="font-bold text-xs text-slate-400 font-mono uppercase tracking-wider">Awaiting Operator Query</h4>
+                              <p className="text-xs text-slate-500 max-w-sm">
+                                Enter a question or pick one of the sample quick queries to audit response trust layers.
+                              </p>
+                            </div>
+                          )}
+                        </div>
+
+                      </div>
+
+                    </div>
+                  )}
                 </div>
               )}
             </>
