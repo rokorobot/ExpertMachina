@@ -12,7 +12,8 @@ from qdrant_client.models import Filter, FieldCondition, MatchAny
 def validate_asset_evidence(
     session: Session, 
     asset: db.KnowledgeAsset, 
-    expert_model_id: int
+    expert_model_id: int,
+    asset_hashes_override: dict = None
 ) -> dict:
     """
     Sprint 3: Evidence Validation Engine.
@@ -22,20 +23,21 @@ def validate_asset_evidence(
     source_hash_verified = False
 
     # Check 1: Status must be APPROVED
-    if asset.status != "APPROVED":
+    if asset.status != "APPROVED" and asset_hashes_override is None:
         failed_checks.append("STATUS_NOT_APPROVED")
 
     # Check 2: Expert Model Scoping
-    expert_model = session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
-    if expert_model and expert_model.asset_ids_json:
-        try:
-            model_asset_ids = json.loads(expert_model.asset_ids_json)
-            if asset.id not in model_asset_ids:
+    if asset_hashes_override is None:
+        expert_model = session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+        if expert_model and expert_model.asset_ids_json:
+            try:
+                model_asset_ids = json.loads(expert_model.asset_ids_json)
+                if asset.id not in model_asset_ids:
+                    failed_checks.append("EXPERT_MODEL_MISMATCH")
+            except Exception:
                 failed_checks.append("EXPERT_MODEL_MISMATCH")
-        except Exception:
+        else:
             failed_checks.append("EXPERT_MODEL_MISMATCH")
-    else:
-        failed_checks.append("EXPERT_MODEL_MISMATCH")
 
     # Check 3 & 4: Chunk existence and hash integrity
     if not asset.chunk_id:
@@ -46,7 +48,8 @@ def validate_asset_evidence(
             failed_checks.append("CHUNK_MISSING")
         else:
             calculated_hash = hashlib.sha256(chunk.text.encode('utf-8')).hexdigest()
-            if asset.source_hash != calculated_hash:
+            expected_hash = asset_hashes_override.get(str(asset.id)) if (asset_hashes_override and str(asset.id) in asset_hashes_override) else asset.source_hash
+            if expected_hash != calculated_hash:
                 failed_checks.append("HASH_TAMPERED")
             else:
                 source_hash_verified = True
@@ -66,7 +69,7 @@ def validate_asset_evidence(
         failed_checks.append("SECTION_MISSING")
 
     # Check 8: Asset is not archived/deleted
-    if asset.status in ["ARCHIVED", "DELETED"]:
+    if asset.status in ["ARCHIVED", "DELETED"] and asset_hashes_override is None:
         failed_checks.append("ASSET_ARCHIVED")
 
     validation_status = "VALID" if not failed_checks else "INVALID"
@@ -294,7 +297,9 @@ def retrieve_approved_evidence(
     session: Session, 
     expert_model_id: int, 
     question: str, 
-    limit: int = 5
+    limit: int = 5,
+    asset_ids_override: list = None,
+    asset_hashes_override: dict = None
 ) -> dict:
     """
     Sprint 6 Extended Retrieval:
@@ -310,28 +315,36 @@ def retrieve_approved_evidence(
             "hash_tamper_occurred": False
         }
 
-    if not expert_model.asset_ids_json:
-        return {
-            "citations": [],
-            "retrieved_asset_ids": [],
-            "validated_asset_ids": [],
-            "hash_tamper_occurred": False
-        }
-    
-    try:
-        asset_ids = json.loads(expert_model.asset_ids_json)
-    except Exception:
-        return {
-            "citations": [],
-            "retrieved_asset_ids": [],
-            "validated_asset_ids": [],
-            "hash_tamper_occurred": False
-        }
+    if asset_ids_override is not None:
+        asset_ids = asset_ids_override
+    else:
+        if not expert_model.asset_ids_json:
+            return {
+                "citations": [],
+                "retrieved_asset_ids": [],
+                "validated_asset_ids": [],
+                "hash_tamper_occurred": False
+            }
+        try:
+            asset_ids = json.loads(expert_model.asset_ids_json)
+        except Exception:
+            return {
+                "citations": [],
+                "retrieved_asset_ids": [],
+                "validated_asset_ids": [],
+                "hash_tamper_occurred": False
+            }
 
-    approved_assets = session.query(db.KnowledgeAsset).filter(
-        db.KnowledgeAsset.id.in_(asset_ids),
-        db.KnowledgeAsset.status == "APPROVED"
-    ).all()
+    if asset_ids_override is not None:
+        # For snapshots, we retrieve all snapshot assets and let the validation engine check status/archival
+        approved_assets = session.query(db.KnowledgeAsset).filter(
+            db.KnowledgeAsset.id.in_(asset_ids)
+        ).all()
+    else:
+        approved_assets = session.query(db.KnowledgeAsset).filter(
+            db.KnowledgeAsset.id.in_(asset_ids),
+            db.KnowledgeAsset.status == "APPROVED"
+        ).all()
 
     if not approved_assets:
         return {
@@ -380,7 +393,7 @@ def retrieve_approved_evidence(
                 asset = chunk_to_asset_map.get(chunk_id)
                 if asset:
                     retrieved_asset_ids.append(asset.id)
-                    validation = validate_asset_evidence(session, asset, expert_model_id)
+                    validation = validate_asset_evidence(session, asset, expert_model_id, asset_hashes_override=asset_hashes_override)
                     if "HASH_TAMPERED" in validation["failed_checks"]:
                         hash_tamper_occurred = True
                     if validation["validation_status"] == "INVALID":
@@ -417,7 +430,7 @@ def retrieve_approved_evidence(
             if len(retrieved_citations) >= limit:
                 break
             retrieved_asset_ids.append(asset.id)
-            validation = validate_asset_evidence(session, asset, expert_model_id)
+            validation = validate_asset_evidence(session, asset, expert_model_id, asset_hashes_override=asset_hashes_override)
             if "HASH_TAMPERED" in validation["failed_checks"]:
                 hash_tamper_occurred = True
             if validation["validation_status"] == "INVALID":

@@ -3,7 +3,7 @@ import shutil
 import hashlib
 import json
 import datetime
-from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, status
+from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -14,6 +14,7 @@ from app import crud
 from app import ingestion
 from app import extraction
 from app import query_engine
+from app import evaluation
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -393,6 +394,37 @@ def delete_benchmark(project_id: int, benchmark_id: int, db_session: Session = D
         raise HTTPException(status_code=404, detail="Benchmark question not found")
     deleted = crud.delete_benchmark_question(db_session, benchmark_id)
     return {"message": "Benchmark question deleted successfully"}
+
+# Evaluation runs routes
+@app.post("/api/projects/{project_id}/evaluations", response_model=schemas.EvaluationRunResponse)
+def trigger_evaluation(
+    project_id: int, 
+    run_in: schemas.EvaluationRunCreate, 
+    background_tasks: BackgroundTasks,
+    db_session: Session = Depends(get_db)
+):
+    if run_in.project_id != project_id:
+        raise HTTPException(status_code=400, detail="Project ID mismatch")
+    
+    try:
+        db_run = evaluation.create_evaluation_run(db_session, run_in)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+        
+    # Trigger execution in the background
+    background_tasks.add_task(evaluation.run_evaluation_batch, db_session, db_run.id)
+    return db_run
+
+@app.get("/api/projects/{project_id}/evaluations", response_model=List[schemas.EvaluationRunResponse])
+def list_evaluations(project_id: int, db_session: Session = Depends(get_db)):
+    return db_session.query(db.EvaluationRun).filter(db.EvaluationRun.project_id == project_id).order_by(db.EvaluationRun.started_at.desc()).all()
+
+@app.get("/api/projects/{project_id}/evaluations/{run_id}", response_model=schemas.EvaluationRunResponse)
+def get_evaluation(project_id: int, run_id: int, db_session: Session = Depends(get_db)):
+    run = db_session.query(db.EvaluationRun).filter(db.EvaluationRun.id == run_id, db.EvaluationRun.project_id == project_id).first()
+    if not run:
+        raise HTTPException(status_code=404, detail="Evaluation run not found")
+    return run
 
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")

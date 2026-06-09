@@ -1,5 +1,5 @@
 import datetime
-from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float
+from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
 
@@ -150,6 +150,51 @@ class BenchmarkQuestion(Base):
     def expected_claims(self):
         import json
         return json.loads(self.expected_claims_json) if self.expected_claims_json else []
+
+class EvaluationRun(Base):
+    __tablename__ = "evaluation_runs"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    expert_model_id = Column(Integer, ForeignKey("expert_models.id"))
+    expert_model_version = Column(String, nullable=True) # or package_id
+    asset_ids_snapshot = Column(Text, nullable=False) # JSON array of IDs
+    asset_hashes_snapshot = Column(Text, nullable=False) # JSON dict of ID -> Hash
+    benchmark_question_ids_snapshot = Column(Text, nullable=False) # JSON array of IDs
+    status = Column(String, default="PENDING") # PENDING, RUNNING, COMPLETED, FAILED
+    average_coverage_score = Column(Float, default=0.0)
+    average_confidence_score = Column(Float, default=0.0)
+    pass_rate = Column(Float, default=0.0)
+    failed_question_ids_json = Column(Text, nullable=True) # JSON array of question IDs that failed
+    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+    results = relationship("EvaluationQuestionResult", back_populates="run", cascade="all, delete-orphan")
+
+class EvaluationQuestionResult(Base):
+    __tablename__ = "evaluation_question_results"
+    id = Column(Integer, primary_key=True, index=True)
+    evaluation_run_id = Column(Integer, ForeignKey("evaluation_runs.id"))
+    benchmark_question_id = Column(Integer, ForeignKey("benchmark_questions.id"))
+    question_text = Column(String, nullable=False)
+    generated_answer = Column(Text, nullable=True)
+    coverage_score = Column(Float, default=0.0)
+    confidence_score = Column(Float, default=0.0)
+    verification_status = Column(String, nullable=True)
+    passed = Column(Boolean, default=False)
+    unsupported_claims_json = Column(Text, nullable=True) # JSON array of strings
+    citations_json = Column(Text, nullable=True) # JSON array of citations
+
+    run = relationship("EvaluationRun", back_populates="results")
+
+    @property
+    def unsupported_claims(self):
+        import json
+        return json.loads(self.unsupported_claims_json) if self.unsupported_claims_json else []
+
+    @property
+    def citations(self):
+        import json
+        return json.loads(self.citations_json) if self.citations_json else []
 
 def init_db():
     Base.metadata.create_all(bind=engine)

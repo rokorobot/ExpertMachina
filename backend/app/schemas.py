@@ -226,3 +226,42 @@ class BenchmarkQuestionResponse(BenchmarkQuestionBase):
     class Config:
         from_attributes = True
 
+class EvaluationQuestionResultResponse(BaseModel):
+    id: int
+    evaluation_run_id: int
+    benchmark_question_id: int
+    question_text: str
+    generated_answer: Optional[str]
+    coverage_score: float
+    confidence_score: float
+    verification_status: Optional[str]
+    passed: bool
+    unsupported_claims: List[str]
+    citations: List[CitationModel]
+    class Config:
+        from_attributes = True
+
+class EvaluationRunCreate(BaseModel):
+    project_id: int
+    expert_model_id: int
+    expert_model_version: Optional[str] = None
+
+class EvaluationRunResponse(BaseModel):
+    id: int
+    project_id: int
+    expert_model_id: int
+    expert_model_version: Optional[str]
+    asset_ids_snapshot: str
+    asset_hashes_snapshot: str
+    benchmark_question_ids_snapshot: str
+    status: str
+    average_coverage_score: float
+    average_confidence_score: float
+    pass_rate: float
+    failed_question_ids_json: Optional[str]
+    started_at: datetime
+    completed_at: Optional[datetime]
+    results: List[EvaluationQuestionResultResponse] = []
+    class Config:
+        from_attributes = True
+
