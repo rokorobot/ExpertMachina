@@ -127,10 +127,11 @@ def run_lifecycle_test():
             project_id=project.id,
             asset_ids=[assets[0].id, assets[1].id]
         )
-        model = crud.create_expert_model(session, model_in)
-        # Should only transfer assets[1] (APPROVED), assets[0] (ARCHIVED/REJECTED) is skipped
-        print(f"Expert Model assets grouped: {model.asset_count} (Expected: 1, because 1 was rejected)")
-        assert model.asset_count == 1
+        try:
+            model = crud.create_expert_model(session, model_in)
+            assert False, "Expert Model creation should have been blocked because an asset is ARCHIVED"
+        except ValueError as e:
+            print(f"Expert Model creation blocked as expected: {e}")
         
         # 9. Reject / Archive all assets
         for a in assets:

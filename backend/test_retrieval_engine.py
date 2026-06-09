@@ -67,6 +67,11 @@ def test_expert_model_isolation():
     )
 
     # 3. Create assets and approve them
+    # 3. Create assets and approve them
+    import hashlib
+    hash_a = hashlib.sha256(chunk_a.text.encode('utf-8')).hexdigest()
+    hash_b = hashlib.sha256(chunk_b.text.encode('utf-8')).hexdigest()
+
     asset_a1 = crud.create_knowledge_asset(
         session,
         schemas.KnowledgeAssetCreate(
@@ -78,7 +83,7 @@ def test_expert_model_isolation():
             chunk_id=chunk_a.id,
             source_page=1,
             source_section="Introduction",
-            source_hash="hash-a1"
+            source_hash=hash_a
         )
     )
     asset_b1 = crud.create_knowledge_asset(
@@ -92,7 +97,7 @@ def test_expert_model_isolation():
             chunk_id=chunk_b.id,
             source_page=1,
             source_section="Introduction",
-            source_hash="hash-b1"
+            source_hash=hash_b
         )
     )
     
@@ -125,7 +130,7 @@ def test_expert_model_isolation():
     )
     print(f"Citations returned for Model A: {citations_a}")
     # Verify that Asset B1 was NOT returned
-    assert not any(c["asset_id"] == asset_b1.id for c in citations_a), "Security Bypass! Model A query leaked Asset B1!"
+    assert not any(c["asset_id"] == asset_b1.id for c in citations_a["citations"]), "Security Bypass! Model A query leaked Asset B1!"
     print("Test passed: Model A query successfully isolated from Model B assets.")
 
     # --- SUCCESS TEST 2 ---
@@ -140,7 +145,7 @@ def test_expert_model_isolation():
         limit=5
     )
     print(f"Citations returned for Model B: {citations_b}")
-    assert any(c["asset_id"] == asset_b1.id for c in citations_b), "Retrieval Failed: Model B query could not retrieve its own asset!"
+    assert any(c["asset_id"] == asset_b1.id for c in citations_b["citations"]), "Retrieval Failed: Model B query could not retrieve its own asset!"
     print("Test passed: Model B successfully retrieved its own asset.")
 
     print("\n=== All Approved Asset Retrieval Engine tests passed successfully! ===")

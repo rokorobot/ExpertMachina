@@ -76,8 +76,8 @@ def test_tampered_chunk_rejection():
         limit=5
     )
     print(f"Citations returned: {citations_ok}")
-    assert len(citations_ok) == 1, "Retrieval failed to return valid evidence"
-    assert citations_ok[0]["asset_id"] == asset.id, "Correct asset not retrieved"
+    assert len(citations_ok["citations"]) == 1, "Retrieval failed to return valid evidence"
+    assert citations_ok["citations"][0]["asset_id"] == asset.id, "Correct asset not retrieved"
     print("Test A: Passed (evidence validates successfully and is returned)")
 
     # --- TEST B: Tampered Chunk Retrieval ---
@@ -97,7 +97,7 @@ def test_tampered_chunk_rejection():
     print(f"Citations returned after tampering: {citations_tampered}")
     
     # Assert that the asset was rejected and not returned
-    assert len(citations_tampered) == 0, "Security Bypass! Tampered chunk text went undetected by the validation engine!"
+    assert len(citations_tampered["citations"]) == 0, "Security Bypass! Tampered chunk text went undetected by the validation engine!"
     print("Test B: Passed (Tampered evidence successfully rejected and blocked from answer generation)")
 
     print("\n=== All Evidence Validation Engine checks passed successfully! ===")

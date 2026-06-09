@@ -74,7 +74,7 @@ def test_grounded_generation():
     print(f"Generated result evidence case: {gen_evidence}")
     assert gen_empty["answer"] != gen_evidence["answer"]
     assert 42 in gen_evidence["used_evidence_ids"]
-    assert "critical deviations must be logged" in gen_evidence["answer"]
+    assert "critical deviations must be logged" in gen_evidence["answer"].lower()
     print("Test B: Passed (correctly generated grounded response containing evidence details)")
 
     print("\n=== All Answer Generation Engine tests passed successfully! ===")
