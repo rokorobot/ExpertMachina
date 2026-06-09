@@ -69,7 +69,7 @@ ExpertMachina classifies response validity by mapping the **Coverage Score** to 
 | Coverage Score Range | Verification Status | Action |
 | :--- | :--- | :--- |
 | **0.95 – 1.00** | `VERIFIED` | Allow answer; display full verification trace. |
-| **0.80 – 0.95** | `PARTIALLY_VERIFIED` | Allow answer; warn operator of partially ungrounded claims. |
+| **0.80 – <0.95** | `PARTIALLY_VERIFIED` | Allow answer; warn operator of partially ungrounded claims. |
 | **< 0.80** | `INSUFFICIENT_EVIDENCE` | **Block candidate answer** and return fallback alert string. |
 
 ### Insufficient Evidence Action
