@@ -266,6 +266,7 @@ def create_expert_model(session: Session, model_in: schemas.ExpertModelCreate):
         asset_count=count,
         quality_score=avg_quality,
         coverage_score=avg_coverage,
+        asset_ids_json=json.dumps(model_in.asset_ids),
         created_at=datetime.datetime.utcnow()
     )
     session.add(db_model)

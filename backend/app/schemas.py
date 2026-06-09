@@ -173,3 +173,26 @@ class AssetBulkUpdate(BaseModel):
     asset_ids: List[int]
     status: str
 
+class QueryInput(BaseModel):
+    expert_model_id: int
+    question: str
+
+class CitationModel(BaseModel):
+    asset_id: int
+    name: str
+    content: str
+    source_document: str
+    source_page: int
+    source_section: str
+    source_hash: str
+    asset_status: str
+    approved_by: str
+    approved_at: str
+
+class QueryResponse(BaseModel):
+    answer: str
+    confidence_score: float
+    coverage_score: float
+    verification_status: str
+    citations: List[CitationModel]
+

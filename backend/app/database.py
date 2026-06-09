@@ -110,6 +110,7 @@ class ExpertModel(Base):
     asset_count = Column(Integer, default=0)
     quality_score = Column(Float, default=0.0)
     coverage_score = Column(Float, default=0.0)
+    asset_ids_json = Column(Text, nullable=True) # JSON array of grouped asset IDs
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 class AgentPackage(Base):

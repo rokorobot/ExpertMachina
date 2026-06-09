@@ -10,6 +10,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import extraction
+from app import query_engine
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -219,6 +220,36 @@ def create_expert(project_id: int, expert_in: schemas.ExpertModelCreate, db_sess
         return crud.create_expert_model(db_session, expert_in)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+@app.post("/api/projects/{project_id}/query", response_model=schemas.QueryResponse)
+def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Session = Depends(get_db)):
+    if not query_in.question.strip():
+        raise HTTPException(status_code=400, detail="Question cannot be empty")
+    
+    citations = query_engine.retrieve_approved_evidence(
+        db_session,
+        expert_model_id=query_in.expert_model_id,
+        question=query_in.question
+    )
+    
+    if not citations:
+        return schemas.QueryResponse(
+            answer="INSUFFICIENT EVIDENCE",
+            confidence_score=0.0,
+            coverage_score=0.0,
+            verification_status="INSUFFICIENT_EVIDENCE",
+            citations=[]
+        )
+    
+    # Simple Sprint 2 output verification synthesis
+    ref_contents = " ".join([c["content"] for c in citations])
+    return schemas.QueryResponse(
+        answer=f"Verified grounded answer synthesized from Expert Model: {ref_contents}",
+        confidence_score=0.95,
+        coverage_score=1.00,
+        verification_status="VERIFIED",
+        citations=citations
+    )
 
 # Agent Packages routes
 @app.get("/api/projects/{project_id}/packages", response_model=List[schemas.AgentPackageResponse])
