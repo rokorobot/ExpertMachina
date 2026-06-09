@@ -239,16 +239,26 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
         validated_citations=citations
     )
     
-    status_val = "VERIFIED" if citations else "INSUFFICIENT_EVIDENCE"
-    cov_score = 1.0 if citations else 0.0
-    conf_score = 0.95 if citations else 0.0
+    # Run Answer Verification Engine Check
+    verification = query_engine.verify_answer_claims(
+        db_session,
+        answer_text=gen_result["answer"],
+        validated_citations=citations
+    )
     
+    conf_score = 0.95 if verification["coverage_score"] >= 0.95 else 0.85 if verification["coverage_score"] >= 0.80 else 0.40
+    
+    final_answer = gen_result["answer"]
+    if verification["verification_status"] == "INSUFFICIENT_EVIDENCE":
+        final_answer = "INSUFFICIENT EVIDENCE"
+        
     return schemas.QueryResponse(
-        answer=gen_result["answer"],
+        answer=final_answer,
         confidence_score=conf_score,
-        coverage_score=cov_score,
-        verification_status=status_val,
-        citations=citations
+        coverage_score=verification["coverage_score"],
+        verification_status=verification["verification_status"],
+        citations=citations,
+        unsupported_claims=verification["unsupported_claims"]
     )
 
 # Agent Packages routes

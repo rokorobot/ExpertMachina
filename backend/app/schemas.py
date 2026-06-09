@@ -195,4 +195,5 @@ class QueryResponse(BaseModel):
     coverage_score: float
     verification_status: str
     citations: List[CitationModel]
+    unsupported_claims: Optional[List[str]] = []
 
