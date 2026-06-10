@@ -282,6 +282,20 @@ class AssetRevisionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class RevisionQueueItem(BaseModel):
+    """A revision plus its comparison baseline for the review workbench."""
+    revision: AssetRevisionResponse
+    asset_id: int
+    asset_name: str
+    asset_type: str
+    asset_access_level: Optional[str] = None
+    # The revision this one supersedes (or the active revision as fallback) -
+    # the left side of the side-by-side comparison.
+    baseline_revision_number: Optional[int] = None
+    baseline_content: Optional[str] = None
+    baseline_content_hash: Optional[str] = None
+    baseline_source_hash: Optional[str] = None
+
 class BenchmarkQuestionBase(BaseModel):
     question: str
     expected_answer_type: str # FACTUAL | PROCEDURAL | POLICY | REFUSAL

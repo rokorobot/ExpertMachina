@@ -127,6 +127,26 @@ def main():
         f"Direct content tampering not detected: {report['failed_checks']}"
     print("Part 6 passed: tampering around the revision workflow is detected at validation time.")
 
+    # 7. Self-healing: approving a revision rescans affected Expert Models.
+    print("\n--- Part 7: Post-approval conflict rescan of affected Expert Models ---")
+    import json as _json
+    model = crud.create_expert_model(session, schemas.ExpertModelCreate(
+        name="Affected Expert", description="", project_id=asset.project_id, asset_ids=[asset.id]))
+    fix = revisions.create_candidate_revision(
+        session, asset.id, "Critical deviations must be logged within 12 hours.",
+        actor="sop_editor_01", change_reason="Restore content after tamper test")
+    revisions.review_revision(session, fix.id, action="APPROVE", actor="governance_officer_01")
+    approved_event = session.query(db.AuditEvent).filter(
+        db.AuditEvent.event_type == "ASSET_REVISION_APPROVED"
+    ).order_by(db.AuditEvent.id.desc()).first()
+    details = _json.loads(approved_event.details)
+    scans = details.get("post_approval_scans", [])
+    assert len(scans) == 1 and scans[0]["expert_model_id"] == model.id, \
+        f"Affected Expert Model not rescanned on revision approval: {scans}"
+    assert "semantic_conflict_score" in scans[0], "Rescan result missing refreshed conflict score"
+    print(f"  Rescan recorded: {scans[0]}")
+    print("Part 7 passed: revision approval triggers conflict rescan of affected models.")
+
     session.close()
     print("\n=== All Asset Revision Workflow tests passed successfully! ===")
 

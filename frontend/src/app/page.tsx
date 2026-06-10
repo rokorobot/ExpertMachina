@@ -92,10 +92,13 @@ export default function Home() {
     conflictScore,
     fetchConflicts,
     runConflictScan,
-    reviewConflict
+    reviewConflict,
+    revisionQueue,
+    fetchRevisionQueue,
+    reviewRevision
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'conflicts' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'conflicts' | 'revisions' | 'audit' | 'console'>('dashboard');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -124,6 +127,17 @@ export default function Home() {
   const [consoleStep, setConsoleStep] = useState('');
   const [consoleResponse, setConsoleResponse] = useState<ConsoleResult | null>(null);
   const [consoleHistory, setConsoleHistory] = useState<ConsoleHistoryEntry[]>([]);
+
+  // Revision Review Workbench state
+  const [revisionStatusFilter, setRevisionStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
+  const [revisionReview, setRevisionReview] = useState<{ id: number; action: 'APPROVE' | 'REJECT' } | null>(null);
+  const [revisionReviewReason, setRevisionReviewReason] = useState('');
+
+  useEffect(() => {
+    if (activeTab === 'revisions' && activeProjectId !== null) {
+      fetchRevisionQueue(activeProjectId);
+    }
+  }, [activeTab, activeProjectId]);
 
   // Conflict Review Workbench state
   const [conflictModelId, setConflictModelId] = useState<number | null>(null);
@@ -523,6 +537,23 @@ export default function Home() {
               {conflicts.filter(c => c.status === 'DETECTED' && c.relationship_type === 'CONFLICTS_WITH').length > 0 && (
                 <span className="ml-auto bg-rose-950/40 text-[10px] text-rose-400 font-mono px-2 py-0.5 rounded-full border border-rose-900/40">
                   {conflicts.filter(c => c.status === 'DETECTED' && c.relationship_type === 'CONFLICTS_WITH').length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('revisions')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'revisions'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <FileCheck className="w-4 h-4" />
+              <span>Revision Reviews</span>
+              {revisionQueue.filter(r => r.revision.status === 'CANDIDATE').length > 0 && (
+                <span className="ml-auto bg-yellow-950/40 text-[10px] text-yellow-400 font-mono px-2 py-0.5 rounded-full border border-yellow-900/40">
+                  {revisionQueue.filter(r => r.revision.status === 'CANDIDATE').length}
                 </span>
               )}
             </button>
@@ -1829,6 +1860,220 @@ export default function Home() {
                             {supportRels.map(rel => renderCard(rel, false))}
                           </div>
                         )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
+              {/* TAB: REVISION REVIEWS (Revision Review Workbench) */}
+              {activeTab === 'revisions' && (
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <FileCheck className="w-4 h-4 text-yellow-400" />
+                      Revision Review Workbench
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Approved knowledge is never edited in place — review candidate revisions before they go live
+                      </span>
+                    </h3>
+
+                    <div className="flex gap-2">
+                      {(['PENDING', 'APPROVED', 'REJECTED', 'ALL'] as const).map((f) => {
+                        const count = f === 'ALL' ? revisionQueue.length :
+                          revisionQueue.filter(r => r.revision.status === (f === 'PENDING' ? 'CANDIDATE' : f)).length;
+                        return (
+                          <button
+                            key={f}
+                            onClick={() => setRevisionStatusFilter(f)}
+                            className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                              revisionStatusFilter === f
+                                ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800'
+                                : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                            }`}
+                          >
+                            {f} ({count})
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {(() => {
+                    const wanted = revisionStatusFilter === 'PENDING' ? 'CANDIDATE' : revisionStatusFilter;
+                    const visible = revisionQueue.filter(r =>
+                      revisionStatusFilter === 'ALL' || r.revision.status === wanted
+                    );
+
+                    if (visible.length === 0) {
+                      return (
+                        <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                          No {revisionStatusFilter !== 'ALL' ? revisionStatusFilter.toLowerCase() + ' ' : ''}revisions.
+                          Editing an approved asset creates a candidate revision that appears here for review.
+                        </div>
+                      );
+                    }
+
+                    // Simple word-level diff: shared prefix/suffix, highlighted middle.
+                    const diffWords = (a: string, b: string) => {
+                      const aw = a.split(/\s+/), bw = b.split(/\s+/);
+                      let p = 0;
+                      while (p < aw.length && p < bw.length && aw[p] === bw[p]) p++;
+                      let s = 0;
+                      while (s < aw.length - p && s < bw.length - p && aw[aw.length - 1 - s] === bw[bw.length - 1 - s]) s++;
+                      return {
+                        prefix: aw.slice(0, p).join(' '),
+                        removed: aw.slice(p, aw.length - s).join(' '),
+                        added: bw.slice(p, bw.length - s).join(' '),
+                        suffix: aw.slice(aw.length - s).join(' ')
+                      };
+                    };
+
+                    const shortHash = (h: string | null) => h ? h.slice(0, 16) + '…' : 'N/A';
+
+                    return (
+                      <div className="space-y-5">
+                        {visible.map((item) => {
+                          const rev = item.revision;
+                          const hasBaseline = item.baseline_content != null;
+                          const d = hasBaseline ? diffWords(item.baseline_content!, rev.content) : null;
+                          const statusLabel = rev.status === 'CANDIDATE' ? 'PENDING' :
+                            rev.status === 'ARCHIVED' ? 'SUPERSEDED' : rev.status;
+                          return (
+                            <div key={rev.id} className={`glass-panel rounded-xl p-5 space-y-4 border-l-4 ${
+                              rev.status === 'CANDIDATE' ? 'border-l-yellow-500' :
+                              rev.status === 'APPROVED' ? 'border-l-emerald-500' :
+                              rev.status === 'REJECTED' ? 'border-l-rose-500/70 opacity-70' : 'border-l-slate-600 opacity-60'
+                            }`}>
+                              <div className="flex flex-wrap justify-between items-center gap-2">
+                                <div className="flex items-center gap-2 flex-wrap">
+                                  <span className="text-[10px] font-mono bg-slate-900 text-cyan-400 px-2 py-0.5 rounded border border-slate-800 uppercase">{item.asset_type}</span>
+                                  <span className="font-bold text-sm text-slate-100">{item.asset_name}</span>
+                                  <span className="text-[10px] font-mono text-slate-500">
+                                    {item.baseline_revision_number != null ? `Rev ${item.baseline_revision_number} → ` : ''}Rev {rev.revision_number}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-2 font-mono text-[10px]">
+                                  <span className="text-slate-500">{rev.created_by} · {new Date(rev.created_at).toLocaleString()}</span>
+                                  <span className={`px-2 py-0.5 rounded-full ${
+                                    rev.status === 'CANDIDATE' ? 'bg-yellow-950/40 text-yellow-400' :
+                                    rev.status === 'APPROVED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                    rev.status === 'REJECTED' ? 'bg-rose-950/30 text-rose-400' : 'bg-slate-900 text-slate-500'
+                                  }`}>{statusLabel}</span>
+                                </div>
+                              </div>
+
+                              {rev.change_reason && (
+                                <p className="text-xs text-slate-300 italic bg-slate-950/40 border border-slate-900/60 rounded p-2.5">
+                                  Reason: {rev.change_reason}
+                                </p>
+                              )}
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                                <div className="bg-rose-950/10 border border-rose-900/30 rounded p-3 space-y-2">
+                                  <span className="text-[9px] font-mono text-rose-400/80 uppercase tracking-wider block">
+                                    − {hasBaseline ? `Rev ${item.baseline_revision_number} (current until approval)` : 'No baseline (first revision)'}
+                                  </span>
+                                  <p className="text-xs font-mono leading-relaxed text-slate-300">
+                                    {d ? (<>
+                                      {d.prefix && <span>{d.prefix} </span>}
+                                      {d.removed && <span className="bg-rose-950/60 text-rose-300 line-through px-1 rounded">{d.removed}</span>}
+                                      {d.suffix && <span> {d.suffix}</span>}
+                                    </>) : <span className="text-slate-600 italic">—</span>}
+                                  </p>
+                                  <div className="text-[9px] font-mono text-slate-500 space-y-0.5 border-t border-slate-900/60 pt-1.5">
+                                    <div>Content Hash: {shortHash(item.baseline_content_hash)}</div>
+                                    <div>Source Hash: {shortHash(item.baseline_source_hash)}</div>
+                                  </div>
+                                </div>
+                                <div className="bg-emerald-950/10 border border-emerald-900/30 rounded p-3 space-y-2">
+                                  <span className="text-[9px] font-mono text-emerald-400/80 uppercase tracking-wider block">
+                                    + Rev {rev.revision_number} ({statusLabel.toLowerCase()})
+                                  </span>
+                                  <p className="text-xs font-mono leading-relaxed text-slate-300">
+                                    {d ? (<>
+                                      {d.prefix && <span>{d.prefix} </span>}
+                                      {d.added && <span className="bg-emerald-950/60 text-emerald-300 px-1 rounded">{d.added}</span>}
+                                      {d.suffix && <span> {d.suffix}</span>}
+                                    </>) : rev.content}
+                                  </p>
+                                  <div className="text-[9px] font-mono text-slate-500 space-y-0.5 border-t border-slate-900/60 pt-1.5">
+                                    <div>Content Hash: {shortHash(rev.content_hash)}</div>
+                                    <div>Source Hash: {shortHash(rev.source_hash)}</div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {rev.status === 'APPROVED' && rev.approved_by && (
+                                <div className="bg-slate-950/40 border border-slate-900/60 rounded p-2.5 text-[10px] font-mono text-slate-400">
+                                  <span className="text-slate-500 uppercase">Approved by</span> <span className="text-emerald-400">{rev.approved_by}</span>
+                                  {rev.approved_at && <span className="text-slate-500"> · {new Date(rev.approved_at).toLocaleString()}</span>}
+                                </div>
+                              )}
+
+                              {rev.status === 'CANDIDATE' && (
+                                revisionReview?.id === rev.id ? (
+                                  <div className="space-y-2 border-t border-slate-900/60 pt-3">
+                                    <label className="block text-[10px] text-slate-400 font-mono uppercase">
+                                      Review reason (required) — recorded in the audit ledger ({revisionReview.action === 'APPROVE' ? 'approving revision' : 'rejecting revision'})
+                                    </label>
+                                    <textarea
+                                      rows={2}
+                                      autoFocus
+                                      placeholder="e.g. Legal directive verified against source document."
+                                      value={revisionReviewReason}
+                                      onChange={(e) => setRevisionReviewReason(e.target.value)}
+                                      className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                                    />
+                                    <div className="flex gap-2">
+                                      <button
+                                        disabled={!revisionReviewReason.trim()}
+                                        onClick={async () => {
+                                          if (activeProjectId !== null) {
+                                            await reviewRevision(rev.id, revisionReview.action, revisionReviewReason.trim(), activeProjectId);
+                                            setRevisionReview(null);
+                                            setRevisionReviewReason('');
+                                          }
+                                        }}
+                                        className={`text-[10px] font-mono font-bold px-3 py-1.5 rounded uppercase tracking-wider disabled:opacity-40 ${
+                                          revisionReview.action === 'APPROVE' ? 'bg-emerald-500 text-slate-950' : 'bg-rose-500 text-slate-950'
+                                        }`}
+                                      >
+                                        {revisionReview.action === 'APPROVE' ? 'Record Approval' : 'Record Rejection'}
+                                      </button>
+                                      <button
+                                        onClick={() => { setRevisionReview(null); setRevisionReviewReason(''); }}
+                                        className="text-[10px] font-mono text-slate-500 hover:text-slate-300 px-3 py-1.5"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                    {revisionReview.action === 'APPROVE' && (
+                                      <span className="text-[9px] text-slate-500 font-mono italic block">
+                                        Approval supersedes the current revision and automatically rescans conflicts in affected Expert Models.
+                                      </span>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="flex gap-2 border-t border-slate-900/60 pt-3">
+                                    <button
+                                      onClick={() => { setRevisionReview({ id: rev.id, action: 'APPROVE' }); setRevisionReviewReason(''); }}
+                                      className="text-[10px] text-emerald-400 hover:text-emerald-300 font-mono flex items-center gap-1.5 bg-emerald-950/20 px-3 py-1.5 rounded border border-emerald-900/30 transition-colors"
+                                    >
+                                      <CheckCircle2 className="w-3 h-3" /> Approve Revision
+                                    </button>
+                                    <button
+                                      onClick={() => { setRevisionReview({ id: rev.id, action: 'REJECT' }); setRevisionReviewReason(''); }}
+                                      className="text-[10px] text-rose-400 hover:text-rose-300 font-mono flex items-center gap-1.5 bg-rose-950/20 px-3 py-1.5 rounded border border-rose-900/30 transition-colors"
+                                    >
+                                      <XCircle className="w-3 h-3" /> Reject Revision
+                                    </button>
+                                  </div>
+                                )
+                              )}
+                            </div>
+                          );
+                        })}
                       </div>
                     );
                   })()}

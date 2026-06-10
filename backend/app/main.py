@@ -463,6 +463,36 @@ def delete_document_assets(document_id: int, status: Optional[str] = None, actor
     return {"message": f"Deleted {count} assets from document {document_id}"}
 
 # Asset Revision Workflow routes (MVP 0.7 Sprint 4)
+@app.get("/api/projects/{project_id}/revisions", response_model=List[schemas.RevisionQueueItem])
+def get_project_revision_queue(project_id: int, status: Optional[str] = None, db_session: Session = Depends(get_db)):
+    """Revision review queue: all revisions for the project's assets, each
+    paired with its comparison baseline (the revision it supersedes)."""
+    query = db_session.query(db.AssetRevision).join(
+        db.KnowledgeAsset, db.AssetRevision.asset_id == db.KnowledgeAsset.id
+    ).filter(db.KnowledgeAsset.project_id == project_id)
+    if status:
+        query = query.filter(db.AssetRevision.status == status)
+    rows = query.order_by(db.AssetRevision.created_at.desc(), db.AssetRevision.id.desc()).all()
+
+    items = []
+    for rev in rows:
+        asset = rev.asset
+        baseline = None
+        if rev.supersedes_revision_id:
+            baseline = db_session.query(db.AssetRevision).filter(db.AssetRevision.id == rev.supersedes_revision_id).first()
+        items.append(schemas.RevisionQueueItem(
+            revision=schemas.AssetRevisionResponse.model_validate(rev),
+            asset_id=asset.id,
+            asset_name=asset.name,
+            asset_type=asset.type,
+            asset_access_level=asset.access_level,
+            baseline_revision_number=baseline.revision_number if baseline else None,
+            baseline_content=baseline.content if baseline else None,
+            baseline_content_hash=baseline.content_hash if baseline else None,
+            baseline_source_hash=baseline.source_hash if baseline else None
+        ))
+    return items
+
 @app.get("/api/assets/{asset_id}/revisions", response_model=List[schemas.AssetRevisionResponse])
 def get_asset_revisions(asset_id: int, db_session: Session = Depends(get_db)):
     asset = db_session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()

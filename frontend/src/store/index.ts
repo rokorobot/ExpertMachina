@@ -126,6 +126,35 @@ export interface ConflictScore {
   score_version: string;
 }
 
+export interface AssetRevision {
+  id: number;
+  asset_id: number;
+  revision_number: number;
+  status: string; // CANDIDATE | APPROVED | REJECTED | ARCHIVED
+  content: string;
+  source_hash: string | null;
+  content_hash: string;
+  created_by: string | null;
+  created_at: string;
+  approved_by: string | null;
+  approved_at: string | null;
+  supersedes_revision_id: number | null;
+  superseded_by_revision_id: number | null;
+  change_reason: string | null;
+}
+
+export interface RevisionQueueItem {
+  revision: AssetRevision;
+  asset_id: number;
+  asset_name: string;
+  asset_type: string;
+  asset_access_level: string | null;
+  baseline_revision_number: number | null;
+  baseline_content: string | null;
+  baseline_content_hash: string | null;
+  baseline_source_hash: string | null;
+}
+
 export interface AuditEvent {
   id: number;
   timestamp: string;
@@ -185,6 +214,10 @@ interface AppState {
   fetchConflicts: (expertModelId: number) => Promise<void>;
   runConflictScan: (expertModelId: number) => Promise<void>;
   reviewConflict: (relationshipId: number, status: string, notes: string | null, expertModelId: number) => Promise<void>;
+
+  revisionQueue: RevisionQueueItem[];
+  fetchRevisionQueue: (projectId: number) => Promise<void>;
+  reviewRevision: (revisionId: number, action: string, notes: string, projectId: number) => Promise<void>;
 }
 
 const API_BASE = 'http://localhost:8000/api';
@@ -471,6 +504,39 @@ export const useAppStore = create<AppState>((set, get) => ({
       get().fetchAuditTrail();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), conflictScanLoading: false });
+    }
+  },
+
+  revisionQueue: [],
+
+  fetchRevisionQueue: async (projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/revisions`);
+      if (!res.ok) throw new Error('Failed to fetch revision queue');
+      const data = await res.json();
+      set({ revisionQueue: data });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  reviewRevision: async (revisionId: number, action: string, notes: string, projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/revisions/${revisionId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action, reviewer: 'GovernanceOfficer', notes }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to record revision review');
+      }
+      // Approval changes the served asset content and rescans conflict
+      // graphs of affected models - refresh everything derived.
+      await get().fetchRevisionQueue(projectId);
+      await get().fetchProjectData(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
   },
 

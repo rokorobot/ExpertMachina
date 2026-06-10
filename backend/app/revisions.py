@@ -147,6 +147,12 @@ def review_revision(session: Session, revision_id: int, action: str,
     session.commit()
     session.refresh(revision)
 
+    # Self-healing governance: an approved revision changes semantic meaning,
+    # so the conflict graph of every Expert Model containing this asset is
+    # stale. Rescan them now - conflict scores and compile gates refresh
+    # automatically because both derive from the relationship table.
+    post_approval_scans = _rescan_affected_models(session, asset)
+
     crud.log_audit_event(
         session,
         actor=actor,
@@ -158,10 +164,53 @@ def review_revision(session: Session, revision_id: int, action: str,
             "revision_number": revision.revision_number,
             "superseded_revision_id": old_active.id if old_active else None,
             "content_hash": revision.content_hash,
-            "notes": notes
+            "notes": notes,
+            "post_approval_scans": post_approval_scans
         })
     )
     return revision
+
+
+def _rescan_affected_models(session: Session, asset: db.KnowledgeAsset) -> list:
+    from app import conflict_engine
+    results = []
+    models = session.query(db.ExpertModel).filter(
+        db.ExpertModel.project_id == asset.project_id
+    ).all()
+    for model in models:
+        try:
+            asset_ids = json.loads(model.asset_ids_json or "[]")
+        except Exception:
+            asset_ids = []
+        if asset.id not in asset_ids:
+            continue
+        try:
+            # Operator conflict verdicts are content-bound: a CONFIRMED or
+            # DISMISSED verdict involving this asset judged content that no
+            # longer exists. Invalidate those pairs so the rescan re-judges
+            # them fresh; verdicts on unrelated pairs survive untouched.
+            stale = session.query(db.AssetRelationship).filter(
+                db.AssetRelationship.expert_model_id == model.id,
+                (db.AssetRelationship.source_asset_id == asset.id) |
+                (db.AssetRelationship.target_asset_id == asset.id)
+            ).all()
+            invalidated_reviews = sum(1 for r in stale if r.status in ("CONFIRMED", "DISMISSED"))
+            for r in stale:
+                session.delete(r)
+            session.commit()
+
+            scan = conflict_engine.scan_expert_model_conflicts(session, model.id)
+            results.append({
+                "expert_model_id": model.id,
+                "nli_available": scan["nli_available"],
+                "conflicts_found": scan["conflicts_found"],
+                "invalidated_reviews": invalidated_reviews,
+                "semantic_conflict_score": scan["semantic_conflict_score"]
+            })
+        except Exception as e:
+            print(f"Post-approval conflict rescan failed for model {model.id}: {e}")
+            results.append({"expert_model_id": model.id, "error": str(e)})
+    return results
 
 
 def get_revisions(session: Session, asset_id: int):

@@ -178,9 +178,16 @@ Package publication is a governance event:
 - Blocked attempts are recorded as `GOVERNANCE_BLOCKED_UNRESOLVED_CONFLICTS` audit events; successful compiles record the full gate verdict (policy, advisory/dismissed counts, scan status) inside `AGENT_PACKAGE_CREATED`.
 - Gate preview endpoint: `GET /api/experts/{id}/compile-gate`. The compiler UI surfaces gate blocks in the error banner.
 
-### Sprint 2 — Revision Review Workbench (Next)
+### Sprint 2 — Revision Review Workbench (Completed)
 
-Side-by-side Rev N vs Rev N+1 review UI: diff view, change reason, approve/reject actions wired to the revision API — closing the biggest operational gap (candidate revisions are currently reviewed via API only).
+Operator-facing **Revision Reviews** tab closing the API-only review gap:
+
+- Revision queue with Pending / Approved / Rejected / All chips and a sidebar badge for pending candidates.
+- Revision cards: asset identity, `Rev N → Rev N+1`, creator, timestamp, change reason.
+- **Side-by-side comparison with colorized word-level diff** (removed text struck through in red, added text highlighted in green) plus the metadata operators reviewing governance changes need: content hash, source hash, revision numbers.
+- Approve / Reject actions **require a review reason**, recorded in the audit ledger — consistent with conflict review.
+- **Self-healing governance on approval**: promoting a revision automatically (1) invalidates operator conflict verdicts involving the revised asset — verdicts are content-bound and judged text that no longer exists; (2) rescans every affected Expert Model; (3) refreshes the semantic conflict score and compile gate. Rescan results (including invalidated review counts) are recorded inside the `ASSET_REVISION_APPROVED` audit event.
+- Verified live with a genuine catch: revising the English retention policy resolved its confirmed conflict (re-judged as SUPPORTS at 0.994) **and surfaced a new contradiction with the now-stale Czech translation (0.986)** — re-closing the compile gate until the translation is reviewed. Cross-lingual translation drift detected autonomously.
 
 ### Sprint 3 — Expert Model Trust Score
 
