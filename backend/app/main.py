@@ -15,6 +15,7 @@ from app import ingestion
 from app import extraction
 from app import query_engine
 from app import evaluation
+from app import conflict_engine
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -448,4 +449,30 @@ def delete_asset(asset_id: int, actor: str = "GovernanceOfficer", db_session: Se
 def delete_document_assets(document_id: int, status: Optional[str] = None, actor: str = "GovernanceOfficer", db_session: Session = Depends(get_db)):
     count = crud.delete_knowledge_assets_by_document(db_session, document_id, status=status, actor=actor)
     return {"message": f"Deleted {count} assets from document {document_id}"}
+
+# Knowledge Integrity Engine routes (MVP 0.7: Semantic Conflict Engine)
+@app.post("/api/experts/{expert_model_id}/conflict-scan", response_model=schemas.ConflictScanResponse)
+def run_conflict_scan(expert_model_id: int, db_session: Session = Depends(get_db)):
+    try:
+        return conflict_engine.scan_expert_model_conflicts(db_session, expert_model_id)
+    except ValueError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/api/experts/{expert_model_id}/conflicts", response_model=List[schemas.AssetRelationshipResponse])
+def get_expert_model_conflicts(expert_model_id: int, relationship_type: Optional[str] = None, db_session: Session = Depends(get_db)):
+    query = db_session.query(db.AssetRelationship).filter(db.AssetRelationship.expert_model_id == expert_model_id)
+    if relationship_type:
+        query = query.filter(db.AssetRelationship.relationship_type == relationship_type)
+    return query.order_by(db.AssetRelationship.confidence.desc()).all()
+
+@app.patch("/api/conflicts/{relationship_id}", response_model=schemas.AssetRelationshipResponse)
+def review_conflict(relationship_id: int, review: schemas.ConflictReviewUpdate, db_session: Session = Depends(get_db)):
+    try:
+        return conflict_engine.review_relationship(
+            db_session, relationship_id, status=review.status, reviewer=review.reviewer, notes=review.notes
+        )
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 

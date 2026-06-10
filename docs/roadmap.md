@@ -9,7 +9,7 @@
 | MVP 0.4 | Expert Model Evaluation & Trust Scorecards | 🔄 In Progress |
 | MVP 0.5 | Integrity Fixes | ✅ Completed |
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
-| MVP 0.7 | Knowledge QA | 📋 Planned |
+| MVP 0.7 | Knowledge QA | 🔄 In Progress (Sprint 1 done) |
 
 ---
 
@@ -109,14 +109,31 @@ Replaces lexical claim matching with semantic entailment:
 
 ---
 
-## MVP 0.7 — Knowledge QA (Planned)
+## MVP 0.7 — Knowledge QA (In Progress)
 
-Contradiction detection applied to the knowledge base itself — NLI as knowledge-base QA, not just answer validation:
+Contradiction detection applied to the knowledge base itself — the Knowledge Integrity Engine pointed at the knowledge, not just at answers.
 
-- **Pairwise contradiction checks across approved assets** within an Expert Model: `Asset A: data deleted after 30 days` vs `Asset B: data retained indefinitely` → `conflicts_with`.
-- **Surface conflicts before model publication** — flag `stale_policy_candidate` / `requires_operator_review` at approval and compile time, not at query time.
-- **Semantic `conflict_score`** — replace the heuristic quality-engine score with NLI-based contradiction evidence.
-- **Asset revision workflow** — editing an approved asset creates a new `CANDIDATE` revision that supersedes the original through re-review, preserving immutable history.
+### Sprint 1 — Semantic Conflict Engine (Completed)
+
+- **Pairwise NLI scan** across the approved assets of an Expert Model, judged in both directions (NLI is asymmetric). Detected relationships stored explicitly: `CONFLICTS_WITH` (with classification and confidence) and `SUPPORTS`; `RELATED` reserved in the schema.
+- **Conflict Classifier** (`RULE_METADATA_V1`) — not every contradiction is a policy error: `DIRECT_CONTRADICTION`, `TEMPORAL_SUPERSESSION` (same policy, different document versions), `SCOPE_CONFLICT` (different departments), `ACCESS_CONFLICT` (different clearance tiers).
+- **Operator review states** — `DETECTED` → `CONFIRMED` / `DISMISSED` via API; review verdicts survive rescans and are audit-logged. Policies sometimes legitimately conflict across contexts; the human stays in the loop.
+- **Calibrated operating point** — knowledge-base scanning runs at a stricter threshold (0.90) than answer verification (0.80): most asset pairs are unrelated, so the prior of true conflict is low, while empirically true conflicts score 0.99+. Configurable via `EM_CONFLICT_*` env vars.
+- **Scale guard** — above a pair cap, an embedding pre-filter keeps the most similar pairs and the scan reports exactly how many were dropped (no silent truncation).
+- **Cross-lingual conflict detection verified**: a Czech deletion policy contradicting an English retention policy is detected at 0.999.
+- API: `POST /api/experts/{id}/conflict-scan`, `GET /api/experts/{id}/conflicts`, `PATCH /api/conflicts/{id}`.
+
+### Sprint 2 — Conflict Review Workbench (Next)
+
+Operator-facing Conflicts tab per Expert Model: conflict pairs with classification, confidence, evidence excerpts, and confirm/dismiss actions.
+
+### Sprint 3 — Semantic `conflict_score`
+
+Replace the heuristic quality-engine score with weighted contradiction density over confirmed/detected conflicts, so the score reflects actual semantic evidence.
+
+### Sprint 4 — Asset Revision Workflow
+
+Model `Asset → Revision` with `supersedes` / `superseded_by` relationships: editing an approved asset creates a new `CANDIDATE` revision that replaces the original through re-review, preserving immutable history.
 
 ---
 

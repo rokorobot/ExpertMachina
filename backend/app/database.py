@@ -133,6 +133,31 @@ class AuditEvent(Base):
     target_id = Column(String, nullable=True)
     details = Column(Text, nullable=True)
 
+class AssetRelationship(Base):
+    """Semantic relationships between approved assets, detected by the
+    Knowledge Integrity Engine (MVP 0.7 Sprint 1). Conflicts carry a
+    classification and survive operator review across rescans."""
+    __tablename__ = "asset_relationships"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    expert_model_id = Column(Integer, ForeignKey("expert_models.id"))
+    source_asset_id = Column(Integer, ForeignKey("knowledge_assets.id"), nullable=False)
+    target_asset_id = Column(Integer, ForeignKey("knowledge_assets.id"), nullable=False)
+    relationship_type = Column(String, nullable=False) # CONFLICTS_WITH | SUPPORTS | RELATED
+    classification = Column(String, nullable=True) # DIRECT_CONTRADICTION | TEMPORAL_SUPERSESSION | SCOPE_CONFLICT | ACCESS_CONFLICT
+    confidence = Column(Float, default=0.0)
+    verifier_json = Column(Text, nullable=True) # verifier identity snapshot that produced the verdict
+    status = Column(String, default="DETECTED") # DETECTED | CONFIRMED | DISMISSED
+    detected_at = Column(DateTime, default=datetime.datetime.utcnow)
+    reviewed_by = Column(String, nullable=True)
+    reviewed_at = Column(DateTime, nullable=True)
+    notes = Column(Text, nullable=True)
+
+    @property
+    def verifier(self):
+        import json
+        return json.loads(self.verifier_json) if self.verifier_json else None
+
 class BenchmarkQuestion(Base):
     __tablename__ = "benchmark_questions"
     id = Column(Integer, primary_key=True, index=True)

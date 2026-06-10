@@ -201,6 +201,39 @@ class QueryResponse(BaseModel):
     contradicted_claims: Optional[List[str]] = []
     verifier: Optional[dict] = None
 
+class AssetRelationshipResponse(BaseModel):
+    id: int
+    project_id: int
+    expert_model_id: int
+    source_asset_id: int
+    target_asset_id: int
+    relationship_type: str # CONFLICTS_WITH | SUPPORTS | RELATED
+    classification: Optional[str] = None # DIRECT_CONTRADICTION | TEMPORAL_SUPERSESSION | SCOPE_CONFLICT | ACCESS_CONFLICT
+    confidence: float
+    status: str # DETECTED | CONFIRMED | DISMISSED
+    detected_at: datetime
+    reviewed_by: Optional[str] = None
+    reviewed_at: Optional[datetime] = None
+    notes: Optional[str] = None
+    verifier: Optional[dict] = None
+    class Config:
+        from_attributes = True
+
+class ConflictScanResponse(BaseModel):
+    expert_model_id: int
+    scanned_assets: int
+    compared_pairs: int
+    dropped_pairs: int
+    nli_available: bool
+    conflicts_found: int
+    supports_found: int
+    relationships: List[AssetRelationshipResponse] = []
+
+class ConflictReviewUpdate(BaseModel):
+    status: str # CONFIRMED | DISMISSED
+    reviewer: Optional[str] = "operator"
+    notes: Optional[str] = None
+
 class BenchmarkQuestionBase(BaseModel):
     question: str
     expected_answer_type: str # FACTUAL | PROCEDURAL | POLICY | REFUSAL

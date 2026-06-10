@@ -1,0 +1,251 @@
+import os
+import json
+import datetime
+import itertools
+
+from sqlalchemy.orm import Session
+
+from app import database as db
+from app import crud
+from app import ingestion
+from app import verification_engine
+
+# Semantic Conflict Engine (MVP 0.7 Sprint 1).
+# Runs pairwise NLI across the approved assets of an Expert Model and stores
+# explicit relationships: CONFLICTS_WITH (with a conflict classification) and
+# SUPPORTS. Neutral pairs are not stored. The RELATED relationship type is
+# reserved in the schema for embedding-based association once real (non-mock)
+# embeddings are guaranteed.
+#
+# NLI is asymmetric, so every pair is judged in both directions and the
+# stronger signal wins. Operator review verdicts (CONFIRMED / DISMISSED)
+# survive rescans; only unreviewed DETECTED rows are recomputed.
+
+CLASSIFIER_VERSION = "RULE_METADATA_V1"
+# Pairwise scans grow O(n^2); above this many pairs the embedding pre-filter
+# keeps the most similar pairs and the scan reports how many were dropped.
+MAX_NLI_PAIRS = int(os.environ.get("EM_CONFLICT_MAX_PAIRS", "400"))
+# Knowledge-base scanning operates at a stricter threshold than answer
+# verification: most asset pairs are unrelated, so the prior of a true
+# conflict is low, while empirically true conflicts score 0.99+. A looser
+# threshold lets cross-domain NLI noise (~0.82) surface as false alarms.
+CONFLICT_CONTRADICTION_THRESHOLD = float(os.environ.get("EM_CONFLICT_CONTRADICTION_THRESHOLD", "0.90"))
+CONFLICT_ENTAILMENT_THRESHOLD = float(os.environ.get("EM_CONFLICT_ENTAILMENT_THRESHOLD", "0.90"))
+
+
+def classify_conflict(session: Session, asset_a, asset_b) -> str:
+    """Metadata-based conflict classification. Not every contradiction is a
+    policy error: supersession, scope, and access tiers explain many of them.
+    Order matters - the most specific structural explanation wins."""
+    if (asset_a.name == asset_b.name and asset_a.type == asset_b.type
+            and asset_a.document_id != asset_b.document_id):
+        return "TEMPORAL_SUPERSESSION"
+
+    doc_a = session.query(db.Document).filter(db.Document.id == asset_a.document_id).first()
+    doc_b = session.query(db.Document).filter(db.Document.id == asset_b.document_id).first()
+    if (doc_a and doc_b and doc_a.department and doc_b.department
+            and doc_a.department != doc_b.department):
+        return "SCOPE_CONFLICT"
+
+    if (asset_a.access_level or "INTERNAL") != (asset_b.access_level or "INTERNAL"):
+        return "ACCESS_CONFLICT"
+
+    return "DIRECT_CONTRADICTION"
+
+
+def _prefilter_pairs(pairs: list) -> tuple:
+    """Embedding pre-filter for large models: keep the most similar pairs,
+    report how many were dropped (no silent caps)."""
+    if len(pairs) <= MAX_NLI_PAIRS:
+        return pairs, 0
+    embeddings = {}
+
+    def emb(asset):
+        if asset.id not in embeddings:
+            embeddings[asset.id] = ingestion.get_embedding(asset.content)
+        return embeddings[asset.id]
+
+    scored = sorted(
+        ((verification_engine._cosine(emb(a), emb(b)), a, b) for a, b in pairs),
+        key=lambda item: item[0],
+        reverse=True,
+    )
+    kept = [(a, b) for _, a, b in scored[:MAX_NLI_PAIRS]]
+    return kept, len(pairs) - len(kept)
+
+
+def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
+    expert_model = session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+    if not expert_model:
+        raise ValueError(f"Expert Model with ID {expert_model_id} not found")
+
+    asset_ids = []
+    if expert_model.asset_ids_json:
+        try:
+            asset_ids = json.loads(expert_model.asset_ids_json)
+        except Exception:
+            asset_ids = []
+    assets = session.query(db.KnowledgeAsset).filter(
+        db.KnowledgeAsset.id.in_(asset_ids),
+        db.KnowledgeAsset.status == "APPROVED"
+    ).all()
+
+    summary = {
+        "expert_model_id": expert_model_id,
+        "scanned_assets": len(assets),
+        "compared_pairs": 0,
+        "dropped_pairs": 0,
+        "nli_available": False,
+        "conflicts_found": 0,
+        "supports_found": 0,
+        "relationships": []
+    }
+
+    pipe = verification_engine.get_nli_pipeline()
+    if pipe is None or len(assets) < 2:
+        return summary
+    summary["nli_available"] = True
+
+    # Operator verdicts survive rescans: skip pairs already reviewed.
+    reviewed_pairs = set()
+    for rel in session.query(db.AssetRelationship).filter(
+        db.AssetRelationship.expert_model_id == expert_model_id,
+        db.AssetRelationship.status.in_(["CONFIRMED", "DISMISSED"])
+    ).all():
+        reviewed_pairs.add(frozenset((rel.source_asset_id, rel.target_asset_id)))
+
+    # Unreviewed detections are recomputed from scratch.
+    session.query(db.AssetRelationship).filter(
+        db.AssetRelationship.expert_model_id == expert_model_id,
+        db.AssetRelationship.status == "DETECTED"
+    ).delete(synchronize_session=False)
+    session.commit()
+
+    pairs = [
+        (a, b) for a, b in itertools.combinations(assets, 2)
+        if frozenset((a.id, b.id)) not in reviewed_pairs
+    ]
+    pairs, dropped = _prefilter_pairs(pairs)
+    summary["compared_pairs"] = len(pairs)
+    summary["dropped_pairs"] = dropped
+    if dropped:
+        print(f"CONFLICT_SCAN: embedding pre-filter dropped {dropped} low-similarity pairs (cap {MAX_NLI_PAIRS}).")
+
+    inputs = []
+    for a, b in pairs:
+        inputs.append({"text": a.content, "text_pair": b.content})
+        inputs.append({"text": b.content, "text_pair": a.content})
+    if not inputs:
+        return summary
+
+    results = pipe(inputs, top_k=None, truncation=True)
+    # Record the scan's actual operating thresholds, not the answer-verifier's.
+    verifier = {
+        **verification_engine.verifier_identity(),
+        "classifier": CLASSIFIER_VERSION,
+        "entailment_threshold": CONFLICT_ENTAILMENT_THRESHOLD,
+        "contradiction_threshold": CONFLICT_CONTRADICTION_THRESHOLD
+    }
+
+    new_rows = []
+    for pair_idx, (a, b) in enumerate(pairs):
+        score_ab = {s["label"].lower(): s["score"] for s in results[pair_idx * 2]}
+        score_ba = {s["label"].lower(): s["score"] for s in results[pair_idx * 2 + 1]}
+        contradiction = max(score_ab.get("contradiction", 0.0), score_ba.get("contradiction", 0.0))
+        ent_ab = score_ab.get("entailment", 0.0)
+        ent_ba = score_ba.get("entailment", 0.0)
+        entailment = max(ent_ab, ent_ba)
+
+        if contradiction >= CONFLICT_CONTRADICTION_THRESHOLD and contradiction > entailment:
+            source, target = (a, b) if a.id < b.id else (b, a)
+            new_rows.append(db.AssetRelationship(
+                project_id=expert_model.project_id,
+                expert_model_id=expert_model_id,
+                source_asset_id=source.id,
+                target_asset_id=target.id,
+                relationship_type="CONFLICTS_WITH",
+                classification=classify_conflict(session, a, b),
+                confidence=round(contradiction, 3),
+                verifier_json=json.dumps(verifier),
+                status="DETECTED"
+            ))
+        elif entailment >= CONFLICT_ENTAILMENT_THRESHOLD:
+            # Direction matters for support: the premise supports the claim.
+            source, target = (a, b) if ent_ab >= ent_ba else (b, a)
+            new_rows.append(db.AssetRelationship(
+                project_id=expert_model.project_id,
+                expert_model_id=expert_model_id,
+                source_asset_id=source.id,
+                target_asset_id=target.id,
+                relationship_type="SUPPORTS",
+                classification=None,
+                confidence=round(entailment, 3),
+                verifier_json=json.dumps(verifier),
+                status="DETECTED"
+            ))
+
+    session.add_all(new_rows)
+    session.commit()
+
+    conflicts = [r for r in new_rows if r.relationship_type == "CONFLICTS_WITH"]
+    supports = [r for r in new_rows if r.relationship_type == "SUPPORTS"]
+    summary["conflicts_found"] = len(conflicts)
+    summary["supports_found"] = len(supports)
+    summary["relationships"] = new_rows
+
+    for rel in conflicts:
+        crud.log_audit_event(
+            session,
+            actor="conflict_engine",
+            event_type="KNOWLEDGE_CONFLICT_DETECTED",
+            target_id=str(expert_model_id),
+            details=json.dumps({
+                "source_asset_id": rel.source_asset_id,
+                "target_asset_id": rel.target_asset_id,
+                "classification": rel.classification,
+                "confidence": rel.confidence,
+                "verifier": verifier
+            })
+        )
+    crud.log_audit_event(
+        session,
+        actor="conflict_engine",
+        event_type="CONFLICT_SCAN_COMPLETED",
+        target_id=str(expert_model_id),
+        details=json.dumps({
+            "scanned_assets": summary["scanned_assets"],
+            "compared_pairs": summary["compared_pairs"],
+            "dropped_pairs": summary["dropped_pairs"],
+            "conflicts_found": summary["conflicts_found"],
+            "supports_found": summary["supports_found"]
+        })
+    )
+    return summary
+
+
+def review_relationship(session: Session, relationship_id: int, status: str,
+                        reviewer: str = "operator", notes: str = None):
+    if status not in ("CONFIRMED", "DISMISSED"):
+        raise ValueError("Review status must be CONFIRMED or DISMISSED")
+    rel = session.query(db.AssetRelationship).filter(db.AssetRelationship.id == relationship_id).first()
+    if not rel:
+        raise LookupError(f"Relationship {relationship_id} not found")
+    rel.status = status
+    rel.reviewed_by = reviewer
+    rel.reviewed_at = datetime.datetime.utcnow()
+    rel.notes = notes
+    session.commit()
+    session.refresh(rel)
+    crud.log_audit_event(
+        session,
+        actor=reviewer,
+        event_type=f"KNOWLEDGE_CONFLICT_{status}",
+        target_id=str(rel.id),
+        details=json.dumps({
+            "source_asset_id": rel.source_asset_id,
+            "target_asset_id": rel.target_asset_id,
+            "classification": rel.classification,
+            "notes": notes
+        })
+    )
+    return rel
