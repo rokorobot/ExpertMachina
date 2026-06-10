@@ -308,7 +308,29 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
     model = session.query(db.ExpertModel).filter(db.ExpertModel.id == package_in.expert_model_id).first()
     if not model:
         return None
-        
+
+    # Compile gate (MVP 0.8): unresolved semantic conflicts block publication.
+    from app import conflict_engine
+    gate = conflict_engine.evaluate_compile_gate(session, package_in.expert_model_id)
+    if not gate["allowed"]:
+        log_audit_event(
+            session,
+            actor="user",
+            event_type="GOVERNANCE_BLOCKED_UNRESOLVED_CONFLICTS",
+            target_id=str(package_in.expert_model_id),
+            details=json.dumps({
+                "attempted_package_name": package_in.name,
+                "blocking_conflicts": gate["blocking_conflicts"],
+                "policy": gate["policy"]
+            })
+        )
+        reasons = sorted({b["reason"] for b in gate["blocking_conflicts"]})
+        raise ValueError(
+            f"Compile blocked by governance gate: {len(gate['blocking_conflicts'])} unresolved "
+            f"semantic conflict(s) ({', '.join(reasons)}). Review them in the Knowledge Conflicts "
+            f"workbench before publishing."
+        )
+
     # Query assets included in the model to serialize references and source provenances
     # In a real system we associate assets to model via a join.
     # Here, for MVP, we compile the active approved assets of the project into the package.
@@ -349,7 +371,25 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
     session.commit()
     session.refresh(db_package)
     
-    log_audit_event(session, actor="user", event_type="AGENT_PACKAGE_CREATED", target_id=str(db_package.id), details=f"Compiled deployable agent package '{db_package.name}' (Governance Version: {db_package.governance_version})")
+    # Publication is a governance event: record the gate verdict that allowed it.
+    log_audit_event(
+        session,
+        actor="user",
+        event_type="AGENT_PACKAGE_CREATED",
+        target_id=str(db_package.id),
+        details=json.dumps({
+            "package_name": db_package.name,
+            "expert_model_id": db_package.expert_model_id,
+            "governance_version": db_package.governance_version,
+            "compile_gate": {
+                "allowed": True,
+                "conflict_scan_performed": gate["conflict_scan_performed"],
+                "advisory_conflicts": len(gate["advisory_conflicts"]),
+                "dismissed_conflicts": gate["dismissed_conflicts"],
+                "policy": gate["policy"]
+            }
+        })
+    )
     return db_package
 
 # Audit Ledger Retrieves

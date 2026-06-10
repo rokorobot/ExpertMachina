@@ -315,6 +315,96 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
     return summary
 
 
+# ---------------------------------------------------------------------------
+# Package Compile Gates (MVP 0.8 Sprint 1)
+# Package publication is a governance event: a model with unresolved
+# semantic conflicts cannot cross the compile boundary.
+#
+# Policy (env-configurable, read at evaluation time):
+#   EM_GATE_BLOCKING_CLASSIFICATIONS  unreviewed (DETECTED) conflicts of
+#       these classes block compile. Default: DIRECT_CONTRADICTION,ACCESS_CONFLICT.
+#       Other unreviewed classes are advisory.
+#   EM_GATE_CONFIRMED_POLICY          'block' (default) or 'allow' for
+#       operator-CONFIRMED conflicts of any class.
+#   EM_GATE_REQUIRE_SCAN              '1' blocks compile when the model has
+#       never had a conflict scan. Default '0'.
+# Dismissed conflicts never block - the operator has contextualized them.
+
+
+def _gate_policy() -> dict:
+    return {
+        "blocking_classifications": [
+            c.strip() for c in os.environ.get(
+                "EM_GATE_BLOCKING_CLASSIFICATIONS",
+                "DIRECT_CONTRADICTION,ACCESS_CONFLICT"
+            ).split(",") if c.strip()
+        ],
+        "confirmed_policy": os.environ.get("EM_GATE_CONFIRMED_POLICY", "block").lower(),
+        "require_scan": os.environ.get("EM_GATE_REQUIRE_SCAN", "0") == "1",
+    }
+
+
+def evaluate_compile_gate(session: Session, expert_model_id: int) -> dict:
+    policy = _gate_policy()
+    conflicts = session.query(db.AssetRelationship).filter(
+        db.AssetRelationship.expert_model_id == expert_model_id,
+        db.AssetRelationship.relationship_type == "CONFLICTS_WITH"
+    ).all()
+
+    scan_performed = session.query(db.AuditEvent).filter(
+        db.AuditEvent.event_type == "CONFLICT_SCAN_COMPLETED",
+        db.AuditEvent.target_id == str(expert_model_id)
+    ).count() > 0
+
+    def _ref(rel):
+        return {
+            "relationship_id": rel.id,
+            "source_asset_id": rel.source_asset_id,
+            "target_asset_id": rel.target_asset_id,
+            "classification": rel.classification,
+            "status": rel.status,
+            "confidence": rel.confidence
+        }
+
+    blocking = []
+    advisory = []
+    dismissed_count = 0
+    for rel in conflicts:
+        if rel.status == "DISMISSED":
+            dismissed_count += 1
+        elif rel.status == "DETECTED":
+            if rel.classification in policy["blocking_classifications"]:
+                blocking.append({**_ref(rel), "reason": "UNREVIEWED_CONFLICT"})
+            else:
+                advisory.append(_ref(rel))
+        elif rel.status == "CONFIRMED":
+            if policy["confirmed_policy"] == "block":
+                blocking.append({**_ref(rel), "reason": "CONFIRMED_CONFLICT"})
+            else:
+                advisory.append(_ref(rel))
+
+    if policy["require_scan"] and not scan_performed:
+        blocking.append({
+            "relationship_id": None,
+            "reason": "NO_CONFLICT_SCAN",
+            "classification": None,
+            "status": None,
+            "confidence": None,
+            "source_asset_id": None,
+            "target_asset_id": None
+        })
+
+    return {
+        "expert_model_id": expert_model_id,
+        "allowed": not blocking,
+        "blocking_conflicts": blocking,
+        "advisory_conflicts": advisory,
+        "dismissed_conflicts": dismissed_count,
+        "conflict_scan_performed": scan_performed,
+        "policy": policy
+    }
+
+
 def review_relationship(session: Session, relationship_id: int, status: str,
                         reviewer: str = "operator", notes: str = None):
     if status not in ("CONFIRMED", "DISMISSED"):

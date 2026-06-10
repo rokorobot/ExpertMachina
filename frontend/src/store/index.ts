@@ -369,7 +369,11 @@ export const useAppStore = create<AppState>((set, get) => ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, expert_model_id: expertModelId, project_id: projectId, governance_version: version || '0.1.0' }),
       });
-      if (!res.ok) throw new Error('Failed to compile Agent Package');
+      if (!res.ok) {
+        // Surface governance gate blocks (409) with their reason.
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to compile Agent Package');
+      }
       await get().fetchProjectData(projectId);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), loading: false });

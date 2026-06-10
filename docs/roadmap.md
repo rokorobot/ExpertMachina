@@ -10,6 +10,9 @@
 | MVP 0.5 | Integrity Fixes | ✅ Completed |
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
 | MVP 0.7 | Knowledge QA | ✅ Completed |
+| MVP 0.8 | Governance Enforcement & Trust Framework | 🔄 In Progress (Sprint 1 done) |
+| MVP 0.9 | Agent Gateway (MCP) | 📋 Planned |
+| MVP 1.0 | Enterprise Agent Knowledge Platform | 📋 Planned |
 
 ---
 
@@ -160,9 +163,41 @@ API: `GET/POST /api/assets/{id}/revisions`, `POST /api/revisions/{id}/review`.
 
 ---
 
-## Future Direction (Post 0.7 / Phase 2)
+## MVP 0.8 — Governance Enforcement & Trust Framework (In Progress)
 
-- **Agent Consumption API** — a hardened, read-only endpoint surface (MCP) for autonomous agent consumption of compiled packages, with per-agent access controls. Deliberately deferred until the knowledge compilation pipeline is trustworthy.
+Closes the loop from *detect* to *detect → review → allow publication*. The governance boundary becomes enforcing, not advisory — deliberately sequenced **before** the MCP gateway so external consumers meet a stable v1 governance core rather than evolving semantics.
+
+### Sprint 1 — Package Compile Gates (Completed)
+
+Package publication is a governance event:
+
+- **Unreviewed `DIRECT_CONTRADICTION` or `ACCESS_CONFLICT` → compile blocked** (HTTP 409 with an operator-actionable reason pointing to the Knowledge Conflicts workbench).
+- **Dismissed conflicts → allowed** (operator has contextualized them; never block).
+- **Confirmed conflicts → configurable policy** (`EM_GATE_CONFIRMED_POLICY`, default `block`).
+- Unreviewed scope/temporal conflicts are advisory; blocking classifications configurable via `EM_GATE_BLOCKING_CLASSIFICATIONS`. Optional `EM_GATE_REQUIRE_SCAN=1` blocks models never conflict-scanned.
+- Blocked attempts are recorded as `GOVERNANCE_BLOCKED_UNRESOLVED_CONFLICTS` audit events; successful compiles record the full gate verdict (policy, advisory/dismissed counts, scan status) inside `AGENT_PACKAGE_CREATED`.
+- Gate preview endpoint: `GET /api/experts/{id}/compile-gate`. The compiler UI surfaces gate blocks in the error banner.
+
+### Sprint 2 — Revision Review Workbench (Next)
+
+Side-by-side Rev N vs Rev N+1 review UI: diff view, change reason, approve/reject actions wired to the revision API — closing the biggest operational gap (candidate revisions are currently reviewed via API only).
+
+### Sprint 3 — Expert Model Trust Score
+
+A first-class object, not a hidden calculation: derived from evaluation score + coverage + semantic conflict score + governance health + revision freshness, with a full breakdown. The explicit combination step reserved when the conflict score shipped standalone.
+
+---
+
+## MVP 0.9 — Agent Gateway (MCP) (Planned)
+
+Expose the v1 governance core to agent consumers (Claude, Codex, Cursor, and other MCP clients): governed query tools, per-agent access tiers, package/version pinning. Once external consumers exist, backward compatibility, API stability, and permission models harden — hence sequenced after governance enforcement is complete.
+
+## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned)
+
+The defensible position: agents consume *semantically verified, conflict-checked, revision-controlled, audit-traceable* company knowledge.
+
+## Future Direction
+
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
 - **Knowledge freshness policies** — expiry and re-review schedules per asset class.
 - **Multi-operator roles** — reviewer / approver separation of duties.

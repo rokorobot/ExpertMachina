@@ -331,10 +331,21 @@ def get_packages(project_id: int, db_session: Session = Depends(get_db)):
 def create_package(project_id: int, pkg_in: schemas.AgentPackageCreate, db_session: Session = Depends(get_db)):
     if pkg_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="Project ID mismatch")
-    pkg = crud.create_agent_package(db_session, pkg_in)
+    try:
+        pkg = crud.create_agent_package(db_session, pkg_in)
+    except ValueError as e:
+        # Governance gate block: 409 Conflict, with the reason for the operator.
+        raise HTTPException(status_code=409, detail=str(e))
     if not pkg:
         raise HTTPException(status_code=404, detail="Expert model not found")
     return pkg
+
+@app.get("/api/experts/{expert_model_id}/compile-gate")
+def get_compile_gate(expert_model_id: int, db_session: Session = Depends(get_db)):
+    expert_model = db_session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+    if not expert_model:
+        raise HTTPException(status_code=404, detail=f"Expert Model with ID {expert_model_id} not found")
+    return conflict_engine.evaluate_compile_gate(db_session, expert_model_id)
 
 # Audit Trail routes
 @app.get("/api/audit", response_model=List[schemas.AuditEventResponse])
