@@ -1,6 +1,6 @@
-# ExpertMachina MVP 0.2 — Governed Knowledge Transformation Factory
+# ExpertMachina Walkthrough — Governed Knowledge Transformation Factory
 
-We have successfully built and verified the second operational version of **ExpertMachina** (MVP 0.2) — a Governed Knowledge Transformation Factory.
+This walkthrough covers the operational platform end-to-end: the governed knowledge factory (MVP 0.2), the evidence-backed Ask Expert console (MVP 0.3), and benchmark evaluation runs (MVP 0.4).
 
 ---
 
@@ -48,6 +48,8 @@ We have successfully built and verified the second operational version of **Expe
 4. **Group into Expert Model**: Go to **Experts & Packages**. Pick the approved assets, name your model (e.g. *"Clinical QA Expert"*), and click **"Build Expert Model"**.
 5. **Compile Agent Package**: Choose your model, assign version `0.1.0`, name the package, and click **"Compile Agent Package"** to get a deployable bundle containing governance metadata.
 6. **Audit trail**: Switch to the **Audit Ledger** tab to inspect the immutable timeline log of all operations.
+7. **Ask the Expert**: Open the **Ask Expert** console, select your Expert Model, and pose a question (e.g. *"Within what timeframe must deviation reports be filed?"*). The engine retrieves only approved assets within the model scope, validates their integrity, generates a grounded answer, verifies every claim against the evidence, and returns the answer with full citations (document, page, section, hash). Questions the approved knowledge cannot support return **`INSUFFICIENT EVIDENCE`** instead of a guess.
+8. **Evaluate the Expert Model**: Define benchmark questions for the project (expected claims, answer type, minimum coverage), then start an evaluation run against the Expert Model. The run snapshots the model's approved assets and executes every benchmark through the full query pipeline, producing a scorecard with `pass_rate`, average coverage/confidence scores, and per-question failure drill-downs.
 
 ---
 

@@ -103,3 +103,43 @@ All successful client responses return the complete verification payload contain
 }
 ```
 This data structure completes the **Knowledge Chain of Custody**, linking the client's answer back to the exact approval event in the factory database.
+
+---
+
+## 7. Benchmark Evaluation & Trust Scorecards (MVP 0.4)
+
+Beyond per-query verification, ExpertMachina quantifies the trustworthiness of an entire Expert Model through reproducible benchmark evaluation runs.
+
+### Benchmark Datasets
+
+Operators define per-project benchmark questions, each specifying:
+
+- **`question`**: The natural-language query to evaluate.
+- **`expected_claims`**: The factual assertions a correct answer must contain.
+- **`expected_answer_type`**: `FACTUAL` | `PROCEDURAL` | `POLICY` | `REFUSAL`.
+- **`min_required_coverage`**: Minimum coverage score for a pass (default `0.95`).
+- **`required_citation_count`**: Minimum number of citations the answer must carry.
+- **`severity`**: `LOW` | `MEDIUM` | `HIGH` | `CRITICAL` — the business impact of a failure.
+
+`REFUSAL`-type benchmarks invert the pass condition: they pass **only** when the console correctly returns `INSUFFICIENT EVIDENCE`. This verifies that the grounding rule holds — the model must refuse questions its approved knowledge cannot answer.
+
+### Snapshot-Based Reproducibility
+
+Each evaluation run freezes three snapshots at creation time:
+
+1. The Expert Model's **approved asset IDs**.
+2. The **source hashes** of those assets (tamper baseline).
+3. The **benchmark question set**.
+
+The batch then executes the full Ask Expert pipeline (retrieval → evidence validation → grounded generation → answer verification) against the snapshot, so results remain reproducible even if governance state changes after the run was created. Runs progress through `PENDING` → `RUNNING` → `COMPLETED` / `FAILED`.
+
+### Scorecard Metrics
+
+Each completed run produces an aggregate scorecard:
+
+- **`pass_rate`**: Fraction of benchmark questions that met their pass conditions.
+- **`average_coverage_score`**: Mean claim-coverage across all questions.
+- **`average_confidence_score`**: Mean confidence across all questions.
+- **Failed question list**: Per-question drill-down with the generated answer, unsupported claims, and citations for every failure.
+
+These scorecards turn "do we trust this Expert Model?" from a subjective judgment into a measurable, auditable, and regression-trackable metric.

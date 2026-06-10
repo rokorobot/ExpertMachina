@@ -13,6 +13,9 @@ graph TD
     F -- No --> H[Excluded/Archived Assets]
     G --> I[Expert Models Compiler]
     I --> J[Reproducible Agent Packages]
+    I --> K[Ask Expert Query Engine]
+    K --> L[Evidence-Backed Answers + Citations]
+    I --> M[Evaluation Framework: Benchmarks & Scorecards]
     style E fill:#f9f,stroke:#333,stroke-width:2px
     style G fill:#9f9,stroke:#333,stroke-width:2px
     style H fill:#f99,stroke:#333,stroke-width:2px
@@ -50,3 +53,19 @@ The core differentiator of ExpertMachina. No automated extraction is allowed to 
 - **Agent Package Compiler**: Bundles selected Expert Models into standardized, versioned zip/json manifests.
 - **Manifest Reproducibility**: Enforces deterministic, lexicographical sorting of assets inside the payload schema. Ensures that compile runs from identical inputs yield identical, bitwise-reproducible distribution bundles.
 - **Serialization**: Encodes full provenance trace strings and digital integrity checks directly inside the distributable package.
+
+## 6. Ask Expert Query Engine (MVP 0.3)
+The interactive, evidence-backed query layer. Unlike standard RAG, the retrieval boundary is scoped to a single selected Expert Model:
+- **Approved Asset Retrieval**: Vector similarity search restricted to assets bundled in the chosen Expert Model, enforced at both the SQLite and Qdrant layers.
+- **Evidence Validation Engine**: Pre-generation gate verifying each candidate asset's `APPROVED` status, `source_hash` integrity (tamper detection), and complete provenance metadata. Failures are discarded and audit-logged.
+- **Grounded Answer Generation**: The generation prompt is constructed strictly from validated evidence.
+- **Answer Verification Engine**: Post-generation claim extraction and evidence mapping. Answers below the coverage threshold are blocked and replaced with `INSUFFICIENT EVIDENCE`.
+- **Query Telemetry**: Every query is recorded in the audit ledger with retrieved asset IDs, evidence hashes, answer hash, operator, and timestamp.
+
+See [assurance.md](assurance.md) for the verification thresholds and scoring model.
+
+## 7. Evaluation Framework (MVP 0.4)
+Quantifies trust in an Expert Model through reproducible benchmark runs:
+- **Benchmark Datasets**: Per-project question sets with expected claims, expected answer type (`FACTUAL`/`PROCEDURAL`/`POLICY`/`REFUSAL`), minimum coverage, and citation requirements.
+- **Snapshot-Based Batch Engine**: Each evaluation run freezes the Expert Model's approved asset IDs and hashes plus the benchmark question set at creation time, so results are reproducible regardless of later governance changes.
+- **Scorecard Metrics**: Per-run `pass_rate`, average coverage and confidence scores, and per-question results including unsupported claims and citations.

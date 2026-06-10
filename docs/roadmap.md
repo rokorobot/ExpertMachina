@@ -1,16 +1,34 @@
 # ExpertMachina Product Roadmap
 
-Having completed MVP 0.2 (Governance & Lifecycle Control), the next milestone centers around transforming ExpertMachina from a knowledge preparation factory into an interactive, trustworthy query console.
+## Milestone Status
+
+| Milestone | Theme | Status |
+| :--- | :--- | :--- |
+| MVP 0.2 | Governance & Lifecycle Control | ✅ Completed |
+| MVP 0.3 | Evidence-Backed Ask Expert Console | ✅ Completed |
+| MVP 0.4 | Expert Model Evaluation & Trust Scorecards | 🔄 In Progress |
 
 ---
 
-## MVP 0.3 — Evidence-Backed Ask Expert Console
+## MVP 0.2 — Governance & Lifecycle Control (Completed)
 
-The primary objective of MVP 0.3 is to allow operators to query their knowledge base using natural language, backed by strict grounding constraints, selected Expert Models, and dual-layer verification.
+The foundational knowledge factory:
 
-### Core Architecture
+- Document ingestion (PDF, DOCX, TXT) with Docling + LlamaIndex parsing and local Qdrant indexing.
+- Rule-based and LLM-assisted knowledge asset extraction with quality scoring.
+- Document lifecycle state machine (`INGESTED` → `PARSED` → `ASSETS_EXTRACTED` → `PARTIALLY_APPROVED` / `APPROVED` / `ALL_ASSETS_REJECTED` / `DELETED`).
+- Human governance review queue with bulk actions and hotkey acceleration.
+- Expert Builder grouping `APPROVED` assets into Expert Models.
+- Reproducible Agent Package compiler with deterministic manifests.
+- Immutable audit ledger with governance bypass protection.
 
-Unlike standard Retrieval-Augmented Generation (RAG) systems that search the entire unstructured corpus, ExpertMachina restricts the context boundary to a selected **Expert Model** containing a curated group of approved assets.
+See [walkthrough.md](walkthrough.md) for the end-to-end scenario and [governance.md](governance.md) for lifecycle details.
+
+---
+
+## MVP 0.3 — Evidence-Backed Ask Expert Console (Completed)
+
+Operators query their knowledge base in natural language, with strict grounding constraints scoped to a selected Expert Model.
 
 ```text
 Question
@@ -30,58 +48,39 @@ Answer Verification (Claim extraction and source alignment check)
 Answer + Citations (Document, Page, Section, Hash)
 ```
 
----
+Delivered across six sprints:
 
-## 1. Domain Scoping: Expert Model Selection
+1. **Ask Expert Console UI** — interactive query console scoped per Expert Model.
+2. **Approved Asset Retrieval Engine** — retrieval boundary enforced at both the SQLite and Qdrant layers; only assets bundled in the selected Expert Model are searchable.
+3. **Evidence Validation Engine** — pre-generation checks for `APPROVED` status, `source_hash` integrity (tamper detection), and complete provenance metadata. Failing assets are discarded and the discard is audit-logged.
+4. **Answer Generation** — generation prompt grounded strictly on validated evidence.
+5. **Answer Verification Engine** — claim extraction, evidence mapping, and coverage thresholding. Below-threshold answers are blocked and replaced with **`INSUFFICIENT EVIDENCE`**.
+6. **Audit Logging Expansion** — every query is logged with retrieved asset IDs, evidence hashes, answer hash, operator, and timestamp.
 
-To support horizontal scaling across thousands of corporate documents, queries must specify an **Expert Model** (e.g. *"Clinical QA Expert"*). 
-- Search is scoped only to assets explicitly bundled into that model.
-- This prevents noise, crosstalk between domains, and significantly reduces the vector search space (e.g., searching 100 assets in a model instead of 200,000 across the entire corpus).
-
----
-
-## 2. The Evidence Validation Engine
-
-Before retrieved context is ever exposed to the LLM generation layer, every candidate asset must pass a validation check:
-- **Status Verification**: Confirms status is currently `APPROVED`.
-- **Integrity Check**: Verifies that a valid `source_hash` and complete `provenance` metadata exist.
-- **Archive Filter**: Verifies that the asset has not been archived since compilation.
-
-If any check fails, the asset is discarded from the generation context, and a warning is logged in the audit ledger.
+The grounding rule — **no evidence = no answer** — is enforced by the verification layer; see [assurance.md](assurance.md) for thresholds and scoring.
 
 ---
 
-## 3. The Answer Verification Layer
+## MVP 0.4 — Expert Model Evaluation & Trust Scorecards (In Progress)
 
-After the LLM generates a candidate response, a deterministic post-processing step executes:
-1. **Claim Extraction**: The response is parsed into individual factual assertions.
-2. **Claim Matching**: Each assertion is mapped back to the validated evidence assets.
-3. **Coverage Verification**: Every factual claim must be explicitly supported by at least one approved asset.
+The objective: make trust in an Expert Model *measurable*. Operators define benchmark datasets of expected questions and answers, run them in reproducible batches against an Expert Model, and receive scorecard metrics quantifying how reliably the model answers (and refuses).
 
-### Grounding Rule: "No Evidence = No Answer"
-If any factual assertion cannot be mapped to an approved asset, or if retrieval returns insufficient context:
-- The candidate answer is blocked.
-- The console returns: **`INSUFFICIENT EVIDENCE`**.
+### Completed Sprints
+
+1. **Benchmark Dataset Schema & CRUD** — benchmark questions with `expected_claims`, `expected_answer_type` (`FACTUAL` | `PROCEDURAL` | `POLICY` | `REFUSAL`), `required_citation_count`, `min_required_coverage`, severity, and tags. Full CRUD API per project.
+2. **Snapshot-Based Batch Engine** — each evaluation run snapshots the Expert Model's approved asset IDs, asset hashes, and the benchmark question set at run creation time, guaranteeing reproducible evaluation even as governance state changes afterwards. Runs progress through `PENDING` → `RUNNING` → `COMPLETED` / `FAILED`.
+3. **Scorecard Metrics** — per-run aggregates: `pass_rate`, `average_coverage_score`, `average_confidence_score`, and the list of failed questions with per-question results (generated answer, unsupported claims, citations). `REFUSAL`-type benchmarks pass only when the console correctly returns `INSUFFICIENT EVIDENCE`.
+
+### Remaining Work
+
+- Evaluation dashboard UI (run history, scorecard visualization, drill-down into failed questions).
+- Run-over-run regression comparison (detect trust degradation between Expert Model versions).
+- Scheduled / triggered re-evaluation when governance state changes (asset approved, archived, or re-extracted).
 
 ---
 
-## 4. Audit Log Expansion
+## Future Direction (Post 0.4)
 
-All console queries are logged with high-fidelity telemetry to ensure absolute traceability:
-
-```json
-{
-  "question": "What is the clinical SLA refund threshold?",
-  "expert_model": "Clinical QA Expert",
-  "retrieved_assets": [
-    "asset_018b321a-4d2c-7431-a8e1-5bc4123490aa"
-  ],
-  "evidence_hashes": [
-    "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-  ],
-  "answer_hash": "a4f89d31c4b789a243e8d77f2bc21a4f00d892d131498b2c45eef723d91ca213",
-  "operator": "qa_auditor_01",
-  "timestamp": "2026-06-10T00:35:00Z"
-}
-```
-This logs the exact state of the assets and evidence hashes at the moment of query evaluation, preserving absolute auditability.
+- **Agent Consumption API** — a hardened, read-only endpoint surface designed for autonomous agent consumption of compiled packages, with per-agent access controls.
+- **Knowledge freshness policies** — expiry and re-review schedules per asset class.
+- **Multi-operator roles** — reviewer / approver separation of duties.
