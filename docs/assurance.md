@@ -45,6 +45,20 @@ Once the language model returns a candidate response, the system executes an aut
 2. **Evidence Mapping**: Every atomic claim is cross-referenced against the validated evidence assets.
 3. **Coverage Calculation**: The system measures how much of the answer is explicitly backed by the retrieved assets.
 
+### Verifier Hierarchy
+
+Claim-to-evidence judgment runs through a tiered verifier chain — the strongest available method is used, and each verification report records the **verifier identity** (method, model ID, engine version, thresholds) so verdicts are reproducible governance artifacts:
+
+| Tier | Method | Semantics |
+| :--- | :--- | :--- |
+| 1 (primary) | **Local NLI entailment** (DeBERTa-v3 MNLI cross-encoder, CPU, no API key) | Three-way verdict per claim/evidence pair: `ENTAILED`, `CONTRADICTED`, `UNSUPPORTED`. An embedding pre-filter selects top-k candidate evidence per claim before cross-encoding. |
+| 2 (fallback) | LLM judge (`OPENAI_API_KEY` present) | Binary supported/unsupported per claim. |
+| 3 (fallback) | Keyword overlap | Lexical match only — blind to negation; retained solely as a zero-dependency fallback. |
+
+### Contradiction Hard-Fail Rule
+
+NLI distinguishes a claim the evidence *doesn't mention* (`UNSUPPORTED`) from a claim the evidence *disproves* (`CONTRADICTED`). A contradicted claim means the answer inverted approved knowledge — or approved assets conflict with each other — and is strictly worse than a coverage gap. **Any contradicted claim forces `INSUFFICIENT_EVIDENCE` and blocks the answer, regardless of coverage score.** Contradicted claims are reported separately from unsupported claims in both the API response and the audit log.
+
 ---
 
 ## 4. Assurance & Governance Metrics

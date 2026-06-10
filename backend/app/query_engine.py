@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
 from app import ingestion
+from app import verification_engine
 from qdrant_client.models import Filter, FieldCondition, MatchAny
 
 def validate_asset_evidence(
@@ -106,18 +107,32 @@ def verify_answer_claims(
     and Stage 5 Evidence Gap Detection without using Qdrant.
     """
     claims = split_into_claims(answer_text)
-    
+
     if not claims:
         return {
             "coverage_score": 1.0,
             "verification_status": "VERIFIED",
             "unsupported_claims": [],
-            "claim_mappings": []
+            "contradicted_claims": [],
+            "claim_mappings": [],
+            "verifier": {"method": "NONE", "engine_version": "none"}
         }
 
+    # Primary path: local NLI entailment verifier (Phase 3).
+    nli_report = verification_engine.verify_claims_nli(claims, validated_citations)
+    if nli_report is not None:
+        return _finalize_verification_report(
+            claims=claims,
+            claim_mappings=nli_report["claim_mappings"],
+            unsupported_claims=nli_report["unsupported_claims"],
+            contradicted_claims=nli_report["contradicted_claims"],
+            verifier=nli_report["verifier"]
+        )
+
+    # Legacy fallback paths: per-claim LLM judge, then keyword overlap.
     claim_mappings = []
     unsupported_claims = []
-    
+
     api_key = os.environ.get("OPENAI_API_KEY")
     has_api_key = api_key and not api_key.startswith("mock-")
     stop_words = {"a", "the", "and", "or", "in", "on", "at", "to", "for", "with", "is", "was", "are", "were", "be", "all", "must", "of", "an", "should", "weekly"}
@@ -171,21 +186,48 @@ def verify_answer_claims(
                 elif len(matches) >= threshold:
                     supporting_asset_ids.append(cite["asset_id"])
 
-        supporting_asset_ids = list(set(supporting_asset_ids))
-        
+        supporting_asset_ids = sorted(set(supporting_asset_ids))
+
         claim_mappings.append({
             "claim": claim,
-            "supporting_assets": supporting_asset_ids
+            "verdict": "ENTAILED" if supporting_asset_ids else "UNSUPPORTED",
+            "supporting_assets": supporting_asset_ids,
+            "contradicting_assets": []
         })
-        
+
         if not supporting_asset_ids:
             unsupported_claims.append(claim)
 
+    fallback_verifier = {
+        "method": "LLM_JUDGE" if has_api_key else "KEYWORD_OVERLAP",
+        "model_id": "gpt-4o-mini" if has_api_key else None,
+        "engine_version": "legacy-v1"
+    }
+    return _finalize_verification_report(
+        claims=claims,
+        claim_mappings=claim_mappings,
+        unsupported_claims=unsupported_claims,
+        contradicted_claims=[],
+        verifier=fallback_verifier
+    )
+
+
+def _finalize_verification_report(
+    claims: list,
+    claim_mappings: list,
+    unsupported_claims: list,
+    contradicted_claims: list,
+    verifier: dict
+) -> dict:
     total_claims = len(claims)
     supported_claims_count = sum(1 for m in claim_mappings if m["supporting_assets"])
     coverage_score = round(supported_claims_count / total_claims, 2)
 
-    if coverage_score >= 0.95:
+    if contradicted_claims:
+        # A contradicted claim means the answer inverted approved evidence
+        # (or approved assets conflict). Hard fail regardless of coverage.
+        verification_status = "INSUFFICIENT_EVIDENCE"
+    elif coverage_score >= 0.95:
         verification_status = "VERIFIED"
     elif coverage_score >= 0.80:
         verification_status = "PARTIALLY_VERIFIED"
@@ -196,9 +238,11 @@ def verify_answer_claims(
         "coverage_score": coverage_score,
         "verification_status": verification_status,
         "unsupported_claims": unsupported_claims,
-        "claim_mappings": claim_mappings
+        "contradicted_claims": contradicted_claims,
+        "claim_mappings": claim_mappings,
+        "verifier": verifier
     }
-    
+
     print(f"VERIFICATION_REPORT: {json.dumps(report)}")
     return report
 
@@ -282,8 +326,9 @@ def generate_evidence_answer(
     else:
         matched_contents = [c["content"] for c in validated_citations]
         if matched_contents:
-            joined_evidence = " ".join(matched_contents)
-            answer_text = f"Verified grounded answer synthesized from Expert Model '{model_name}': {joined_evidence}"
+            # Restate the evidence verbatim — a grounded mock answer must be
+            # entailed by its own evidence, so no meta-preamble.
+            answer_text = " ".join(matched_contents)
         else:
             answer_text = fallback_text
 

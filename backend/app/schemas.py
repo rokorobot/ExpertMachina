@@ -196,6 +196,8 @@ class QueryResponse(BaseModel):
     verification_status: str
     citations: List[CitationModel]
     unsupported_claims: Optional[List[str]] = []
+    contradicted_claims: Optional[List[str]] = []
+    verifier: Optional[dict] = None
 
 class BenchmarkQuestionBase(BaseModel):
     question: str

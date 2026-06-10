@@ -285,9 +285,11 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
         "validated_assets": validated_asset_ids,
         "used_evidence_ids": gen_result["used_evidence_ids"],
         "unsupported_claims": verification["unsupported_claims"],
+        "contradicted_claims": verification.get("contradicted_claims", []),
         "coverage_score": verification["coverage_score"],
         "confidence_score": conf_score,
         "verification_status": verification["verification_status"],
+        "verifier": verification.get("verifier"),
         "answer_hash": answer_hash,
         "operator": "operator_admin_02",
         "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
@@ -307,7 +309,9 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
         coverage_score=verification["coverage_score"],
         verification_status=verification["verification_status"],
         citations=citations,
-        unsupported_claims=verification["unsupported_claims"]
+        unsupported_claims=verification["unsupported_claims"],
+        contradicted_claims=verification.get("contradicted_claims", []),
+        verifier=verification.get("verifier")
     )
 
 # Agent Packages routes
