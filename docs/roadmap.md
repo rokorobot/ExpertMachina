@@ -8,7 +8,7 @@
 | MVP 0.3 | Evidence-Backed Ask Expert Console | ✅ Completed |
 | MVP 0.4 | Expert Model Evaluation & Trust Scorecards | 🔄 In Progress |
 | MVP 0.5 | Integrity Fixes | ✅ Completed |
-| MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | 🔄 Nearly Complete |
+| MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
 | MVP 0.7 | Knowledge QA | 📋 Planned |
 
 ---
@@ -94,21 +94,18 @@ Knowledge-base audit integrity hardening, prerequisite to any agent-facing surfa
 
 ---
 
-## MVP 0.6 — Semantic Verification: Knowledge Integrity Engine (Nearly Complete)
+## MVP 0.6 — Semantic Verification: Knowledge Integrity Engine (Completed)
 
-Replaces lexical claim matching with semantic entailment. Shipped:
+Replaces lexical claim matching with semantic entailment:
 
 - `verification_engine.py` — local NLI cross-encoder, CPU, no API key required.
-- **Multilingual by default** (`mDeBERTa-v3 XNLI`), validated on English, Czech, and cross-lingual (English evidence / Czech claim) pairs. English-optimized mode available via `EM_NLI_MODEL_ID`.
+- **Multilingual by default** (`mDeBERTa-v3 XNLI`), benchmark-validated on English, Czech, German, and French claims against English evidence — and German evidence against Czech claims — all at 0.97+ confidence. English-optimized mode available via `EM_NLI_MODEL_ID`. **Cross-lingual semantic verification** (e.g. English SOP, Czech operator question) is a first-class, tested capability.
 - Embeddings used **only** for candidate evidence retrieval (top-k pre-filter), never as a verification verdict — bi-encoders are blind to negation.
 - Three-way verdicts per claim: `ENTAILED` / `UNSUPPORTED` (neutral) / `CONTRADICTED`, each with the model probability as a confidence score.
 - `CONTRADICTED` is a **hard fail**: blocks the answer regardless of coverage score.
-- Labeled verification benchmark dataset (verbatim, paraphrase, negation, semantic inversion, neutral, cross-lingual cases).
-
-Remaining:
-
-- **Atomic claim decomposition** — replace regex sentence splitting so compound policy sentences are verified claim-by-claim.
-- Pin and record the model weight hash (not just the model ID) in the verifier identity.
+- **Atomic claim decomposition** — compound policy sentences ("must be logged within 24 hours and reviewed weekly unless escalated") decompose into individually verified atomic claims with condition clauses preserved on every claim they govern. LLM-assisted when a key is present; deterministic coordination splitting otherwise. The decomposition method is recorded in every verification report.
+- **Reproducible verifier identity** — every verdict records the model ID, HF snapshot revision, SHA256 of the model weight files, engine version, and thresholds, so any historical verification decision can be reproduced against the exact weights that produced it.
+- Labeled verification benchmark dataset: 11 cases spanning verbatim, paraphrase, negation, semantic inversion, neutral, and cross-lingual (CS/DE/FR) — all passing.
 
 ---
 

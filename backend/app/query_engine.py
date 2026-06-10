@@ -8,6 +8,7 @@ from app import database as db
 from app import schemas
 from app import ingestion
 from app import verification_engine
+from app import claims as claims_module
 from qdrant_client.models import Filter, FieldCondition, MatchAny
 
 def validate_asset_evidence(
@@ -106,7 +107,7 @@ def verify_answer_claims(
     Stage 3 Coverage Calculation, Stage 4 Status Mapping,
     and Stage 5 Evidence Gap Detection without using Qdrant.
     """
-    claims = split_into_claims(answer_text)
+    claims, decomposition_method = claims_module.decompose_claims(answer_text)
 
     if not claims:
         return {
@@ -126,7 +127,7 @@ def verify_answer_claims(
             claim_mappings=nli_report["claim_mappings"],
             unsupported_claims=nli_report["unsupported_claims"],
             contradicted_claims=nli_report["contradicted_claims"],
-            verifier=nli_report["verifier"]
+            verifier={**nli_report["verifier"], "claim_decomposition": decomposition_method}
         )
 
     # Legacy fallback paths: per-claim LLM judge, then keyword overlap.
@@ -202,7 +203,8 @@ def verify_answer_claims(
     fallback_verifier = {
         "method": "LLM_JUDGE" if has_api_key else "KEYWORD_OVERLAP",
         "model_id": "gpt-4o-mini" if has_api_key else None,
-        "engine_version": "legacy-v1"
+        "engine_version": "legacy-v1",
+        "claim_decomposition": decomposition_method
     }
     return _finalize_verification_report(
         claims=claims,

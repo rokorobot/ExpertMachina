@@ -1,5 +1,6 @@
 import os
 import math
+import hashlib
 
 from app import ingestion
 
@@ -19,6 +20,7 @@ ENGINE_VERSION = "nli-v1"
 
 _nli_pipeline = None
 _nli_load_failed = False
+_model_fingerprint = None
 
 
 def is_enabled() -> bool:
@@ -27,10 +29,42 @@ def is_enabled() -> bool:
     return os.environ.get("EM_NLI_VERIFICATION", "auto").lower() != "off"
 
 
+def _compute_model_fingerprint() -> dict:
+    """SHA256 over the cached model weight files plus the HF snapshot
+    revision, so any historical verification verdict can be reproduced
+    against the exact weights that produced it."""
+    global _model_fingerprint
+    if _model_fingerprint is not None:
+        return _model_fingerprint
+    fingerprint = {"model_revision": None, "weights_hash": None}
+    try:
+        from huggingface_hub import snapshot_download
+        snapshot_path = snapshot_download(NLI_MODEL_ID, local_files_only=True)
+        fingerprint["model_revision"] = os.path.basename(snapshot_path)
+        hasher = hashlib.sha256()
+        weight_files = sorted(
+            f for f in os.listdir(snapshot_path)
+            if f.endswith((".safetensors", ".bin"))
+        )
+        for weight_file in weight_files:
+            with open(os.path.join(snapshot_path, weight_file), "rb") as fh:
+                for block in iter(lambda: fh.read(1 << 20), b""):
+                    hasher.update(block)
+        if weight_files:
+            fingerprint["weights_hash"] = hasher.hexdigest()
+    except Exception as e:
+        print(f"Model fingerprint unavailable ({e}).")
+    _model_fingerprint = fingerprint
+    return fingerprint
+
+
 def verifier_identity() -> dict:
+    fingerprint = _compute_model_fingerprint()
     return {
         "method": "NLI_LOCAL",
         "model_id": NLI_MODEL_ID,
+        "model_revision": fingerprint["model_revision"],
+        "weights_hash": fingerprint["weights_hash"],
         "engine_version": ENGINE_VERSION,
         "entailment_threshold": ENTAILMENT_THRESHOLD,
         "contradiction_threshold": CONTRADICTION_THRESHOLD,

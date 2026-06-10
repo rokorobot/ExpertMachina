@@ -45,9 +45,13 @@ Once the language model returns a candidate response, the system executes an aut
 2. **Evidence Mapping**: Every atomic claim is cross-referenced against the validated evidence assets.
 3. **Coverage Calculation**: The system measures how much of the answer is explicitly backed by the retrieved assets.
 
+### Atomic Claim Decomposition
+
+Before judgment, the answer is decomposed into atomic claims. A compound policy sentence — *"Critical deviations must be logged within 24 hours and reviewed weekly by the quality manager unless escalated"* — yields separately verified claims, with condition clauses preserved on every claim they govern. Decomposition is LLM-assisted when an API key is present (`LLM_ATOMIC`) and falls back to deterministic coordination splitting (`RULE_COORDINATION`); the method used is recorded in every verification report, making claim granularity a reproducible part of each verdict.
+
 ### Verifier Hierarchy
 
-Claim-to-evidence judgment runs through a tiered verifier chain — the strongest available method is used, and each verification report records the **verifier identity** (method, model ID, engine version, thresholds) so verdicts are reproducible governance artifacts:
+Claim-to-evidence judgment runs through a tiered verifier chain — the strongest available method is used, and each verification report records the **verifier identity** (method, model ID, HF snapshot revision, SHA256 weights hash, engine version, thresholds, claim decomposition method) so any historical verdict can be reproduced against the exact model weights that produced it:
 
 | Tier | Method | Semantics |
 | :--- | :--- | :--- |

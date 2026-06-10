@@ -36,10 +36,14 @@ NLI_BENCHMARK = [
     ("Critical deviations must not be logged within 24 hours.", "CONTRADICTED", "direct negation of policy"),
     ("Customer data must be retained indefinitely.", "CONTRADICTED", "semantic inversion of retention policy"),
     ("Managers receive performance bonuses every quarter.", "UNSUPPORTED", "neutral claim, no evidence"),
-    # Cross-lingual cases: Czech claims judged against English evidence
+    # Cross-lingual cases: non-English claims judged against English evidence
     # (multilingual default model only).
     ("Zákaznická data musí být po 30 dnech smazána.", "ENTAILED", "cross-lingual Czech claim vs English evidence"),
     ("Zákaznická data se nikdy nemažou.", "CONTRADICTED", "cross-lingual Czech negation vs English evidence"),
+    ("Kundendaten müssen nach 30 Tagen gelöscht werden.", "ENTAILED", "cross-lingual German claim vs English evidence"),
+    ("Kundendaten dürfen unbegrenzt aufbewahrt werden.", "CONTRADICTED", "cross-lingual German inversion vs English evidence"),
+    ("Les écarts critiques doivent être enregistrés dans un délai de 24 heures.", "ENTAILED", "cross-lingual French claim vs English evidence"),
+    ("Il n'est pas nécessaire d'enregistrer les écarts critiques.", "CONTRADICTED", "cross-lingual French negation vs English evidence"),
 ]
 
 
@@ -97,6 +101,9 @@ def test_nli_labeled_benchmark():
     result = verification_engine.verify_claims_nli(claims, CITATIONS)
     assert result is not None, "NLI verifier returned None despite an available pipeline"
     assert result["verifier"]["method"] == "NLI_LOCAL"
+    # Reproducibility: the verdict must be traceable to the exact weights.
+    assert result["verifier"]["weights_hash"], "Verifier identity missing model weights hash"
+    assert result["verifier"]["model_revision"], "Verifier identity missing model revision"
 
     failures = []
     for mapping, (claim, expected, description) in zip(result["claim_mappings"], NLI_BENCHMARK):
@@ -117,6 +124,8 @@ def test_nli_labeled_benchmark():
         validated_citations=CITATIONS,
     )
     assert report["verifier"]["method"] == "NLI_LOCAL"
+    assert report["verifier"]["claim_decomposition"] == "RULE_COORDINATION", \
+        "Verification report missing claim decomposition method"
     assert "Customer data must be retained indefinitely." in report["contradicted_claims"], \
         "NLI path failed to flag the inverted claim as contradicted"
     assert report["verification_status"] == "INSUFFICIENT_EVIDENCE", \
@@ -124,8 +133,35 @@ def test_nli_labeled_benchmark():
     print("Part 3 passed: NLI verifier catches negation and semantic inversion that keyword overlap cannot.")
 
 
+def test_atomic_claim_decomposition():
+    print("\n--- Part 4: Atomic claim decomposition ---")
+    from app import claims as claims_module
+
+    compound = ("Critical deviations must be logged within 24 hours and reviewed "
+                "weekly by the quality manager unless escalated.")
+    decomposed, method = claims_module.decompose_claims(compound)
+    assert method == "RULE_COORDINATION", f"Expected rule-based decomposition, got {method}"
+    assert decomposed == [
+        "Critical deviations must be logged within 24 hours unless escalated.",
+        "Critical deviations must be reviewed weekly by the quality manager unless escalated.",
+    ], f"Compound sentence decomposed wrongly: {decomposed}"
+
+    simple, _ = claims_module.decompose_claims("Quality managers review deviations weekly.")
+    assert simple == ["Quality managers review deviations weekly."], \
+        f"Simple sentence must pass through unchanged, got {simple}"
+
+    # Coordination inside a noun phrase must NOT be split.
+    noun_phrase, _ = claims_module.decompose_claims(
+        "The committee must be informed about audits and inspections every month."
+    )
+    assert len(noun_phrase) == 1, f"Noun-phrase coordination wrongly split: {noun_phrase}"
+
+    print("Part 4 passed: compound policy sentences decompose into atomic claims; simple sentences are untouched.")
+
+
 if __name__ == "__main__":
     test_keyword_fallback_report_shape()
     test_contradiction_hard_fail_rule()
     test_nli_labeled_benchmark()
+    test_atomic_claim_decomposition()
     print("\n=== All NLI verification engine tests passed successfully! ===")
