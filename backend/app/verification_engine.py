@@ -3,10 +3,15 @@ import math
 
 from app import ingestion
 
-# Phase 3 Verifier: local NLI entailment (English-first) with embedding pre-filter.
+# Knowledge Integrity Engine: local NLI entailment with embedding pre-filter.
 # Falls back to None when transformers/torch are unavailable so callers can
 # degrade to the LLM-judge or keyword-overlap paths in query_engine.
-NLI_MODEL_ID = os.environ.get("EM_NLI_MODEL_ID", "MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli")
+#
+# Default is multilingual (validated on English, Czech, and cross-lingual
+# English-evidence/Czech-claim pairs). For English-only corpora, set
+# EM_NLI_MODEL_ID=MoritzLaurer/DeBERTa-v3-base-mnli-fever-anli as the
+# optimized mode.
+NLI_MODEL_ID = os.environ.get("EM_NLI_MODEL_ID", "MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7")
 ENTAILMENT_THRESHOLD = float(os.environ.get("EM_NLI_ENTAILMENT_THRESHOLD", "0.80"))
 CONTRADICTION_THRESHOLD = float(os.environ.get("EM_NLI_CONTRADICTION_THRESHOLD", "0.80"))
 PREFILTER_TOP_K = int(os.environ.get("EM_NLI_PREFILTER_TOP_K", "4"))
@@ -108,33 +113,42 @@ def verify_claims_nli(claims: list, citations: list) -> dict:
         print(f"NLI inference failed ({e}). Falling back to legacy verification.")
         return None
 
-    per_claim = [{"supporting": [], "contradicting": []} for _ in claims]
+    per_claim = [{"supporting": {}, "contradicting": {}, "max_neutral": 0.0} for _ in claims]
     for (claim_idx, asset_id), scores in zip(pair_index, results):
         score_map = {entry["label"].lower(): entry["score"] for entry in scores}
         entailment = score_map.get("entailment", 0.0)
         contradiction = score_map.get("contradiction", 0.0)
+        neutral = score_map.get("neutral", 0.0)
+        state = per_claim[claim_idx]
+        state["max_neutral"] = max(state["max_neutral"], neutral)
         if entailment >= ENTAILMENT_THRESHOLD and entailment >= contradiction:
-            per_claim[claim_idx]["supporting"].append(asset_id)
+            state["supporting"][asset_id] = max(state["supporting"].get(asset_id, 0.0), entailment)
         elif contradiction >= CONTRADICTION_THRESHOLD and contradiction > entailment:
-            per_claim[claim_idx]["contradicting"].append(asset_id)
+            state["contradicting"][asset_id] = max(state["contradicting"].get(asset_id, 0.0), contradiction)
 
     claim_mappings = []
     unsupported_claims = []
     contradicted_claims = []
     for claim_idx, claim in enumerate(claims):
-        supporting = sorted(set(per_claim[claim_idx]["supporting"]))
-        contradicting = sorted(set(per_claim[claim_idx]["contradicting"]))
+        state = per_claim[claim_idx]
+        supporting = sorted(state["supporting"])
+        contradicting = sorted(state["contradicting"])
+        # Confidence is the model probability behind the winning verdict.
         if supporting:
             verdict = "ENTAILED"
+            confidence = max(state["supporting"].values())
         elif contradicting:
             verdict = "CONTRADICTED"
+            confidence = max(state["contradicting"].values())
             contradicted_claims.append(claim)
         else:
             verdict = "UNSUPPORTED"
+            confidence = state["max_neutral"]
             unsupported_claims.append(claim)
         claim_mappings.append({
             "claim": claim,
             "verdict": verdict,
+            "confidence": round(confidence, 3),
             "supporting_assets": supporting,
             "contradicting_assets": contradicting,
         })

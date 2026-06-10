@@ -191,6 +191,7 @@ def verify_answer_claims(
         claim_mappings.append({
             "claim": claim,
             "verdict": "ENTAILED" if supporting_asset_ids else "UNSUPPORTED",
+            "confidence": None,
             "supporting_assets": supporting_asset_ids,
             "contradicting_assets": []
         })

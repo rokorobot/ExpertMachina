@@ -51,7 +51,7 @@ Claim-to-evidence judgment runs through a tiered verifier chain — the stronges
 
 | Tier | Method | Semantics |
 | :--- | :--- | :--- |
-| 1 (primary) | **Local NLI entailment** (DeBERTa-v3 MNLI cross-encoder, CPU, no API key) | Three-way verdict per claim/evidence pair: `ENTAILED`, `CONTRADICTED`, `UNSUPPORTED`. An embedding pre-filter selects top-k candidate evidence per claim before cross-encoding. |
+| 1 (primary) | **Local NLI entailment** (multilingual mDeBERTa-v3 XNLI cross-encoder by default, CPU, no API key; English-optimized DeBERTa-v3 MNLI via `EM_NLI_MODEL_ID`) | Three-way verdict per claim/evidence pair: `ENTAILED`, `CONTRADICTED`, `UNSUPPORTED`, each with the model probability as a per-claim confidence score. An embedding pre-filter selects top-k candidate evidence per claim before cross-encoding. Validated on English, Czech, and cross-lingual evidence/claim pairs. |
 | 2 (fallback) | LLM judge (`OPENAI_API_KEY` present) | Binary supported/unsupported per claim. |
 | 3 (fallback) | Keyword overlap | Lexical match only — blind to negation; retained solely as a zero-dependency fallback. |
 

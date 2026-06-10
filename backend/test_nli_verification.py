@@ -36,6 +36,10 @@ NLI_BENCHMARK = [
     ("Critical deviations must not be logged within 24 hours.", "CONTRADICTED", "direct negation of policy"),
     ("Customer data must be retained indefinitely.", "CONTRADICTED", "semantic inversion of retention policy"),
     ("Managers receive performance bonuses every quarter.", "UNSUPPORTED", "neutral claim, no evidence"),
+    # Cross-lingual cases: Czech claims judged against English evidence
+    # (multilingual default model only).
+    ("Zákaznická data musí být po 30 dnech smazána.", "ENTAILED", "cross-lingual Czech claim vs English evidence"),
+    ("Zákaznická data se nikdy nemažou.", "CONTRADICTED", "cross-lingual Czech negation vs English evidence"),
 ]
 
 
@@ -97,9 +101,12 @@ def test_nli_labeled_benchmark():
     failures = []
     for mapping, (claim, expected, description) in zip(result["claim_mappings"], NLI_BENCHMARK):
         status = "OK " if mapping["verdict"] == expected else "FAIL"
-        print(f"  [{status}] {description}: expected {expected}, got {mapping['verdict']}")
+        print(f"  [{status}] {description}: expected {expected}, got {mapping['verdict']} (confidence {mapping['confidence']})")
         if mapping["verdict"] != expected:
             failures.append((claim, expected, mapping["verdict"]))
+        if expected in ("ENTAILED", "CONTRADICTED") and mapping["verdict"] == expected:
+            assert mapping["confidence"] >= 0.80, \
+                f"Verdict confidence below threshold for: {claim} ({mapping['confidence']})"
 
     assert not failures, f"NLI verdicts wrong for: {failures}"
 
