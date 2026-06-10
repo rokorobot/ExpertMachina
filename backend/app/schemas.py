@@ -176,18 +176,20 @@ class AssetBulkUpdate(BaseModel):
 class QueryInput(BaseModel):
     expert_model_id: int
     question: str
+    access_level: Optional[str] = "INTERNAL" # caller clearance: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
 
 class CitationModel(BaseModel):
     asset_id: int
     name: str
     content: str
-    source_document: str
-    source_page: int
-    source_section: str
-    source_hash: str
+    source_document: Optional[str] = None
+    source_page: Optional[int] = None
+    source_section: Optional[str] = None
+    source_hash: Optional[str] = None
     asset_status: str
-    approved_by: str
-    approved_at: str
+    # Provenance is reported honestly: None when not recorded, never fabricated.
+    approved_by: Optional[str] = None
+    approved_at: Optional[str] = None
 
 class QueryResponse(BaseModel):
     answer: str

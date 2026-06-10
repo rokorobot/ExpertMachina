@@ -338,47 +338,68 @@ def generate_evidence_answer(
         "generation_mode": "MOCK_DETERMINISTIC"
     }
 
+# MVP 0.5 access boundary: callers only see assets at or below their tier.
+ACCESS_RANK = {"PUBLIC": 0, "INTERNAL": 1, "RESTRICTED": 2, "EXECUTIVE": 3}
+
+
+def _access_rank(level: str) -> int:
+    return ACCESS_RANK.get((level or "INTERNAL").upper(), ACCESS_RANK["INTERNAL"])
+
+
+def _build_citation(session: Session, asset: db.KnowledgeAsset) -> dict:
+    doc = session.query(db.Document).filter(db.Document.id == asset.document_id).first()
+    review = session.query(db.AssetReview).filter(db.AssetReview.asset_id == asset.id).first()
+    # Provenance must be reported honestly: missing values stay None rather
+    # than being backfilled with fabricated defaults.
+    return {
+        "asset_id": asset.id,
+        "name": asset.name,
+        "content": asset.content,
+        "source_document": doc.filename if doc else None,
+        "source_page": asset.source_page,
+        "source_section": asset.source_section,
+        "source_hash": asset.source_hash,
+        "asset_status": asset.status,
+        "approved_by": review.approver if review else None,
+        "approved_at": review.reviewed_at.isoformat() + "Z" if (review and review.reviewed_at) else None
+    }
+
+
 def retrieve_approved_evidence(
-    session: Session, 
-    expert_model_id: int, 
-    question: str, 
+    session: Session,
+    expert_model_id: int,
+    question: str,
     limit: int = 5,
     asset_ids_override: list = None,
-    asset_hashes_override: dict = None
+    asset_hashes_override: dict = None,
+    caller_access_level: str = "INTERNAL"
 ) -> dict:
     """
     Sprint 6 Extended Retrieval:
     Retrieves and validates approved evidence. Discards any assets failing validation.
     Returns rich metadata for query audit expansion.
     """
+    empty_result = {
+        "citations": [],
+        "retrieved_asset_ids": [],
+        "validated_asset_ids": [],
+        "hash_tamper_occurred": False,
+        "access_blocked_asset_ids": []
+    }
+
     expert_model = session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
     if not expert_model:
-        return {
-            "citations": [],
-            "retrieved_asset_ids": [],
-            "validated_asset_ids": [],
-            "hash_tamper_occurred": False
-        }
+        return empty_result
 
     if asset_ids_override is not None:
         asset_ids = asset_ids_override
     else:
         if not expert_model.asset_ids_json:
-            return {
-                "citations": [],
-                "retrieved_asset_ids": [],
-                "validated_asset_ids": [],
-                "hash_tamper_occurred": False
-            }
+            return empty_result
         try:
             asset_ids = json.loads(expert_model.asset_ids_json)
         except Exception:
-            return {
-                "citations": [],
-                "retrieved_asset_ids": [],
-                "validated_asset_ids": [],
-                "hash_tamper_occurred": False
-            }
+            return empty_result
 
     if asset_ids_override is not None:
         # For snapshots, we retrieve all snapshot assets and let the validation engine check status/archival
@@ -391,12 +412,22 @@ def retrieve_approved_evidence(
             db.KnowledgeAsset.status == "APPROVED"
         ).all()
 
+    # Access boundary: drop assets above the caller's clearance tier.
+    caller_rank = _access_rank(caller_access_level)
+    access_blocked_asset_ids = [
+        a.id for a in approved_assets if _access_rank(a.access_level) > caller_rank
+    ]
+    approved_assets = [
+        a for a in approved_assets if _access_rank(a.access_level) <= caller_rank
+    ]
+
     if not approved_assets:
         return {
             "citations": [],
             "retrieved_asset_ids": [],
             "validated_asset_ids": [],
-            "hash_tamper_occurred": False
+            "hash_tamper_occurred": False,
+            "access_blocked_asset_ids": access_blocked_asset_ids
         }
 
     chunk_to_asset_map = {}
@@ -445,24 +476,7 @@ def retrieve_approved_evidence(
                         continue
 
                     validated_asset_ids.append(asset.id)
-                    doc = session.query(db.Document).filter(db.Document.id == asset.document_id).first()
-                    doc_name = doc.filename if doc else "Unknown Document"
-                    review = session.query(db.AssetReview).filter(db.AssetReview.asset_id == asset.id).first()
-                    approved_by = review.approver if (review and review.approver) else "operator_admin_02"
-                    approved_at = review.reviewed_at.isoformat() + "Z" if (review and review.reviewed_at) else datetime.datetime.utcnow().isoformat() + "Z"
-
-                    citation = {
-                        "asset_id": asset.id,
-                        "name": asset.name,
-                        "content": asset.content,
-                        "source_document": doc_name,
-                        "source_page": asset.source_page or 1,
-                        "source_section": asset.source_section or "Main Content",
-                        "source_hash": asset.source_hash or "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                        "asset_status": asset.status,
-                        "approved_by": approved_by,
-                        "approved_at": approved_at
-                    }
+                    citation = _build_citation(session, asset)
                     if citation not in retrieved_citations:
                         retrieved_citations.append(citation)
                         
@@ -482,37 +496,22 @@ def retrieve_approved_evidence(
                 continue
 
             validated_asset_ids.append(asset.id)
-            doc = session.query(db.Document).filter(db.Document.id == asset.document_id).first()
-            doc_name = doc.filename if doc else "Unknown Document"
-            review = session.query(db.AssetReview).filter(db.AssetReview.asset_id == asset.id).first()
-            approved_by = review.approver if (review and review.approver) else "operator_admin_02"
-            approved_at = review.reviewed_at.isoformat() + "Z" if (review and review.reviewed_at) else datetime.datetime.utcnow().isoformat() + "Z"
-
-            citation = {
-                "asset_id": asset.id,
-                "name": asset.name,
-                "content": asset.content,
-                "source_document": doc_name,
-                "source_page": asset.source_page or 1,
-                "source_section": asset.source_section or "Main Content",
-                "source_hash": asset.source_hash or "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
-                "asset_status": asset.status,
-                "approved_by": approved_by,
-                "approved_at": approved_at
-            }
-            retrieved_citations.append(citation)
+            retrieved_citations.append(_build_citation(session, asset))
 
     retrieved_audit_log = {
         "expert_model_id": expert_model_id,
         "question": question,
         "candidate_assets": len(asset_ids),
-        "retrieved_assets": retrieved_asset_ids
+        "retrieved_assets": retrieved_asset_ids,
+        "caller_access_level": caller_access_level,
+        "access_blocked_assets": access_blocked_asset_ids
     }
     print(f"RETRIEVAL_AUDIT: {json.dumps(retrieved_audit_log)}")
-    
+
     return {
         "citations": retrieved_citations,
         "retrieved_asset_ids": retrieved_asset_ids,
         "validated_asset_ids": validated_asset_ids,
-        "hash_tamper_occurred": hash_tamper_occurred
+        "hash_tamper_occurred": hash_tamper_occurred,
+        "access_blocked_asset_ids": access_blocked_asset_ids
     }

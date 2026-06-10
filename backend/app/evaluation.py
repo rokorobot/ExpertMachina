@@ -87,7 +87,10 @@ def run_evaluation_batch(session: Session, run_id: int):
                 expert_model_id=db_run.expert_model_id,
                 question=b.question,
                 asset_ids_override=asset_ids_snapshot,
-                asset_hashes_override=asset_hashes_snapshot
+                asset_hashes_override=asset_hashes_snapshot,
+                # Evaluation batches are operator-initiated and must exercise
+                # the full snapshot regardless of asset access tiers.
+                caller_access_level="EXECUTIVE"
             )
 
             citations = retrieval_res["citations"]

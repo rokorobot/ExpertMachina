@@ -179,6 +179,11 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
         old_st, new_st = status_change
         event_t = "ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED"
         log_audit_event(session, actor=actor, event_type=event_t, target_id=str(asset.id), details=f"Asset status updated from {old_st} to {new_st}")
+        if new_st == "APPROVED":
+            # Record the approval as a review row so citations carry real
+            # approver provenance instead of fabricated defaults.
+            session.add(db.AssetReview(asset_id=asset.id, approver=actor, notes=f"Approved (status changed from {old_st})"))
+            session.commit()
         if asset.document_id:
             update_document_lifecycle(session, asset.document_id)
     else:

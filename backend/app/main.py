@@ -199,6 +199,9 @@ def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, actor: str = "User", db
             
             event_t = "ASSET_REVIEWED" if bulk_in.status == "REVIEWED" else "ASSET_APPROVED" if bulk_in.status == "APPROVED" else "ASSET_UPDATED"
             crud.log_audit_event(db_session, actor=actor, event_type=event_t, target_id=str(asset.id), details=f"Asset status updated from {old_st} to {bulk_in.status} via bulk update")
+            if bulk_in.status == "APPROVED" and old_st != "APPROVED":
+                db_session.add(db.AssetReview(asset_id=asset.id, approver=actor, notes=f"Approved via bulk update (from {old_st})"))
+                db_session.commit()
             
             if asset.document_id:
                 affected_doc_ids.add(asset.document_id)
@@ -233,7 +236,8 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
     retrieval_res = query_engine.retrieve_approved_evidence(
         db_session,
         expert_model_id=query_in.expert_model_id,
-        question=query_in.question
+        question=query_in.question,
+        caller_access_level=query_in.access_level
     )
     
     citations = retrieval_res["citations"]
@@ -283,6 +287,8 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
         "expert_model_name": model_name,
         "retrieved_assets": retrieved_asset_ids,
         "validated_assets": validated_asset_ids,
+        "caller_access_level": query_in.access_level,
+        "access_blocked_assets": retrieval_res.get("access_blocked_asset_ids", []),
         "used_evidence_ids": gen_result["used_evidence_ids"],
         "unsupported_claims": verification["unsupported_claims"],
         "contradicted_claims": verification.get("contradicted_claims", []),
