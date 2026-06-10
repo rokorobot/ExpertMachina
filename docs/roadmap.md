@@ -9,7 +9,7 @@
 | MVP 0.4 | Expert Model Evaluation & Trust Scorecards | 🔄 In Progress |
 | MVP 0.5 | Integrity Fixes | ✅ Completed |
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
-| MVP 0.7 | Knowledge QA | 🔄 In Progress (Sprint 1 done) |
+| MVP 0.7 | Knowledge QA | ✅ Completed |
 
 ---
 
@@ -109,7 +109,7 @@ Replaces lexical claim matching with semantic entailment:
 
 ---
 
-## MVP 0.7 — Knowledge QA (In Progress)
+## MVP 0.7 — Knowledge QA (Completed)
 
 Contradiction detection applied to the knowledge base itself — the Knowledge Integrity Engine pointed at the knowledge, not just at answers.
 
@@ -143,9 +143,20 @@ Operator-facing **Knowledge Conflicts** tab in the dashboard:
 - Review-sensitive by construction: confirming a conflict lowers the score; dismissing one with a reason restores it. Verified live in the UI (78 → 87 on dismissal).
 - Exposed via `GET /api/experts/{id}/conflict-score`, included in scan summaries and the `CONFLICT_SCAN_COMPLETED` audit event, versioned as `conflict-score-v1`.
 
-### Sprint 4 — Asset Revision Workflow
+### Sprint 4 — Asset Revision Workflow (Completed)
 
-Model `Asset → Revision` with `supersedes` / `superseded_by` relationships: editing an approved asset creates a new `CANDIDATE` revision that replaces the original through re-review, preserving immutable history.
+Immutable revision history: `knowledge_assets` is the stable logical identity, `asset_revisions` holds immutable content/version records.
+
+**Core rule: approved assets are never edited in place.** Any content edit reaching an `APPROVED` asset — including via the generic asset-update API — is diverted into a new `CANDIDATE` revision; the active approved revision keeps serving until the candidate passes review.
+
+- The asset row is a projection of the active approved revision, so Expert Models, retrieval, packages, and evaluation snapshots reference `asset_id` + active revision by construction.
+- Approval supersedes: old revision becomes `ARCHIVED` with `superseded_by_revision_id` set; the new revision records approver, timestamp, and `change_reason`; an `AssetReview` row is written; audit events `ASSET_REVISION_CREATED` / `_APPROVED` / `_REJECTED`.
+- **Lazy adoption**: existing assets get revision 1 created from their current state on first approval or first edit — no aggressive migration.
+- **Strictly linear**: one pending candidate at a time; branching deferred.
+- **Revision integrity check**: evidence validation verifies live asset content against the active revision's `content_hash` (`REVISION_CONTENT_MISMATCH`) — tampering around the workflow is caught at query time. Citations expose the revision number.
+- UI: asset cards show `Rev N · Current` and `Candidate Pending` badges.
+
+API: `GET/POST /api/assets/{id}/revisions`, `POST /api/revisions/{id}/review`.
 
 ---
 

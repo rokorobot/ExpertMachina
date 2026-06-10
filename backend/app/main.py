@@ -16,6 +16,7 @@ from app import extraction
 from app import query_engine
 from app import evaluation
 from app import conflict_engine
+from app import revisions
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -449,6 +450,38 @@ def delete_asset(asset_id: int, actor: str = "GovernanceOfficer", db_session: Se
 def delete_document_assets(document_id: int, status: Optional[str] = None, actor: str = "GovernanceOfficer", db_session: Session = Depends(get_db)):
     count = crud.delete_knowledge_assets_by_document(db_session, document_id, status=status, actor=actor)
     return {"message": f"Deleted {count} assets from document {document_id}"}
+
+# Asset Revision Workflow routes (MVP 0.7 Sprint 4)
+@app.get("/api/assets/{asset_id}/revisions", response_model=List[schemas.AssetRevisionResponse])
+def get_asset_revisions(asset_id: int, db_session: Session = Depends(get_db)):
+    asset = db_session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
+    if not asset:
+        raise HTTPException(status_code=404, detail=f"Asset {asset_id} not found")
+    return revisions.get_revisions(db_session, asset_id)
+
+@app.post("/api/assets/{asset_id}/revisions", response_model=schemas.AssetRevisionResponse)
+def create_asset_revision(asset_id: int, revision_in: schemas.AssetRevisionCreate, db_session: Session = Depends(get_db)):
+    try:
+        return revisions.create_candidate_revision(
+            db_session, asset_id, revision_in.content,
+            actor=revision_in.actor, change_reason=revision_in.change_reason
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/revisions/{revision_id}/review", response_model=schemas.AssetRevisionResponse)
+def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate, db_session: Session = Depends(get_db)):
+    try:
+        return revisions.review_revision(
+            db_session, revision_id, action=review.action,
+            actor=review.reviewer, notes=review.notes
+        )
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 # Knowledge Integrity Engine routes (MVP 0.7: Semantic Conflict Engine)
 @app.post("/api/experts/{expert_model_id}/conflict-scan", response_model=schemas.ConflictScanResponse)

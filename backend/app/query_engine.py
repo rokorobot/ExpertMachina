@@ -74,6 +74,16 @@ def validate_asset_evidence(
     if asset.status in ["ARCHIVED", "DELETED"] and asset_hashes_override is None:
         failed_checks.append("ASSET_ARCHIVED")
 
+    # Check 9: Revision integrity. When the asset has an immutable revision
+    # history, the live content must match the active approved revision's
+    # content hash - direct tampering around the revision workflow fails here.
+    approved_revisions = [r for r in asset.revisions if r.status == "APPROVED"]
+    if approved_revisions:
+        active_revision = max(approved_revisions, key=lambda r: r.revision_number)
+        live_hash = hashlib.sha256((asset.content or "").encode('utf-8')).hexdigest()
+        if live_hash != active_revision.content_hash:
+            failed_checks.append("REVISION_CONTENT_MISMATCH")
+
     validation_status = "VALID" if not failed_checks else "INVALID"
 
     report = {
@@ -356,6 +366,7 @@ def _build_citation(session: Session, asset: db.KnowledgeAsset) -> dict:
     # than being backfilled with fabricated defaults.
     return {
         "asset_id": asset.id,
+        "revision": asset.active_revision_number,
         "name": asset.name,
         "content": asset.content,
         "source_document": doc.filename if doc else None,

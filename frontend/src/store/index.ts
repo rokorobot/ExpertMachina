@@ -62,6 +62,9 @@ export interface KnowledgeAsset {
   created_at: string;
   quality_scores: QualityScore[];
   reviews: AssetReview[];
+  revision_count: number;
+  active_revision_number: number | null;
+  has_pending_revision: boolean;
 }
 
 export interface ExpertModel {

@@ -1136,6 +1136,22 @@ export default function Home() {
                                             {asset.type}
                                           </span>
                                           <div className="flex gap-2">
+                                            {asset.active_revision_number != null && (
+                                              <span
+                                                title="Active approved revision — older revisions are archived as superseded"
+                                                className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/30 border border-cyan-900/40 text-cyan-400"
+                                              >
+                                                Rev {asset.active_revision_number} · Current
+                                              </span>
+                                            )}
+                                            {asset.has_pending_revision && (
+                                              <span
+                                                title="A candidate revision is awaiting review — the current revision stays active until it is approved"
+                                                className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-950/40 border border-yellow-900/40 text-yellow-400"
+                                              >
+                                                Candidate Pending
+                                              </span>
+                                            )}
                                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 border border-slate-900 text-slate-400">
                                               Access: {asset.access_level}
                                             </span>

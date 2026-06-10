@@ -56,7 +56,22 @@ A Knowledge Chain of Custody is considered **valid** if and only if all of the f
 
 ---
 
-## 4. Answer Traceability (Shipped in MVP 0.3)
+## 4. Immutable Revision History (MVP 0.7)
+
+Approved knowledge is never edited in place. Each asset's content lives in an immutable `asset_revisions` chain:
+
+```text
+Policy Asset (stable identity)
+ ├── Revision 1 (ARCHIVED — superseded by Revision 2)
+ ├── Revision 2 (APPROVED — active, serves Expert Models)
+ └── Revision 3 (CANDIDATE — pending review)
+```
+
+Every revision records its content hash, creator, approver, timestamps, `supersedes` / `superseded_by` links, and a `change_reason`. Evidence validation verifies the live asset content against the active revision's hash (`REVISION_CONTENT_MISMATCH` on tampering), and citations carry the revision number — so any historical answer can be traced to the exact revision of the exact asset that produced it.
+
+---
+
+## 5. Answer Traceability (Shipped in MVP 0.3)
 
 The chain of custody extends directly to interactive query sessions in the Ask Expert console:
 

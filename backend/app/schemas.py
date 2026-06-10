@@ -122,6 +122,10 @@ class KnowledgeAssetResponse(KnowledgeAssetBase):
     created_at: datetime
     quality_scores: List[QualityScoreResponse] = []
     reviews: List[AssetReviewResponse] = []
+    # Revision projection (MVP 0.7 Sprint 4)
+    revision_count: Optional[int] = 0
+    active_revision_number: Optional[int] = None
+    has_pending_revision: Optional[bool] = False
     class Config:
         from_attributes = True
 
@@ -180,6 +184,7 @@ class QueryInput(BaseModel):
 
 class CitationModel(BaseModel):
     asset_id: int
+    revision: Optional[int] = None # active approved revision number, if revision history exists
     name: str
     content: str
     source_document: Optional[str] = None
@@ -248,6 +253,34 @@ class ConflictReviewUpdate(BaseModel):
     status: str # CONFIRMED | DISMISSED
     reviewer: Optional[str] = "operator"
     notes: Optional[str] = None
+
+class AssetRevisionCreate(BaseModel):
+    content: str
+    change_reason: Optional[str] = None
+    actor: Optional[str] = "operator"
+
+class RevisionReviewUpdate(BaseModel):
+    action: str # APPROVE | REJECT
+    reviewer: Optional[str] = "operator"
+    notes: Optional[str] = None
+
+class AssetRevisionResponse(BaseModel):
+    id: int
+    asset_id: int
+    revision_number: int
+    status: str # CANDIDATE | APPROVED | REJECTED | ARCHIVED
+    content: str
+    source_hash: Optional[str] = None
+    content_hash: str
+    created_by: Optional[str] = None
+    created_at: datetime
+    approved_by: Optional[str] = None
+    approved_at: Optional[datetime] = None
+    supersedes_revision_id: Optional[int] = None
+    superseded_by_revision_id: Optional[int] = None
+    change_reason: Optional[str] = None
+    class Config:
+        from_attributes = True
 
 class BenchmarkQuestionBase(BaseModel):
     question: str

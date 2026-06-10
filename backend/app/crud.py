@@ -165,8 +165,23 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
         return None
     
     update_data = update.dict(exclude_unset=True)
+
+    # Core revision rule: approved content is never edited in place.
+    # A content edit on an APPROVED asset becomes a CANDIDATE revision;
+    # the asset row keeps serving the active approved revision.
+    if (asset.status == "APPROVED"
+            and "content" in update_data
+            and update_data["content"] != asset.content
+            and update_data.get("status", "APPROVED") == "APPROVED"):
+        from app import revisions
+        new_content = update_data.pop("content")
+        revisions.create_candidate_revision(
+            session, asset.id, new_content, actor=actor,
+            change_reason="Edited via asset update"
+        )
+
     status_change = None
-    
+
     for key, value in update_data.items():
         if key == "status" and value != asset.status:
             status_change = (asset.status, value)
@@ -184,6 +199,10 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
             # approver provenance instead of fabricated defaults.
             session.add(db.AssetReview(asset_id=asset.id, approver=actor, notes=f"Approved (status changed from {old_st})"))
             session.commit()
+            # Lazy revision adoption: first approval creates revision 1
+            # from the asset's current state.
+            from app import revisions
+            revisions.ensure_baseline_revision(session, asset, actor=actor)
         if asset.document_id:
             update_document_lifecycle(session, asset.document_id)
     else:

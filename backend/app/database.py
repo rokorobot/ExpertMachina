@@ -76,6 +76,46 @@ class KnowledgeAsset(Base):
 
     reviews = relationship("AssetReview", back_populates="asset", cascade="all, delete-orphan")
     quality_scores = relationship("QualityScore", back_populates="asset", cascade="all, delete-orphan")
+    revisions = relationship("AssetRevision", back_populates="asset", cascade="all, delete-orphan")
+
+    # Revision projection helpers: the asset row always mirrors the active
+    # approved revision; these expose revision state to API responses.
+    @property
+    def revision_count(self):
+        return len(self.revisions)
+
+    @property
+    def active_revision_number(self):
+        approved = [r.revision_number for r in self.revisions if r.status == "APPROVED"]
+        return max(approved) if approved else None
+
+    @property
+    def has_pending_revision(self):
+        return any(r.status == "CANDIDATE" for r in self.revisions)
+
+
+class AssetRevision(Base):
+    """Immutable content/version records (MVP 0.7 Sprint 4). The parent
+    knowledge_assets row is the stable logical identity; approved content is
+    never edited in place - edits create a new CANDIDATE revision here.
+    A superseded revision is ARCHIVED with superseded_by_revision_id set."""
+    __tablename__ = "asset_revisions"
+    id = Column(Integer, primary_key=True, index=True)
+    asset_id = Column(Integer, ForeignKey("knowledge_assets.id"), nullable=False)
+    revision_number = Column(Integer, nullable=False)
+    status = Column(String, default="CANDIDATE") # CANDIDATE | APPROVED | REJECTED | ARCHIVED
+    content = Column(Text, nullable=False)
+    source_hash = Column(String, nullable=True) # chunk provenance hash at revision time
+    content_hash = Column(String, nullable=False) # sha256 of this revision's content
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    approved_by = Column(String, nullable=True)
+    approved_at = Column(DateTime, nullable=True)
+    supersedes_revision_id = Column(Integer, ForeignKey("asset_revisions.id"), nullable=True)
+    superseded_by_revision_id = Column(Integer, ForeignKey("asset_revisions.id"), nullable=True)
+    change_reason = Column(Text, nullable=True)
+
+    asset = relationship("KnowledgeAsset", back_populates="revisions")
 
 class AssetReview(Base):
     __tablename__ = "asset_reviews"
