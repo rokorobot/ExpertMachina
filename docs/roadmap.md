@@ -7,6 +7,9 @@
 | MVP 0.2 | Governance & Lifecycle Control | ✅ Completed |
 | MVP 0.3 | Evidence-Backed Ask Expert Console | ✅ Completed |
 | MVP 0.4 | Expert Model Evaluation & Trust Scorecards | 🔄 In Progress |
+| MVP 0.5 | Integrity Fixes | ✅ Completed |
+| MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | 🔄 Nearly Complete |
+| MVP 0.7 | Knowledge QA | 📋 Planned |
 
 ---
 
@@ -79,8 +82,50 @@ The objective: make trust in an Expert Model *measurable*. Operators define benc
 
 ---
 
-## Future Direction (Post 0.4)
+## MVP 0.5 — Integrity Fixes (Completed)
 
-- **Agent Consumption API** — a hardened, read-only endpoint surface designed for autonomous agent consumption of compiled packages, with per-agent access controls.
+Knowledge-base audit integrity hardening, prerequisite to any agent-facing surface:
+
+- **Honest provenance** — removed all fabricated citation fallbacks (default approver identities, placeholder hashes, backfilled pages/sections). Missing provenance is reported as `null`, never invented.
+- **Approval recording at source** — approving an asset (single or bulk) now writes a real `AssetReview` row with the actual approver and timestamp, so citations carry recorded provenance.
+- **Access-level enforcement** — the query engine enforces the asset `access_level` tier (`PUBLIC` < `INTERNAL` < `RESTRICTED` < `EXECUTIVE`) against the caller's clearance. Blocked asset IDs are recorded in the retrieval audit log.
+- **Verifier identity in the audit ledger** — every verification verdict records the method, model ID, engine version, and thresholds that produced it.
+- **Transparent fallback** — keyword overlap survives only as a clearly labeled zero-dependency fallback (`verifier.method = KEYWORD_OVERLAP`).
+
+---
+
+## MVP 0.6 — Semantic Verification: Knowledge Integrity Engine (Nearly Complete)
+
+Replaces lexical claim matching with semantic entailment. Shipped:
+
+- `verification_engine.py` — local NLI cross-encoder, CPU, no API key required.
+- **Multilingual by default** (`mDeBERTa-v3 XNLI`), validated on English, Czech, and cross-lingual (English evidence / Czech claim) pairs. English-optimized mode available via `EM_NLI_MODEL_ID`.
+- Embeddings used **only** for candidate evidence retrieval (top-k pre-filter), never as a verification verdict — bi-encoders are blind to negation.
+- Three-way verdicts per claim: `ENTAILED` / `UNSUPPORTED` (neutral) / `CONTRADICTED`, each with the model probability as a confidence score.
+- `CONTRADICTED` is a **hard fail**: blocks the answer regardless of coverage score.
+- Labeled verification benchmark dataset (verbatim, paraphrase, negation, semantic inversion, neutral, cross-lingual cases).
+
+Remaining:
+
+- **Atomic claim decomposition** — replace regex sentence splitting so compound policy sentences are verified claim-by-claim.
+- Pin and record the model weight hash (not just the model ID) in the verifier identity.
+
+---
+
+## MVP 0.7 — Knowledge QA (Planned)
+
+Contradiction detection applied to the knowledge base itself — NLI as knowledge-base QA, not just answer validation:
+
+- **Pairwise contradiction checks across approved assets** within an Expert Model: `Asset A: data deleted after 30 days` vs `Asset B: data retained indefinitely` → `conflicts_with`.
+- **Surface conflicts before model publication** — flag `stale_policy_candidate` / `requires_operator_review` at approval and compile time, not at query time.
+- **Semantic `conflict_score`** — replace the heuristic quality-engine score with NLI-based contradiction evidence.
+- **Asset revision workflow** — editing an approved asset creates a new `CANDIDATE` revision that supersedes the original through re-review, preserving immutable history.
+
+---
+
+## Future Direction (Post 0.7 / Phase 2)
+
+- **Agent Consumption API** — a hardened, read-only endpoint surface (MCP) for autonomous agent consumption of compiled packages, with per-agent access controls. Deliberately deferred until the knowledge compilation pipeline is trustworthy.
+- **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
 - **Knowledge freshness policies** — expiry and re-review schedules per asset class.
 - **Multi-operator roles** — reviewer / approver separation of duties.
