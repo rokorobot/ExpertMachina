@@ -123,9 +123,15 @@ Contradiction detection applied to the knowledge base itself — the Knowledge I
 - **Cross-lingual conflict detection verified**: a Czech deletion policy contradicting an English retention policy is detected at 0.999.
 - API: `POST /api/experts/{id}/conflict-scan`, `GET /api/experts/{id}/conflicts`, `PATCH /api/conflicts/{id}`.
 
-### Sprint 2 — Conflict Review Workbench (Next)
+### Sprint 2 — Conflict Review Workbench (Completed)
 
-Operator-facing Conflicts tab per Expert Model: conflict pairs with classification, confidence, evidence excerpts, and confirm/dismiss actions.
+Operator-facing **Knowledge Conflicts** tab in the dashboard:
+
+- Expert Model selector with on-demand conflict scan and live summary chips (assets, pairs, conflicts, supports), including NLI-unavailable and dropped-pairs warnings.
+- Conflict cards grouped by classification, each showing the relationship, classification badge, confidence, status, and both assets' evidence excerpts with deep links to the source assets.
+- Confirm / dismiss actions with an **operator decision reason** captured inline — the reason is stored on the relationship and recorded in the audit ledger, turning each review into an audit artifact.
+- Status filters (ALL / DETECTED / CONFIRMED / DISMISSED) with live counts; a sidebar badge shows unreviewed conflict count.
+- Verified end-to-end against a live scan: a confirmed conflict shows reviewer, timestamp, and reason; dismissed conflicts survive rescans.
 
 ### Sprint 3 — Semantic `conflict_score`
 

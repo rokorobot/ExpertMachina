@@ -1,24 +1,20 @@
 'use client';
 
 import React, { useEffect, useState, useRef } from 'react';
-import { 
-  LayoutDashboard, 
-  FileText, 
-  Database, 
-  ShieldCheck, 
-  FileCode, 
-  History, 
-  Upload, 
-  Plus, 
+import {
+  LayoutDashboard,
+  FileText,
+  Database,
+  ShieldCheck,
+  History,
+  Upload,
+  Plus,
   Folder,
-  CheckCircle2, 
-  XCircle, 
-  AlertCircle, 
+  CheckCircle2,
+  XCircle,
+  AlertCircle,
   ArrowRight,
-  User,
-  Settings,
   HelpCircle,
-  FileCode2,
   Trash2,
   Sparkles,
   Info,
@@ -28,9 +24,42 @@ import {
   FileCheck,
   MessageSquare,
   Send,
-  AlertTriangle
+  AlertTriangle,
+  ShieldAlert,
+  Scale,
+  ExternalLink
 } from 'lucide-react';
-import { useAppStore, KnowledgeAsset, Document, ExpertModel } from '../store';
+import { useAppStore } from '../store';
+
+interface ConsoleCitation {
+  asset_id: string;
+  name: string;
+  content: string;
+  source_document: string;
+  source_page: number;
+  source_section: string;
+  source_hash: string;
+  asset_status: string;
+  approved_by: string;
+  approved_at: string;
+}
+
+interface ConsoleResult {
+  answer: string;
+  confidence_score: number;
+  coverage_score: number;
+  verification_status: 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'INSUFFICIENT_EVIDENCE';
+  citations: ConsoleCitation[];
+}
+
+interface ConsoleHistoryEntry {
+  question: string;
+  expert_model: string;
+  verification_status: ConsoleResult['verification_status'];
+  coverage_score: number;
+  confidence_score: number;
+  timestamp: string;
+}
 
 export default function Home() {
   const {
@@ -56,10 +85,16 @@ export default function Home() {
     createAgentPackage,
     fetchAuditTrail,
     deleteAsset,
-    deleteDocumentAssets
+    deleteDocumentAssets,
+    conflicts,
+    conflictScanSummary,
+    conflictScanLoading,
+    fetchConflicts,
+    runConflictScan,
+    reviewConflict
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'conflicts' | 'audit' | 'console'>('dashboard');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -86,14 +121,26 @@ export default function Home() {
   const [consoleQuestion, setConsoleQuestion] = useState('');
   const [consoleLoading, setConsoleLoading] = useState(false);
   const [consoleStep, setConsoleStep] = useState('');
-  const [consoleResponse, setConsoleResponse] = useState<{
-    answer: string;
-    confidence_score: number;
-    coverage_score: number;
-    verification_status: 'VERIFIED' | 'PARTIALLY_VERIFIED' | 'INSUFFICIENT_EVIDENCE';
-    citations: any[];
-  } | null>(null);
-  const [consoleHistory, setConsoleHistory] = useState<any[]>([]);
+  const [consoleResponse, setConsoleResponse] = useState<ConsoleResult | null>(null);
+  const [consoleHistory, setConsoleHistory] = useState<ConsoleHistoryEntry[]>([]);
+
+  // Conflict Review Workbench state
+  const [conflictModelId, setConflictModelId] = useState<number | null>(null);
+  const [conflictStatusFilter, setConflictStatusFilter] = useState<'ALL' | 'DETECTED' | 'CONFIRMED' | 'DISMISSED'>('ALL');
+  const [conflictReview, setConflictReview] = useState<{ id: number; action: 'CONFIRMED' | 'DISMISSED' } | null>(null);
+  const [conflictReviewReason, setConflictReviewReason] = useState('');
+
+  useEffect(() => {
+    if (activeTab === 'conflicts' && experts.length > 0 && conflictModelId === null) {
+      setConflictModelId(experts[0].id);
+    }
+  }, [activeTab, experts]);
+
+  useEffect(() => {
+    if (activeTab === 'conflicts' && conflictModelId !== null) {
+      fetchConflicts(conflictModelId);
+    }
+  }, [activeTab, conflictModelId]);
 
   // Pre-fill model selection when entering console
   useEffect(() => {
@@ -128,7 +175,7 @@ export default function Home() {
         
         // Mocking logic
         const q = consoleQuestion.toLowerCase();
-        let mockResult: any = {
+        let mockResult: ConsoleResult = {
           answer: "INSUFFICIENT EVIDENCE",
           confidence_score: 0.38,
           coverage_score: 0.42,
@@ -460,6 +507,23 @@ export default function Home() {
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Experts & Packages</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('conflicts')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'conflicts'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <ShieldAlert className="w-4 h-4" />
+              <span>Knowledge Conflicts</span>
+              {conflicts.filter(c => c.status === 'DETECTED' && c.relationship_type === 'CONFLICTS_WITH').length > 0 && (
+                <span className="ml-auto bg-rose-950/40 text-[10px] text-rose-400 font-mono px-2 py-0.5 rounded-full border border-rose-900/40">
+                  {conflicts.filter(c => c.status === 'DETECTED' && c.relationship_type === 'CONFLICTS_WITH').length}
+                </span>
+              )}
             </button>
 
             <button
@@ -885,7 +949,7 @@ export default function Home() {
 
                         let entries = Object.entries(grouped);
                         if (selectedDocFilterId !== null) {
-                          entries = entries.filter(([_, group]) => group.docId === selectedDocFilterId);
+                          entries = entries.filter(([, group]) => group.docId === selectedDocFilterId);
                         }
 
                         if (entries.length === 0 && selectedDocFilterId !== null) {
@@ -894,7 +958,7 @@ export default function Home() {
                               <AlertCircle className="w-12 h-12 text-yellow-500 mx-auto" />
                               <h3 className="font-bold text-sm text-slate-350">No assets extracted from this document yet.</h3>
                               <p className="text-xs text-slate-500 max-w-sm mx-auto">
-                                This document has been ingested but assets have not been extracted yet. Click the "Extract Assets" button in the Document Inventory to generate them.
+                                This document has been ingested but assets have not been extracted yet. Click the &quot;Extract Assets&quot; button in the Document Inventory to generate them.
                               </p>
                               <button
                                 onClick={() => {
@@ -1086,7 +1150,7 @@ export default function Home() {
                                       </div>
 
                                       <div className="bg-slate-950/50 border border-slate-900 rounded p-3 text-xs leading-relaxed text-slate-300 font-mono italic">
-                                        "{asset.content}"
+                                        &quot;{asset.content}&quot;
                                       </div>
 
                                       <div className="space-y-3.5 border-t border-slate-900/60 pt-3">
@@ -1375,10 +1439,10 @@ export default function Home() {
                       ) : (
                         <div className="space-y-4 max-h-96 overflow-y-auto pr-2">
                           {packages.map((pkg) => {
-                            let assetRefs = [];
+                            let assetRefs: { type: string; name: string; access_level: string }[] = [];
                             try {
                               assetRefs = JSON.parse(pkg.asset_references || '[]');
-                            } catch (e) {}
+                            } catch {}
 
                             return (
                               <div key={pkg.id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-3">
@@ -1396,7 +1460,7 @@ export default function Home() {
                                 <div className="border-t border-slate-900/60 pt-2 space-y-1">
                                   <span className="text-[9px] text-slate-500 block uppercase font-mono tracking-wider">Governed Knowledge Contents ({assetRefs.length} assets)</span>
                                   <div className="space-y-1">
-                                    {assetRefs.map((ref: any, idx: number) => (
+                                    {assetRefs.map((ref, idx) => (
                                       <div key={idx} className="flex justify-between text-[9px] font-mono bg-slate-900/80 p-1 px-2 rounded text-slate-400">
                                         <span className="truncate max-w-[200px]">[{ref.type}] {ref.name}</span>
                                         <span className="text-cyan-400 font-semibold">{ref.access_level}</span>
@@ -1412,6 +1476,313 @@ export default function Home() {
                     </div>
                   </div>
 
+                </div>
+              )}
+
+              {/* TAB: KNOWLEDGE CONFLICTS (Conflict Review Workbench) */}
+              {activeTab === 'conflicts' && (
+                <div className="space-y-6">
+
+                  {/* SCAN CONTROL BAR */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <ShieldAlert className="w-4 h-4 text-rose-400" />
+                      Conflict Review Workbench
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Semantic contradiction detection across approved assets — before agent consumption
+                      </span>
+                    </h3>
+
+                    {experts.length === 0 ? (
+                      <div className="text-center py-10 text-xs text-slate-500 italic">
+                        No Expert Models available. Build a model in Experts &amp; Packages first.
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-end gap-4">
+                        <div className="flex-1 min-w-[220px]">
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Expert Model</label>
+                          <select
+                            value={conflictModelId ?? ''}
+                            onChange={(e) => setConflictModelId(Number(e.target.value))}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200"
+                          >
+                            {experts.map((m) => (
+                              <option key={m.id} value={m.id}>EM-{m.id} — {m.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button
+                          onClick={() => conflictModelId !== null && runConflictScan(conflictModelId)}
+                          disabled={conflictScanLoading || conflictModelId === null}
+                          className="py-2 px-5 bg-gradient-to-r from-rose-500 to-rose-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40 flex items-center gap-2"
+                        >
+                          <Scale className="w-3.5 h-3.5" />
+                          {conflictScanLoading ? 'Scanning Pairs…' : 'Run Conflict Scan'}
+                        </button>
+
+                        {conflictScanSummary && conflictScanSummary.expert_model_id === conflictModelId && (
+                          <div className="flex gap-2 font-mono text-[10px]">
+                            <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1.5 text-center">
+                              <span className="text-slate-500 block text-[8px] uppercase">Assets</span>
+                              <span className="text-slate-200 font-bold">{conflictScanSummary.scanned_assets}</span>
+                            </div>
+                            <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1.5 text-center">
+                              <span className="text-slate-500 block text-[8px] uppercase">Pairs</span>
+                              <span className="text-cyan-400 font-bold">{conflictScanSummary.compared_pairs}</span>
+                            </div>
+                            <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1.5 text-center">
+                              <span className="text-slate-500 block text-[8px] uppercase">Conflicts</span>
+                              <span className="text-rose-400 font-bold">{conflictScanSummary.conflicts_found}</span>
+                            </div>
+                            <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1.5 text-center">
+                              <span className="text-slate-500 block text-[8px] uppercase">Supports</span>
+                              <span className="text-emerald-400 font-bold">{conflictScanSummary.supports_found}</span>
+                            </div>
+                            {!conflictScanSummary.nli_available && (
+                              <div className="bg-yellow-950/30 border border-yellow-900/40 rounded px-3 py-1.5 text-yellow-400 flex items-center">
+                                NLI engine unavailable
+                              </div>
+                            )}
+                            {conflictScanSummary.dropped_pairs > 0 && (
+                              <div className="bg-yellow-950/30 border border-yellow-900/40 rounded px-3 py-1.5 text-yellow-400 flex items-center">
+                                {conflictScanSummary.dropped_pairs} low-similarity pairs not scanned
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    {/* STATUS FILTERS */}
+                    <div className="flex gap-2 pt-1">
+                      {(['ALL', 'DETECTED', 'CONFIRMED', 'DISMISSED'] as const).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setConflictStatusFilter(f)}
+                          className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                            conflictStatusFilter === f
+                              ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800'
+                              : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                          }`}
+                        >
+                          {f}{f !== 'ALL' && ` (${conflicts.filter(c => c.status === f).length})`}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* CONFLICT CARDS GROUPED BY CLASSIFICATION */}
+                  {(() => {
+                    const visible = conflicts.filter(c =>
+                      conflictStatusFilter === 'ALL' || c.status === conflictStatusFilter
+                    );
+                    const conflictRels = visible.filter(c => c.relationship_type === 'CONFLICTS_WITH');
+                    const supportRels = visible.filter(c => c.relationship_type === 'SUPPORTS');
+                    const assetById = (id: number) => assets.find(a => a.id === id);
+
+                    const CLASS_STYLES: Record<string, { label: string; badge: string }> = {
+                      DIRECT_CONTRADICTION: { label: 'Direct Contradiction', badge: 'bg-rose-950/40 text-rose-400 border-rose-900/50' },
+                      TEMPORAL_SUPERSESSION: { label: 'Temporal Supersession', badge: 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50' },
+                      SCOPE_CONFLICT: { label: 'Scope Conflict', badge: 'bg-cyan-950/40 text-cyan-400 border-cyan-900/50' },
+                      ACCESS_CONFLICT: { label: 'Access Conflict', badge: 'bg-purple-950/40 text-purple-400 border-purple-900/50' },
+                    };
+
+                    const groups = Object.keys(CLASS_STYLES)
+                      .map(key => ({ key, items: conflictRels.filter(c => c.classification === key) }))
+                      .filter(g => g.items.length > 0);
+
+                    if (conflictRels.length === 0 && supportRels.length === 0) {
+                      return (
+                        <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                          No relationships {conflictStatusFilter !== 'ALL' ? `with status ${conflictStatusFilter} ` : ''}for this Expert Model.
+                          Run a conflict scan to analyze approved assets pairwise.
+                        </div>
+                      );
+                    }
+
+                    const renderEvidence = (assetId: number) => {
+                      const asset = assetById(assetId);
+                      return (
+                        <div className="bg-slate-950/60 border border-slate-900 rounded p-3 space-y-1.5 flex-1 min-w-0">
+                          <div className="flex justify-between items-center gap-2">
+                            <span className="text-[10px] font-mono text-cyan-400 truncate">
+                              [{asset?.type || 'ASSET'}] {asset?.name || `Asset #${assetId}`}
+                            </span>
+                            <button
+                              onClick={() => {
+                                if (asset) {
+                                  setSelectedDocFilterId(asset.document_id);
+                                  setActiveTab('assets');
+                                }
+                              }}
+                              title="Open source asset"
+                              className="text-slate-500 hover:text-cyan-400 transition-colors shrink-0"
+                            >
+                              <ExternalLink className="w-3 h-3" />
+                            </button>
+                          </div>
+                          <p className="text-xs text-slate-300 font-mono italic leading-relaxed">
+                            &quot;{asset?.content || 'Asset content unavailable (asset may have been deleted).'}&quot;
+                          </p>
+                          {asset && (
+                            <span className="text-[9px] font-mono text-slate-500 block">
+                              Access: {asset.access_level} · Page {asset.source_page} · {asset.source_section}
+                            </span>
+                          )}
+                        </div>
+                      );
+                    };
+
+                    const renderCard = (rel: typeof conflicts[number], isConflict: boolean) => (
+                      <div
+                        key={rel.id}
+                        className={`glass-panel rounded-xl p-5 space-y-4 border-l-4 ${
+                          rel.status === 'DISMISSED' ? 'opacity-55 border-l-slate-600' :
+                          rel.status === 'CONFIRMED' ? (isConflict ? 'border-l-rose-500' : 'border-l-emerald-500') :
+                          isConflict ? 'border-l-rose-500/70' : 'border-l-emerald-500/70'
+                        }`}
+                      >
+                        <div className="flex flex-wrap justify-between items-center gap-2">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <span className="text-[10px] font-mono text-slate-300">
+                              Asset #{rel.source_asset_id}
+                            </span>
+                            <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded ${
+                              isConflict ? 'bg-rose-950/40 text-rose-400' : 'bg-emerald-950/40 text-emerald-400'
+                            }`}>
+                              {rel.relationship_type === 'CONFLICTS_WITH' ? 'conflicts_with' : 'supports'}
+                            </span>
+                            <span className="text-[10px] font-mono text-slate-300">
+                              Asset #{rel.target_asset_id}
+                            </span>
+                            {isConflict && rel.classification && (
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${CLASS_STYLES[rel.classification]?.badge || 'bg-slate-900 text-slate-400 border-slate-800'}`}>
+                                {CLASS_STYLES[rel.classification]?.label || rel.classification}
+                              </span>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 font-mono text-[10px]">
+                            <span className="text-slate-500">Confidence:</span>
+                            <span className={`font-bold ${rel.confidence >= 0.95 ? 'text-rose-400' : 'text-yellow-400'}`}>
+                              {rel.confidence.toFixed(3)}
+                            </span>
+                            <span className={`px-2 py-0.5 rounded-full ${
+                              rel.status === 'CONFIRMED' ? 'bg-rose-950/40 text-rose-400' :
+                              rel.status === 'DISMISSED' ? 'bg-slate-900 text-slate-500' :
+                              'bg-yellow-950/40 text-yellow-400'
+                            }`}>
+                              {rel.status}
+                            </span>
+                          </div>
+                        </div>
+
+                        <div className="flex flex-col md:flex-row gap-3 items-stretch">
+                          {renderEvidence(rel.source_asset_id)}
+                          <div className="flex items-center justify-center shrink-0">
+                            {isConflict
+                              ? <AlertTriangle className="w-4 h-4 text-rose-500" />
+                              : <ArrowRight className="w-4 h-4 text-emerald-500" />}
+                          </div>
+                          {renderEvidence(rel.target_asset_id)}
+                        </div>
+
+                        {rel.status !== 'DETECTED' && (
+                          <div className="bg-slate-950/40 border border-slate-900/60 rounded p-2.5 text-[10px] font-mono text-slate-400">
+                            <span className="text-slate-500 uppercase">Reviewed by</span> <span className="text-cyan-400">{rel.reviewed_by}</span>
+                            {rel.reviewed_at && <span className="text-slate-500"> · {new Date(rel.reviewed_at).toLocaleString()}</span>}
+                            {rel.notes && (
+                              <p className="text-slate-300 italic mt-1 font-sans">Reason: {rel.notes}</p>
+                            )}
+                          </div>
+                        )}
+
+                        {rel.status === 'DETECTED' && isConflict && (
+                          conflictReview?.id === rel.id ? (
+                            <div className="space-y-2 border-t border-slate-900/60 pt-3">
+                              <label className="block text-[10px] text-slate-400 font-mono uppercase">
+                                Decision reason — recorded in the audit ledger ({conflictReview.action === 'CONFIRMED' ? 'confirming conflict' : 'dismissing as contextual'})
+                              </label>
+                              <textarea
+                                rows={2}
+                                autoFocus
+                                placeholder="e.g. Different departments; manufacturing SOP does not apply to clinical operations."
+                                value={conflictReviewReason}
+                                onChange={(e) => setConflictReviewReason(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                              />
+                              <div className="flex gap-2">
+                                <button
+                                  onClick={async () => {
+                                    if (conflictModelId !== null) {
+                                      await reviewConflict(rel.id, conflictReview.action, conflictReviewReason.trim() || null, conflictModelId);
+                                      setConflictReview(null);
+                                      setConflictReviewReason('');
+                                    }
+                                  }}
+                                  className={`text-[10px] font-mono font-bold px-3 py-1.5 rounded uppercase tracking-wider ${
+                                    conflictReview.action === 'CONFIRMED'
+                                      ? 'bg-rose-500 text-slate-950'
+                                      : 'bg-slate-700 text-slate-100'
+                                  }`}
+                                >
+                                  {conflictReview.action === 'CONFIRMED' ? 'Record Confirmation' : 'Record Dismissal'}
+                                </button>
+                                <button
+                                  onClick={() => { setConflictReview(null); setConflictReviewReason(''); }}
+                                  className="text-[10px] font-mono text-slate-500 hover:text-slate-300 px-3 py-1.5"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex gap-2 border-t border-slate-900/60 pt-3">
+                              <button
+                                onClick={() => { setConflictReview({ id: rel.id, action: 'CONFIRMED' }); setConflictReviewReason(''); }}
+                                className="text-[10px] text-rose-400 hover:text-rose-300 font-mono flex items-center gap-1.5 bg-rose-950/20 px-3 py-1.5 rounded border border-rose-900/30 transition-colors"
+                              >
+                                <AlertTriangle className="w-3 h-3" /> Confirm Conflict
+                              </button>
+                              <button
+                                onClick={() => { setConflictReview({ id: rel.id, action: 'DISMISSED' }); setConflictReviewReason(''); }}
+                                className="text-[10px] text-slate-400 hover:text-slate-200 font-mono flex items-center gap-1.5 bg-slate-900/40 px-3 py-1.5 rounded border border-slate-800 transition-colors"
+                              >
+                                <XCircle className="w-3 h-3" /> Dismiss as Contextual
+                              </button>
+                            </div>
+                          )
+                        )}
+                      </div>
+                    );
+
+                    return (
+                      <div className="space-y-6">
+                        {groups.map(group => (
+                          <div key={group.key} className="space-y-3">
+                            <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${CLASS_STYLES[group.key].badge}`}>
+                                {CLASS_STYLES[group.key].label}
+                              </span>
+                              <span className="text-slate-500 font-mono text-[10px]">{group.items.length} pair{group.items.length > 1 ? 's' : ''}</span>
+                            </h4>
+                            {group.items.map(rel => renderCard(rel, true))}
+                          </div>
+                        ))}
+
+                        {supportRels.length > 0 && (
+                          <div className="space-y-3 pt-2">
+                            <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-emerald-950/40 text-emerald-400 border-emerald-900/50">
+                                Supporting Relationships
+                              </span>
+                              <span className="text-slate-500 font-mono text-[10px]">{supportRels.length} pair{supportRels.length > 1 ? 's' : ''}</span>
+                            </h4>
+                            {supportRels.map(rel => renderCard(rel, false))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 
@@ -1678,7 +2049,7 @@ export default function Home() {
                                         </div>
 
                                         <p className="text-[11px] text-slate-400 italic font-mono bg-slate-950/30 p-2 rounded">
-                                          "{cite.content}"
+                                          &quot;{cite.content}&quot;
                                         </p>
 
                                         <div className="grid grid-cols-2 gap-2 border-t border-slate-900/80 pt-2 text-[9px] font-mono text-slate-500">

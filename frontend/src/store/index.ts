@@ -2,7 +2,7 @@ import { create } from 'zustand';
 
 export interface Project {
   id: number;
-  name: str;
+  name: string;
   description: string;
   customer_id: number;
   status: string;
@@ -86,6 +86,33 @@ export interface AgentPackage {
   created_at: string;
 }
 
+export interface AssetRelationship {
+  id: number;
+  project_id: number;
+  expert_model_id: number;
+  source_asset_id: number;
+  target_asset_id: number;
+  relationship_type: string; // CONFLICTS_WITH | SUPPORTS | RELATED
+  classification: string | null; // DIRECT_CONTRADICTION | TEMPORAL_SUPERSESSION | SCOPE_CONFLICT | ACCESS_CONFLICT
+  confidence: number;
+  status: string; // DETECTED | CONFIRMED | DISMISSED
+  detected_at: string;
+  reviewed_by: string | null;
+  reviewed_at: string | null;
+  notes: string | null;
+  verifier: Record<string, unknown> | null;
+}
+
+export interface ConflictScanSummary {
+  expert_model_id: number;
+  scanned_assets: number;
+  compared_pairs: number;
+  dropped_pairs: number;
+  nli_available: boolean;
+  conflicts_found: number;
+  supports_found: number;
+}
+
 export interface AuditEvent {
   id: number;
   timestamp: string;
@@ -137,6 +164,13 @@ interface AppState {
   fetchAuditTrail: () => Promise<void>;
   deleteAsset: (assetId: number) => Promise<void>;
   deleteDocumentAssets: (documentId: number, status?: string) => Promise<void>;
+
+  conflicts: AssetRelationship[];
+  conflictScanSummary: ConflictScanSummary | null;
+  conflictScanLoading: boolean;
+  fetchConflicts: (expertModelId: number) => Promise<void>;
+  runConflictScan: (expertModelId: number) => Promise<void>;
+  reviewConflict: (relationshipId: number, status: string, notes: string | null, expertModelId: number) => Promise<void>;
 }
 
 const API_BASE = 'http://localhost:8000/api';
@@ -165,8 +199,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (data.length > 0 && get().activeProjectId === null) {
         get().setActiveProject(data[0].id);
       }
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -185,8 +219,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to create workspace project');
       await get().fetchProjects();
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -210,8 +244,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       set({ documents, assets, experts, packages, stats, loading: false });
       get().fetchAuditTrail();
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -230,8 +264,8 @@ export const useAppStore = create<AppState>((set, get) => ({
 
       if (!res.ok) throw new Error('Failed to upload document');
       await get().fetchProjectData(projectId);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -243,8 +277,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to load batch demo documents');
       await get().fetchProjectData(projectId);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -256,8 +290,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to extract knowledge assets');
       await get().fetchProjectData(projectId);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -276,8 +310,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       // If notes are supplied, create review details
       // Simple mockup review post for MVP governance tracking
       await get().fetchProjectData(pid);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -293,8 +327,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to bulk update asset status');
       await get().fetchProjectData(pid);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -308,8 +342,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to build Expert Model');
       await get().fetchProjectData(projectId);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -323,8 +357,8 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to compile Agent Package');
       await get().fetchProjectData(projectId);
-    } catch (err: any) {
-      set({ error: err.message, loading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), loading: false });
     }
   },
 
@@ -354,9 +388,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to delete asset');
       await get().fetchProjectData(pid);
-    } catch (err: any) {
+    } catch (err) {
       // Rollback on error
-      set({ assets: currentAssets, error: err.message });
+      set({ assets: currentAssets, error: err instanceof Error ? err.message : String(err) });
     }
   },
 
@@ -380,9 +414,55 @@ export const useAppStore = create<AppState>((set, get) => ({
       });
       if (!res.ok) throw new Error('Failed to delete document assets');
       await get().fetchProjectData(pid);
-    } catch (err: any) {
+    } catch (err) {
       // Rollback on error
-      set({ assets: currentAssets, error: err.message });
+      set({ assets: currentAssets, error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  conflicts: [],
+  conflictScanSummary: null,
+  conflictScanLoading: false,
+
+  fetchConflicts: async (expertModelId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/experts/${expertModelId}/conflicts`);
+      if (!res.ok) throw new Error('Failed to fetch conflict relationships');
+      const data = await res.json();
+      set({ conflicts: data });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  runConflictScan: async (expertModelId: number) => {
+    set({ conflictScanLoading: true, error: null });
+    try {
+      const res = await fetch(`${API_BASE}/experts/${expertModelId}/conflict-scan`, {
+        method: 'POST',
+      });
+      if (!res.ok) throw new Error('Conflict scan failed');
+      const summary = await res.json();
+      set({ conflictScanSummary: summary, conflictScanLoading: false });
+      await get().fetchConflicts(expertModelId);
+      get().fetchAuditTrail();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), conflictScanLoading: false });
+    }
+  },
+
+  reviewConflict: async (relationshipId: number, status: string, notes: string | null, expertModelId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/conflicts/${relationshipId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status, reviewer: 'GovernanceOfficer', notes }),
+      });
+      if (!res.ok) throw new Error('Failed to record conflict review');
+      await get().fetchConflicts(expertModelId);
+      get().fetchAuditTrail();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
   }
 }));
