@@ -1,10 +1,10 @@
 # ExpertMachina
 
-**Governed Knowledge Transformation Factory**
+**Knowledge Compiler & Integrity Platform**
 
-ExpertMachina transforms unstructured enterprise knowledge — documents, SOPs, policies, procedures, manuals — into governed, auditable, evidence-backed Expert Models that serve as the authoritative knowledge layer for AI agents.
+ExpertMachina compiles enterprise knowledge — documents, SOPs, policies, procedures, manuals — into **semantically verified, conflict-checked, revision-controlled** Expert Models that can be consumed safely by AI agents.
 
-ExpertMachina is not a chatbot, a document repository, or a traditional RAG system. It is a **Knowledge Governance Platform**: extracted knowledge is reviewed, approved, audited, and packaged before any AI system is allowed to consume it.
+ExpertMachina is not a chatbot, a document repository, or a traditional RAG system. Most knowledge systems help agents *find* information; ExpertMachina answers a harder question: **how do we know the knowledge itself is trustworthy before any agent uses it?** Extracted knowledge passes through semantic verification, conflict analysis, immutable revision governance, and publication gates before any AI system is allowed to consume it — and the governance semantics agents depend on (revision, conflict, provenance, trust, gate status, access level) are frozen, versioned contracts.
 
 ```text
 Company Knowledge
@@ -41,7 +41,8 @@ Only `APPROVED` assets may cross the governance boundary into Expert Models and 
 | Document | Contents |
 | :--- | :--- |
 | [Architecture](docs/architecture.md) | The layered pipeline: ingestion, indexing, extraction, governance boundary, query engine, packaging |
-| [Governance](docs/governance.md) | Document and asset lifecycle state machines, boundary rules, operator workflow controls |
+| [Governance Contract v1](docs/governance-contract-v1.md) | **Normative spec** of the frozen governance semantics: Access, Revision, Conflict Score, Compile Gate, Trust Score, Verified Answer — the contract the MCP gateway exposes |
+| [Governance](docs/governance.md) | Core governance principles, document and asset lifecycle state machines, boundary rules, operator workflow controls |
 | [Provenance](docs/provenance.md) | Knowledge chain of custody, trace metadata, formal integrity rules, answer citations |
 | [Assurance](docs/assurance.md) | Evidence validation, answer verification, coverage/confidence scoring, benchmark evaluation |
 | [Roadmap](docs/roadmap.md) | Completed milestones (MVP 0.2, 0.3) and current work (MVP 0.4 evaluation framework) |

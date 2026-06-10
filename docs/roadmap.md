@@ -213,7 +213,12 @@ A first-class hierarchical object (`trust-score-v1`), never a single opaque numb
 
 ## MVP 0.9 — Agent Gateway (MCP) (Planned)
 
-Expose the v1 governance core to agent consumers (Claude, Codex, Cursor, and other MCP clients): governed query tools, per-agent access tiers, package/version pinning. Once external consumers exist, backward compatibility, API stability, and permission models harden — hence sequenced after governance enforcement is complete.
+Expose the v1 governance core to agent consumers (Claude, Codex, Cursor, and other MCP clients) as a **read-only** transport over the frozen contract — the gateway adds no semantics of its own.
+
+- **[Governance Contract v1](governance-contract-v1.md) written first** ✅ — the normative specification (Access, Revision, Conflict Score, Compile Gate, Trust Score, Verified Answer models plus the audit event registry) that becomes the public API surface.
+- Tier 1 tools: `ask_expert`, `get_trust_score`, `check_gate_status`. Tier 2: `get_provenance`, `get_conflicts`, `get_revision_history`.
+- No write actions in 0.9: the governance core must be observable before it becomes agent-writable. Progression: read-only (0.9) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
+- Per-agent clearance under the Access Model; every gateway call audit-logged.
 
 ## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned)
 
