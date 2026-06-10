@@ -228,6 +228,21 @@ class ConflictScanResponse(BaseModel):
     conflicts_found: int
     supports_found: int
     relationships: List[AssetRelationshipResponse] = []
+    semantic_conflict_score: Optional[float] = None
+    semantic_conflict_summary: Optional[str] = None
+
+class ConflictScoreBreakdownItem(BaseModel):
+    status: str
+    classification: str
+    count: int
+    penalty: float
+
+class ConflictScoreResponse(BaseModel):
+    expert_model_id: int
+    semantic_conflict_score: float
+    semantic_conflict_summary: str
+    breakdown: List[ConflictScoreBreakdownItem] = []
+    score_version: str
 
 class ConflictReviewUpdate(BaseModel):
     status: str # CONFIRMED | DISMISSED

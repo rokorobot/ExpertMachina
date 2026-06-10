@@ -89,6 +89,7 @@ export default function Home() {
     conflicts,
     conflictScanSummary,
     conflictScanLoading,
+    conflictScore,
     fetchConflicts,
     runConflictScan,
     reviewConflict
@@ -1550,6 +1551,38 @@ export default function Home() {
                             )}
                           </div>
                         )}
+                      </div>
+                    )}
+
+                    {/* SEMANTIC CONFLICT SCORE — standalone metric, never averaged into quality */}
+                    {conflictScore && conflictScore.expert_model_id === conflictModelId && (
+                      <div className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 flex flex-wrap items-center gap-5">
+                        <div className="text-center">
+                          <span className={`text-3xl font-bold font-mono block ${
+                            conflictScore.semantic_conflict_score >= 90 ? 'text-emerald-400' :
+                            conflictScore.semantic_conflict_score >= 70 ? 'text-yellow-400' : 'text-rose-400'
+                          }`}>
+                            {conflictScore.semantic_conflict_score}
+                          </span>
+                          <span className="text-[9px] text-slate-500 font-mono uppercase tracking-wider">Semantic Conflict Score</span>
+                        </div>
+                        <div className="flex-1 min-w-[240px] space-y-1.5">
+                          <p className="text-xs text-slate-300">
+                            {conflictScore.semantic_conflict_summary}
+                          </p>
+                          {conflictScore.breakdown.length > 0 && (
+                            <div className="flex flex-wrap gap-1.5">
+                              {conflictScore.breakdown.map((b, i) => (
+                                <span key={i} className="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-900/80 border border-slate-800 text-slate-400">
+                                  {b.count}× {b.status.toLowerCase()} {b.classification.toLowerCase().replace(/_/g, ' ')} → −{b.penalty}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          <span className="text-[9px] text-slate-600 font-mono block italic">
+                            Standalone integrity metric ({conflictScore.score_version}) — reported separately from quality score, never silently averaged.
+                          </span>
+                        </div>
                       </div>
                     )}
 

@@ -111,6 +111,16 @@ export interface ConflictScanSummary {
   nli_available: boolean;
   conflicts_found: number;
   supports_found: number;
+  semantic_conflict_score: number | null;
+  semantic_conflict_summary: string | null;
+}
+
+export interface ConflictScore {
+  expert_model_id: number;
+  semantic_conflict_score: number;
+  semantic_conflict_summary: string;
+  breakdown: { status: string; classification: string; count: number; penalty: number }[];
+  score_version: string;
 }
 
 export interface AuditEvent {
@@ -168,6 +178,7 @@ interface AppState {
   conflicts: AssetRelationship[];
   conflictScanSummary: ConflictScanSummary | null;
   conflictScanLoading: boolean;
+  conflictScore: ConflictScore | null;
   fetchConflicts: (expertModelId: number) => Promise<void>;
   runConflictScan: (expertModelId: number) => Promise<void>;
   reviewConflict: (relationshipId: number, status: string, notes: string | null, expertModelId: number) => Promise<void>;
@@ -423,13 +434,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   conflicts: [],
   conflictScanSummary: null,
   conflictScanLoading: false,
+  conflictScore: null,
 
   fetchConflicts: async (expertModelId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/experts/${expertModelId}/conflicts`);
-      if (!res.ok) throw new Error('Failed to fetch conflict relationships');
-      const data = await res.json();
-      set({ conflicts: data });
+      const [relsRes, scoreRes] = await Promise.all([
+        fetch(`${API_BASE}/experts/${expertModelId}/conflicts`),
+        fetch(`${API_BASE}/experts/${expertModelId}/conflict-score`)
+      ]);
+      if (!relsRes.ok) throw new Error('Failed to fetch conflict relationships');
+      const conflicts = await relsRes.json();
+      const conflictScore = scoreRes.ok ? await scoreRes.json() : null;
+      set({ conflicts, conflictScore });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

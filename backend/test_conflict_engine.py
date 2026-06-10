@@ -155,6 +155,50 @@ def test_review_survives_rescan(session, model, conflict_rel):
     print("Part 3 passed: dismissed conflicts stay dismissed; review verdicts are audit-logged.")
 
 
+def test_semantic_conflict_score(session, model):
+    print("\n--- Part 4: Semantic conflict score (explainable, review-sensitive) ---")
+
+    # State after Part 3: 1 DISMISSED direct + re-detected direct, access, scope.
+    score = conflict_engine.compute_semantic_conflict_score(session, model.id)
+    # penalty = 10 (detected direct) + 8 (detected access) + 5 (detected scope) + 1 (dismissed direct x0.1) = 24
+    assert score["semantic_conflict_score"] == 76.0, \
+        f"Expected 76.0 after one dismissal, got {score['semantic_conflict_score']}"
+    assert "1 detected direct contradiction" in score["semantic_conflict_summary"]
+    assert "1 detected access conflict" in score["semantic_conflict_summary"]
+    assert "1 detected scope conflict" in score["semantic_conflict_summary"]
+    assert "1 dismissed direct contradiction" in score["semantic_conflict_summary"]
+    assert score["breakdown"], "Score breakdown missing"
+    print(f"  Score: {score['semantic_conflict_score']} | {score['semantic_conflict_summary']}")
+
+    # Confirming a conflict must penalize harder than mere detection.
+    detected_direct = session.query(db.AssetRelationship).filter(
+        db.AssetRelationship.expert_model_id == model.id,
+        db.AssetRelationship.relationship_type == "CONFLICTS_WITH",
+        db.AssetRelationship.classification == "DIRECT_CONTRADICTION",
+        db.AssetRelationship.status == "DETECTED"
+    ).first()
+    conflict_engine.review_relationship(session, detected_direct.id, status="CONFIRMED",
+                                        reviewer="governance_officer_01", notes="Genuine retention conflict.")
+    confirmed_score = conflict_engine.compute_semantic_conflict_score(session, model.id)
+    # penalty = 12 (confirmed direct x1.2) + 8 + 5 + 1 = 26
+    assert confirmed_score["semantic_conflict_score"] == 74.0, \
+        f"Expected 74.0 after confirmation, got {confirmed_score['semantic_conflict_score']}"
+    assert confirmed_score["semantic_conflict_score"] < score["semantic_conflict_score"], \
+        "Confirming a conflict must lower the score"
+    print(f"  Score after confirmation: {confirmed_score['semantic_conflict_score']} | {confirmed_score['semantic_conflict_summary']}")
+
+    # A model with no recorded conflicts scores a clean 100.
+    clean = crud.create_expert_model(
+        session,
+        schemas.ExpertModelCreate(name="Clean Expert", description="No conflicts", project_id=model.project_id, asset_ids=[])
+    )
+    clean_score = conflict_engine.compute_semantic_conflict_score(session, clean.id)
+    assert clean_score["semantic_conflict_score"] == 100.0
+    assert "No semantic conflicts" in clean_score["semantic_conflict_summary"]
+
+    print("Part 4 passed: score is explainable, punishes confirmation, and forgives dismissal.")
+
+
 if __name__ == "__main__":
     print("\nInitializing test database for Semantic Conflict Engine checks...")
     engine = create_engine("sqlite:///:memory:", connect_args={"check_same_thread": False})
@@ -172,5 +216,6 @@ if __name__ == "__main__":
     model, conflict_rel = test_conflict_scan(session, project)
     if model is not None:
         test_review_survives_rescan(session, model, conflict_rel)
+        test_semantic_conflict_score(session, model)
     session.close()
     print("\n=== All Semantic Conflict Engine tests passed successfully! ===")

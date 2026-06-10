@@ -133,9 +133,15 @@ Operator-facing **Knowledge Conflicts** tab in the dashboard:
 - Status filters (ALL / DETECTED / CONFIRMED / DISMISSED) with live counts; a sidebar badge shows unreviewed conflict count.
 - Verified end-to-end against a live scan: a confirmed conflict shows reviewer, timestamp, and reason; dismissed conflicts survive rescans.
 
-### Sprint 3 — Semantic `conflict_score`
+### Sprint 3 — Semantic Conflict Score (Completed)
 
-Replace the heuristic quality-engine score with weighted contradiction density over confirmed/detected conflicts, so the score reflects actual semantic evidence.
+`semantic_conflict_score = 100 − weighted penalty`, explainable and review-sensitive:
+
+- Penalty weights by classification (`DIRECT_CONTRADICTION` 10 > `ACCESS_CONFLICT` 8 > `SCOPE_CONFLICT` 5 > `TEMPORAL_SUPERSESSION` 3) and review status (`CONFIRMED` ×1.2 > `DETECTED` ×1.0 > `DISMISSED` ×0.1 — operator-contextualized conflicts are nearly free).
+- Two fields, never one magic number: `semantic_conflict_score` plus a `semantic_conflict_summary` reason string ("1 confirmed direct contradiction, 1 detected access conflict, …") and a full per-line penalty breakdown.
+- **Standalone metric**: displayed in the Conflict Review Workbench with its own panel, summary, and itemized penalty chips. It is *never* silently averaged into `quality_score`; combining into a broader Expert Model Trust Score is a future, explicit step.
+- Review-sensitive by construction: confirming a conflict lowers the score; dismissing one with a reason restores it. Verified live in the UI (78 → 87 on dismissal).
+- Exposed via `GET /api/experts/{id}/conflict-score`, included in scan summaries and the `CONFLICT_SCAN_COMPLETED` audit event, versioned as `conflict-score-v1`.
 
 ### Sprint 4 — Asset Revision Workflow
 

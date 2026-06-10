@@ -32,6 +32,84 @@ MAX_NLI_PAIRS = int(os.environ.get("EM_CONFLICT_MAX_PAIRS", "400"))
 CONFLICT_CONTRADICTION_THRESHOLD = float(os.environ.get("EM_CONFLICT_CONTRADICTION_THRESHOLD", "0.90"))
 CONFLICT_ENTAILMENT_THRESHOLD = float(os.environ.get("EM_CONFLICT_ENTAILMENT_THRESHOLD", "0.90"))
 
+# Semantic conflict score (MVP 0.7 Sprint 3): 100 - weighted penalty.
+# Penalties are per detected conflict pair, weighted by how severe the
+# classification is and how the operator has reviewed it. A dismissed
+# conflict is nearly free - the operator has already contextualized it.
+# This score is standalone: it is NEVER averaged into quality_score.
+SCORE_VERSION = "conflict-score-v1"
+CLASSIFICATION_PENALTIES = {
+    "DIRECT_CONTRADICTION": 10.0,
+    "ACCESS_CONFLICT": 8.0,
+    "SCOPE_CONFLICT": 5.0,
+    "TEMPORAL_SUPERSESSION": 3.0,
+}
+STATUS_MULTIPLIERS = {
+    "CONFIRMED": 1.2,
+    "DETECTED": 1.0,
+    "DISMISSED": 0.1,
+}
+_CLASS_LABELS = {
+    "DIRECT_CONTRADICTION": "direct contradiction",
+    "ACCESS_CONFLICT": "access conflict",
+    "SCOPE_CONFLICT": "scope conflict",
+    "TEMPORAL_SUPERSESSION": "temporal supersession",
+}
+
+
+def compute_semantic_conflict_score(session: Session, expert_model_id: int) -> dict:
+    """Explainable contradiction-density score for an Expert Model.
+    Returns the score, a human-readable reason, and the full penalty
+    breakdown so the number is never magic."""
+    conflicts = session.query(db.AssetRelationship).filter(
+        db.AssetRelationship.expert_model_id == expert_model_id,
+        db.AssetRelationship.relationship_type == "CONFLICTS_WITH"
+    ).all()
+
+    if not conflicts:
+        return {
+            "expert_model_id": expert_model_id,
+            "semantic_conflict_score": 100.0,
+            "semantic_conflict_summary": "No semantic conflicts detected across approved assets.",
+            "breakdown": [],
+            "score_version": SCORE_VERSION
+        }
+
+    counts = {}
+    for rel in conflicts:
+        key = (rel.status, rel.classification or "DIRECT_CONTRADICTION")
+        counts[key] = counts.get(key, 0) + 1
+
+    status_order = ["CONFIRMED", "DETECTED", "DISMISSED"]
+    class_order = list(CLASSIFICATION_PENALTIES)
+    breakdown = []
+    parts = []
+    total_penalty = 0.0
+    for status in status_order:
+        for classification in class_order:
+            count = counts.get((status, classification), 0)
+            if not count:
+                continue
+            penalty = round(count * CLASSIFICATION_PENALTIES[classification] * STATUS_MULTIPLIERS[status], 2)
+            total_penalty += penalty
+            breakdown.append({
+                "status": status,
+                "classification": classification,
+                "count": count,
+                "penalty": penalty
+            })
+            label = _CLASS_LABELS[classification]
+            parts.append(f"{count} {status.lower()} {label}{'s' if count > 1 else ''}")
+
+    score = max(0.0, round(100.0 - total_penalty, 1))
+    return {
+        "expert_model_id": expert_model_id,
+        "semantic_conflict_score": score,
+        "semantic_conflict_summary": ", ".join(parts) + ".",
+        "breakdown": breakdown,
+        "score_version": SCORE_VERSION
+    }
+
 
 def classify_conflict(session: Session, asset_a, asset_b) -> str:
     """Metadata-based conflict classification. Not every contradiction is a
@@ -98,11 +176,16 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
         "nli_available": False,
         "conflicts_found": 0,
         "supports_found": 0,
-        "relationships": []
+        "relationships": [],
+        "semantic_conflict_score": 100.0,
+        "semantic_conflict_summary": "No semantic conflicts detected across approved assets."
     }
 
     pipe = verification_engine.get_nli_pipeline()
     if pipe is None or len(assets) < 2:
+        score = compute_semantic_conflict_score(session, expert_model_id)
+        summary["semantic_conflict_score"] = score["semantic_conflict_score"]
+        summary["semantic_conflict_summary"] = score["semantic_conflict_summary"]
         return summary
     summary["nli_available"] = True
 
@@ -136,6 +219,9 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
         inputs.append({"text": a.content, "text_pair": b.content})
         inputs.append({"text": b.content, "text_pair": a.content})
     if not inputs:
+        score = compute_semantic_conflict_score(session, expert_model_id)
+        summary["semantic_conflict_score"] = score["semantic_conflict_score"]
+        summary["semantic_conflict_summary"] = score["semantic_conflict_summary"]
         return summary
 
     results = pipe(inputs, top_k=None, truncation=True)
@@ -193,6 +279,10 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
     summary["supports_found"] = len(supports)
     summary["relationships"] = new_rows
 
+    score = compute_semantic_conflict_score(session, expert_model_id)
+    summary["semantic_conflict_score"] = score["semantic_conflict_score"]
+    summary["semantic_conflict_summary"] = score["semantic_conflict_summary"]
+
     for rel in conflicts:
         crud.log_audit_event(
             session,
@@ -217,7 +307,9 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
             "compared_pairs": summary["compared_pairs"],
             "dropped_pairs": summary["dropped_pairs"],
             "conflicts_found": summary["conflicts_found"],
-            "supports_found": summary["supports_found"]
+            "supports_found": summary["supports_found"],
+            "semantic_conflict_score": summary["semantic_conflict_score"],
+            "semantic_conflict_summary": summary["semantic_conflict_summary"]
         })
     )
     return summary

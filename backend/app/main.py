@@ -458,6 +458,13 @@ def run_conflict_scan(expert_model_id: int, db_session: Session = Depends(get_db
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+@app.get("/api/experts/{expert_model_id}/conflict-score", response_model=schemas.ConflictScoreResponse)
+def get_expert_model_conflict_score(expert_model_id: int, db_session: Session = Depends(get_db)):
+    expert_model = db_session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+    if not expert_model:
+        raise HTTPException(status_code=404, detail=f"Expert Model with ID {expert_model_id} not found")
+    return conflict_engine.compute_semantic_conflict_score(db_session, expert_model_id)
+
 @app.get("/api/experts/{expert_model_id}/conflicts", response_model=List[schemas.AssetRelationshipResponse])
 def get_expert_model_conflicts(expert_model_id: int, relationship_type: Optional[str] = None, db_session: Session = Depends(get_db)):
     query = db_session.query(db.AssetRelationship).filter(db.AssetRelationship.expert_model_id == expert_model_id)
