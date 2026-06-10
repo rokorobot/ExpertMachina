@@ -4,6 +4,19 @@ ExpertMachina enforces an enterprise-grade governance model where knowledge asse
 
 ---
 
+## 0. Core Governance Principles
+
+These principles are load-bearing — every workflow below derives from them:
+
+1. **Only `APPROVED` knowledge crosses the governance boundary.** Enforced in the backend, never just the UI.
+2. **Approved knowledge is never edited in place.** Edits create `CANDIDATE` revisions that supersede through re-review (immutable revision history).
+3. **Governance verdicts are content-bound.** A human review pertains to *Asset A Revision X vs Asset B Revision Y* — not to *Asset A forever*. When an asset's content changes through an approved revision, conflict verdicts involving that asset are automatically invalidated and re-judged; verdicts on unrelated pairs survive. Without this rule, a stale dismissal could silently waive a brand-new contradiction.
+4. **Missing data is reported as missing, never fabricated.** Citations, provenance, and trust components show `null` / `NOT_MEASURED` rather than invented defaults.
+5. **Detection without enforcement is advisory, not governance.** Unresolved semantic conflicts block package compilation; publication is itself a governance event whose gate verdict is permanently recorded.
+6. **Every score must be explainable.** Conflict and trust scores carry full per-component breakdowns and reasons — "why not 100?" is always answerable from the data, and scorers record their version and (for model-based verdicts) the exact model weights hash.
+
+---
+
 ## 1. Document Lifecycle States
 
 Source documents transition through the following lifecycle states:

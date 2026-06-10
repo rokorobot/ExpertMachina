@@ -10,7 +10,7 @@
 | MVP 0.5 | Integrity Fixes | ✅ Completed |
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
 | MVP 0.7 | Knowledge QA | ✅ Completed |
-| MVP 0.8 | Governance Enforcement & Trust Framework | 🔄 In Progress (Sprint 1 done) |
+| MVP 0.8 | Governance Enforcement & Trust Framework | ✅ Completed — governance core frozen |
 | MVP 0.9 | Agent Gateway (MCP) | 📋 Planned |
 | MVP 1.0 | Enterprise Agent Knowledge Platform | 📋 Planned |
 
@@ -163,7 +163,7 @@ API: `GET/POST /api/assets/{id}/revisions`, `POST /api/revisions/{id}/review`.
 
 ---
 
-## MVP 0.8 — Governance Enforcement & Trust Framework (In Progress)
+## MVP 0.8 — Governance Enforcement & Trust Framework (Completed)
 
 Closes the loop from *detect* to *detect → review → allow publication*. The governance boundary becomes enforcing, not advisory — deliberately sequenced **before** the MCP gateway so external consumers meet a stable v1 governance core rather than evolving semantics.
 
@@ -189,9 +189,25 @@ Operator-facing **Revision Reviews** tab closing the API-only review gap:
 - **Self-healing governance on approval**: promoting a revision automatically (1) invalidates operator conflict verdicts involving the revised asset — verdicts are content-bound and judged text that no longer exists; (2) rescans every affected Expert Model; (3) refreshes the semantic conflict score and compile gate. Rescan results (including invalidated review counts) are recorded inside the `ASSET_REVISION_APPROVED` audit event.
 - Verified live with a genuine catch: revising the English retention policy resolved its confirmed conflict (re-judged as SUPPORTS at 0.994) **and surfaced a new contradiction with the now-stale Czech translation (0.986)** — re-closing the compile gate until the translation is reviewed. Cross-lingual translation drift detected autonomously.
 
-### Sprint 3 — Expert Model Trust Score
+### Sprint 3 — Expert Model Trust Score (Completed)
 
-A first-class object, not a hidden calculation: derived from evaluation score + coverage + semantic conflict score + governance health + revision freshness, with a full breakdown. The explicit combination step reserved when the conflict score shipped standalone.
+A first-class hierarchical object (`trust-score-v1`), never a single opaque number:
+
+| Component | Weight | Source |
+| :--- | :--- | :--- |
+| Evaluation Reliability | 0.25 | Pass rate of the latest completed benchmark run |
+| Evidence Coverage | 0.20 | Average claim coverage of the latest run |
+| Conflict Integrity | 0.25 | The semantic conflict score (`conflict-score-v1`) |
+| Governance Health | 0.20 | Penalties for governance debt: unreviewed conflicts (−8 each), pending revisions (−5 each), blocked compile gate (−15), missing provenance (−4 each, capped) |
+| Revision Freshness | 0.10 | Days since last governance review (tiered: ≤30d=100 … >365d=25) |
+
+- Every component carries a human-readable **reason** — "why not 100?" is always answerable.
+- Components without underlying data report **`NOT_MEASURED`** with an actionable reason and are excluded from the weighted aggregate (weights renormalized) — never fabricated.
+- Governance Health treats governance signals as distinct from knowledge signals, exactly as designed.
+- Displayed on Expert Model cards with the full component breakdown; the heuristic `quality_score` remains separate — metrics are never silently merged.
+- `GET /api/experts/{id}/trust-score` and `GET /api/projects/{id}/trust-scores`.
+
+**With Sprint 3 complete, the v1 governance core is frozen**: provenance, semantic verification, conflict detection + classification, immutable revisions, compile gates, conflict score, and trust score are stable external contracts for the MCP gateway. Core governance principles are codified in [governance.md](governance.md).
 
 ---
 

@@ -95,7 +95,8 @@ export default function Home() {
     reviewConflict,
     revisionQueue,
     fetchRevisionQueue,
-    reviewRevision
+    reviewRevision,
+    trustScores
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'conflicts' | 'revisions' | 'audit' | 'console'>('dashboard');
@@ -1401,6 +1402,53 @@ export default function Home() {
                                   <span className="text-cyan-400 font-bold text-xs">{model.coverage_score}%</span>
                                 </div>
                               </div>
+
+                              {/* EXPERT MODEL TRUST SCORE — hierarchical, every component explainable */}
+                              {(() => {
+                                const ts = trustScores.find(t => t.expert_model_id === model.id);
+                                if (!ts) return null;
+                                return (
+                                  <div className="bg-slate-950/60 border border-slate-900 rounded p-3 space-y-2" title={ts.summary}>
+                                    <div className="flex items-center justify-between">
+                                      <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">
+                                        Trust Score <span className="text-slate-600">({ts.score_version})</span>
+                                      </span>
+                                      <span className={`text-base font-bold font-mono ${
+                                        ts.trust_score == null ? 'text-slate-500' :
+                                        ts.trust_score >= 90 ? 'text-emerald-400' :
+                                        ts.trust_score >= 70 ? 'text-yellow-400' : 'text-rose-400'
+                                      }`}>
+                                        {ts.trust_score ?? 'N/A'}
+                                      </span>
+                                    </div>
+                                    <div className="space-y-1">
+                                      {ts.components.map((c) => (
+                                        <div key={c.key} className="flex items-center gap-2" title={c.reason}>
+                                          <span className="text-[9px] font-mono text-slate-400 w-36 shrink-0 truncate">{c.label}</span>
+                                          <div className="flex-1 h-1.5 bg-slate-900 rounded overflow-hidden">
+                                            {c.measured && c.score != null && (
+                                              <div
+                                                className={`h-full rounded ${
+                                                  c.score >= 90 ? 'bg-emerald-500/80' :
+                                                  c.score >= 70 ? 'bg-yellow-500/80' : 'bg-rose-500/80'
+                                                }`}
+                                                style={{ width: `${c.score}%` }}
+                                              />
+                                            )}
+                                          </div>
+                                          <span className={`text-[9px] font-mono w-12 text-right ${
+                                            !c.measured ? 'text-slate-600 italic' :
+                                            c.score! >= 90 ? 'text-emerald-400' :
+                                            c.score! >= 70 ? 'text-yellow-400' : 'text-rose-400'
+                                          }`}>
+                                            {c.measured ? c.score : 'N/M'}
+                                          </span>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })()}
                             </div>
                           ))}
                         </div>

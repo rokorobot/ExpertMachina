@@ -155,6 +155,24 @@ export interface RevisionQueueItem {
   baseline_source_hash: string | null;
 }
 
+export interface TrustComponent {
+  key: string;
+  label: string;
+  score: number | null;
+  weight: number;
+  measured: boolean;
+  reason: string;
+  details: Record<string, unknown>;
+}
+
+export interface TrustScore {
+  expert_model_id: number;
+  trust_score: number | null;
+  score_version: string;
+  summary: string;
+  components: TrustComponent[];
+}
+
 export interface AuditEvent {
   id: number;
   timestamp: string;
@@ -218,6 +236,8 @@ interface AppState {
   revisionQueue: RevisionQueueItem[];
   fetchRevisionQueue: (projectId: number) => Promise<void>;
   reviewRevision: (revisionId: number, action: string, notes: string, projectId: number) => Promise<void>;
+
+  trustScores: TrustScore[];
 }
 
 const API_BASE = 'http://localhost:8000/api';
@@ -275,12 +295,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ loading: true, error: null });
     try {
       // Fetch stats, docs, assets, experts, packages in parallel
-      const [docsRes, assetsRes, expertsRes, packagesRes, statsRes] = await Promise.all([
+      const [docsRes, assetsRes, expertsRes, packagesRes, statsRes, trustRes] = await Promise.all([
         fetch(`${API_BASE}/projects/${projectId}/documents`),
         fetch(`${API_BASE}/projects/${projectId}/assets`),
         fetch(`${API_BASE}/projects/${projectId}/experts`),
         fetch(`${API_BASE}/projects/${projectId}/packages`),
-        fetch(`${API_BASE}/dashboard/${projectId}`)
+        fetch(`${API_BASE}/dashboard/${projectId}`),
+        fetch(`${API_BASE}/projects/${projectId}/trust-scores`)
       ]);
 
       const documents = docsRes.ok ? await docsRes.json() : [];
@@ -288,8 +309,9 @@ export const useAppStore = create<AppState>((set, get) => ({
       const experts = expertsRes.ok ? await expertsRes.json() : [];
       const packages = packagesRes.ok ? await packagesRes.json() : [];
       const stats = statsRes.ok ? await statsRes.json() : null;
+      const trustScores = trustRes.ok ? await trustRes.json() : [];
 
-      set({ documents, assets, experts, packages, stats, loading: false });
+      set({ documents, assets, experts, packages, stats, trustScores, loading: false });
       get().fetchAuditTrail();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), loading: false });
@@ -507,6 +529,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
+  trustScores: [],
   revisionQueue: [],
 
   fetchRevisionQueue: async (projectId: number) => {

@@ -17,6 +17,7 @@ from app import query_engine
 from app import evaluation
 from app import conflict_engine
 from app import revisions
+from app import trust
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -531,6 +532,18 @@ def run_conflict_scan(expert_model_id: int, db_session: Session = Depends(get_db
         return conflict_engine.scan_expert_model_conflicts(db_session, expert_model_id)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/api/experts/{expert_model_id}/trust-score", response_model=schemas.TrustScoreResponse)
+def get_expert_model_trust_score(expert_model_id: int, db_session: Session = Depends(get_db)):
+    try:
+        return trust.compute_trust_score(db_session, expert_model_id)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+
+@app.get("/api/projects/{project_id}/trust-scores", response_model=List[schemas.TrustScoreResponse])
+def get_project_trust_scores(project_id: int, db_session: Session = Depends(get_db)):
+    models = db_session.query(db.ExpertModel).filter(db.ExpertModel.project_id == project_id).all()
+    return [trust.compute_trust_score(db_session, m.id) for m in models]
 
 @app.get("/api/experts/{expert_model_id}/conflict-score", response_model=schemas.ConflictScoreResponse)
 def get_expert_model_conflict_score(expert_model_id: int, db_session: Session = Depends(get_db)):

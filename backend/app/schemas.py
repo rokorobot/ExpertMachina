@@ -254,6 +254,22 @@ class ConflictReviewUpdate(BaseModel):
     reviewer: Optional[str] = "operator"
     notes: Optional[str] = None
 
+class TrustComponent(BaseModel):
+    key: str
+    label: str
+    score: Optional[float] = None
+    weight: float
+    measured: bool
+    reason: str
+    details: dict = {}
+
+class TrustScoreResponse(BaseModel):
+    expert_model_id: int
+    trust_score: Optional[float] = None
+    score_version: str
+    summary: str
+    components: List[TrustComponent] = []
+
 class AssetRevisionCreate(BaseModel):
     content: str
     change_reason: Optional[str] = None
