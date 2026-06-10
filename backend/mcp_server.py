@@ -1,0 +1,101 @@
+"""ExpertMachina MCP Gateway (MVP 0.9 - read-only).
+
+Transport layer over Governance Contract v1 (docs/governance-contract-v1.md).
+Adds no semantics of its own: every tool delegates to the same functions the
+governed REST console uses, and every call is recorded in the audit ledger
+as MCP_TOOL_CALLED.
+
+Run (stdio, from backend/):
+    .venv\\Scripts\\python mcp_server.py
+
+Claude Desktop / Claude Code / Cursor config example:
+{
+  "mcpServers": {
+    "expertmachina": {
+      "command": "C:\\\\path\\\\to\\\\backend\\\\.venv\\\\Scripts\\\\python.exe",
+      "args": ["C:\\\\path\\\\to\\\\backend\\\\mcp_server.py"],
+      "env": {
+        "EM_AGENT_ID": "claude-desktop-rk",
+        "EM_AGENT_CLEARANCE": "INTERNAL"
+      }
+    }
+  }
+}
+
+Agent clearance follows Access Model v1 and defaults to PUBLIC (most
+restrictive) when unset. Write actions (approve_revision, dismiss_conflict,
+publish_package) are deliberately NOT exposed in v0.9: the governance core
+must be observable before it becomes agent-writable.
+"""
+import os
+import sys
+import builtins
+
+sys.path.append(os.path.dirname(os.path.abspath(__file__)))
+
+# stdio transport discipline: stdout carries JSON-RPC frames ONLY. The
+# governance engines print telemetry (VALIDATION_REPORT, RETRIEVAL_AUDIT,
+# ...) which must go to stderr or it corrupts the protocol stream.
+_original_print = builtins.print
+
+
+def _stderr_print(*args, **kwargs):
+    kwargs.setdefault("file", sys.stderr)
+    _original_print(*args, **kwargs)
+
+
+builtins.print = _stderr_print
+
+from mcp.server.fastmcp import FastMCP
+
+from app import mcp_gateway
+
+mcp = FastMCP(
+    "expertmachina",
+    instructions=(
+        "ExpertMachina Governance Gateway (read-only, Governance Contract v1). "
+        "Expert Models are compiled, semantically verified, conflict-checked, "
+        "revision-controlled enterprise knowledge. Answers are evidence-backed: "
+        "no evidence means no answer. Citations include revision numbers and "
+        "provenance; trust and gate verdicts are explainable and versioned."
+    ),
+)
+
+
+@mcp.tool()
+def ask_expert(expert_model_id: int, question: str) -> dict:
+    """Ask an Expert Model an evidence-backed question (Verified Answer v1).
+
+    Returns the answer with citations (document, page, section, hash,
+    revision), coverage_score, verification_status, and the verifier
+    identity. Answers failing verification return INSUFFICIENT EVIDENCE -
+    the system never guesses. Retrieval respects this agent's clearance.
+    """
+    return mcp_gateway.ask_expert(expert_model_id, question)
+
+
+@mcp.tool()
+def get_trust_score(expert_model_id: int) -> dict:
+    """Get the hierarchical Trust Score v1 for an Expert Model.
+
+    Returns the aggregate trust_score plus five explainable components
+    (evaluation reliability, evidence coverage, conflict integrity,
+    governance health, revision freshness), each with a reason. Components
+    without underlying data are NOT_MEASURED, never fabricated.
+    """
+    return mcp_gateway.get_trust_score(expert_model_id)
+
+
+@mcp.tool()
+def check_gate_status(expert_model_id: int) -> dict:
+    """Check the Compile Gate v1 verdict for an Expert Model.
+
+    Returns ALLOWED or BLOCKED with the blocking conflicts (unreviewed or
+    confirmed semantic contradictions), advisory conflicts, and the active
+    gate policy. A BLOCKED model cannot be published as an Agent Package.
+    """
+    return mcp_gateway.check_gate_status(expert_model_id)
+
+
+if __name__ == "__main__":
+    mcp.run()

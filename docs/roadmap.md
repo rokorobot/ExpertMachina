@@ -11,7 +11,7 @@
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
 | MVP 0.7 | Knowledge QA | ✅ Completed |
 | MVP 0.8 | Governance Enforcement & Trust Framework | ✅ Completed — governance core frozen |
-| MVP 0.9 | Agent Gateway (MCP) | 📋 Planned |
+| MVP 0.9 | Agent Gateway (MCP) | 🔄 In Progress (Sprint 1 done) |
 | MVP 1.0 | Enterprise Agent Knowledge Platform | 📋 Planned |
 
 ---
@@ -211,14 +211,40 @@ A first-class hierarchical object (`trust-score-v1`), never a single opaque numb
 
 ---
 
-## MVP 0.9 — Agent Gateway (MCP) (Planned)
+## MVP 0.9 — Agent Gateway (MCP) (In Progress)
 
 Expose the v1 governance core to agent consumers (Claude, Codex, Cursor, and other MCP clients) as a **read-only** transport over the frozen contract — the gateway adds no semantics of its own.
 
-- **[Governance Contract v1](governance-contract-v1.md) written first** ✅ — the normative specification (Access, Revision, Conflict Score, Compile Gate, Trust Score, Verified Answer models plus the audit event registry) that becomes the public API surface.
-- Tier 1 tools: `ask_expert`, `get_trust_score`, `check_gate_status`. Tier 2: `get_provenance`, `get_conflicts`, `get_revision_history`.
+- **[Governance Contract v1](governance-contract-v1.md) written first** ✅ — the normative specification that is the public API surface.
+
+### Sprint 1 — Tier 1 Read-Only Gateway (Completed)
+
+- **`backend/mcp_server.py`** — stdio MCP server (official `mcp` SDK / FastMCP) exposing exactly three tools: `ask_expert`, `get_trust_score`, `check_gate_status`. Write tools (`approve_revision`, `dismiss_conflict`, `publish_package`) are deliberately absent; the test suite asserts the surface.
+- **Transport, not policy**: every tool delegates to the same functions the REST console uses — the Ask Expert pipeline was extracted into a single shared `execute_expert_query` service so the gateway *cannot* drift into semantics of its own.
+- **Per-agent identity and clearance** from the MCP connection config (`EM_AGENT_ID`, `EM_AGENT_CLEARANCE`), defaulting to `PUBLIC` (most restrictive). Clearance flows into retrieval under Access Model v1 — verified: an EXECUTIVE asset never reaches an INTERNAL-clearance agent's citations.
+- **Mandatory `MCP_TOOL_CALLED` audit event** on every call: agent id, tool name, clearance, expert model, gateway version, timestamp. The underlying query events carry the agent as actor — the gateway is part of the governance boundary.
+- **stdio discipline**: engine telemetry is routed to stderr so stdout carries JSON-RPC frames only.
+- Verified live over a real stdio MCP client session against the dev knowledge base: tool listing, gate verdict (`BLOCKED` on the stale-translation conflict), trust score (87.1 with components), and an evidence-backed answer with revision-aware citations and the full verifier fingerprint — all audit-logged.
+
+Agent connection config example:
+
+```json
+{
+  "mcpServers": {
+    "expertmachina": {
+      "command": "C:\\path\\to\\backend\\.venv\\Scripts\\python.exe",
+      "args": ["C:\\path\\to\\backend\\mcp_server.py"],
+      "env": { "EM_AGENT_ID": "claude-desktop-rk", "EM_AGENT_CLEARANCE": "INTERNAL" }
+    }
+  }
+}
+```
+
+### Sprint 2 — Tier 2 Governance Surface (Next)
+
+`get_provenance`, `get_conflicts`, `get_revision_history` — the tools that let an advanced agent answer "why is trust only 87?" by walking the governance evidence itself.
+
 - No write actions in 0.9: the governance core must be observable before it becomes agent-writable. Progression: read-only (0.9) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
-- Per-agent clearance under the Access Model; every gateway call audit-logged.
 
 ## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned)
 

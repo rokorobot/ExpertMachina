@@ -6,6 +6,7 @@ import hashlib
 from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
+from app import crud
 from app import ingestion
 from app import verification_engine
 from app import claims as claims_module
@@ -528,4 +529,100 @@ def retrieve_approved_evidence(
         "validated_asset_ids": validated_asset_ids,
         "hash_tamper_occurred": hash_tamper_occurred,
         "access_blocked_asset_ids": access_blocked_asset_ids
+    }
+
+
+def execute_expert_query(
+    session: Session,
+    expert_model_id: int,
+    question: str,
+    caller_access_level: str = "INTERNAL",
+    actor: str = "operator_admin_02"
+) -> dict:
+    """The single evidence-backed query pipeline (Verified Answer v1).
+
+    Shared by the REST console and the MCP gateway - the gateway is
+    transport over this contract and adds no semantics of its own.
+    """
+    retrieval_res = retrieve_approved_evidence(
+        session,
+        expert_model_id=expert_model_id,
+        question=question,
+        caller_access_level=caller_access_level
+    )
+
+    citations = retrieval_res["citations"]
+    retrieved_asset_ids = retrieval_res["retrieved_asset_ids"]
+    validated_asset_ids = retrieval_res["validated_asset_ids"]
+    hash_tamper_occurred = retrieval_res["hash_tamper_occurred"]
+
+    gen_result = generate_evidence_answer(
+        session,
+        expert_model_id=expert_model_id,
+        question=question,
+        validated_citations=citations
+    )
+
+    verification = verify_answer_claims(
+        session,
+        answer_text=gen_result["answer"],
+        validated_citations=citations
+    )
+
+    conf_score = 0.95 if verification["coverage_score"] >= 0.95 else 0.85 if verification["coverage_score"] >= 0.80 else 0.40
+
+    final_answer = gen_result["answer"]
+    if verification["verification_status"] == "INSUFFICIENT_EVIDENCE":
+        final_answer = "INSUFFICIENT EVIDENCE"
+
+    answer_hash = hashlib.sha256(final_answer.encode('utf-8')).hexdigest()
+
+    model = session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+    model_name = model.name if model else "Unknown Expert Model"
+
+    if not retrieved_asset_ids:
+        event_type = "ASK_EXPERT_BLOCKED_NO_APPROVED_EVIDENCE"
+    elif hash_tamper_occurred:
+        event_type = "ASK_EXPERT_BLOCKED_HASH_TAMPER"
+    elif verification["verification_status"] == "INSUFFICIENT_EVIDENCE":
+        event_type = "ASK_EXPERT_BLOCKED_INSUFFICIENT_EVIDENCE"
+    else:
+        event_type = "ASK_EXPERT_QUERY"
+
+    audit_detail = {
+        "question": question,
+        "expert_model_id": expert_model_id,
+        "expert_model_name": model_name,
+        "retrieved_assets": retrieved_asset_ids,
+        "validated_assets": validated_asset_ids,
+        "caller_access_level": caller_access_level,
+        "access_blocked_assets": retrieval_res.get("access_blocked_asset_ids", []),
+        "used_evidence_ids": gen_result["used_evidence_ids"],
+        "unsupported_claims": verification["unsupported_claims"],
+        "contradicted_claims": verification.get("contradicted_claims", []),
+        "coverage_score": verification["coverage_score"],
+        "confidence_score": conf_score,
+        "verification_status": verification["verification_status"],
+        "verifier": verification.get("verifier"),
+        "answer_hash": answer_hash,
+        "operator": actor,
+        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
+    }
+    crud.log_audit_event(
+        session,
+        actor=actor,
+        event_type=event_type,
+        target_id=str(expert_model_id),
+        details=json.dumps(audit_detail)
+    )
+
+    return {
+        "answer": final_answer,
+        "confidence_score": conf_score,
+        "coverage_score": verification["coverage_score"],
+        "verification_status": verification["verification_status"],
+        "citations": citations,
+        "unsupported_claims": verification["unsupported_claims"],
+        "contradicted_claims": verification.get("contradicted_claims", []),
+        "verifier": verification.get("verifier")
     }

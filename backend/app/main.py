@@ -235,93 +235,16 @@ def create_expert(project_id: int, expert_in: schemas.ExpertModelCreate, db_sess
 def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Session = Depends(get_db)):
     if not query_in.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
-    
-    retrieval_res = query_engine.retrieve_approved_evidence(
+
+    # Single shared pipeline (Verified Answer v1) - also used by the MCP gateway.
+    result = query_engine.execute_expert_query(
         db_session,
         expert_model_id=query_in.expert_model_id,
         question=query_in.question,
-        caller_access_level=query_in.access_level
+        caller_access_level=query_in.access_level,
+        actor="operator_admin_02"
     )
-    
-    citations = retrieval_res["citations"]
-    retrieved_asset_ids = retrieval_res["retrieved_asset_ids"]
-    validated_asset_ids = retrieval_res["validated_asset_ids"]
-    hash_tamper_occurred = retrieval_res["hash_tamper_occurred"]
-    
-    gen_result = query_engine.generate_evidence_answer(
-        db_session,
-        expert_model_id=query_in.expert_model_id,
-        question=query_in.question,
-        validated_citations=citations
-    )
-    
-    # Run Answer Verification Engine Check
-    verification = query_engine.verify_answer_claims(
-        db_session,
-        answer_text=gen_result["answer"],
-        validated_citations=citations
-    )
-    
-    conf_score = 0.95 if verification["coverage_score"] >= 0.95 else 0.85 if verification["coverage_score"] >= 0.80 else 0.40
-    
-    final_answer = gen_result["answer"]
-    if verification["verification_status"] == "INSUFFICIENT_EVIDENCE":
-        final_answer = "INSUFFICIENT EVIDENCE"
-    
-    answer_hash = hashlib.sha256(final_answer.encode('utf-8')).hexdigest()
-    
-    # Get model details
-    model = db_session.query(db.ExpertModel).filter(db.ExpertModel.id == query_in.expert_model_id).first()
-    model_name = model.name if model else "Unknown Expert Model"
-    
-    # Determine event type
-    if not retrieved_asset_ids:
-        event_type = "ASK_EXPERT_BLOCKED_NO_APPROVED_EVIDENCE"
-    elif hash_tamper_occurred:
-        event_type = "ASK_EXPERT_BLOCKED_HASH_TAMPER"
-    elif verification["verification_status"] == "INSUFFICIENT_EVIDENCE":
-        event_type = "ASK_EXPERT_BLOCKED_INSUFFICIENT_EVIDENCE"
-    else:
-        event_type = "ASK_EXPERT_QUERY"
-        
-    audit_detail = {
-        "question": query_in.question,
-        "expert_model_id": query_in.expert_model_id,
-        "expert_model_name": model_name,
-        "retrieved_assets": retrieved_asset_ids,
-        "validated_assets": validated_asset_ids,
-        "caller_access_level": query_in.access_level,
-        "access_blocked_assets": retrieval_res.get("access_blocked_asset_ids", []),
-        "used_evidence_ids": gen_result["used_evidence_ids"],
-        "unsupported_claims": verification["unsupported_claims"],
-        "contradicted_claims": verification.get("contradicted_claims", []),
-        "coverage_score": verification["coverage_score"],
-        "confidence_score": conf_score,
-        "verification_status": verification["verification_status"],
-        "verifier": verification.get("verifier"),
-        "answer_hash": answer_hash,
-        "operator": "operator_admin_02",
-        "timestamp": datetime.datetime.utcnow().isoformat() + "Z"
-    }
-    
-    crud.log_audit_event(
-        db_session,
-        actor="operator_admin_02",
-        event_type=event_type,
-        target_id=str(query_in.expert_model_id),
-        details=json.dumps(audit_detail)
-    )
-        
-    return schemas.QueryResponse(
-        answer=final_answer,
-        confidence_score=conf_score,
-        coverage_score=verification["coverage_score"],
-        verification_status=verification["verification_status"],
-        citations=citations,
-        unsupported_claims=verification["unsupported_claims"],
-        contradicted_claims=verification.get("contradicted_claims", []),
-        verifier=verification.get("verifier")
-    )
+    return schemas.QueryResponse(**result)
 
 # Agent Packages routes
 @app.get("/api/projects/{project_id}/packages", response_model=List[schemas.AgentPackageResponse])
