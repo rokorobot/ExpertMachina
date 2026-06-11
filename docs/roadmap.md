@@ -20,7 +20,8 @@
 | MVP 0.10.1 | Change Detection / Incremental Sync | ✅ Completed |
 | MVP 0.10.2 | Policy-Based Auto Approval | ✅ Completed |
 | MVP 0.11 | Source Connector Framework | ✅ Completed |
-| — | LLM Provider Settings (model-per-function) | 📋 Next (utility) |
+| MVP 0.11.1 | Transport Hardening (audit) + CI enforcement | ✅ Completed |
+| MVP 0.12 | LLM Provider Settings (governed model-per-function config) | 📋 Next |
 | MVP 1.0 | Enterprise Platform (identity, roles, credentials, deployment) | 📋 Planned |
 
 ---
