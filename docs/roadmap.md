@@ -335,9 +335,25 @@ The read-only gateway is complete — six tools, exactly as the Governance Contr
 
 No write actions in 0.9 — delivered as specified. Progression: read-only (0.9 ✅) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
 
-## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned)
+## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned, NEXT)
 
 The defensible position: agents consume *semantically verified, conflict-checked, revision-controlled, audit-traceable* company knowledge.
+
+**Framing (agreed June 2026, at v0.12.0 release): v1.0 is the enterprise
+BOUNDARY milestone, not "add login."** The central question it answers:
+
+> Who is allowed to do what, with which credentials, against which
+> sources and expert packages?
+
+That one question connects identity, roles, credential storage, cloud
+connectors (D14), provider keys (D19), agent access (Access Model v1),
+audit actor integrity (today: caller-supplied strings, accepted
+limitation), and enterprise deployment.
+
+**Hard warning for the scoping session: do not bolt auth onto routes.
+Build the identity model as a governed platform boundary** — the fourth
+instance of the D17/D18/D19 shape: callers propose actors; the identity
+boundary decides who they are.
 
 ## Future Direction
 

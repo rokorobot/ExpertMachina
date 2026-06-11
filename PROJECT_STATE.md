@@ -148,7 +148,12 @@ workflows are URL-addressable
 
 1. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred
    until here by explicit decision; also unblocks stored provider keys per D19
-   and cloud connectors per D14). Framing ruling (June 2026): future model
+   and cloud connectors per D14). THE BOUNDARY MILESTONE, not "add login" —
+   central question: who is allowed to do what, with which credentials,
+   against which sources and expert packages? Hard rule for scoping: do NOT
+   bolt auth onto routes; build the identity model as a governed platform
+   boundary (the D17/D18/D19 shape: callers propose actors, the identity
+   boundary decides). Full framing in docs/roadmap.md MVP 1.0 section. Framing ruling (June 2026): future model
    evaluation is a MEANS — select the best engine for a governed Expert
    Package's deployment — never an LLM-benchmarking end in itself; the
    knowledge and its expert representation are the primary asset, the agent is
