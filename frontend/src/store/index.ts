@@ -232,6 +232,69 @@ export interface TrustScore {
   components: TrustComponent[];
 }
 
+export interface GovernanceInboxItem {
+  id: string;
+  type: 'CONFLICT' | 'REVISION' | 'GOVERNANCE_WARNING';
+  source_id: number;
+  expert_model_id: number | null;
+  expert_model_name: string | null;
+  related_expert_model_ids?: number[];
+  asset_id?: number;
+  source_asset_id?: number;
+  target_asset_id?: number;
+  status: string;
+  classification: string | null;
+  confidence: number | null;
+  severity: 'HIGH' | 'MEDIUM' | 'LOW';
+  bucket: 'NEEDS_REVIEW' | 'CAN_WAIT' | 'RESOLVED';
+  title: string;
+  reason: string;
+  deep_link: string;
+  created_at: string | null;
+  resolved_at: string | null;
+}
+
+export interface GovernanceGateConflictRef {
+  relationship_id: number | null;
+  source_asset_id: number | null;
+  target_asset_id: number | null;
+  classification: string | null;
+  status: string | null;
+  confidence: number | null;
+  reason?: string;
+}
+
+export interface GovernanceReadiness {
+  expert_model_id: number;
+  expert_model_name: string;
+  trust_score: number | null;
+  trust_summary: string;
+  compile_allowed: boolean;
+  blocking_conflicts: GovernanceGateConflictRef[];
+  advisory_conflicts: GovernanceGateConflictRef[];
+  dismissed_conflicts: number;
+  conflict_scan_performed: boolean;
+  governance_facts: string[];
+}
+
+export interface GovernanceInbox {
+  project_id: number;
+  inbox_version: string;
+  generated_at: string;
+  resolved_window_days: number;
+  gate_policy: Record<string, unknown>;
+  summary: {
+    needs_review: number;
+    can_wait: number;
+    recently_resolved: number;
+    high_severity: number;
+    blocked_expert_models: number;
+    total_expert_models: number;
+  };
+  items: GovernanceInboxItem[];
+  readiness: GovernanceReadiness[];
+}
+
 export interface AuditEvent {
   id: number;
   timestamp: string;
@@ -297,6 +360,10 @@ interface AppState {
   reviewRevision: (revisionId: number, action: string, notes: string, projectId: number) => Promise<void>;
 
   trustScores: TrustScore[];
+
+  governanceInbox: GovernanceInbox | null;
+  governanceInboxLoading: boolean;
+  fetchGovernanceInbox: (projectId: number) => Promise<void>;
 
   agentActivity: AgentActivitySummary | null;
   fetchAgentActivity: () => Promise<void>;
@@ -608,6 +675,20 @@ export const useAppStore = create<AppState>((set, get) => ({
   trustScores: [],
   revisionQueue: [],
   agentActivity: null,
+  governanceInbox: null,
+  governanceInboxLoading: false,
+
+  fetchGovernanceInbox: async (projectId: number) => {
+    set({ governanceInboxLoading: true });
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/governance/inbox`);
+      if (!res.ok) throw new Error('Failed to fetch governance inbox');
+      const data = await res.json();
+      set({ governanceInbox: data, governanceInboxLoading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), governanceInboxLoading: false });
+    }
+  },
 
   fetchAgentActivity: async () => {
     try {

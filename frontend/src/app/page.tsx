@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   ShieldAlert,
   Scale,
-  ExternalLink
+  ExternalLink,
+  Inbox
 } from 'lucide-react';
 import { useAppStore } from '../store';
 
@@ -107,10 +108,13 @@ export default function Home() {
     deleteBenchmark,
     startEvaluation,
     agentActivity,
-    fetchAgentActivity
+    fetchAgentActivity,
+    governanceInbox,
+    governanceInboxLoading,
+    fetchGovernanceInbox
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -204,6 +208,65 @@ export default function Home() {
       fetchConflicts(conflictModelId);
     }
   }, [activeTab, conflictModelId]);
+
+  // Governance Inbox & Readiness Console state (MVP 0.9.1)
+  const [inboxModelFilter, setInboxModelFilter] = useState<number | null>(null);
+  const [highlightRelationshipId, setHighlightRelationshipId] = useState<number | null>(null);
+  const [highlightRevisionId, setHighlightRevisionId] = useState<number | null>(null);
+
+  // Keep the inbox (and its nav badge) fresh: on workspace change and on tab entry.
+  useEffect(() => {
+    if (activeProjectId !== null) {
+      fetchGovernanceInbox(activeProjectId);
+    }
+  }, [activeProjectId]);
+
+  useEffect(() => {
+    if (activeTab === 'inbox' && activeProjectId !== null) {
+      fetchGovernanceInbox(activeProjectId);
+    }
+  }, [activeTab, activeProjectId]);
+
+  // A deep-link highlight only makes sense on the tab it belongs to.
+  useEffect(() => {
+    if (activeTab !== 'conflicts' && highlightRelationshipId !== null) setHighlightRelationshipId(null);
+    if (activeTab !== 'revisions' && highlightRevisionId !== null) setHighlightRevisionId(null);
+  }, [activeTab]);
+
+  // Inbox deep-link navigation: parse the item's deep_link and set workbench
+  // state directly — the inbox is a control tower, the decision happens in
+  // the specialized workbench.
+  const openDeepLink = (link: string) => {
+    const params = new URLSearchParams(link.split('?')[1] || '');
+    const tab = params.get('tab');
+    const expert = params.get('expert');
+    const relationship = params.get('relationship');
+    const revision = params.get('revision');
+    if (tab === 'conflicts') {
+      if (expert) setConflictModelId(Number(expert));
+      setConflictStatusFilter('ALL');
+      setHighlightRelationshipId(relationship ? Number(relationship) : null);
+      setActiveTab('conflicts');
+    } else if (tab === 'revisions') {
+      setRevisionStatusFilter('ALL');
+      setHighlightRevisionId(revision ? Number(revision) : null);
+      setActiveTab('revisions');
+    } else if (tab === 'experts') {
+      setActiveTab('experts');
+    }
+  };
+
+  // Scroll the deep-linked card into view once its workbench has rendered.
+  useEffect(() => {
+    const targetId =
+      activeTab === 'conflicts' && highlightRelationshipId !== null ? `conflict-${highlightRelationshipId}` :
+      activeTab === 'revisions' && highlightRevisionId !== null ? `revision-${highlightRevisionId}` : null;
+    if (!targetId) return;
+    const timer = setTimeout(() => {
+      document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [activeTab, highlightRelationshipId, highlightRevisionId, conflicts, revisionQueue]);
 
   // Pre-fill model selection when entering console
   useEffect(() => {
@@ -311,6 +374,31 @@ export default function Home() {
     fetchProjects();
   }, []);
 
+  // Hydrate governance deep-link state (?tab=conflicts&expert=11&relationship=42)
+  // from the URL once on load. The assets tab stays path-based (/knowledge-assets).
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const tab = params.get('tab');
+    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
+    if (tab && (urlTabs as readonly string[]).includes(tab)) {
+      const expert = params.get('expert');
+      const relationship = params.get('relationship');
+      const revision = params.get('revision');
+      if (tab === 'conflicts' && expert) setConflictModelId(Number(expert));
+      if (tab === 'conflicts' && relationship) {
+        setHighlightRelationshipId(Number(relationship));
+        setConflictStatusFilter('ALL');
+      }
+      if (tab === 'revisions' && revision) {
+        setHighlightRevisionId(Number(revision));
+        setRevisionStatusFilter('ALL');
+      }
+      if (tab === 'inbox' && expert) setInboxModelFilter(Number(expert));
+      setActiveTab(tab as typeof urlTabs[number]);
+    }
+  }, []);
+
   // Parse path and query parameters for deep linking
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -342,22 +430,32 @@ export default function Home() {
       
       let newPath = '/';
       let newSearch = '';
-      
+
       if (activeTab === 'assets') {
         newPath = '/knowledge-assets';
         if (selectedDocFilterId) {
           newSearch = `?documentId=${selectedDocFilterId}`;
         }
+      } else if (activeTab !== 'dashboard') {
+        // Governance workflows are URL-addressable: tab plus the active
+        // workbench selection round-trip through the address bar.
+        const params = new URLSearchParams();
+        params.set('tab', activeTab);
+        if (activeTab === 'conflicts' && conflictModelId !== null) params.set('expert', String(conflictModelId));
+        if (activeTab === 'conflicts' && highlightRelationshipId !== null) params.set('relationship', String(highlightRelationshipId));
+        if (activeTab === 'revisions' && highlightRevisionId !== null) params.set('revision', String(highlightRevisionId));
+        if (activeTab === 'inbox' && inboxModelFilter !== null) params.set('expert', String(inboxModelFilter));
+        newSearch = `?${params.toString()}`;
       }
-      
+
       const targetUrl = newPath + newSearch;
       const currentUrl = currentPath + currentSearch;
-      
+
       if (currentUrl !== targetUrl) {
         window.history.pushState(null, '', targetUrl);
       }
     }
-  }, [activeTab, selectedDocFilterId]);
+  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter]);
 
   // Listen to browser back/forward buttons
   useEffect(() => {
@@ -366,9 +464,13 @@ export default function Home() {
       const searchParams = new URLSearchParams(window.location.search);
       const documentIdParam = searchParams.get('documentId');
       const documentParam = searchParams.get('document');
-      
+      const tabParam = searchParams.get('tab');
+      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
+
       if (pathname.includes('/knowledge-assets')) {
         setActiveTab('assets');
+      } else if (tabParam && urlTabs.includes(tabParam)) {
+        setActiveTab(tabParam as 'inbox' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
       } else {
         setActiveTab('dashboard');
       }
@@ -524,6 +626,23 @@ export default function Home() {
             >
               <LayoutDashboard className="w-4 h-4" />
               <span>Executive Dashboard</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('inbox')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'inbox'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Inbox className="w-4 h-4" />
+              <span>Governance Inbox</span>
+              {governanceInbox && governanceInbox.summary.needs_review > 0 && (
+                <span className="ml-auto bg-rose-950/40 text-[10px] text-rose-400 font-mono px-2 py-0.5 rounded-full border border-rose-900/40">
+                  {governanceInbox.summary.needs_review}
+                </span>
+              )}
             </button>
 
             <button
@@ -1930,6 +2049,271 @@ export default function Home() {
                 </div>
               )}
 
+              {/* TAB: GOVERNANCE INBOX & READINESS CONSOLE (MVP 0.9.1) */}
+              {activeTab === 'inbox' && (
+                <div className="space-y-6">
+
+                  {/* HEADER + SUMMARY */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
+                        <Inbox className="w-4 h-4 text-cyan-400" />
+                        Governance Inbox
+                        <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                          One prioritized operating view over existing reviewable records — decisions happen in the specialized workbenches
+                        </span>
+                      </h3>
+                      <button
+                        onClick={() => activeProjectId !== null && fetchGovernanceInbox(activeProjectId)}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/30 border border-cyan-900/40 rounded px-3 py-1.5 uppercase tracking-wider"
+                      >
+                        {governanceInboxLoading ? 'Refreshing…' : 'Refresh'}
+                      </button>
+                    </div>
+
+                    {governanceInbox && (
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 font-mono text-center">
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Needs Review Now</span>
+                          <span className={`font-bold text-xl ${governanceInbox.summary.needs_review > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {governanceInbox.summary.needs_review}
+                          </span>
+                        </div>
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Can Wait</span>
+                          <span className="text-yellow-400 font-bold text-xl">{governanceInbox.summary.can_wait}</span>
+                        </div>
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Recently Resolved</span>
+                          <span className="text-slate-300 font-bold text-xl">{governanceInbox.summary.recently_resolved}</span>
+                        </div>
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Blocked Models</span>
+                          <span className={`font-bold text-xl ${governanceInbox.summary.blocked_expert_models > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>
+                            {governanceInbox.summary.blocked_expert_models}/{governanceInbox.summary.total_expert_models}
+                          </span>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* EXPERT MODEL FILTER */}
+                    {experts.length > 0 && (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        <button
+                          onClick={() => setInboxModelFilter(null)}
+                          className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                            inboxModelFilter === null
+                              ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800'
+                              : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                          }`}
+                        >
+                          ALL MODELS
+                        </button>
+                        {experts.map((m) => (
+                          <button
+                            key={m.id}
+                            onClick={() => setInboxModelFilter(m.id)}
+                            className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                              inboxModelFilter === m.id
+                                ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800'
+                                : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                            }`}
+                          >
+                            EM-{m.id} {m.name}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* COMPILE READINESS PANEL */}
+                  {governanceInbox && governanceInbox.readiness.length > 0 && (
+                    <div className="space-y-3">
+                      <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                        <Boxes className="w-3.5 h-3.5 text-cyan-400" />
+                        Compile Readiness
+                        <span className="text-slate-500 font-mono text-[10px] font-normal">
+                          Can each Expert Model be deployed today?
+                        </span>
+                      </h4>
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {governanceInbox.readiness
+                          .filter(r => inboxModelFilter === null || r.expert_model_id === inboxModelFilter)
+                          .map((r) => (
+                          <div
+                            key={r.expert_model_id}
+                            className={`glass-panel rounded-xl p-5 space-y-3 border-l-4 ${
+                              r.compile_allowed ? 'border-l-emerald-500' : 'border-l-rose-500'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="font-bold text-sm text-slate-100 truncate">
+                                <span className="text-[10px] font-mono text-slate-500 mr-2">EM-{r.expert_model_id}</span>
+                                {r.expert_model_name}
+                              </span>
+                              <span className={`text-[10px] font-mono font-bold px-2.5 py-1 rounded-full ${
+                                r.compile_allowed
+                                  ? 'bg-emerald-950/40 text-emerald-400 border border-emerald-900/50'
+                                  : 'bg-rose-950/40 text-rose-400 border border-rose-900/50'
+                              }`}>
+                                {r.compile_allowed ? 'READY' : 'BLOCKED'}
+                              </span>
+                            </div>
+
+                            <div className="flex items-center gap-4">
+                              <div className="text-center shrink-0">
+                                <span className={`text-2xl font-bold font-mono block ${
+                                  r.trust_score === null ? 'text-slate-600' :
+                                  r.trust_score >= 90 ? 'text-emerald-400' :
+                                  r.trust_score >= 70 ? 'text-yellow-400' : 'text-rose-400'
+                                }`}>
+                                  {r.trust_score ?? '—'}
+                                </span>
+                                <span className="text-[9px] text-slate-500 font-mono uppercase">Trust</span>
+                              </div>
+                              <div className="flex gap-2 font-mono text-[10px] flex-wrap">
+                                <span className={`px-2 py-1 rounded border ${
+                                  r.blocking_conflicts.length > 0
+                                    ? 'bg-rose-950/30 text-rose-400 border-rose-900/40'
+                                    : 'bg-slate-950 text-slate-500 border-slate-900'
+                                }`}>
+                                  {r.blocking_conflicts.length} blocking
+                                </span>
+                                <span className="px-2 py-1 rounded border bg-slate-950 text-slate-400 border-slate-900">
+                                  {r.advisory_conflicts.length} advisory
+                                </span>
+                                <span className="px-2 py-1 rounded border bg-slate-950 text-slate-500 border-slate-900">
+                                  {r.dismissed_conflicts} dismissed
+                                </span>
+                                {!r.conflict_scan_performed && (
+                                  <span className="px-2 py-1 rounded border bg-yellow-950/30 text-yellow-400 border-yellow-900/40">
+                                    never scanned
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            {r.governance_facts.length > 0 && (
+                              <div className="space-y-1 border-t border-slate-900/60 pt-2">
+                                {r.governance_facts.map((fact, i) => (
+                                  <span key={i} className="text-[10px] font-mono text-slate-400 block">• {fact}</span>
+                                ))}
+                              </div>
+                            )}
+
+                            {!r.compile_allowed && (
+                              <button
+                                onClick={() => setInboxModelFilter(r.expert_model_id)}
+                                className="text-[10px] text-rose-400 hover:text-rose-300 font-mono flex items-center gap-1.5 bg-rose-950/20 px-3 py-1.5 rounded border border-rose-900/30 transition-colors"
+                              >
+                                <ArrowRight className="w-3 h-3" /> View Blocking Items
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* PRIORITIZED WORK ITEM BUCKETS */}
+                  {(() => {
+                    if (!governanceInbox) {
+                      return (
+                        <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                          {governanceInboxLoading ? 'Computing governance inbox…' : 'No inbox data. Select a workspace project.'}
+                        </div>
+                      );
+                    }
+
+                    const matchesModel = (item: typeof governanceInbox.items[number]) =>
+                      inboxModelFilter === null ||
+                      item.expert_model_id === inboxModelFilter ||
+                      (item.related_expert_model_ids || []).includes(inboxModelFilter);
+                    const visible = governanceInbox.items.filter(matchesModel);
+
+                    const SEVERITY_BADGE: Record<string, string> = {
+                      HIGH: 'bg-rose-950/40 text-rose-400 border-rose-900/50',
+                      MEDIUM: 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50',
+                      LOW: 'bg-slate-900 text-slate-400 border-slate-800',
+                    };
+                    const TYPE_META: Record<string, { label: string; action: string }> = {
+                      CONFLICT: { label: 'CONFLICT', action: 'Review Conflict' },
+                      REVISION: { label: 'REVISION', action: 'Review Revision' },
+                      GOVERNANCE_WARNING: { label: 'WARNING', action: 'Open Expert Model' },
+                    };
+                    const BUCKETS = [
+                      { key: 'NEEDS_REVIEW', label: 'Needs Review Now', hint: 'blocking or awaiting a human verdict' },
+                      { key: 'CAN_WAIT', label: 'Can Wait', hint: 'informational warnings and policy-allowed items' },
+                      { key: 'RESOLVED', label: `Recently Resolved`, hint: `reviewed within the last ${governanceInbox.resolved_window_days} days` },
+                    ] as const;
+
+                    if (visible.length === 0) {
+                      return (
+                        <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                          No governance items{inboxModelFilter !== null ? ' for this Expert Model' : ''}. All clear.
+                        </div>
+                      );
+                    }
+
+                    return (
+                      <div className="space-y-6">
+                        {BUCKETS.map((bucket) => {
+                          const bucketItems = visible.filter(i => i.bucket === bucket.key);
+                          if (bucketItems.length === 0) return null;
+                          return (
+                            <div key={bucket.key} className="space-y-3">
+                              <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                                {bucket.key === 'NEEDS_REVIEW' ? <AlertTriangle className="w-3.5 h-3.5 text-rose-400" /> :
+                                 bucket.key === 'CAN_WAIT' ? <Clock className="w-3.5 h-3.5 text-yellow-400" /> :
+                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-400" />}
+                                {bucket.label}
+                                <span className="text-slate-500 font-mono text-[10px] font-normal">
+                                  {bucketItems.length} item{bucketItems.length > 1 ? 's' : ''} — {bucket.hint}
+                                </span>
+                              </h4>
+                              {bucketItems.map((item) => (
+                                <div
+                                  key={item.id}
+                                  className={`glass-panel rounded-xl p-4 flex flex-wrap items-center gap-3 ${
+                                    item.bucket === 'RESOLVED' ? 'opacity-60' : ''
+                                  }`}
+                                >
+                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${SEVERITY_BADGE[item.severity]}`}>
+                                    {item.severity}
+                                  </span>
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-slate-950 text-slate-400 border-slate-900 shrink-0">
+                                    {TYPE_META[item.type]?.label || item.type}
+                                  </span>
+                                  <div className="flex-1 min-w-[220px] space-y-0.5">
+                                    <span className="text-xs font-bold text-slate-200 block">{item.title}</span>
+                                    <span className="text-[10px] text-slate-400 block">{item.reason}</span>
+                                    <span className="text-[9px] font-mono text-slate-500 block">
+                                      {item.expert_model_name && <>EM-{item.expert_model_id} {item.expert_model_name} · </>}
+                                      {item.classification && <>{item.classification.toLowerCase().replace(/_/g, ' ')} · </>}
+                                      {item.confidence !== null && item.confidence !== undefined && <>confidence {item.confidence.toFixed(3)} · </>}
+                                      {item.status}
+                                      {item.created_at && <> · {new Date(item.created_at).toLocaleString()}</>}
+                                    </span>
+                                  </div>
+                                  {item.bucket !== 'RESOLVED' && (
+                                    <button
+                                      onClick={() => openDeepLink(item.deep_link)}
+                                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1.5 bg-cyan-950/20 px-3 py-1.5 rounded border border-cyan-900/30 transition-colors shrink-0"
+                                    >
+                                      {TYPE_META[item.type]?.action || 'Open'} <ArrowRight className="w-3 h-3" />
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+
               {/* TAB: KNOWLEDGE CONFLICTS (Conflict Review Workbench) */}
               {activeTab === 'conflicts' && (
                 <div className="space-y-6">
@@ -2119,11 +2503,12 @@ export default function Home() {
                     const renderCard = (rel: typeof conflicts[number], isConflict: boolean) => (
                       <div
                         key={rel.id}
+                        id={`conflict-${rel.id}`}
                         className={`glass-panel rounded-xl p-5 space-y-4 border-l-4 ${
                           rel.status === 'DISMISSED' ? 'opacity-55 border-l-slate-600' :
                           rel.status === 'CONFIRMED' ? (isConflict ? 'border-l-rose-500' : 'border-l-emerald-500') :
                           isConflict ? 'border-l-rose-500/70' : 'border-l-emerald-500/70'
-                        }`}
+                        } ${highlightRelationshipId === rel.id ? 'ring-2 ring-cyan-500/70' : ''}`}
                       >
                         <div className="flex flex-wrap justify-between items-center gap-2">
                           <div className="flex items-center gap-2 flex-wrap">
@@ -2343,11 +2728,11 @@ export default function Home() {
                           const statusLabel = rev.status === 'CANDIDATE' ? 'PENDING' :
                             rev.status === 'ARCHIVED' ? 'SUPERSEDED' : rev.status;
                           return (
-                            <div key={rev.id} className={`glass-panel rounded-xl p-5 space-y-4 border-l-4 ${
+                            <div key={rev.id} id={`revision-${rev.id}`} className={`glass-panel rounded-xl p-5 space-y-4 border-l-4 ${
                               rev.status === 'CANDIDATE' ? 'border-l-yellow-500' :
                               rev.status === 'APPROVED' ? 'border-l-emerald-500' :
                               rev.status === 'REJECTED' ? 'border-l-rose-500/70 opacity-70' : 'border-l-slate-600 opacity-60'
-                            }`}>
+                            } ${highlightRevisionId === rev.id ? 'ring-2 ring-cyan-500/70' : ''}`}>
                               <div className="flex flex-wrap justify-between items-center gap-2">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="text-[10px] font-mono bg-slate-900 text-cyan-400 px-2 py-0.5 rounded border border-slate-800 uppercase">{item.asset_type}</span>

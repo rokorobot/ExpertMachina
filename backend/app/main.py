@@ -18,6 +18,7 @@ from app import evaluation
 from app import conflict_engine
 from app import revisions
 from app import trust
+from app import governance_inbox
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -551,4 +552,14 @@ def review_conflict(relationship_id: int, review: schemas.ConflictReviewUpdate, 
         raise HTTPException(status_code=400, detail=str(e))
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
+
+# Governance Inbox & Readiness Console (MVP 0.9.1): a computed operational
+# index over existing reviewable records. Read-only - all review actions
+# stay on the specialized workbench endpoints above.
+@app.get("/api/projects/{project_id}/governance/inbox")
+def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db)):
+    project = db_session.query(db.Project).filter(db.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return governance_inbox.build_inbox(db_session, project_id)
 

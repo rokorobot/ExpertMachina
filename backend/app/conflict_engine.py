@@ -344,6 +344,20 @@ def _gate_policy() -> dict:
     }
 
 
+def relationship_gate_disposition(rel, policy: dict = None) -> str:
+    """How a single conflict relationship affects the compile gate under the
+    given policy: BLOCKING, ADVISORY, or DISMISSED. Single source of truth
+    shared by evaluate_compile_gate and the governance inbox, so the two
+    surfaces can never disagree about severity."""
+    policy = policy or _gate_policy()
+    if rel.status == "DISMISSED":
+        return "DISMISSED"
+    if rel.status == "CONFIRMED":
+        return "BLOCKING" if policy["confirmed_policy"] == "block" else "ADVISORY"
+    # DETECTED (and any unknown status, conservatively)
+    return "BLOCKING" if rel.classification in policy["blocking_classifications"] else "ADVISORY"
+
+
 def evaluate_compile_gate(session: Session, expert_model_id: int) -> dict:
     policy = _gate_policy()
     conflicts = session.query(db.AssetRelationship).filter(
@@ -370,18 +384,14 @@ def evaluate_compile_gate(session: Session, expert_model_id: int) -> dict:
     advisory = []
     dismissed_count = 0
     for rel in conflicts:
-        if rel.status == "DISMISSED":
+        disposition = relationship_gate_disposition(rel, policy)
+        if disposition == "DISMISSED":
             dismissed_count += 1
-        elif rel.status == "DETECTED":
-            if rel.classification in policy["blocking_classifications"]:
-                blocking.append({**_ref(rel), "reason": "UNREVIEWED_CONFLICT"})
-            else:
-                advisory.append(_ref(rel))
-        elif rel.status == "CONFIRMED":
-            if policy["confirmed_policy"] == "block":
-                blocking.append({**_ref(rel), "reason": "CONFIRMED_CONFLICT"})
-            else:
-                advisory.append(_ref(rel))
+        elif disposition == "BLOCKING":
+            reason = "CONFIRMED_CONFLICT" if rel.status == "CONFIRMED" else "UNREVIEWED_CONFLICT"
+            blocking.append({**_ref(rel), "reason": reason})
+        else:
+            advisory.append(_ref(rel))
 
     if policy["require_scan"] and not scan_performed:
         blocking.append({
