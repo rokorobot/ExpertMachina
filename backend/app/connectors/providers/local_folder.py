@@ -1,18 +1,15 @@
+import datetime
 import os
 
 from app.connectors.exceptions import SourceValidationError
-from app.connectors.models import ConnectorItem
+from app.connectors.models import ConnectorFetchResult, ConnectorItem
 
 
 class LocalFolderProvider:
     """Source enumeration over a local or mounted directory - and nothing
-    else. The provider describes what exists (URIs, names, context); every
-    verdict (duplicate/changed/new/failed), all hashing, and all governance
-    stay in the framework.
-
-    Step 3 scope: validate / describe / discover. Fetch remains in the
-    framework until its own extraction step so the timing of stat/read
-    (at ingest time, not discovery time) stays identical.
+    else. The provider describes what exists (URIs, names, context) and
+    hands over bytes on request; every verdict (duplicate/changed/new/
+    failed), all hashing, and all governance stay in the framework.
     """
 
     def __init__(self, connector, parseable_extensions):
@@ -57,3 +54,18 @@ class LocalFolderProvider:
                     matches.append(os.path.join(dirpath, filename))
         return [ConnectorItem(uri=os.path.abspath(path), name=os.path.basename(path))
                 for path in sorted(matches)]
+
+    def fetch(self, item: ConnectorItem) -> ConnectorFetchResult:
+        """Read one file. Called at ingest time, not discovery time - size,
+        mtime, and content are measured when the framework processes the
+        item, exactly as v0.10.x did. Metadata is described context only;
+        the framework's sha256 of data remains the sole change verdict."""
+        stat = os.stat(item.uri)
+        with open(item.uri, "rb") as f:
+            data = f.read()
+        return ConnectorFetchResult(
+            data=data,
+            metadata={
+                "size_bytes": stat.st_size,
+                "modified_at": datetime.datetime.utcfromtimestamp(stat.st_mtime),
+            })

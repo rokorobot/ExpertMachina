@@ -93,7 +93,7 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         seen_hashes_this_job = set()
 
         for item in items:
-            outcome = _ingest_one(session, connector, job, item, seen_hashes_this_job)
+            outcome = _ingest_one(session, connector, job, provider, item, seen_hashes_this_job)
             if outcome == "INGESTED":
                 job.files_ingested += 1
             elif outcome == "DUPLICATE":
@@ -161,11 +161,11 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
 
 
 def _ingest_one(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
-                item: ConnectorItem, seen_hashes: set) -> str:
+                provider: LocalFolderProvider, item: ConnectorItem, seen_hashes: set) -> str:
     """Process one discovered item; always writes a SourceDocument row.
-    Step 3 note: fetch (stat/read) still lives here, using item.uri as the
-    local path, until its own extraction step - so the timing of the read
-    (at ingest time, not discovery time) stays identical."""
+    The provider fetches (at ingest time, not discovery time); the
+    framework hashes - the sha256 of the fetched bytes is the only change
+    verdict, provider metadata is recorded as described context."""
     record = db.SourceDocument(
         project_id=job.project_id,
         connector_id=connector.id,
@@ -173,11 +173,10 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
         source_uri=item.uri,
     )
     try:
-        stat = os.stat(item.uri)
-        record.size_bytes = stat.st_size
-        record.source_modified_at = datetime.datetime.utcfromtimestamp(stat.st_mtime)
-        with open(item.uri, "rb") as f:
-            data = f.read()
+        fetched = provider.fetch(item)
+        data = fetched.data
+        record.size_bytes = fetched.metadata.get("size_bytes")
+        record.source_modified_at = fetched.metadata.get("modified_at")
         record.file_hash = hashlib.sha256(data).hexdigest()
 
         # Change detection (MVP 0.10.1): within a connector, the source URI is
@@ -204,7 +203,7 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
             doc = session.query(db.Document).filter(db.Document.id == prior.document_id).first()
             if doc:
                 seen_hashes.add(record.file_hash)
-                return _apply_source_change(session, connector, job, record, doc, data)
+                return _apply_source_change(session, connector, job, record, doc, item, data)
 
         duplicate_of = None
         if record.file_hash in seen_hashes:
@@ -301,7 +300,8 @@ def _discard_temp_asset(session: Session, asset: db.KnowledgeAsset):
 
 
 def _apply_source_change(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
-                         record: db.SourceDocument, doc: db.Document, data: bytes) -> str:
+                         record: db.SourceDocument, doc: db.Document,
+                         item: ConnectorItem, data: bytes) -> str:
     """A source file changed (MVP 0.10.1): re-extract the new content and
     reconcile it against the document's existing assets through the EXISTING
     governance machinery -
@@ -312,7 +312,9 @@ def _apply_source_change(session: Session, connector: db.SourceConnector, job: d
     Old chunks are kept so approved assets retain verifiable provenance to the
     content they were approved against until their revisions are approved."""
     try:
-        filename = os.path.basename(record.source_uri)
+        # item.name, not URI parsing - deriving a display name from a URI
+        # is provider knowledge (identical bytes for local paths).
+        filename = item.name
         dest_path = os.path.join(UPLOAD_DIR, f"{job.project_id}_c{connector.id}_{record.file_hash[:8]}_{filename}")
         with open(dest_path, "wb") as out:
             out.write(data)
