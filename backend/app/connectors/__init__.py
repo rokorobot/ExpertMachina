@@ -11,3 +11,16 @@ from app.connectors.framework import (  # noqa: F401
     execute_ingestion_job,
     run_ingestion_job,
 )
+
+# The provider contract (Step 2) - the language the framework and provider
+# adapters speak. Types only until the extraction steps wire them in.
+from app.connectors.exceptions import (  # noqa: F401
+    ConnectorError,
+    FetchError,
+    SourceValidationError,
+)
+from app.connectors.models import (  # noqa: F401
+    ConnectorFetchResult,
+    ConnectorItem,
+    ConnectorProvider,
+)
