@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-11 · current version **v0.11.0** · release HEAD `a35f7f3` (+ post-release transport hardening) · branch `main`
+**Snapshot:** 2026-06-11 · current version **v0.11.1** (transport hardening) · HEAD `c3c0d16` · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -102,6 +102,7 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 | v0.10.1 | `a66c83d` | Change Detection → candidate revisions via existing machinery |
 | v0.10.2 | `051d00a` | Policy-Based Auto Approval (versioned policies, snapshot provenance, D17) |
 | v0.11.0 | `77e1408` | Source Connector Framework — LocalFolder retrofitted as a thin provider, behavior identical (zero assertion edits), seam tests, D18 ratified |
+| v0.11.1 | `c3c0d16` | Transport hardening (audit): bulk route unshadowed + unified through crud (revision parity — D17 generalized to HTTP), filename sanitization, CORS narrowed, HTTP smoke layer (3rd regression layer), CI enforcement |
 
 ## How to run
 
@@ -117,11 +118,16 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
   17 warnings (exhaustive-deps + one unused var) — both run in CI. (The old claim
   that the build fails on any-type lint errors was STALE — corrected 2026-06-11
   per audit; zero any-types exist in page.tsx/store.)
-- Tests: standalone scripts in `backend/`, run with the venv python. Two layers:
-  PRODUCT regression (user-visible behavior) and ARCHITECTURAL regression —
-  `test_connector_seam.py` protects the D18 provider/framework boundary with a
-  fake `fake://` provider (all product tests can pass while "provider decides"
-  quietly returns; only the seam suite catches that). Product suites:
+- Tests: standalone scripts in `backend/`, run with the venv python. THREE layers
+  (each catches what the others structurally cannot):
+  1. PRODUCT regression — user-visible behavior;
+  2. ARCHITECTURAL regression — `test_connector_seam.py` protects the D18
+     provider/framework boundary with a fake `fake://` provider;
+  3. TRANSPORT regression — `test_http_api.py` drives the real FastAPI app over
+     HTTP (route ordering, params, serialization): the function-level suites all
+     passed for years while /api/assets/bulk was unreachable; only this layer
+     catches that class. CI (.github/workflows/ci.yml) enforces all three on
+     every push plus frontend tsc + eslint. Product suites:
   (`test_auto_approval.py`,
   `test_local_connector.py`, `test_claim_verdicts.py`, `test_package_builder.py`,
   `test_governance_inbox.py`, `test_compile_gates.py`, `test_revision_workflow.py`,
