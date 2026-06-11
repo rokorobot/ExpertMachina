@@ -167,6 +167,17 @@ Architecture tests against a FAKE provider — no filesystem, no UI:
 These prove future providers can plug in safely; they are the contract's
 test double.
 
+IMPLEMENTED: backend/test_connector_seam.py — all four passing. The fake
+provider uses non-filesystem `fake://` URIs through the real framework
+end-to-end, which is itself evidence the framework holds no path
+assumptions.
+
+Contract addendum (discovered at fetch extraction): `fetch` metadata has
+two well-known OPTIONAL keys the framework records into SourceDocument
+context columns if offered — `size_bytes` and `modified_at`. Metadata
+remains informational; these names are a soft contract so future
+providers know what gets recorded.
+
 ## Hard invariant: providers describe, the framework decides
 
 ```
