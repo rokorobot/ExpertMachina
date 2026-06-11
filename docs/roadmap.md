@@ -351,3 +351,11 @@ The defensible position: agents consume *semantically verified, conflict-checked
   Model X" — a claim one-model-fits-all RAG cannot make) → deployable Expert
   Agent (HR / Compliance / Clinical Ops experts). Dovetails with D11's
   model-per-function configuration via the LLM Provider Settings milestone.
+  **Credibility note — the referee is not one of the players**: unlike
+  LLM-as-judge evaluation products, the verdict mechanism here is independent
+  of every model under test (local NLI cross-encoder with reproducible weight
+  fingerprints, deterministic conflict/coverage checks, governed expectations
+  — the D11 rationale). Per-package rankings are therefore reproducible and
+  free of judge-family bias. This capability was not designed for
+  benchmarking; it is inherited from governance decisions (evidence first,
+  provenance first, reproducible verdicts) — which is why it is defensible.
