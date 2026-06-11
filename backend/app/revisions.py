@@ -149,9 +149,11 @@ def review_revision(session: Session, revision_id: int, action: str,
 
     # Self-healing governance: an approved revision changes semantic meaning,
     # so the conflict graph of every Expert Model containing this asset is
-    # stale. Rescan them now - conflict scores and compile gates refresh
-    # automatically because both derive from the relationship table.
-    post_approval_scans = _rescan_affected_models(session, asset)
+    # stale. The rescan is heavy (NLI) and runs as a background task
+    # (v0.9.2a) - the approval event records that it was scheduled, and each
+    # background scan writes its own CONFLICT_SCAN_COMPLETED event. State
+    # transition and recomputation are deliberately separate.
+    affected_ids = affected_expert_model_ids(session, asset)
 
     crud.log_audit_event(
         session,
@@ -165,15 +167,16 @@ def review_revision(session: Session, revision_id: int, action: str,
             "superseded_revision_id": old_active.id if old_active else None,
             "content_hash": revision.content_hash,
             "notes": notes,
-            "post_approval_scans": post_approval_scans
+            "rescan_scheduled": bool(affected_ids),
+            "affected_model_ids": affected_ids
         })
     )
     return revision
 
 
-def _rescan_affected_models(session: Session, asset: db.KnowledgeAsset) -> list:
-    from app import conflict_engine
-    results = []
+def affected_expert_model_ids(session: Session, asset: db.KnowledgeAsset) -> list:
+    """Expert Models whose conflict graph is staled by a change to this asset."""
+    ids = []
     models = session.query(db.ExpertModel).filter(
         db.ExpertModel.project_id == asset.project_id
     ).all()
@@ -182,8 +185,32 @@ def _rescan_affected_models(session: Session, asset: db.KnowledgeAsset) -> list:
             asset_ids = json.loads(model.asset_ids_json or "[]")
         except Exception:
             asset_ids = []
-        if asset.id not in asset_ids:
-            continue
+        if asset.id in asset_ids:
+            ids.append(model.id)
+    return ids
+
+
+def run_post_approval_rescan(asset_id: int):
+    """Background-task entry point (v0.9.2a): owns its session so it can run
+    after the approval response has been sent. Invalidates content-bound
+    verdicts and rescans every affected Expert Model; each scan writes its
+    own CONFLICT_SCAN_COMPLETED audit event."""
+    session = db.SessionLocal()
+    try:
+        asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
+        if not asset:
+            print(f"Post-approval rescan skipped: asset {asset_id} no longer exists")
+            return
+        _rescan_affected_models(session, asset)
+    finally:
+        session.close()
+
+
+def _rescan_affected_models(session: Session, asset: db.KnowledgeAsset) -> list:
+    from app import conflict_engine
+    results = []
+    for model_id in affected_expert_model_ids(session, asset):
+        model = session.query(db.ExpertModel).filter(db.ExpertModel.id == model_id).first()
         try:
             # Operator conflict verdicts are content-bound: a CONFIRMED or
             # DISMISSED verdict involving this asset judged content that no

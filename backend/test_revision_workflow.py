@@ -127,8 +127,9 @@ def main():
         f"Direct content tampering not detected: {report['failed_checks']}"
     print("Part 6 passed: tampering around the revision workflow is detected at validation time.")
 
-    # 7. Self-healing: approving a revision rescans affected Expert Models.
-    print("\n--- Part 7: Post-approval conflict rescan of affected Expert Models ---")
+    # 7. Self-healing: approval SCHEDULES a background rescan of affected
+    # Expert Models (v0.9.2a) - the approval itself returns immediately.
+    print("\n--- Part 7: Post-approval conflict rescan is scheduled, then runs in background ---")
     import json as _json
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
         name="Affected Expert", description="", project_id=asset.project_id, asset_ids=[asset.id]))
@@ -140,12 +141,28 @@ def main():
         db.AuditEvent.event_type == "ASSET_REVISION_APPROVED"
     ).order_by(db.AuditEvent.id.desc()).first()
     details = _json.loads(approved_event.details)
-    scans = details.get("post_approval_scans", [])
+    assert details.get("rescan_scheduled") is True, "Approval event must record that a rescan was scheduled"
+    assert details.get("affected_model_ids") == [model.id], \
+        f"Approval event must name the affected models: {details.get('affected_model_ids')}"
+    assert "post_approval_scans" not in details, \
+        "Approval event must not pretend scans already completed"
+
+    # Simulate the background task (the endpoint schedules
+    # revisions.run_post_approval_rescan; tests drive the same logic with
+    # the test session instead of a fresh SessionLocal).
+    session.refresh(asset)
+    scans = revisions._rescan_affected_models(session, asset)
     assert len(scans) == 1 and scans[0]["expert_model_id"] == model.id, \
-        f"Affected Expert Model not rescanned on revision approval: {scans}"
+        f"Affected Expert Model not rescanned by background task: {scans}"
     assert "semantic_conflict_score" in scans[0], "Rescan result missing refreshed conflict score"
+    if scans[0]["nli_available"]:
+        scan_events = session.query(db.AuditEvent).filter(
+            db.AuditEvent.event_type == "CONFLICT_SCAN_COMPLETED",
+            db.AuditEvent.target_id == str(model.id)
+        ).count()
+        assert scan_events >= 1, "Background scan must write its own CONFLICT_SCAN_COMPLETED event"
     print(f"  Rescan recorded: {scans[0]}")
-    print("Part 7 passed: revision approval triggers conflict rescan of affected models.")
+    print("Part 7 passed: approval schedules the rescan; background task heals the conflict graph.")
 
     session.close()
     print("\n=== All Asset Revision Workflow tests passed successfully! ===")

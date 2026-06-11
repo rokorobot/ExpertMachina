@@ -497,9 +497,9 @@ def create_asset_revision(asset_id: int, revision_in: schemas.AssetRevisionCreat
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/revisions/{revision_id}/review", response_model=schemas.AssetRevisionResponse)
-def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate, db_session: Session = Depends(get_db)):
+def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db)):
     try:
-        return revisions.review_revision(
+        revision = revisions.review_revision(
             db_session, revision_id, action=review.action,
             actor=review.reviewer, notes=review.notes
         )
@@ -507,6 +507,12 @@ def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+    # v0.9.2a: the approval returns immediately; the heavy NLI conflict
+    # rescan of affected Expert Models runs as a background task with its
+    # own session. State transition and recomputation are separate.
+    if review.action == "APPROVE":
+        background_tasks.add_task(revisions.run_post_approval_rescan, revision.asset_id)
+    return revision
 
 # Knowledge Integrity Engine routes (MVP 0.7: Semantic Conflict Engine)
 @app.post("/api/experts/{expert_model_id}/conflict-scan", response_model=schemas.ConflictScanResponse)

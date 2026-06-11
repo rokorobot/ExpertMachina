@@ -2980,7 +2980,7 @@ export default function Home() {
                                     </div>
                                     {revisionReview.action === 'APPROVE' && (
                                       <span className="text-[9px] text-slate-500 font-mono italic block">
-                                        Approval supersedes the current revision and automatically rescans conflicts in affected Expert Models.
+                                        Approval supersedes the current revision; conflict rescans of affected Expert Models are scheduled in the background and refresh the Inbox when complete.
                                       </span>
                                     )}
                                   </div>
