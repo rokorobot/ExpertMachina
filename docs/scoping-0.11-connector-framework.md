@@ -97,6 +97,23 @@ Architecture tests against a FAKE provider — no filesystem, no UI:
 These prove future providers can plug in safely; they are the contract's
 test double.
 
+## Hard invariant: providers describe, the framework decides
+
+```
+URI          = identity
+content hash = change verdict
+metadata     = context
+```
+
+Providers may describe source state; only the framework decides
+reconciliation. `modified_at` and other provider metadata may explain
+provenance but must never decide truth — this forecloses the classic
+enterprise-connector bug pair (timestamp changed → false change;
+timestamp unchanged → missed content change) and keeps future
+SharePoint/Drive/Notion/export providers from smuggling correctness
+assumptions into provider code. Candidate for ratification as a
+D-register ruling when v0.11 ships.
+
 ## Interface honesty constraint
 
 The `ConnectorItem` contract must NOT assume one file = one source item.
