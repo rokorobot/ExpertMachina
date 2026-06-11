@@ -177,6 +177,28 @@ provider-ish; `_ingest_one` / `_apply_source_change` / job accounting are
 framework-ish; the policy hook is framework-ish. The retrofit is a separation,
 not a rewrite.
 
+## Status of this brief: hypothesis under test, not destiny
+
+This document records what we BELIEVE the correct architecture is; the
+retrofit is the experiment that decides whether it's TRUE. The single-
+sentence framing of the milestone: *test whether acquisition behavior can
+survive separation from acquisition source.* Three acceptable outcomes:
+
+- **Yes** → a platform.
+- **Partially** → a better architecture than imagined, amended here.
+- **No** → a corrected understanding of the system, recorded here.
+
+All three create knowledge; only one creates the exact framework imagined
+today, and that is fine.
+
+**On resistance** (e.g. a step reveals reconciliation depends on
+source-specific semantics nobody anticipated): do NOT hide the complexity,
+force it into the framework, and declare the step passed. Instead: record
+the observation, challenge the assumption, revise this brief in daylight,
+and defer any D-register ratification. Forcing reality to comply with a
+hypothesis is the failure mode; amending the hypothesis is the process
+working — the same process that produced D17.
+
 ## Earned afterwards (not before)
 
 - A first-class "Sources & Connectors" UI area — justified by plurality (D8)
