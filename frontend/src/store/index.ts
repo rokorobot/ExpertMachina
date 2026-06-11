@@ -215,6 +215,21 @@ export interface EvaluationRun {
   results: EvaluationQuestionResult[];
 }
 
+export interface CoverageTrendPoint {
+  run_id: number;
+  completed_at: string | null;
+  pass_rate: number;
+  average_coverage_score: number;
+  claims_total: number | null;
+  verdict_counts: { ENTAILED: number; CONTRADICTED: number; UNSUPPORTED: number } | null;
+  supported_pct: number | null;
+}
+
+export interface CoverageTrend {
+  expert_model_id: number;
+  runs: CoverageTrendPoint[];
+}
+
 export interface AgentActivity {
   agent_id: string;
   clearance: string | null;
@@ -391,6 +406,8 @@ interface AppState {
   benchmarks: BenchmarkQuestion[];
   evaluationRuns: EvaluationRun[];
   evaluationRunning: boolean;
+  coverageTrend: CoverageTrend | null;
+  fetchCoverageTrend: (expertModelId: number) => Promise<void>;
   fetchEvaluations: (projectId: number) => Promise<void>;
   createBenchmark: (projectId: number, payload: Record<string, unknown>) => Promise<void>;
   deleteBenchmark: (projectId: number, benchmarkId: number) => Promise<void>;
@@ -740,6 +757,18 @@ export const useAppStore = create<AppState>((set, get) => ({
   benchmarks: [],
   evaluationRuns: [],
   evaluationRunning: false,
+  coverageTrend: null,
+
+  fetchCoverageTrend: async (expertModelId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/experts/${expertModelId}/coverage-trend`);
+      if (!res.ok) throw new Error('Failed to fetch coverage trend');
+      const data = await res.json();
+      set({ coverageTrend: data });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
 
   fetchEvaluations: async (projectId: number) => {
     try {

@@ -112,7 +112,9 @@ export default function Home() {
     governanceInbox,
     governanceInboxLoading,
     fetchGovernanceInbox,
-    reviewClaimVerdict
+    reviewClaimVerdict,
+    coverageTrend,
+    fetchCoverageTrend
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
@@ -160,6 +162,14 @@ export default function Home() {
   const [benchCoverage, setBenchCoverage] = useState(0.95);
   const [evalModelId, setEvalModelId] = useState<number | null>(null);
   const [expandedRunId, setExpandedRunId] = useState<number | null>(null);
+  // Answer Coverage Governance (MVP 0.9.3)
+  const [trustExplainerId, setTrustExplainerId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'evaluations' && evalModelId !== null) {
+      fetchCoverageTrend(evalModelId);
+    }
+  }, [activeTab, evalModelId, evaluationRuns]);
 
   useEffect(() => {
     if (activeTab === 'evaluations' && activeProjectId !== null) {
@@ -1629,22 +1639,39 @@ export default function Home() {
                               {(() => {
                                 const ts = trustScores.find(t => t.expert_model_id === model.id);
                                 if (!ts) return null;
+                                // Weighted contribution per measured component: these sum
+                                // exactly to the trust score (weights renormalized).
+                                const totalWeight = ts.components.filter(c => c.measured).reduce((s, c) => s + c.weight, 0);
+                                const contribution = (c: typeof ts.components[number]) =>
+                                  c.measured && c.score != null && totalWeight > 0
+                                    ? (c.score * c.weight) / totalWeight : null;
+                                const explaining = trustExplainerId === model.id;
                                 return (
                                   <div className="bg-slate-950/60 border border-slate-900 rounded p-3 space-y-2" title={ts.summary}>
                                     <div className="flex items-center justify-between">
                                       <span className="text-[9px] font-mono text-slate-500 uppercase tracking-wider">
                                         Trust Score <span className="text-slate-600">({ts.score_version})</span>
                                       </span>
-                                      <span className={`text-base font-bold font-mono ${
-                                        ts.trust_score == null ? 'text-slate-500' :
-                                        ts.trust_score >= 90 ? 'text-emerald-400' :
-                                        ts.trust_score >= 70 ? 'text-yellow-400' : 'text-rose-400'
-                                      }`}>
-                                        {ts.trust_score ?? 'N/A'}
-                                      </span>
+                                      <div className="flex items-center gap-2">
+                                        <button
+                                          onClick={() => setTrustExplainerId(explaining ? null : model.id)}
+                                          className="text-[9px] font-mono text-cyan-400 hover:text-cyan-300 border border-cyan-900/40 bg-cyan-950/20 rounded px-2 py-0.5"
+                                        >
+                                          {explaining ? 'Hide' : 'Why this score?'}
+                                        </button>
+                                        <span className={`text-base font-bold font-mono ${
+                                          ts.trust_score == null ? 'text-slate-500' :
+                                          ts.trust_score >= 90 ? 'text-emerald-400' :
+                                          ts.trust_score >= 70 ? 'text-yellow-400' : 'text-rose-400'
+                                        }`}>
+                                          {ts.trust_score ?? 'N/A'}
+                                        </span>
+                                      </div>
                                     </div>
                                     <div className="space-y-1">
-                                      {ts.components.map((c) => (
+                                      {ts.components.map((c) => {
+                                        const contrib = contribution(c);
+                                        return (
                                         <div key={c.key} className="flex items-center gap-2" title={c.reason}>
                                           <span className="text-[9px] font-mono text-slate-400 w-36 shrink-0 truncate">{c.label}</span>
                                           <div className="flex-1 h-1.5 bg-slate-900 rounded overflow-hidden">
@@ -1665,9 +1692,33 @@ export default function Home() {
                                           }`}>
                                             {c.measured ? c.score : 'N/M'}
                                           </span>
+                                          <span className="text-[9px] font-mono text-slate-500 w-12 text-right">
+                                            {contrib !== null ? `+${contrib.toFixed(1)}` : '—'}
+                                          </span>
                                         </div>
-                                      ))}
+                                        );
+                                      })}
                                     </div>
+                                    {explaining && (
+                                      <div className="space-y-1.5 border-t border-slate-900/60 pt-2">
+                                        <span className="text-[8px] font-mono text-slate-600 uppercase tracking-wider block">
+                                          Contributions sum to the trust score (weights renormalized over measured components)
+                                        </span>
+                                        {ts.components.map((c) => (
+                                          <div key={c.key} className="text-[9px] font-mono">
+                                            <span className="text-slate-400">{c.label}</span>
+                                            <span className="text-slate-500"> · weight {c.weight}</span>
+                                            <p className="text-slate-300 font-sans italic">{c.reason}</p>
+                                            {c.key === 'governance_health' && Array.isArray((c.details as { penalties?: unknown }).penalties) &&
+                                              ((c.details as { penalties: { signal: string; count: number; penalty: number }[] }).penalties).map((p, i) => (
+                                                <span key={i} className="text-[9px] text-rose-400/80 block pl-2">
+                                                  − {p.penalty} · {p.count}× {p.signal.replace(/_/g, ' ')}
+                                                </span>
+                                              ))}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    )}
                                   </div>
                                 );
                               })()}
@@ -1970,6 +2021,93 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
+
+                  {/* COVERAGE TREND (MVP 0.9.3) — answer coverage over completed runs */}
+                  {(() => {
+                    if (!coverageTrend || coverageTrend.expert_model_id !== evalModelId) return null;
+                    const points = coverageTrend.runs;
+                    if (points.length === 0) return null;
+
+                    const W = 420, H = 110, PL = 30, PR = 12, PT = 10, PB = 18;
+                    const x = (i: number) => points.length === 1
+                      ? PL + (W - PL - PR) / 2
+                      : PL + (i * (W - PL - PR)) / (points.length - 1);
+                    const y = (pct: number) => PT + (100 - pct) * (H - PT - PB) / 100;
+                    const line = (vals: (number | null)[]) =>
+                      vals.map((v, i) => v === null ? null : `${x(i)},${y(v)}`)
+                        .filter(Boolean).join(' ');
+
+                    const passVals = points.map(p => p.pass_rate * 100);
+                    const covVals = points.map(p => p.average_coverage_score * 100);
+                    const supVals = points.map(p => p.supported_pct);
+
+                    const SERIES = [
+                      { label: 'Pass Rate', color: '#34d399', vals: passVals as (number | null)[] },
+                      { label: 'Avg Coverage', color: '#22d3ee', vals: covVals as (number | null)[] },
+                      { label: 'Supported Claims', color: '#facc15', vals: supVals },
+                    ];
+
+                    return (
+                      <div className="glass-panel p-6 rounded-xl space-y-3">
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                          <Sparkles className="w-4 h-4 text-cyan-400" />
+                          Answer Coverage Trend
+                          <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                            Computed from persisted evaluation runs and claim verdicts — runs before verdict persistence show no claim series
+                          </span>
+                        </h3>
+                        <div className="flex flex-wrap gap-4 items-start">
+                          <svg viewBox={`0 0 ${W} ${H}`} className="flex-1 min-w-[280px] max-w-[560px]">
+                            {[0, 50, 100].map(g => (
+                              <g key={g}>
+                                <line x1={PL} y1={y(g)} x2={W - PR} y2={y(g)} stroke="#1e293b" strokeWidth="1" />
+                                <text x={PL - 4} y={y(g) + 3} textAnchor="end" fontSize="7" fill="#64748b" fontFamily="monospace">{g}</text>
+                              </g>
+                            ))}
+                            {SERIES.map(s => (
+                              <polyline key={s.label} points={line(s.vals)} fill="none" stroke={s.color} strokeWidth="1.5" strokeOpacity="0.85" />
+                            ))}
+                            {SERIES.map(s => s.vals.map((v, i) => v === null ? null : (
+                              <circle key={`${s.label}-${i}`} cx={x(i)} cy={y(v)} r="2.5" fill={s.color}>
+                                <title>{`RUN-${points[i].run_id} ${s.label}: ${Math.round(v)}%`}</title>
+                              </circle>
+                            )))}
+                            {points.map((p, i) => (
+                              <text key={p.run_id} x={x(i)} y={H - 4} textAnchor="middle" fontSize="7" fill="#64748b" fontFamily="monospace">
+                                RUN-{p.run_id}
+                              </text>
+                            ))}
+                          </svg>
+                          <div className="space-y-2 min-w-[180px]">
+                            <div className="flex flex-wrap gap-3">
+                              {SERIES.map(s => (
+                                <span key={s.label} className="flex items-center gap-1.5 text-[9px] font-mono text-slate-400">
+                                  <span className="w-2.5 h-0.5 rounded" style={{ backgroundColor: s.color }} />
+                                  {s.label}
+                                </span>
+                              ))}
+                            </div>
+                            <div className="space-y-1">
+                              {points.map(p => (
+                                <div key={p.run_id} className="flex items-center gap-2 text-[9px] font-mono">
+                                  <span className="text-slate-500 w-12 shrink-0">RUN-{p.run_id}</span>
+                                  {p.verdict_counts ? (
+                                    <>
+                                      <span className="text-emerald-400">{p.verdict_counts.ENTAILED} entailed</span>
+                                      <span className="text-rose-400">{p.verdict_counts.CONTRADICTED} contradicted</span>
+                                      <span className="text-yellow-400">{p.verdict_counts.UNSUPPORTED} unsupported</span>
+                                    </>
+                                  ) : (
+                                    <span className="text-slate-600 italic">verdicts not persisted for this run</span>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })()}
 
                   {/* RUN HISTORY & SCORECARDS */}
                   <div className="space-y-4">

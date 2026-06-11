@@ -573,6 +573,14 @@ def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db))
 # measurement: reviewing one records a VERIFICATION_REVIEWED audit event and
 # never mutates the ClaimVerdict row. Remediation happens on the asset or
 # revision; the next evaluation run produces fresh verdicts.
+# Answer Coverage Governance (MVP 0.9.3): trend over persisted run facts.
+@app.get("/api/experts/{expert_model_id}/coverage-trend")
+def get_expert_coverage_trend(expert_model_id: int, db_session: Session = Depends(get_db)):
+    model = db_session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
+    if not model:
+        raise HTTPException(status_code=404, detail=f"Expert Model {expert_model_id} not found")
+    return evaluation.coverage_trend(db_session, expert_model_id)
+
 @app.get("/api/evaluations/{run_id}/verdicts", response_model=List[schemas.ClaimVerdictResponse])
 def get_run_claim_verdicts(run_id: int, verdict: Optional[str] = None, db_session: Session = Depends(get_db)):
     query = db_session.query(db.ClaimVerdict).filter(db.ClaimVerdict.evaluation_run_id == run_id)

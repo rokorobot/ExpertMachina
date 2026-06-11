@@ -143,6 +143,30 @@ def main():
         "Review must never mutate the verdict artifact"
     print("Part 5 passed: human judgment recorded in the audit ledger, artifact immutable.")
 
+    # Part 6: coverage trend over completed runs (MVP 0.9.3).
+    print("\n--- Part 6: Coverage trend reports runs oldest-first with honest verdict metrics ---")
+    trend = evaluation.coverage_trend(session, model.id)
+    run_ids = [p["run_id"] for p in trend["runs"]]
+    assert run_ids == sorted(run_ids), "Trend must be ordered oldest-first"
+    assert len(run_ids) == 2, f"Expected both completed runs in the trend: {run_ids}"
+    first, second = trend["runs"]
+    # Run 1 had real verdicts (incl. the two injected gaps); run 2 only its own.
+    assert first["claims_total"] and first["verdict_counts"]["UNSUPPORTED"] >= 1
+    assert first["supported_pct"] is not None
+    assert second["claims_total"] >= 1 and second["supported_pct"] is not None
+    # A run with no verdicts must report None, never fabricated zeros.
+    bare_run = db.EvaluationRun(
+        project_id=project.id, expert_model_id=model.id,
+        asset_ids_snapshot="[]", asset_hashes_snapshot="{}",
+        benchmark_question_ids_snapshot="[]", status="COMPLETED",
+        completed_at=datetime.datetime.utcnow())
+    session.add(bare_run)
+    session.commit()
+    trend = evaluation.coverage_trend(session, model.id)
+    bare = next(p for p in trend["runs"] if p["run_id"] == bare_run.id)
+    assert bare["claims_total"] is None and bare["verdict_counts"] is None and bare["supported_pct"] is None
+    print("Part 6 passed: trend is ordered, measured, and never fabricates verdict data.")
+
     print("\n=== All Persisted Verification Verdict tests passed successfully! ===")
 
 

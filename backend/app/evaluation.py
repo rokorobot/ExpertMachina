@@ -49,6 +49,39 @@ def create_evaluation_run(session: Session, run_in: schemas.EvaluationRunCreate)
     session.refresh(db_run)
     return db_run
 
+def coverage_trend(session: Session, expert_model_id: int) -> dict:
+    """Answer Coverage Governance (MVP 0.9.3): coverage and verdict-mix
+    trend over COMPLETED evaluation runs, oldest first. Pure read over
+    persisted run facts and claim verdicts - no new state. Runs that
+    predate verdict persistence (v0.9.2) report verdict metrics as
+    unmeasured (None), never fabricated zeros."""
+    runs = session.query(db.EvaluationRun).filter(
+        db.EvaluationRun.expert_model_id == expert_model_id,
+        db.EvaluationRun.status == "COMPLETED"
+    ).order_by(db.EvaluationRun.id.asc()).all()
+
+    points = []
+    for run in runs:
+        verdicts = session.query(db.ClaimVerdict).filter(
+            db.ClaimVerdict.evaluation_run_id == run.id
+        ).all()
+        counts = {"ENTAILED": 0, "CONTRADICTED": 0, "UNSUPPORTED": 0}
+        for v in verdicts:
+            if v.verdict in counts:
+                counts[v.verdict] += 1
+        total = sum(counts.values())
+        points.append({
+            "run_id": run.id,
+            "completed_at": run.completed_at.isoformat() if run.completed_at else None,
+            "pass_rate": run.pass_rate,
+            "average_coverage_score": run.average_coverage_score,
+            "claims_total": total if total else None,
+            "verdict_counts": counts if total else None,
+            "supported_pct": round(counts["ENTAILED"] / total * 100, 1) if total else None,
+        })
+    return {"expert_model_id": expert_model_id, "runs": points}
+
+
 def run_evaluation_batch(session: Session, run_id: int):
     db_run = session.query(db.EvaluationRun).filter(db.EvaluationRun.id == run_id).first()
     if not db_run:
