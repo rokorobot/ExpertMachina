@@ -19,8 +19,8 @@
 | MVP 0.10.0 | Local Folder Connector | ✅ Completed |
 | MVP 0.10.1 | Change Detection / Incremental Sync | ✅ Completed |
 | MVP 0.10.2 | Policy-Based Auto Approval | ✅ Completed |
-| MVP 0.11 | Source Connector Framework (multi-source) | 📋 Next |
-| — | LLM Provider Settings (model-per-function) | 📋 Planned (utility) |
+| MVP 0.11 | Source Connector Framework | ✅ Completed |
+| — | LLM Provider Settings (model-per-function) | 📋 Next (utility) |
 | MVP 1.0 | Enterprise Platform (identity, roles, credentials, deployment) | 📋 Planned |
 
 ---
@@ -69,17 +69,21 @@ maintain it at enterprise scale?":
   ruling (D17). **Explicitly deferred**: semantic/condition-based rules
   (formatting-only diffs, NLI contradiction checks) and revision auto-approval
   — those belong to the phased validation track (deterministic → NLI → LLM).
-- **0.11 Source Connector Framework (next)** — the FRAMEWORK is the deliverable,
-  individual connectors are plugins. A provider interface (discover, enumerate,
-  fetch, hash, sync state, provenance, change detection) implemented FIRST by
-  retrofitting LocalFolderConnector — proving the abstraction against the one
-  real provider before adding more — then reused by SharePoint / Drive /
-  Confluence / Notion / S3 / Git plugins. A first-class "Sources & Connectors"
-  UI area becomes justified by plurality (D8); cloud connectors needing stored
-  credentials stay blocked on the v1.x identity layer. Full design contract:
-  [scoping-0.11-connector-framework.md](scoping-0.11-connector-framework.md) —
-  acceptance test: LocalFolder gets thinner, behavior stays identical, existing
-  test suites pass unchanged; hard rule: no cloud provider before the retrofit.
+- **0.11 Source Connector Framework (✅)** — NOT a new connector: an
+  architecture extraction. `connectors.py` became a generic
+  sync/reconciliation framework plus a thin LocalFolderProvider (~85 lines:
+  walk, URIs, read, stat — nothing else) speaking the four-method contract
+  (validate / describe / discover / fetch). Behavior identical: all
+  pre-existing suites pass with ZERO assertion edits; the framework holds
+  zero source-side filesystem operations and processed `fake://` URIs
+  end-to-end in the new seam suite (test_connector_seam.py — architectural
+  regression, now part of the named contract). D18 ratified on that
+  evidence: providers describe, the framework decides. Design contract +
+  Phase 1 concern map: [scoping-0.11-connector-framework.md](scoping-0.11-connector-framework.md).
+  Future providers (SharePoint / Drive / Confluence / exports) plug in
+  without framework changes; credential-requiring ones still wait for v1.x
+  identity; the "Sources & Connectors" UI area arrives with the second
+  provider type (D8).
 
 ---
 
@@ -351,6 +355,14 @@ The defensible position: agents consume *semantically verified, conflict-checked
   Model X" — a claim one-model-fits-all RAG cannot make) → deployable Expert
   Agent (HR / Compliance / Clinical Ops experts). Dovetails with D11's
   model-per-function configuration via the LLM Provider Settings milestone.
+  **Purpose ruling (June 2026): model evaluation is a MEANS, never the end.**
+  ExpertMachina is a knowledge-to-agent system, not an LLM evaluation
+  platform: the governed knowledge and its expert representation are the
+  primary asset, the agent is the delivery mechanism, and model selection is
+  the optimization layer that picks the engine. The question is never "which
+  LLM won?" but "which model enables THIS Expert Package to deliver the
+  highest-quality answers for THIS customer's use case?" The benchmark serves
+  deployment; deployment never serves the benchmark.
   **Credibility note — the referee is not one of the players**: unlike
   LLM-as-judge evaluation products, the verdict mechanism here is independent
   of every model under test (local NLI cross-encoder with reproducible weight

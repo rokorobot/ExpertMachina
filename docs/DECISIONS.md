@@ -136,3 +136,30 @@ A policy is a governed object, not a setting. The rules:
 Semantic conditions (formatting-only diffs, NLI contradiction checks) and any
 future revision auto-approval are a separate, explicit decision — not an
 extension of this one.
+
+## D18 — Providers describe; the framework decides (v0.11)
+A source provider may describe source state — reachability (`validate`),
+audit context (`describe`), items (`discover`: URI + name + metadata), and
+content (`fetch`: bytes + metadata) — and must NOT determine reconciliation
+outcomes. Identity is the provider-defined URI (D7 generalized beyond
+files); the change verdict is the framework's hash of fetched content;
+provider metadata (`modified_at`, `size_bytes`, anything else) is
+informational context — recorded, never decisive for NEW / DUPLICATE /
+CHANGED / FAILED. One source file need not equal one item; the provider
+owns the mapping from its native shape to items.
+**Why:** forecloses the classic enterprise-connector bug pair (timestamp
+changed → false change; timestamp unchanged → missed content change) and
+keeps correctness assumptions out of provider code — every future provider
+(SharePoint, Drive, exports) inherits reconciliation, revisions, policy
+(D17), and audit instead of reimplementing or subverting them.
+**Tradeoff accepted:** the framework always fetches content to hash it —
+no metadata-based fetch skipping. If a provider ever wants timestamp-based
+optimization, that is a new explicit decision, not an interpretation of
+this one.
+**Evidence:** backend/test_connector_seam.py — Test C (modified_at changes
++ hash unchanged → DUPLICATE, the new timestamp still recorded as context)
+and Test A (the framework classified `fake://` URIs end-to-end, inputs
+that could not exist under the original design). The seam suite is part of
+the named regression contract: it protects the architecture the way the
+product suites protect behavior — user-visible tests can all pass while
+"provider decides" quietly returns; only the seam tests catch that.

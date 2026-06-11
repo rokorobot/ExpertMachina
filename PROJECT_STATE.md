@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-11 · current version **v0.10.2** · HEAD `051d00a` · branch `main`
+**Snapshot:** 2026-06-11 · current version **v0.11.0** · HEAD `6992dfd` · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -18,7 +18,8 @@ revision-controlled.
 ## The value chain (all segments working end-to-end)
 
 ```
-Folder (Local Connector)          v0.10.0  scan-now bulk ingestion, dedup, per-file status
+Source (Connector Framework)      v0.11.0  provider plugins; LocalFolderProvider first (D18)
+  ↓ scan-now ingestion            v0.10.0  bulk ingestion, dedup, per-file status
   ↓ change detection              v0.10.1  changed source → candidate revision
 Documents → CANDIDATE assets               existing extraction pipeline (OpenAI gpt-4o-mini or rules)
   ↓ policy auto-approval          v0.10.2  versioned per-project rules, new candidates only (D17)
@@ -52,7 +53,9 @@ Readiness per model; deep links into specialized workbenches; URL-addressable.
 | `evaluation.py` | benchmark runs (background), persists **ClaimVerdict** rows, `coverage_trend` |
 | `governance_inbox.py` | computed inbox + readiness (NO work-item table by design) |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
-| `connectors.py` | LOCAL_FOLDER scan worker: dedup, change detection → revisions |
+| `connectors/framework.py` | generic sync/reconciliation engine: job lifecycle, URI identity, hash verdicts, dedup, change→revisions, policy hook, audit (zero source-side filesystem ops) |
+| `connectors/models.py` | provider contract: ConnectorItem, ConnectorFetchResult, ConnectorProvider (validate/describe/discover/fetch) |
+| `connectors/providers/local_folder.py` | LocalFolderProvider: walk, URIs, read, stat — nothing else (~85 lines) |
 | `policy.py` | Policy-Based Auto Approval engine: deterministic type+scope match, policy snapshot provenance |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools over Governance Contract v1 |
 | `query_engine.py` | retrieval + validation + generation + claim verification; `ACCESS_RANK` |
@@ -98,6 +101,7 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 | — | `05ef588` | Folder ingestion folded into Document Inventory (UI ruling) |
 | v0.10.1 | `a66c83d` | Change Detection → candidate revisions via existing machinery |
 | v0.10.2 | `051d00a` | Policy-Based Auto Approval (versioned policies, snapshot provenance, D17) |
+| v0.11.0 | `77e1408` | Source Connector Framework — LocalFolder retrofitted as a thin provider, behavior identical (zero assertion edits), seam tests, D18 ratified |
 
 ## How to run
 
@@ -111,7 +115,11 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
   demo is wanted (there is deliberately no delete endpoint).
 - `npm run build` fails on PRE-EXISTING lint errors (any-types, unescaped quotes);
   dev mode works. `npx tsc --noEmit` is clean — use it as the frontend check.
-- Tests: standalone scripts in `backend/`, run with the venv python
+- Tests: standalone scripts in `backend/`, run with the venv python. Two layers:
+  PRODUCT regression (user-visible behavior) and ARCHITECTURAL regression —
+  `test_connector_seam.py` protects the D18 provider/framework boundary with a
+  fake `fake://` provider (all product tests can pass while "provider decides"
+  quietly returns; only the seam suite catches that). Product suites:
   (`test_auto_approval.py`,
   `test_local_connector.py`, `test_claim_verdicts.py`, `test_package_builder.py`,
   `test_governance_inbox.py`, `test_compile_gates.py`, `test_revision_workflow.py`,
@@ -124,14 +132,18 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 
 ## Next milestones (agreed order)
 
-1. **v0.11.0 — Source Connector Framework** (framework-first: retrofit
-   LocalFolder as the first provider; design contract + acceptance test in
-   docs/scoping-0.11-connector-framework.md; "Sources & Connectors" becomes a
-   first-class UI area only then)
-2. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
-   config store — app currently has env-vars only)
-3. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until
+1. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
+   config store — app currently has env-vars only). Framing ruling (June 2026):
+   future model evaluation is a MEANS — select the best engine for a governed
+   Expert Package's deployment — never an LLM-benchmarking end in itself; the
+   knowledge and its expert representation are the primary asset, the agent is
+   the delivery mechanism.
+2. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until
    here by explicit decision)
+
+A second credential-free provider (Slack/Notion export, git working copy) is
+backlog, not scheduled — chosen for a different enumeration shape when wanted;
+the "Sources & Connectors" UI area arrives with it (D8).
 
 Deprioritized/deferred: semantic/condition-based auto-approval (formatting-only
 diffs, NLI contradiction checks) and revision auto-approval (a separate explicit
