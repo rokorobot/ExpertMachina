@@ -1,8 +1,7 @@
 # Python/Backend
 backend/.venv/
-backend/app/__pycache__/
-backend/__pycache__/
-backend/*.pyc
+__pycache__/
+*.pyc
 backend/uploads/
 backend/expert_machina.db
 backend/qdrant_db/
