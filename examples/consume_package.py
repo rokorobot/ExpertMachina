@@ -3,14 +3,19 @@
 Demonstrates the portable consumption channel (MVP 0.9.4): a downstream agent
 loads a governed Expert Package, verifies its tamper-evident hash chain, and
 answers questions ONLY from the packaged knowledge, with asset citations.
+The package format is agent-agnostic - this example uses the OpenAI API
+(the same provider ExpertMachina's own pipeline standardizes on), but any
+LLM or agent framework can consume the same files.
 
 Usage:
     python consume_package.py <path/to/package.empkg> "<question>"
 
 Verification (hash chain + governance snapshot) always runs and is offline.
-The answer step calls the Claude API and needs:
-    pip install anthropic
-    ANTHROPIC_API_KEY set in the environment
+The answer step calls the OpenAI API and needs:
+    pip install openai
+    OPENAI_API_KEY set in the environment
+    OPENAI_MODEL optionally overrides the model (default: gpt-4o-mini;
+    set it to your preferred Codex-class model)
 Without a key the script prints the assembled agent prompt instead of calling
 the model, so the packaging contract can be inspected end to end.
 
@@ -89,28 +94,31 @@ def main() -> None:
 
     system_prompt = build_system_prompt(pkg)
 
-    if not os.environ.get("ANTHROPIC_API_KEY"):
-        print("ANTHROPIC_API_KEY not set - printing the agent prompt instead of answering.\n")
+    api_key = os.environ.get("OPENAI_API_KEY")
+    if not api_key or api_key.startswith("mock-"):
+        print("OPENAI_API_KEY not set - printing the agent prompt instead of answering.\n")
         print("=" * 70)
         print(system_prompt)
         print("=" * 70)
         print(f"\nQuestion that would be asked: {question}")
         return
 
-    from anthropic import Anthropic
+    from openai import OpenAI
 
-    client = Anthropic()
-    response = client.messages.create(
-        model="claude-opus-4-8",
-        max_tokens=16000,
-        system=system_prompt,
-        messages=[{"role": "user", "content": question}],
+    model = os.environ.get("OPENAI_MODEL", "gpt-4o-mini")
+    client = OpenAI()
+    response = client.chat.completions.create(
+        model=model,
+        messages=[
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": question},
+        ],
     )
-    answer = "".join(block.text for block in response.content if block.type == "text")
+    answer = response.choices[0].message.content
 
     print(f"Question: {question}\n")
     print(f"Answer:   {answer}\n")
-    print(f"Answered by an external agent from package "
+    print(f"Answered by an external agent ({model}) from package "
           f"'{pkg['manifest']['package_name']}' v{pkg['manifest']['governance_version']} "
           f"(trust {pkg['manifest']['trust_score']} at compile time).")
 
