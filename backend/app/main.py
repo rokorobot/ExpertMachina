@@ -185,7 +185,11 @@ def auth_change_password(body: schemas.ChangePasswordRequest,
         raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
     verify_token, verified = identity.authenticate_password(db_session, p.name, body.current_password)
     if verify_token is None:
-        raise HTTPException(status_code=401, detail="Current password is incorrect")
+        # 400, deliberately NOT 401: the caller's SESSION is valid - what
+        # failed is a field in the request body. A 401 here would make the
+        # frontend's global session-expiry handler log the user out for a
+        # typo (live bug, June 2026).
+        raise HTTPException(status_code=400, detail="Current password is incorrect")
     # the verification login minted a session we don't need - revoke it
     vp, vc = identity.resolve_token(db_session, verify_token)
     if vc is not None:

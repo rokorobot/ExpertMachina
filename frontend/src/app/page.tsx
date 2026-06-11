@@ -175,7 +175,9 @@ export default function Home() {
   const [loginBusy, setLoginBusy] = useState(false);
   const [pwCurrent, setPwCurrent] = useState('');
   const [pwNew, setPwNew] = useState('');
+  const [pwConfirm, setPwConfirm] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
+  const [pwSuccess, setPwSuccess] = useState(false);
 
   // Users & Tokens admin forms (WS3, ADMIN only)
   const [npName, setNpName] = useState('');
@@ -1100,31 +1102,53 @@ export default function Home() {
 
         {/* Identity Boundary: forced credential rotation after bootstrap */}
         {currentUser.must_change_password && (
-          <div className="bg-amber-950/40 border-b border-amber-900/50 px-8 py-3 flex items-center gap-4 text-xs text-amber-200">
-            <AlertCircle className="w-4 h-4 shrink-0" />
-            <span className="shrink-0">One-time password in use — set your own:</span>
+          <div className="bg-amber-950/40 border-b border-amber-900/50 px-8 py-3 text-xs text-amber-200 space-y-1.5">
+            <div className="flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span className="font-semibold">One-time password in use — set your own password:</span>
+            </div>
             <form
-              className="flex items-center gap-2"
+              className="flex flex-wrap items-end gap-3"
               onSubmit={async (e) => {
                 e.preventDefault();
                 setPwBusy(true);
                 const ok = await changePassword(pwCurrent, pwNew);
                 setPwBusy(false);
-                if (ok) { setPwCurrent(''); setPwNew(''); }
+                if (ok) { setPwCurrent(''); setPwNew(''); setPwConfirm(''); setPwSuccess(true); }
               }}
             >
-              <input type="password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
-                     placeholder="current password"
-                     className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-40 outline-none focus:border-amber-700" />
-              <input type="password" value={pwNew} onChange={(e) => setPwNew(e.target.value)}
-                     placeholder="new password (min 8)"
-                     className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-40 outline-none focus:border-amber-700" />
-              <button type="submit" disabled={pwBusy || pwNew.length < 8 || !pwCurrent}
-                      className="px-2 py-1 rounded bg-amber-600/80 text-slate-950 font-semibold uppercase tracking-wider text-[10px] disabled:opacity-40">
-                {pwBusy ? 'Saving…' : 'Save'}
+              <label className="block">
+                <span className="block text-[9px] font-mono uppercase tracking-wider text-amber-400/80 mb-0.5">Current (one-time) password</span>
+                <input type="password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
+                       className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-44 outline-none focus:border-amber-700" />
+              </label>
+              <label className="block">
+                <span className="block text-[9px] font-mono uppercase tracking-wider text-amber-400/80 mb-0.5">New password (min 8)</span>
+                <input type="password" value={pwNew} onChange={(e) => setPwNew(e.target.value)}
+                       className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-44 outline-none focus:border-amber-700" />
+              </label>
+              <label className="block">
+                <span className="block text-[9px] font-mono uppercase tracking-wider text-amber-400/80 mb-0.5">Confirm new password</span>
+                <input type="password" value={pwConfirm} onChange={(e) => setPwConfirm(e.target.value)}
+                       className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-44 outline-none focus:border-amber-700" />
+              </label>
+              <button type="submit"
+                      disabled={pwBusy || pwNew.length < 8 || !pwCurrent || pwNew !== pwConfirm}
+                      className="px-3 py-1.5 rounded bg-amber-600/80 text-slate-950 font-semibold uppercase tracking-wider text-[10px] disabled:opacity-40">
+                {pwBusy ? 'Saving…' : 'Save new password'}
               </button>
-              {authError && <span className="text-rose-400">{authError}</span>}
+              {pwNew && pwConfirm && pwNew !== pwConfirm && (
+                <span className="text-rose-400 pb-1.5">passwords do not match</span>
+              )}
+              {authError && <span className="text-rose-400 pb-1.5">{authError}</span>}
             </form>
+          </div>
+        )}
+        {pwSuccess && !currentUser.must_change_password && (
+          <div className="bg-emerald-950/40 border-b border-emerald-900/50 px-8 py-2 text-xs text-emerald-300 flex items-center gap-2">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+            Password changed. Your session stays signed in; use the new password next time.
+            <button onClick={() => setPwSuccess(false)} className="ml-auto text-emerald-500 hover:text-emerald-300 font-mono text-[10px] uppercase">dismiss</button>
           </div>
         )}
 

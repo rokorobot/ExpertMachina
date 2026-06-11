@@ -183,6 +183,35 @@ def main_test():
         print("Part 5 passed: revoked token fails closed, stays in lineage, and the")
         print("               revocation fact answers who/role at action time.")
 
+        # Part 6: forced rotation flow (live bug, June 2026): a WRONG current
+        # password must be a 400 field error - the session stays alive - and
+        # never a 401 that the frontend's session-expiry handler turns into
+        # a logout. A correct rotation kills the old password.
+        print("\n--- Part 6: change-password - wrong current is a field error, not a logout ---")
+        r = client.post("/api/auth/login", json={"name": "eve", "password": eve["one_time_password"]})
+        EVE = {"Authorization": f"Bearer {r.json()['token']}"}
+        r = client.post("/api/auth/change-password",
+                        json={"current_password": "eve-NEW-password-99",
+                              "new_password": "eve-NEW-password-99"},  # the new-pw-typed-twice mistake
+                        headers=EVE)
+        assert r.status_code == 400, f"Wrong current password must be 400, got {r.status_code}"
+        r = client.get("/api/auth/me", headers=EVE)
+        assert r.status_code == 200, "The session must SURVIVE a wrong current password"
+        assert r.json()["must_change_password"] is True, "Rotation must not have happened"
+        r = client.post("/api/auth/change-password",
+                        json={"current_password": eve["one_time_password"],
+                              "new_password": "eve-NEW-password-99"},
+                        headers=EVE)
+        assert r.status_code == 200 and r.json()["must_change_password"] is False, r.text
+        r = client.get("/api/auth/me", headers=EVE)
+        assert r.status_code == 200, "The session survives a successful rotation too"
+        r = client.post("/api/auth/login", json={"name": "eve", "password": eve["one_time_password"]})
+        assert r.status_code == 401, "The one-time password must be dead after rotation"
+        r = client.post("/api/auth/login", json={"name": "eve", "password": "eve-NEW-password-99"})
+        assert r.status_code == 200, "The new password must work"
+        print("Part 6 passed: wrong current -> 400 + session intact; rotation kills the")
+        print("               one-time password and the session stays signed in.")
+
     print("\nAll identity administration checks passed.")
 
 
