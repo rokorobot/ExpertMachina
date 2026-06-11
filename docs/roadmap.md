@@ -12,7 +12,60 @@
 | MVP 0.7 | Knowledge QA | ✅ Completed |
 | MVP 0.8 | Governance Enforcement & Trust Framework | ✅ Completed — governance core frozen |
 | MVP 0.9 | Agent Gateway (MCP) | ✅ Completed — full read-only surface |
-| MVP 1.0 | Enterprise Agent Knowledge Platform | 📋 Planned |
+| MVP 0.9.1 | Governance Inbox & Readiness Console | ✅ Completed |
+| MVP 0.9.2 / 0.9.2a | Persisted Verification Verdicts / Background Rescan | ✅ Completed |
+| MVP 0.9.3 | Answer Coverage Governance | ✅ Completed |
+| MVP 0.9.4 | Agent Package Builder (.empkg) | ✅ Completed |
+| MVP 0.10.0 | Local Folder Connector | ✅ Completed |
+| MVP 0.10.1 | Change Detection / Incremental Sync | ✅ Completed |
+| MVP 0.10.2 | Policy-Based Auto Approval | 📋 Next |
+| MVP 0.11 | Source Connector Framework (multi-source) | 📋 Planned |
+| — | LLM Provider Settings (model-per-function) | 📋 Planned (utility) |
+| MVP 1.0 | Enterprise Platform (identity, roles, credentials, deployment) | 📋 Planned |
+
+---
+
+## The 0.9.x line — Governance Operationalization (Completed)
+
+v0.9.0 proved knowledge can be governed; the 0.9.x releases made governance
+*operational* and gave it an exit door:
+
+- **0.9.1 Governance Inbox & Readiness Console** — one prioritized operating view
+  computed from existing reviewable records (no work-item table); Compile
+  Readiness per Expert Model; deep links into the specialized workbenches;
+  URL-addressable governance workflows.
+- **0.9.2 Persisted Verification Verdicts** — `ClaimVerdict` immutable evaluation
+  artifacts (verdict, confidence, evidence assets, verifier weight fingerprint);
+  EVIDENCE_GAP inbox items from the latest completed run; human review =
+  `VERIFICATION_REVIEWED` audit event, artifact untouched.
+- **0.9.2a Background Revision Rescan** — approvals return instantly; NLI
+  recomputation runs as a background task with its own session and audit events.
+- **0.9.3 Answer Coverage Governance** — coverage/pass-rate/verdict-mix trend
+  over evaluation runs; trust explainer with weighted contributions that sum
+  exactly to the score.
+- **0.9.4 Agent Package Builder** — the compile gate finally guards a real
+  artifact: hash-chained, clearance-filtered, provider-agnostic `.empkg` with a
+  portable answering contract; external consumer example (OpenAI API).
+
+## The 0.10.x line — Enterprise Knowledge Acquisition (In Progress)
+
+The bottleneck shifted from "can we govern knowledge?" to "can we acquire and
+maintain it at enterprise scale?":
+
+- **0.10.0 Local Folder Connector (✅)** — scan-now bulk ingestion over local or
+  mounted folders: recursive walk, extension filter, sha256 dedup, per-file
+  status, background job with live progress. Connector output becomes ordinary
+  documents and CANDIDATE assets — no connector-specific review flow. UI lives
+  inside Document Inventory.
+- **0.10.1 Change Detection (✅)** — a changed source file becomes a candidate
+  revision through the existing revision machinery; per-scan source rows retain
+  the full hash history; approved content never changes until a human approves.
+- **0.10.2 Policy-Based Auto Approval (next)** — auto-approve configured low-risk
+  document classes (audit-logged "approved by policy"), keeping manual review
+  for regulated classes; the pressure valve bulk ingestion requires.
+- **0.11 Source Connector Framework** — multiple source types (SharePoint,
+  Drive, Confluence, S3, Git); a first-class "Sources & Connectors" area becomes
+  justified; cloud connectors blocked on the v1.x credentials/identity layer.
 
 ---
 
