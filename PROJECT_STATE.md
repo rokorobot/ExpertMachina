@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-11 · current version **v0.11.0** · HEAD `6992dfd` · branch `main`
+**Snapshot:** 2026-06-11 · current version **v0.11.0** · release HEAD `a35f7f3` (+ post-release transport hardening) · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -113,8 +113,10 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
   Note: the demo DB contains a DISABLED test policy (id 1, "Low-risk descriptive
   docs") from v0.10.2 live verification — harmless; remove via SQL if a clean
   demo is wanted (there is deliberately no delete endpoint).
-- `npm run build` fails on PRE-EXISTING lint errors (any-types, unescaped quotes);
-  dev mode works. `npx tsc --noEmit` is clean — use it as the frontend check.
+- Frontend checks: `npx tsc --noEmit` is clean; `npx eslint src` reports 0 errors /
+  17 warnings (exhaustive-deps + one unused var) — both run in CI. (The old claim
+  that the build fails on any-type lint errors was STALE — corrected 2026-06-11
+  per audit; zero any-types exist in page.tsx/store.)
 - Tests: standalone scripts in `backend/`, run with the venv python. Two layers:
   PRODUCT regression (user-visible behavior) and ARCHITECTURAL regression —
   `test_connector_seam.py` protects the D18 provider/framework boundary with a
