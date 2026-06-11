@@ -233,6 +233,43 @@ export interface EvaluationRun {
   results: EvaluationQuestionResult[];
 }
 
+export interface SourceConnector {
+  id: number;
+  project_id: number;
+  name: string;
+  type: string;
+  root_path: string;
+  include_extensions: string | null;
+  created_at: string;
+}
+
+export interface IngestionJob {
+  id: number;
+  project_id: number;
+  connector_id: number;
+  status: string; // PENDING | RUNNING | COMPLETED | FAILED
+  files_discovered: number;
+  files_ingested: number;
+  files_duplicate: number;
+  files_failed: number;
+  error: string | null;
+  started_at: string;
+  completed_at: string | null;
+}
+
+export interface SourceDocument {
+  id: number;
+  ingestion_job_id: number;
+  source_uri: string;
+  file_hash: string | null;
+  size_bytes: number | null;
+  source_modified_at: string | null;
+  status: string; // INGESTED | DUPLICATE | FAILED
+  error: string | null;
+  document_id: number | null;
+  created_at: string;
+}
+
 export interface CoverageTrendPoint {
   run_id: number;
   completed_at: string | null;
@@ -417,6 +454,15 @@ interface AppState {
   governanceInboxLoading: boolean;
   fetchGovernanceInbox: (projectId: number) => Promise<void>;
   reviewClaimVerdict: (verdictId: number, reviewer: string, comment: string) => Promise<void>;
+
+  sourceConnectors: SourceConnector[];
+  ingestionJobs: IngestionJob[];
+  jobFiles: Record<number, SourceDocument[]>;
+  fetchConnectors: (projectId: number) => Promise<void>;
+  createConnector: (projectId: number, name: string, rootPath: string, extensions?: string) => Promise<void>;
+  scanConnector: (connectorId: number, projectId: number) => Promise<void>;
+  fetchIngestionJobs: (projectId: number) => Promise<void>;
+  fetchJobFiles: (jobId: number) => Promise<void>;
 
   agentActivity: AgentActivitySummary | null;
   fetchAgentActivity: () => Promise<void>;
@@ -742,6 +788,70 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ governanceInbox: data, governanceInboxLoading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), governanceInboxLoading: false });
+    }
+  },
+
+  sourceConnectors: [],
+  ingestionJobs: [],
+  jobFiles: {},
+
+  fetchConnectors: async (projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/connectors`);
+      if (res.ok) set({ sourceConnectors: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  createConnector: async (projectId: number, name: string, rootPath: string, extensions?: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/connectors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, root_path: rootPath, include_extensions: extensions || null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to create connector');
+      }
+      await get().fetchConnectors(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  scanConnector: async (connectorId: number, projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/connectors/${connectorId}/scan`, { method: 'POST' });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to start scan');
+      }
+      await get().fetchIngestionJobs(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  fetchIngestionJobs: async (projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/ingestion-jobs`);
+      if (res.ok) set({ ingestionJobs: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  fetchJobFiles: async (jobId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/ingestion-jobs/${jobId}/files`);
+      if (res.ok) {
+        const data = await res.json();
+        set({ jobFiles: { ...get().jobFiles, [jobId]: data } });
+      }
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
   },
 

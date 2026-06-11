@@ -114,10 +114,18 @@ export default function Home() {
     fetchGovernanceInbox,
     reviewClaimVerdict,
     coverageTrend,
-    fetchCoverageTrend
+    fetchCoverageTrend,
+    sourceConnectors,
+    ingestionJobs,
+    jobFiles,
+    fetchConnectors,
+    createConnector,
+    scanConnector,
+    fetchIngestionJobs,
+    fetchJobFiles
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'connectors' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -220,6 +228,42 @@ export default function Home() {
       fetchConflicts(conflictModelId);
     }
   }, [activeTab, conflictModelId]);
+
+  // Source Connectors state (MVP 0.10.0)
+  const [connectorName, setConnectorName] = useState('');
+  const [connectorPath, setConnectorPath] = useState('');
+  const [connectorExts, setConnectorExts] = useState('.txt,.md,.pdf,.docx');
+  const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'connectors' && activeProjectId !== null) {
+      fetchConnectors(activeProjectId);
+      fetchIngestionJobs(activeProjectId);
+    }
+  }, [activeTab, activeProjectId]);
+
+  // Live progress: poll while any job is pending/running on the connectors tab.
+  useEffect(() => {
+    if (activeTab !== 'connectors' || activeProjectId === null) return;
+    const active = ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING');
+    if (!active) return;
+    const timer = setInterval(() => {
+      fetchIngestionJobs(activeProjectId);
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [activeTab, activeProjectId, ingestionJobs]);
+
+  // A finished scan changes documents/assets/inbox - refresh project data once.
+  const prevJobsRef = useRef<string>('');
+  useEffect(() => {
+    const signature = ingestionJobs.map(j => `${j.id}:${j.status}`).join('|');
+    if (prevJobsRef.current && signature !== prevJobsRef.current &&
+        activeProjectId !== null && !ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING')) {
+      useAppStore.getState().fetchProjectData(activeProjectId);
+      fetchGovernanceInbox(activeProjectId);
+    }
+    prevJobsRef.current = signature;
+  }, [ingestionJobs]);
 
   // Governance Inbox & Readiness Console state (MVP 0.9.1)
   const [inboxModelFilter, setInboxModelFilter] = useState<number | null>(null);
@@ -405,7 +449,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
+    const urlTabs = ['inbox', 'connectors', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -498,12 +542,12 @@ export default function Home() {
       const documentIdParam = searchParams.get('documentId');
       const documentParam = searchParams.get('document');
       const tabParam = searchParams.get('tab');
-      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
+      const urlTabs = ['inbox', 'connectors', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
 
       if (pathname.includes('/knowledge-assets')) {
         setActiveTab('assets');
       } else if (tabParam && urlTabs.includes(tabParam)) {
-        setActiveTab(tabParam as 'inbox' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
+        setActiveTab(tabParam as 'inbox' | 'connectors' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
       } else {
         setActiveTab('dashboard');
       }
@@ -691,6 +735,23 @@ export default function Home() {
               {documents.length > 0 && (
                 <span className="ml-auto bg-slate-800 text-[10px] text-slate-300 font-mono px-2 py-0.5 rounded-full">
                   {documents.length}
+                </span>
+              )}
+            </button>
+
+            <button
+              onClick={() => setActiveTab('connectors')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'connectors'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Folder className="w-4 h-4" />
+              <span>Source Connectors</span>
+              {ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING') && (
+                <span className="ml-auto bg-cyan-950/40 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-900/40 animate-pulse">
+                  scanning
                 </span>
               )}
             </button>
@@ -2312,6 +2373,159 @@ export default function Home() {
                       })
                     )}
                   </div>
+                </div>
+              )}
+
+              {/* TAB: SOURCE CONNECTORS (MVP 0.10.0 - Local Folder, scan now) */}
+              {activeTab === 'connectors' && (
+                <div className="space-y-6">
+
+                  {/* CREATE CONNECTOR */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <Folder className="w-4 h-4 text-cyan-400" />
+                      Source Connectors
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Read-only discovery over local or mounted folders — output enters the ordinary governance pipeline as CANDIDATE assets
+                      </span>
+                    </h3>
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (activeProjectId === null || !connectorName.trim() || !connectorPath.trim()) return;
+                        await createConnector(activeProjectId, connectorName.trim(), connectorPath.trim(), connectorExts.trim());
+                        setConnectorName('');
+                        setConnectorPath('');
+                      }}
+                      className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
+                    >
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Connector Name</label>
+                        <input type="text" required value={connectorName} onChange={(e) => setConnectorName(e.target.value)}
+                          placeholder="e.g. Quality SOP Share"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Folder Path</label>
+                        <input type="text" required value={connectorPath} onChange={(e) => setConnectorPath(e.target.value)}
+                          placeholder="C:\\shares\\policies or /mnt/docs"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">File Types</label>
+                        <input type="text" value={connectorExts} onChange={(e) => setConnectorExts(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
+                      </div>
+                      <button type="submit"
+                        className="py-2 px-5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
+                        Add Connector
+                      </button>
+                    </form>
+
+                    {/* CONNECTOR LIST */}
+                    {sourceConnectors.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        {sourceConnectors.map((c) => {
+                          const busy = ingestionJobs.some(j => j.connector_id === c.id && (j.status === 'PENDING' || j.status === 'RUNNING'));
+                          return (
+                            <div key={c.id} className="flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3">
+                              <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">{c.type}</span>
+                              <span className="font-bold text-sm text-slate-200">{c.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={c.root_path}>{c.root_path}</span>
+                              <span className="text-[9px] font-mono text-slate-600">{c.include_extensions}</span>
+                              <button
+                                onClick={() => activeProjectId !== null && scanConnector(c.id, activeProjectId)}
+                                disabled={busy}
+                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider disabled:opacity-40"
+                              >
+                                {busy ? 'Scanning…' : 'Scan Now'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* INGESTION JOBS */}
+                  {ingestionJobs.length === 0 ? (
+                    <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                      No ingestion jobs yet. Add a connector and run a scan — discovered files become ordinary documents and CANDIDATE assets.
+                    </div>
+                  ) : (
+                    <div className="space-y-4">
+                      {ingestionJobs.map((job) => {
+                        const connector = sourceConnectors.find(c => c.id === job.connector_id);
+                        const expanded = expandedJobId === job.id;
+                        const files = jobFiles[job.id] || [];
+                        return (
+                          <div key={job.id} className={`glass-panel rounded-xl p-5 space-y-3 border-l-4 ${
+                            job.status === 'COMPLETED' ? (job.files_failed > 0 ? 'border-l-yellow-500' : 'border-l-emerald-500') :
+                            job.status === 'FAILED' ? 'border-l-rose-500' : 'border-l-cyan-500'
+                          }`}>
+                            <div className="flex flex-wrap justify-between items-center gap-2 cursor-pointer"
+                              onClick={() => {
+                                const next = expanded ? null : job.id;
+                                setExpandedJobId(next);
+                                if (next !== null) fetchJobFiles(job.id);
+                              }}>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">JOB-{job.id}</span>
+                                <span className="font-bold text-sm text-slate-200">{connector?.name || `Connector ${job.connector_id}`}</span>
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                                  job.status === 'COMPLETED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                  job.status === 'FAILED' ? 'bg-rose-950/30 text-rose-400' : 'bg-cyan-950/40 text-cyan-400 animate-pulse'
+                                }`}>{job.status}</span>
+                                <span className="text-[9px] font-mono text-slate-500">{new Date(job.started_at).toLocaleString()}</span>
+                              </div>
+                              <div className="flex gap-2 font-mono text-[10px]">
+                                <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                  <span className="text-slate-500 block text-[8px] uppercase">Discovered</span>
+                                  <span className="text-slate-200 font-bold">{job.files_discovered}</span>
+                                </div>
+                                <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                  <span className="text-slate-500 block text-[8px] uppercase">Ingested</span>
+                                  <span className="text-emerald-400 font-bold">{job.files_ingested}</span>
+                                </div>
+                                <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                  <span className="text-slate-500 block text-[8px] uppercase">Duplicates</span>
+                                  <span className="text-yellow-400 font-bold">{job.files_duplicate}</span>
+                                </div>
+                                <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                  <span className="text-slate-500 block text-[8px] uppercase">Failed</span>
+                                  <span className={`font-bold ${job.files_failed > 0 ? 'text-rose-400' : 'text-slate-500'}`}>{job.files_failed}</span>
+                                </div>
+                              </div>
+                            </div>
+
+                            {job.error && (
+                              <p className="text-[10px] text-rose-400/90 font-mono bg-rose-950/20 border border-rose-900/30 rounded p-2">
+                                {job.error}
+                              </p>
+                            )}
+
+                            {expanded && files.length > 0 && (
+                              <div className="space-y-1 border-t border-slate-900/60 pt-3 max-h-72 overflow-y-auto pr-2">
+                                {files.map((f) => (
+                                  <div key={f.id} className="flex flex-wrap items-center gap-2 text-[9px] font-mono bg-slate-950/50 rounded px-2 py-1">
+                                    <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                      f.status === 'INGESTED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                      f.status === 'DUPLICATE' ? 'bg-yellow-950/40 text-yellow-400' :
+                                      'bg-rose-950/40 text-rose-400'
+                                    }`}>{f.status}</span>
+                                    <span className="text-slate-300 flex-1 min-w-[200px] truncate" title={f.source_uri}>{f.source_uri}</span>
+                                    {f.size_bytes !== null && <span className="text-slate-600">{f.size_bytes} B</span>}
+                                    {f.document_id && <span className="text-cyan-400">DOC-{f.document_id}</span>}
+                                    {f.error && <span className="text-slate-400 italic w-full pl-1">{f.error}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
                 </div>
               )}
 

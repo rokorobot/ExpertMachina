@@ -23,6 +23,58 @@ class Project(Base):
     description = Column(String, nullable=True)
     status = Column(String, default="NEW") # NEW, INGESTING, TRANSFORMING, REVIEW, PUBLISHED
 
+class SourceConnector(Base):
+    """Enterprise Source Connector (MVP 0.10.0). Read-only discovery over an
+    existing repository. LOCAL_FOLDER only for now - cloud connectors wait
+    for the credentials/identity layer. Connector output becomes ordinary
+    ExpertMachina objects (Document -> CANDIDATE assets); there is no
+    connector-specific review flow by design."""
+    __tablename__ = "source_connectors"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    name = Column(String, nullable=False)
+    type = Column(String, default="LOCAL_FOLDER") # LOCAL_FOLDER (cloud types reserved for v1.x)
+    root_path = Column(String, nullable=False)
+    include_extensions = Column(String, default=".txt,.md,.pdf,.docx") # comma-separated
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
+class IngestionJob(Base):
+    """One 'Scan now' execution of a connector. Counters are live facts
+    (updated per file so progress polling works); per-file outcomes live in
+    SourceDocument rows. No silent skips - every discovered file gets a row."""
+    __tablename__ = "ingestion_jobs"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    connector_id = Column(Integer, ForeignKey("source_connectors.id"))
+    status = Column(String, default="PENDING") # PENDING | RUNNING | COMPLETED | FAILED
+    files_discovered = Column(Integer, default=0)
+    files_ingested = Column(Integer, default=0)
+    files_duplicate = Column(Integer, default=0)
+    files_failed = Column(Integer, default=0)
+    error = Column(Text, nullable=True) # job-level failure / non-fatal extraction error
+    started_at = Column(DateTime, default=datetime.datetime.utcnow)
+    completed_at = Column(DateTime, nullable=True)
+
+
+class SourceDocument(Base):
+    """Discovered-file inventory: provenance from the source URI through to
+    the ordinary Document the file became (or why it didn't)."""
+    __tablename__ = "source_documents"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    connector_id = Column(Integer, ForeignKey("source_connectors.id"))
+    ingestion_job_id = Column(Integer, ForeignKey("ingestion_jobs.id"))
+    source_uri = Column(String, nullable=False) # absolute path at the source
+    file_hash = Column(String, nullable=True) # sha256 of file content
+    size_bytes = Column(Integer, nullable=True)
+    source_modified_at = Column(DateTime, nullable=True)
+    status = Column(String, default="INGESTED") # INGESTED | DUPLICATE | FAILED
+    error = Column(Text, nullable=True)
+    document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)
@@ -34,6 +86,7 @@ class Document(Base):
     version = Column(String, nullable=True)
     file_path = Column(String, nullable=True)
     status = Column(String, default="UPLOADED") # UPLOADED, PARSED, FAILED
+    content_hash = Column(String, nullable=True) # sha256 of file content (MVP 0.10.0, dedup key)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     modified_at = Column(DateTime, default=datetime.datetime.utcnow)
 
@@ -331,7 +384,10 @@ def _ensure_columns():
             "file_path": "TEXT",
             "package_hash": "TEXT",
             "manifest_json": "TEXT",
-        }
+        },
+        "documents": {
+            "content_hash": "TEXT",
+        },
     }
     with engine.connect() as conn:
         for table, columns in additions.items():

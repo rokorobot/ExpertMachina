@@ -19,6 +19,7 @@ from app import conflict_engine
 from app import revisions
 from app import trust
 from app import governance_inbox
+from app import connectors
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -169,6 +170,74 @@ def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db)):
         docs_created.append(doc.filename)
         
     return {"message": "Batch demo SOP documents uploaded and parsed successfully", "documents": docs_created}
+
+# Enterprise Source Connector routes (MVP 0.10.0): LOCAL_FOLDER, scan-now
+# only. Connector output becomes ordinary documents and CANDIDATE assets in
+# the existing governance pipeline - no connector-specific review flow.
+@app.post("/api/projects/{project_id}/connectors", response_model=schemas.SourceConnectorResponse)
+def create_source_connector(project_id: int, connector_in: schemas.SourceConnectorCreate, db_session: Session = Depends(get_db)):
+    if (connector_in.type or "LOCAL_FOLDER").upper() != "LOCAL_FOLDER":
+        raise HTTPException(status_code=400, detail="Only LOCAL_FOLDER connectors are supported in this release")
+    if not connector_in.root_path.strip():
+        raise HTTPException(status_code=400, detail="root_path is required")
+    connector = db.SourceConnector(
+        project_id=project_id,
+        name=connector_in.name,
+        type="LOCAL_FOLDER",
+        root_path=connector_in.root_path.strip(),
+        include_extensions=connector_in.include_extensions or ".txt,.md,.pdf,.docx",
+    )
+    db_session.add(connector)
+    db_session.commit()
+    db_session.refresh(connector)
+    crud.log_audit_event(db_session, actor="operator", event_type="SOURCE_CONNECTOR_CREATED",
+                         target_id=str(connector.id),
+                         details=json.dumps({"name": connector.name, "type": connector.type,
+                                             "root_path": connector.root_path}))
+    return connector
+
+@app.get("/api/projects/{project_id}/connectors", response_model=List[schemas.SourceConnectorResponse])
+def list_source_connectors(project_id: int, db_session: Session = Depends(get_db)):
+    return db_session.query(db.SourceConnector).filter(
+        db.SourceConnector.project_id == project_id).order_by(db.SourceConnector.id).all()
+
+@app.post("/api/connectors/{connector_id}/scan", response_model=schemas.IngestionJobResponse)
+def scan_source_connector(connector_id: int, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db)):
+    connector = db_session.query(db.SourceConnector).filter(db.SourceConnector.id == connector_id).first()
+    if not connector:
+        raise HTTPException(status_code=404, detail=f"Connector {connector_id} not found")
+    running = db_session.query(db.IngestionJob).filter(
+        db.IngestionJob.connector_id == connector_id,
+        db.IngestionJob.status.in_(["PENDING", "RUNNING"])
+    ).first()
+    if running:
+        raise HTTPException(status_code=409, detail=f"Ingestion job {running.id} is already in progress for this connector")
+    job = db.IngestionJob(project_id=connector.project_id, connector_id=connector.id, status="PENDING")
+    db_session.add(job)
+    db_session.commit()
+    db_session.refresh(job)
+    # v0.9.2a discipline: return immediately; the scan owns its own session.
+    background_tasks.add_task(connectors.run_ingestion_job, job.id)
+    return job
+
+@app.get("/api/projects/{project_id}/ingestion-jobs", response_model=List[schemas.IngestionJobResponse])
+def list_ingestion_jobs(project_id: int, db_session: Session = Depends(get_db)):
+    return db_session.query(db.IngestionJob).filter(
+        db.IngestionJob.project_id == project_id).order_by(db.IngestionJob.id.desc()).all()
+
+@app.get("/api/ingestion-jobs/{job_id}", response_model=schemas.IngestionJobResponse)
+def get_ingestion_job(job_id: int, db_session: Session = Depends(get_db)):
+    job = db_session.query(db.IngestionJob).filter(db.IngestionJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Ingestion job {job_id} not found")
+    return job
+
+@app.get("/api/ingestion-jobs/{job_id}/files", response_model=List[schemas.SourceDocumentResponse])
+def list_ingestion_job_files(job_id: int, status: Optional[str] = None, db_session: Session = Depends(get_db)):
+    query = db_session.query(db.SourceDocument).filter(db.SourceDocument.ingestion_job_id == job_id)
+    if status:
+        query = query.filter(db.SourceDocument.status == status.upper())
+    return query.order_by(db.SourceDocument.id).all()
 
 # Knowledge Assets routes
 @app.get("/api/projects/{project_id}/assets", response_model=List[schemas.KnowledgeAssetResponse])

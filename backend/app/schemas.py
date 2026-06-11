@@ -146,6 +146,52 @@ class ExpertModelResponse(ExpertModelBase):
     class Config:
         from_attributes = True
 
+class SourceConnectorCreate(BaseModel):
+    name: str
+    root_path: str
+    type: Optional[str] = "LOCAL_FOLDER"
+    include_extensions: Optional[str] = None # comma-separated; defaults to all supported
+
+class SourceConnectorResponse(BaseModel):
+    id: int
+    project_id: int
+    name: str
+    type: str
+    root_path: str
+    include_extensions: Optional[str] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class IngestionJobResponse(BaseModel):
+    id: int
+    project_id: int
+    connector_id: int
+    status: str # PENDING | RUNNING | COMPLETED | FAILED
+    files_discovered: int
+    files_ingested: int
+    files_duplicate: int
+    files_failed: int
+    error: Optional[str] = None
+    started_at: datetime
+    completed_at: Optional[datetime] = None
+    class Config:
+        from_attributes = True
+
+class SourceDocumentResponse(BaseModel):
+    id: int
+    ingestion_job_id: int
+    source_uri: str
+    file_hash: Optional[str] = None
+    size_bytes: Optional[int] = None
+    source_modified_at: Optional[datetime] = None
+    status: str # INGESTED | DUPLICATE | FAILED
+    error: Optional[str] = None
+    document_id: Optional[int] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 class AgentPackageBase(BaseModel):
     name: str
     expert_model_id: int
