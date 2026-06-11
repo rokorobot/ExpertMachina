@@ -386,6 +386,42 @@ immutable at action time (the ClaimVerdict/AssetRevision pattern applied
 to actors). Until v1.0 ships, D14 remains correct: single operator,
 actor strings, no false assurance.
 
+**Refined D20 candidate text** (June 2026 — ratify with evidence when
+v1.0 ships):
+
+> Callers propose identity. The identity boundary decides actor.
+> Governed actions must record identity facts as immutable historical
+> evidence at action time. Future user-table state must never be
+> required to explain past governed actions.
+
+Rationale: **governance distrusts reconstruction, not users.**
+`user_id = 7` answers "who is Alice today?" — a governed action must
+answer "who was Alice when the approval occurred?" Conceptual sketch of
+what an approval carries (shape to be discovered in scoping, not
+prescribed):
+
+```
+IdentityFact: actor_id, display_name, role-at-action-time,
+              authentication_method, credential_fingerprint, timestamp
+```
+
+**Scoping order (evidence-first, not login-first):** the first question
+is "what identity evidence must exist for a governed action to be
+explainable six months later?" — then identity facts → authentication →
+roles → credential storage → authorization → enterprise deployment, in
+that order, not the reverse.
+
+**Existing landing pads** (D14 made new schemas identity-ready on
+purpose): ClaimVerdict.evaluator_type/evaluator_id,
+AssetRevision.approved_by/approved_at, AssetReview.reviewer/approver,
+AuditEvent.actor. v1.0 upgrades these from caller-supplied strings to
+boundary-decided evidence.
+
+The milestone arc this completes: v0.10.2 governed approval, v0.11
+governed acquisition, v0.12 governed model selection, v1.0 governs
+identity — each removes a category of "trust me" and replaces it with
+evidence recorded when the action occurred.
+
 ## Future Direction
 
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
