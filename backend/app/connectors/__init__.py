@@ -24,3 +24,4 @@ from app.connectors.models import (  # noqa: F401
     ConnectorItem,
     ConnectorProvider,
 )
+from app.connectors.providers.local_folder import LocalFolderProvider  # noqa: F401

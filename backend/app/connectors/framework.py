@@ -11,6 +11,8 @@ from app import ingestion
 from app import extraction
 from app import policy
 from app import revisions
+from app.connectors.models import ConnectorItem
+from app.connectors.providers.local_folder import LocalFolderProvider
 
 # Enterprise Source Connector - LOCAL_FOLDER (MVP 0.10.0).
 #
@@ -33,23 +35,19 @@ SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
 UPLOAD_DIR = "./uploads"
 
 
-def _extensions(connector: db.SourceConnector) -> set:
-    raw = connector.include_extensions or ",".join(sorted(SUPPORTED_EXTENSIONS))
-    wanted = {e.strip().lower() for e in raw.split(",") if e.strip()}
-    # Never ingest a type the parser can't handle - declared, not silent.
-    return wanted & SUPPORTED_EXTENSIONS
+def _provider_for(connector: db.SourceConnector) -> LocalFolderProvider:
+    """Provider construction. Only LOCAL_FOLDER exists; a registry is earned
+    when a second provider type does (D8). SUPPORTED_EXTENSIONS is the
+    framework's parser capability, handed to the provider so enumeration
+    filters on the capability/config intersection (seam 1)."""
+    return LocalFolderProvider(connector, SUPPORTED_EXTENSIONS)
 
 
 def discover_files(connector: db.SourceConnector) -> list:
-    """Recursive walk of the connector root, filtered to supported
-    extensions. Returns absolute paths, deterministic order."""
-    matches = []
-    for dirpath, _dirnames, filenames in os.walk(connector.root_path):
-        for filename in filenames:
-            ext = os.path.splitext(filename)[1].lower()
-            if ext in _extensions(connector):
-                matches.append(os.path.join(dirpath, filename))
-    return sorted(matches)
+    """Pre-0.11 compatibility surface: the walk now lives in
+    LocalFolderProvider.discover(); returns the discovered URIs
+    (absolute paths, deterministic order) as plain strings."""
+    return [item.uri for item in _provider_for(connector).discover()]
 
 
 def run_ingestion_job(job_id: int):
@@ -70,28 +68,32 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
     connector = session.query(db.SourceConnector).filter(
         db.SourceConnector.id == job.connector_id).first()
 
+    provider = _provider_for(connector)
+
     job.status = "RUNNING"
     job.started_at = datetime.datetime.utcnow()
     session.commit()
+    # describe(): provider-specific source context, logged without
+    # interpretation. Key order keeps the payload identical to pre-0.11.
     crud.log_audit_event(
         session, actor=f"connector:{connector.name}", event_type="INGESTION_JOB_STARTED",
         target_id=str(job.id),
-        details=json.dumps({"connector_id": connector.id, "root_path": connector.root_path,
-                            "extensions": sorted(_extensions(connector))}))
+        details=json.dumps({"connector_id": connector.id, **provider.describe()}))
 
     try:
-        if not os.path.isdir(connector.root_path):
-            raise FileNotFoundError(f"Connector root path does not exist or is not a directory: {connector.root_path}")
+        # Reachability is the provider's question; whether ingestion runs
+        # remains the framework's.
+        provider.validate()
 
-        files = discover_files(connector)
-        job.files_discovered = len(files)
+        items = provider.discover()
+        job.files_discovered = len(items)
         session.commit()
 
         os.makedirs(UPLOAD_DIR, exist_ok=True)
         seen_hashes_this_job = set()
 
-        for source_path in files:
-            outcome = _ingest_one(session, connector, job, source_path, seen_hashes_this_job)
+        for item in items:
+            outcome = _ingest_one(session, connector, job, item, seen_hashes_this_job)
             if outcome == "INGESTED":
                 job.files_ingested += 1
             elif outcome == "DUPLICATE":
@@ -159,19 +161,22 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
 
 
 def _ingest_one(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
-                source_path: str, seen_hashes: set) -> str:
-    """Process one discovered file; always writes a SourceDocument row."""
+                item: ConnectorItem, seen_hashes: set) -> str:
+    """Process one discovered item; always writes a SourceDocument row.
+    Step 3 note: fetch (stat/read) still lives here, using item.uri as the
+    local path, until its own extraction step - so the timing of the read
+    (at ingest time, not discovery time) stays identical."""
     record = db.SourceDocument(
         project_id=job.project_id,
         connector_id=connector.id,
         ingestion_job_id=job.id,
-        source_uri=os.path.abspath(source_path),
+        source_uri=item.uri,
     )
     try:
-        stat = os.stat(source_path)
+        stat = os.stat(item.uri)
         record.size_bytes = stat.st_size
         record.source_modified_at = datetime.datetime.utcfromtimestamp(stat.st_mtime)
-        with open(source_path, "rb") as f:
+        with open(item.uri, "rb") as f:
             data = f.read()
         record.file_hash = hashlib.sha256(data).hexdigest()
 
@@ -222,7 +227,7 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
 
         # From here on, the file becomes an ORDINARY document: same upload
         # dir, same create_document, same parser as the manual upload flow.
-        filename = os.path.basename(source_path)
+        filename = item.name
         dest_path = os.path.join(UPLOAD_DIR, f"{job.project_id}_c{connector.id}_{record.file_hash[:8]}_{filename}")
         with open(dest_path, "wb") as out:
             out.write(data)
