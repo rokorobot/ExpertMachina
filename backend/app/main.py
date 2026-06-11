@@ -25,10 +25,14 @@ from app import policy
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
 
-# Enable CORS for Next.js frontend
+# CORS: explicit local frontend origins only (audit hardening). The API has
+# no identity layer until v1.x (D14) - a wildcard here let any webpage the
+# operator visits call state-mutating endpoints from their browser. Override
+# for other deployments via EM_CORS_ORIGINS (comma-separated).
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In development, allow all
+    allow_origins=[o.strip() for o in os.environ.get(
+        "EM_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -81,14 +85,22 @@ def upload_document(
     owner: str = Form("User"),
     db_session: Session = Depends(get_db)
 ):
-    file_path = os.path.join(UPLOAD_DIR, f"{project_id}_{file.filename}")
+    # Sanitize the client-supplied filename: strip any path components so a
+    # crafted name can never escape UPLOAD_DIR (defense in depth - the
+    # project-id prefix already breaks clean traversal, but multipart
+    # filenames are attacker-controlled input and treated as such).
+    filename = os.path.basename((file.filename or "").replace("\\", "/")).strip()
+    if not filename or filename in {".", ".."}:
+        raise HTTPException(status_code=400, detail="Invalid filename")
+
+    file_path = os.path.join(UPLOAD_DIR, f"{project_id}_{filename}")
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-        
+
     doc = crud.create_document(
-        db_session, 
-        project_id=project_id, 
-        filename=file.filename, 
+        db_session,
+        project_id=project_id,
+        filename=filename,
         file_path=file_path,
         department=department,
         owner=owner
@@ -356,39 +368,37 @@ def extract_assets(project_id: int, db_session: Session = Depends(get_db)):
     auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids)
     return {"message": "Knowledge assets extracted successfully.", "auto_approval": auto_approval}
 
+# NOTE: /api/assets/bulk MUST be registered BEFORE /api/assets/{asset_id} -
+# FastAPI matches routes in registration order, and the dynamic route would
+# otherwise swallow "bulk" and 422 on int parsing (audit finding C1: the
+# bulk endpoint was unreachable from v0.2 until this fix).
+@app.patch("/api/assets/bulk", response_model=List[schemas.KnowledgeAssetResponse])
+def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, actor: str = "User", db_session: Session = Depends(get_db)):
+    # One approval path for every species of approval (the D17/D18 lesson):
+    # delegate to crud.update_knowledge_asset so bulk approvals get the same
+    # AssetReview, baseline revision, and lifecycle side effects as single
+    # and policy approvals - the old inline copy here skipped the baseline
+    # revision entirely.
+    updated_assets = []
+    for asset_id in bulk_in.asset_ids:
+        asset = db_session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
+        if not asset:
+            continue
+        old_st = asset.status
+        updated = crud.update_knowledge_asset(
+            db_session, asset_id, schemas.KnowledgeAssetUpdate(status=bulk_in.status), actor=actor,
+            audit_details=f"Asset status updated from {old_st} to {bulk_in.status} via bulk update",
+            review_notes=f"Approved via bulk update (from {old_st})")
+        if updated:
+            updated_assets.append(updated)
+    return updated_assets
+
 @app.patch("/api/assets/{asset_id}", response_model=schemas.KnowledgeAssetResponse)
 def update_asset(asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "User", db_session: Session = Depends(get_db)):
     asset = crud.update_knowledge_asset(db_session, asset_id, update, actor=actor)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
     return asset
-
-@app.patch("/api/assets/bulk", response_model=List[schemas.KnowledgeAssetResponse])
-def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, actor: str = "User", db_session: Session = Depends(get_db)):
-    updated_assets = []
-    affected_doc_ids = set()
-    for asset_id in bulk_in.asset_ids:
-        asset = db_session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
-        if asset:
-            old_st = asset.status
-            asset.status = bulk_in.status
-            db_session.commit()
-            db_session.refresh(asset)
-            
-            event_t = "ASSET_REVIEWED" if bulk_in.status == "REVIEWED" else "ASSET_APPROVED" if bulk_in.status == "APPROVED" else "ASSET_UPDATED"
-            crud.log_audit_event(db_session, actor=actor, event_type=event_t, target_id=str(asset.id), details=f"Asset status updated from {old_st} to {bulk_in.status} via bulk update")
-            if bulk_in.status == "APPROVED" and old_st != "APPROVED":
-                db_session.add(db.AssetReview(asset_id=asset.id, approver=actor, notes=f"Approved via bulk update (from {old_st})"))
-                db_session.commit()
-            
-            if asset.document_id:
-                affected_doc_ids.add(asset.document_id)
-            updated_assets.append(asset)
-            
-    for doc_id in affected_doc_ids:
-        crud.update_document_lifecycle(db_session, doc_id)
-        
-    return updated_assets
 
 
 # Expert Models routes

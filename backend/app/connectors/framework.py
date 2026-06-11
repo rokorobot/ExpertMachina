@@ -226,7 +226,9 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
 
         # From here on, the file becomes an ORDINARY document: same upload
         # dir, same create_document, same parser as the manual upload flow.
-        filename = item.name
+        # item.name is provider-supplied input - strip any path components
+        # so no provider can stage outside UPLOAD_DIR (defense in depth).
+        filename = os.path.basename((item.name or "").replace("\\", "/")).strip() or "unnamed"
         dest_path = os.path.join(UPLOAD_DIR, f"{job.project_id}_c{connector.id}_{record.file_hash[:8]}_{filename}")
         with open(dest_path, "wb") as out:
             out.write(data)
@@ -313,8 +315,9 @@ def _apply_source_change(session: Session, connector: db.SourceConnector, job: d
     content they were approved against until their revisions are approved."""
     try:
         # item.name, not URI parsing - deriving a display name from a URI
-        # is provider knowledge (identical bytes for local paths).
-        filename = item.name
+        # is provider knowledge (identical bytes for local paths). Sanitized
+        # like the ingest path: provider-supplied names never carry paths.
+        filename = os.path.basename((item.name or "").replace("\\", "/")).strip() or "unnamed"
         dest_path = os.path.join(UPLOAD_DIR, f"{job.project_id}_c{connector.id}_{record.file_hash[:8]}_{filename}")
         with open(dest_path, "wb") as out:
             out.write(data)
