@@ -15,17 +15,24 @@ Claude Desktop / Claude Code / Cursor config example:
       "command": "C:\\\\path\\\\to\\\\backend\\\\.venv\\\\Scripts\\\\python.exe",
       "args": ["C:\\\\path\\\\to\\\\backend\\\\mcp_server.py"],
       "env": {
-        "EM_AGENT_ID": "claude-desktop-rk",
-        "EM_AGENT_CLEARANCE": "INTERNAL"
+        "EM_AGENT_TOKEN": "emk_...issued by an ADMIN via /api/identity/tokens..."
       }
     }
   }
 }
 
-Agent clearance follows Access Model v1 and defaults to PUBLIC (most
-restrictive) when unset. Write actions (approve_revision, dismiss_conflict,
-publish_package) are deliberately NOT exposed in v0.9: the governance core
-must be observable before it becomes agent-writable.
+Identity Boundary v1.0: the agent proposes EM_AGENT_TOKEN; the boundary
+decides who it is. Clearance comes from the AGENT principal in the
+governed registry (Access Model v1), never from the environment - the
+pre-boundary EM_AGENT_ID / EM_AGENT_CLEARANCE variables no longer
+establish identity and are refused explicitly when present without a
+token. Tokens are resolved per tool call, so revocation and clearance
+changes take effect on a live session's next call. Unauthenticated
+agents are refused, and every refusal is audited (MCP_AUTH_REFUSED).
+
+Write actions (approve_revision, dismiss_conflict, publish_package) are
+deliberately NOT exposed: the governance core must be observable before
+it becomes agent-writable.
 """
 import os
 import sys

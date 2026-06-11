@@ -4,6 +4,7 @@ import datetime
 
 from app import database as db
 from app import crud
+from app import identity as identity_boundary
 from app import query_engine
 from app import conflict_engine
 from app import trust
@@ -16,36 +17,80 @@ from app import revisions as revisions_module
 # and every call emits an MCP_TOOL_CALLED audit event - the gateway itself
 # is part of the governance boundary.
 #
-# Agent identity and clearance come from the MCP server configuration
-# (per-agent connection): EM_AGENT_ID and EM_AGENT_CLEARANCE. Clearance
-# follows Access Model v1 (PUBLIC < INTERNAL < RESTRICTED < EXECUTIVE)
-# and defaults to the most restrictive tier when unset.
+# Identity Boundary v1.0 (D20 candidate): the agent PROPOSES a token
+# (EM_AGENT_TOKEN); the boundary DECIDES who it is. Identity is resolved
+# per tool call, so revocation and registry changes (clearance) take
+# effect on the very next call of a live session. Clearance comes from
+# the Principal registry, never from the environment. The pre-boundary
+# env assertion (EM_AGENT_ID / EM_AGENT_CLEARANCE) is refused EXPLICITLY
+# when present without a token - a configured-but-silently-ignored
+# credential would be false assurance (D14's reasoning).
 
 GATEWAY_VERSION = "mcp-gateway-v1"
 VALID_CLEARANCES = ("PUBLIC", "INTERNAL", "RESTRICTED", "EXECUTIVE")
+LEGACY_ENV_VARS = ("EM_AGENT_ID", "EM_AGENT_CLEARANCE")
 
 
-def agent_identity() -> dict:
-    clearance = os.environ.get("EM_AGENT_CLEARANCE", "PUBLIC").upper()
-    if clearance not in VALID_CLEARANCES:
-        clearance = "PUBLIC"
-    return {
-        "agent_id": os.environ.get("EM_AGENT_ID", "unidentified-agent"),
-        "clearance": clearance,
-    }
-
-
-def _audit_tool_call(session, tool_name: str, expert_model_id, extra: dict = None):
-    identity = agent_identity()
+def _audit_refusal(session, reason: str, legacy_vars: list):
     crud.log_audit_event(
         session,
-        actor=identity["agent_id"],
+        actor="identity_boundary",
+        event_type="MCP_AUTH_REFUSED",
+        details=json.dumps({
+            "reason": reason,
+            "legacy_env_vars_present": legacy_vars,
+            "gateway_version": GATEWAY_VERSION,
+            "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
+        })
+    )
+
+
+def resolve_agent(session) -> identity_boundary.Actor:
+    """EM_AGENT_TOKEN -> Credential -> AGENT Principal -> Actor.
+    Unauthenticated agents are refused (a boundary that grants courtesy
+    access is not a boundary), and every refusal is audited."""
+    token = (os.environ.get("EM_AGENT_TOKEN") or "").strip()
+    legacy = [v for v in LEGACY_ENV_VARS if os.environ.get(v)]
+    if not token:
+        if legacy:
+            _audit_refusal(session, "env_asserted_identity", legacy)
+            raise PermissionError(
+                f"{' / '.join(legacy)} no longer establish identity (v1.0 identity "
+                "boundary): agent identity is decided from EM_AGENT_TOKEN, a governed "
+                "API token issued by an ADMIN via /api/identity/tokens.")
+        _audit_refusal(session, "no_token", legacy)
+        raise PermissionError(
+            "MCP authentication required: set EM_AGENT_TOKEN to a governed API token "
+            "issued via /api/identity/tokens. Unauthenticated agents are refused.")
+    principal, credential = identity_boundary.resolve_token(session, token)
+    if principal is None:
+        _audit_refusal(session, "invalid_expired_or_revoked_token", legacy)
+        raise PermissionError("MCP authentication failed: token unknown, expired, or revoked.")
+    if principal.kind != "AGENT":
+        _audit_refusal(session, f"non_agent_principal:{principal.kind}", legacy)
+        raise PermissionError(
+            f"Only AGENT principals may use the MCP gateway; this token belongs to a "
+            f"{principal.kind} principal.")
+    return identity_boundary.Actor(principal, "API_TOKEN", credential=credential)
+
+
+def agent_clearance(actor: identity_boundary.Actor) -> str:
+    """Governed clearance from the Principal registry - never the env."""
+    clearance = (actor.principal.clearance or "PUBLIC").upper()
+    return clearance if clearance in VALID_CLEARANCES else "PUBLIC"
+
+
+def _audit_tool_call(session, actor, tool_name: str, expert_model_id, extra: dict = None):
+    crud.log_audit_event(
+        session,
+        actor=actor.name,
+        identity_fact_id=actor.fact(session).id,
         event_type="MCP_TOOL_CALLED",
         target_id=str(expert_model_id) if expert_model_id is not None else None,
         details=json.dumps({
             "tool_name": tool_name,
-            "agent_id": identity["agent_id"],
-            "clearance": identity["clearance"],
+            "agent_id": actor.name,
+            "clearance": agent_clearance(actor),
             "expert_model_id": expert_model_id,
             "gateway_version": GATEWAY_VERSION,
             "timestamp": datetime.datetime.utcnow().isoformat() + "Z",
@@ -54,22 +99,23 @@ def _audit_tool_call(session, tool_name: str, expert_model_id, extra: dict = Non
     )
 
 
-def _check_asset_clearance(session, asset: db.KnowledgeAsset, tool_name: str):
+def _check_asset_clearance(session, actor, asset: db.KnowledgeAsset, tool_name: str):
     """Access Model v1: deny when the asset's tier exceeds the agent's
     clearance. Denials are themselves audit events."""
-    identity = agent_identity()
+    clearance = agent_clearance(actor)
     asset_rank = query_engine._access_rank(asset.access_level)
-    agent_rank = query_engine._access_rank(identity["clearance"])
+    agent_rank = query_engine._access_rank(clearance)
     if asset_rank > agent_rank:
         crud.log_audit_event(
             session,
-            actor=identity["agent_id"],
+            actor=actor.name,
+            identity_fact_id=actor.fact(session).id,
             event_type="MCP_ACCESS_DENIED",
             target_id=str(asset.id),
             details=json.dumps({
                 "tool_name": tool_name,
-                "agent_id": identity["agent_id"],
-                "clearance": identity["clearance"],
+                "agent_id": actor.name,
+                "clearance": clearance,
                 "required_access_level": asset.access_level,
                 "asset_id": asset.id,
                 "gateway_version": GATEWAY_VERSION,
@@ -78,7 +124,7 @@ def _check_asset_clearance(session, asset: db.KnowledgeAsset, tool_name: str):
         )
         raise ValueError(
             f"Access denied: asset {asset.id} requires {asset.access_level} clearance; "
-            f"this agent has {identity['clearance']}."
+            f"this agent has {clearance}."
         )
 
 
@@ -88,14 +134,14 @@ def ask_expert(expert_model_id: int, question: str, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        identity = agent_identity()
-        _audit_tool_call(session, "ask_expert", expert_model_id, {"question": question})
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "ask_expert", expert_model_id, {"question": question})
         result = query_engine.execute_expert_query(
             session,
             expert_model_id=expert_model_id,
             question=question,
-            caller_access_level=identity["clearance"],
-            actor=identity["agent_id"]
+            caller_access_level=agent_clearance(actor),
+            actor=actor.name
         )
         return result
     finally:
@@ -108,7 +154,8 @@ def get_trust_score(expert_model_id: int, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        _audit_tool_call(session, "get_trust_score", expert_model_id)
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_trust_score", expert_model_id)
         return trust.compute_trust_score(session, expert_model_id)
     finally:
         if own_session:
@@ -121,7 +168,8 @@ def check_gate_status(expert_model_id: int, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        _audit_tool_call(session, "check_gate_status", expert_model_id)
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "check_gate_status", expert_model_id)
         gate = conflict_engine.evaluate_compile_gate(session, expert_model_id)
         return {
             "expert_model_id": expert_model_id,
@@ -143,11 +191,12 @@ def get_provenance(asset_id: int, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        _audit_tool_call(session, "get_provenance", None, {"asset_id": asset_id})
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_provenance", None, {"asset_id": asset_id})
         asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
         if not asset:
             raise LookupError(f"Asset {asset_id} not found")
-        _check_asset_clearance(session, asset, "get_provenance")
+        _check_asset_clearance(session, actor, asset, "get_provenance")
         citation = query_engine._build_citation(session, asset)
         return {
             **citation,
@@ -171,7 +220,8 @@ def get_conflicts(expert_model_id: int, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        _audit_tool_call(session, "get_conflicts", expert_model_id)
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_conflicts", expert_model_id)
         rels = session.query(db.AssetRelationship).filter(
             db.AssetRelationship.expert_model_id == expert_model_id
         ).order_by(db.AssetRelationship.confidence.desc()).all()
@@ -205,11 +255,12 @@ def get_revision_history(asset_id: int, session=None) -> dict:
     own_session = session is None
     session = session or db.SessionLocal()
     try:
-        _audit_tool_call(session, "get_revision_history", None, {"asset_id": asset_id})
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_revision_history", None, {"asset_id": asset_id})
         asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
         if not asset:
             raise LookupError(f"Asset {asset_id} not found")
-        _check_asset_clearance(session, asset, "get_revision_history")
+        _check_asset_clearance(session, actor, asset, "get_revision_history")
         revs = revisions_module.get_revisions(session, asset_id)
         return {
             "asset_id": asset_id,

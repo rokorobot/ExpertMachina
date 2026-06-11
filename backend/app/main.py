@@ -69,8 +69,26 @@ def require_actor(authorization: Optional[str] = Header(None),
             status_code=401,
             detail="Authentication required: the identity boundary decides actors; "
                    "callers cannot assert them. Log in at /api/auth/login.")
+    if principal.kind == "AGENT":
+        # Agents consume knowledge through the MCP gateway (D10's governed
+        # channel) under clearance. What an agent may do on the REST surface
+        # is an authorization question - answered by the WS3 role matrix,
+        # not implicitly by possession of a token.
+        raise HTTPException(
+            status_code=403,
+            detail="AGENT tokens are valid at the MCP gateway only; REST access for "
+                   "agents awaits the authorization matrix (v1.0 WS3).")
     method = "PASSWORD" if credential.kind == "SESSION" else "API_TOKEN"
     return identity.Actor(principal, method, credential=credential)
+
+
+def require_admin(actor: identity.Actor = Depends(require_actor)) -> identity.Actor:
+    """The MINIMUM authorization needed for WS2b (identity administration);
+    the general role matrix is WS3 and is deliberately not built here."""
+    if actor.principal.role != "ADMIN":
+        raise HTTPException(status_code=403,
+                            detail="ADMIN role required for identity administration")
+    return actor
 
 
 @app.on_event("startup")
@@ -154,6 +172,98 @@ def auth_change_password(body: schemas.ChangePasswordRequest,
     return schemas.AuthIdentityResponse(
         name=p.name, display_name=p.display_name, role=p.role, kind=p.kind,
         must_change_password=False)
+
+# Identity administration (v1.0 WS2b): AGENT/SERVICE principals and API
+# tokens, ADMIN only. Tokens govern agents and services the way sessions
+# govern humans: issued against the registry, hashed at rest, plaintext
+# shown exactly once, revoked never deleted (lineage). The MCP gateway
+# resolves EM_AGENT_TOKEN against these per call.
+@app.get("/api/identity/principals", response_model=List[schemas.PrincipalResponse])
+def list_principals(db_session: Session = Depends(get_db),
+                    actor: identity.Actor = Depends(require_admin)):
+    return db_session.query(db.Principal).order_by(db.Principal.id).all()
+
+@app.post("/api/identity/principals", response_model=schemas.PrincipalResponse)
+def create_identity_principal(body: schemas.PrincipalCreate,
+                              db_session: Session = Depends(get_db),
+                              actor: identity.Actor = Depends(require_admin)):
+    kind = (body.kind or "").strip().upper()
+    if kind not in ("AGENT", "SERVICE"):
+        raise HTTPException(status_code=400,
+                            detail="Only AGENT and SERVICE principals are created here. "
+                                   "HUMAN administration arrives with the WS3 role matrix; "
+                                   "SYSTEM and DELEGATED principals are platform-managed.")
+    name = (body.name or "").strip()
+    if not name:
+        raise HTTPException(status_code=400, detail="name is required")
+    clearance = (body.clearance or "").strip().upper() or None
+    if kind == "AGENT":
+        clearance = clearance or "PUBLIC"
+        if clearance not in ("PUBLIC", "INTERNAL", "RESTRICTED", "EXECUTIVE"):
+            raise HTTPException(status_code=400, detail=f"Invalid clearance '{clearance}'")
+    elif clearance is not None:
+        raise HTTPException(status_code=400, detail="clearance applies to AGENT principals only")
+    try:
+        return identity.create_principal(
+            db_session, name=name, display_name=(body.display_name or name).strip(),
+            kind=kind, clearance=clearance, created_by=actor.display,
+            identity_fact_id=actor.fact(db_session).id)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/api/identity/tokens", response_model=schemas.TokenIssuedResponse)
+def issue_identity_token(body: schemas.TokenIssueRequest,
+                         db_session: Session = Depends(get_db),
+                         actor: identity.Actor = Depends(require_admin)):
+    principal = identity.get_principal(db_session, (body.principal_name or "").strip())
+    if principal is None:
+        raise HTTPException(status_code=404, detail=f"Principal '{body.principal_name}' not found")
+    if principal.kind not in ("AGENT", "SERVICE"):
+        raise HTTPException(status_code=400,
+                            detail=f"API tokens are for AGENT/SERVICE principals; "
+                                   f"{principal.kind} principals authenticate with passwords/sessions.")
+    if not principal.active:
+        raise HTTPException(status_code=400, detail=f"Principal '{principal.name}' is deactivated")
+    expires_at = None
+    if body.expires_days is not None:
+        if body.expires_days <= 0:
+            raise HTTPException(status_code=400, detail="expires_days must be positive")
+        expires_at = datetime.datetime.utcnow() + datetime.timedelta(days=body.expires_days)
+    plaintext, cred = identity.issue_token(
+        db_session, principal, kind="API_TOKEN", label=body.label, expires_at=expires_at,
+        actor=actor.display, identity_fact_id=actor.fact(db_session).id)
+    return schemas.TokenIssuedResponse(
+        token=plaintext, fingerprint=cred.fingerprint, principal_name=principal.name,
+        label=cred.label, expires_at=cred.expires_at)
+
+@app.get("/api/identity/tokens", response_model=List[schemas.TokenResponse])
+def list_identity_tokens(db_session: Session = Depends(get_db),
+                         actor: identity.Actor = Depends(require_admin)):
+    rows = db_session.query(db.Credential, db.Principal).join(
+        db.Principal, db.Credential.principal_id == db.Principal.id).filter(
+        db.Credential.kind == "API_TOKEN").order_by(db.Credential.id).all()
+    # fingerprints only - hashes never leave the store, plaintext never returns
+    return [schemas.TokenResponse(
+        fingerprint=c.fingerprint, principal_name=p.name, principal_kind=p.kind,
+        label=c.label, created_at=c.created_at, expires_at=c.expires_at,
+        revoked_at=c.revoked_at, last_used_at=c.last_used_at) for c, p in rows]
+
+@app.post("/api/identity/tokens/{fingerprint}/revoke", response_model=schemas.TokenResponse)
+def revoke_identity_token(fingerprint: str,
+                          db_session: Session = Depends(get_db),
+                          actor: identity.Actor = Depends(require_admin)):
+    cred = db_session.query(db.Credential).filter(
+        db.Credential.fingerprint == fingerprint, db.Credential.kind == "API_TOKEN").first()
+    if cred is None:
+        raise HTTPException(status_code=404, detail=f"Token '{fingerprint}' not found")
+    identity.revoke_credential(db_session, cred, actor=actor.display,
+                               reason="revoked by administrator",
+                               identity_fact_id=actor.fact(db_session).id)
+    principal = db_session.query(db.Principal).filter(db.Principal.id == cred.principal_id).first()
+    return schemas.TokenResponse(
+        fingerprint=cred.fingerprint, principal_name=principal.name, principal_kind=principal.kind,
+        label=cred.label, created_at=cred.created_at, expires_at=cred.expires_at,
+        revoked_at=cred.revoked_at, last_used_at=cred.last_used_at)
 
 # Customer / Workspace Project routes
 @app.get("/api/projects", response_model=List[schemas.ProjectResponse])

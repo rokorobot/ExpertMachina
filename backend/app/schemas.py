@@ -475,6 +475,48 @@ class AuthIdentityResponse(BaseModel):
 class LoginResponse(AuthIdentityResponse):
     token: str
 
+# Identity administration (WS2b): AGENT/SERVICE principals + API tokens.
+class PrincipalCreate(BaseModel):
+    name: str
+    display_name: Optional[str] = None
+    kind: str  # AGENT | SERVICE (HUMAN administration arrives with WS3 roles)
+    clearance: Optional[str] = None  # AGENT only: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+
+class PrincipalResponse(BaseModel):
+    id: int
+    name: str
+    display_name: str
+    kind: str
+    role: Optional[str] = None
+    clearance: Optional[str] = None
+    active: bool
+    created_by: Optional[str] = None
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class TokenIssueRequest(BaseModel):
+    principal_name: str
+    label: Optional[str] = None
+    expires_days: Optional[int] = None  # None = no expiry (revocation is the control)
+
+class TokenIssuedResponse(BaseModel):
+    token: str  # plaintext - exists exactly here, exactly once; only the hash is stored
+    fingerprint: str
+    principal_name: str
+    label: Optional[str] = None
+    expires_at: Optional[datetime] = None
+
+class TokenResponse(BaseModel):
+    fingerprint: str
+    principal_name: str
+    principal_kind: str
+    label: Optional[str] = None
+    created_at: datetime
+    expires_at: Optional[datetime] = None
+    revoked_at: Optional[datetime] = None
+    last_used_at: Optional[datetime] = None
+
 class EvaluationQuestionResultResponse(BaseModel):
     id: int
     evaluation_run_id: int

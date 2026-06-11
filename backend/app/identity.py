@@ -81,7 +81,8 @@ def _audit(session: Session, actor: str, event_type: str, target_id: str = None,
 
 def create_principal(session: Session, name: str, display_name: str, kind: str,
                      role: str = None, clearance: str = None,
-                     created_by: str = "system") -> db.Principal:
+                     created_by: str = "system",
+                     identity_fact_id: int = None) -> db.Principal:
     if kind not in PRINCIPAL_KINDS:
         raise ValueError(f"Unknown principal kind: {kind}")
     if role is not None and role not in ROLES:
@@ -98,7 +99,8 @@ def create_principal(session: Session, name: str, display_name: str, kind: str,
     session.refresh(principal)
     import json
     _audit(session, actor=created_by, event_type="PRINCIPAL_CREATED", target_id=str(principal.id),
-           details=json.dumps({"name": name, "kind": kind, "role": role, "clearance": clearance}))
+           details=json.dumps({"name": name, "kind": kind, "role": role, "clearance": clearance}),
+           identity_fact_id=identity_fact_id)
     return principal
 
 
@@ -178,7 +180,8 @@ def set_password(session: Session, principal: db.Principal, password: str,
 
 def issue_token(session: Session, principal: db.Principal, kind: str = "API_TOKEN",
                 label: str = None, expires_at: datetime.datetime = None,
-                issued_by_credential_id: int = None, actor: str = None):
+                issued_by_credential_id: int = None, actor: str = None,
+                identity_fact_id: int = None):
     """Returns (plaintext, credential). The plaintext exists exactly once,
     here - only its sha256 is stored."""
     if kind not in ("API_TOKEN", "SESSION"):
@@ -196,18 +199,20 @@ def issue_token(session: Session, principal: db.Principal, kind: str = "API_TOKE
     import json
     _audit(session, actor=actor or principal.name, event_type="CREDENTIAL_CREATED",
            target_id=cred.fingerprint,
-           details=json.dumps({"kind": kind, "principal": principal.name, "label": label}))
+           details=json.dumps({"kind": kind, "principal": principal.name, "label": label}),
+           identity_fact_id=identity_fact_id)
     return plaintext, cred
 
 
 def revoke_credential(session: Session, credential: db.Credential, actor: str,
-                      reason: str = "revoked"):
+                      reason: str = "revoked", identity_fact_id: int = None):
     if credential.revoked_at is None:
         credential.revoked_at = datetime.datetime.utcnow()
         session.commit()
         import json
         _audit(session, actor=actor, event_type="CREDENTIAL_REVOKED",
-               target_id=credential.fingerprint, details=json.dumps({"reason": reason}))
+               target_id=credential.fingerprint, details=json.dumps({"reason": reason}),
+               identity_fact_id=identity_fact_id)
     return credential
 
 
