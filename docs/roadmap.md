@@ -427,6 +427,9 @@ v1.0 ships):
 > Governed actions must record identity facts as immutable historical
 > evidence at action time. Future user-table state must never be
 > required to explain past governed actions.
+> Identity evidence records authentication at action time; authorization
+> and user state may change later without altering historical identity
+> facts.
 
 Rationale: **governance distrusts reconstruction, not users.**
 `user_id = 7` answers "who is Alice today?" — a governed action must

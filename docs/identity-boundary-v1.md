@@ -49,6 +49,13 @@ same sense SSO is.
 > Governed actions must record identity facts as immutable historical
 > evidence at action time. Future user-table state must never be
 > required to explain past governed actions.
+> Identity evidence records authentication at action time; authorization
+> and user state may change later without altering historical identity
+> facts.
+
+The final sentence (added at design review) closes the gap between
+authentication and role snapshots: future state must never be required
+to explain past decisions — the same principle D17–D19 already encode.
 
 Fourth instance of the family principle (D17/D18/D19):
 *Proposal and Decision must be separated. Convenience proposes.
@@ -114,6 +121,13 @@ survives the way revision lineage does. Plaintext tokens are shown once
 at creation; only hashes are stored (D19: the store never holds usable
 secrets it doesn't need — hashes verify, they don't reveal).
 
+**Credential lineage is first-class, not plumbing** (elevated at design
+review): the Alice test's hardest clause is *which credential
+authenticated her*, not *was she a user*. Enterprise forensics
+interrogate credentials — which token? which password generation? was it
+revoked later? — more often than they interrogate principals. For
+enterprise governance, Credential may matter more than Principal.
+
 ### IdentityFact (immutable evidence — the ClaimVerdict pattern)
 
 ```
@@ -127,10 +141,29 @@ chain for DELEGATED actors), created_at
 No status column, no reviewer fields, never updated (D3 applied to
 actors). The boundary mints **one fact per authenticated request** that
 performs a governed write; every record written in that request
-references it. DELEGATED chains: a scan started by Alice produces
-`connector:X` facts with `on_behalf_of` → Alice's fact; `policy:Y` facts
-chain to the ingestion job's fact (generalizing D17's triggering-job
-provenance).
+references it.
+
+**Purity rule (ruled at design review):** IdentityFact answers exactly
+one question — *who was authenticated?* It must never accumulate
+request-context responsibilities (route, operation, parameters, write
+inventory). Those are a different question — *what operation produced
+these records?* If request-level forensics are wanted, introduce a
+**RequestFact** between IdentityFact and the written records rather than
+widening IdentityFact into a catch-all historical object. The watchpoint
+is encoded structurally: the test suite asserts IdentityFact's column
+set stays within the identity vocabulary, so request-context creep fails
+CI, not code review.
+
+**DELEGATED chains — identity and action context evolve independently
+(ruled at design review):** `on_behalf_of` answers *who authorized*
+(connector:X acts on behalf of Alice's fact; policy:Y chains to the
+ingestion job's fact). But the governance question is usually *why did
+policy:X act?* — `Alice → IngestionJob #17 → Policy #3 → Asset #42` —
+and that causal chain is **ActionContext**, which already lives in
+governed objects and D17 provenance (ASSET_AUTO_APPROVED carries the
+policy id/version/snapshot and the triggering job). Never overload
+`on_behalf_of` to carry causal semantics beyond identity; the two chains
+must be able to evolve independently.
 
 ### Landing-pad upgrades (additive, nullable — `_ensure_columns`)
 
