@@ -28,13 +28,29 @@ blocked on the v1.x identity layer regardless (D14).
 
 ```
 backend/app/connectors/
+  __init__.py             # preserves existing import surface
   framework.py            # universal sync/reconciliation engine
+  models.py               # ConnectorItem, fetch/reconciliation result types
+  exceptions.py
   providers/
+    __init__.py
     local_folder.py       # filesystem discovery + file reading only
 ```
 
 (The v0.10.x `connectors.py` module becomes this package; callers —
 main.py, tests — import paths update but behavior must not.)
+
+## Success criterion (the whole milestone in one table)
+
+```
+User experience:    identical
+API behavior:       identical
+Database behavior:  identical
+Tests:              identical (zero assertion edits)
+Architecture:       different
+```
+
+If a user can tell the difference, something probably went wrong.
 
 ## Responsibility split
 
@@ -81,6 +97,34 @@ The existing suites (test_local_connector.py parts 1–7, test_auto_approval.py
 parts 1–6) must pass unchanged — they ARE the acceptance test in executable
 form. New tests cover only the framework/provider seam itself.
 
+## Execution order (agreed 11-step plan)
+
+1. **Move code into the package structure** — no behavior change, imports
+   preserved. Structure first, extraction second.
+2. **Define the provider contract** — `ConnectorProvider` (discover, fetch)
+   and `ConnectorItem` (uri, name, metadata). Provider describes; it never
+   decides duplicate / changed / revision / policy / approval.
+3. **Extract discovery** — `discover_files` → `providers/local_folder.py`,
+   returning ConnectorItems and nothing else.
+4. **Extract the reconciliation engine** → `framework.py`: URI identity,
+   hash comparison, NEW / DUPLICATE / CHANGED / FAILED classification.
+   The framework is the ONLY place that can pronounce those verdicts (D7).
+5. **Extract ingestion** — document creation, candidate assets, audit events.
+6. **Extract revision logic** — `_apply_source_change` semantics become
+   provider-independent framework behavior.
+7. **Extract the policy hook** — provider → framework → documents →
+   candidates → policy evaluation; new candidates only, never revisions (D17).
+8. **Make LocalFolderProvider thin** — walk filesystem, build URIs, read
+   files, return content. **If LocalFolderProvider is still huge, the
+   extraction failed** — that's the heuristic, not a style preference.
+9. **Regression** — existing suites pass with zero rewrites.
+10. **Seam tests** — see below.
+11. **Architecture review before closing**: could a GitProvider /
+    SlackExportProvider / NotionExportProvider be added WITHOUT touching
+    framework.py, policy.py, the revision workflow, or the audit system?
+    Yes → the framework succeeded. "I'd need to modify framework logic" →
+    the abstraction is still wrong; fix it before calling v0.11 done.
+
 ## Seam tests (new in v0.11): prove the boundary, not the behavior
 
 Architecture tests against a FAKE provider — no filesystem, no UI:
@@ -92,7 +136,9 @@ Architecture tests against a FAKE provider — no filesystem, no UI:
    reason and continues the scan (no silent skip, no aborted job).
 3. Provider supplies stable URI + metadata → framework uses URI as identity
    and content hash as the only change signal (provider metadata like
-   modified_at is informational, never the change verdict).
+   modified_at is informational, never the change verdict). Executable form:
+   `modified_at` changes while content hash is unchanged → verdict is
+   **NOT CHANGED** (duplicate). This test is the D18 candidate made runnable.
 
 These prove future providers can plug in safely; they are the contract's
 test double.
