@@ -33,7 +33,7 @@ import {
   Inbox,
   Settings
 } from 'lucide-react';
-import { useAppStore } from '../store';
+import { useAppStore, can } from '../store';
 
 // The deterministic class dimension auto-approval rules are keyed on (MVP 0.10.2).
 const POLICY_ASSET_TYPES = ['PROCEDURE', 'POLICY', 'ROLE', 'SYSTEM', 'WORKFLOW', 'PRODUCT', 'DEPARTMENT'];
@@ -140,8 +140,23 @@ export default function Home() {
     toggleApprovalPolicy,
     llmSettings,
     fetchLLMSettings,
-    updateLLMSetting
+    updateLLMSetting,
+    principals,
+    apiTokens,
+    lastOneTimePassword,
+    lastIssuedToken,
+    fetchPrincipals,
+    createPrincipal,
+    updatePrincipal,
+    resetPrincipalPassword,
+    fetchApiTokens,
+    issueApiToken,
+    revokeApiToken
   } = useAppStore();
+
+  // WS3 role-aware UI: hide what the backend would refuse. The backend
+  // route guards remain the source of truth - this is presentation only.
+  const allow = (permission: string) => can(currentUser, permission);
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
 
@@ -161,6 +176,14 @@ export default function Home() {
   const [pwCurrent, setPwCurrent] = useState('');
   const [pwNew, setPwNew] = useState('');
   const [pwBusy, setPwBusy] = useState(false);
+
+  // Users & Tokens admin forms (WS3, ADMIN only)
+  const [npName, setNpName] = useState('');
+  const [npKind, setNpKind] = useState<'HUMAN' | 'AGENT' | 'SERVICE'>('HUMAN');
+  const [npRole, setNpRole] = useState('READ_ONLY');
+  const [npClearance, setNpClearance] = useState('PUBLIC');
+  const [tokPrincipal, setTokPrincipal] = useState('');
+  const [tokLabel, setTokLabel] = useState('');
   const [selectedDocFilterId, setSelectedDocFilterId] = useState<number | null>(null);
   
   // Doc Upload forms
@@ -500,6 +523,13 @@ export default function Home() {
   useEffect(() => {
     if (currentUser) fetchProjects();
   }, [currentUser]);
+
+  useEffect(() => {
+    if (activeTab === 'settings' && can(currentUser, 'identity:manage')) {
+      fetchPrincipals();
+      fetchApiTokens();
+    }
+  }, [activeTab, currentUser]);
 
   // Hydrate governance deep-link state (?tab=conflicts&expert=11&relationship=42)
   // from the URL once on load. The assets tab stays path-based (/knowledge-assets).
@@ -962,6 +992,7 @@ export default function Home() {
               <span>Ask Expert Console</span>
             </button>
 
+            {allow('audit:read') && (
             <button
               onClick={() => setActiveTab('agents')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
@@ -978,7 +1009,9 @@ export default function Home() {
                 </span>
               )}
             </button>
+            )}
 
+            {allow('audit:read') && (
             <button
               onClick={() => setActiveTab('audit')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
@@ -990,7 +1023,9 @@ export default function Home() {
               <History className="w-4 h-4" />
               <span>Audit Ledger</span>
             </button>
+            )}
 
+            {allow('settings:manage') && (
             <button
               onClick={() => setActiveTab('settings')}
               className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
@@ -1002,6 +1037,7 @@ export default function Home() {
               <Settings className="w-4 h-4" />
               <span>Settings</span>
             </button>
+            )}
           </nav>
         </div>
 
@@ -1242,7 +1278,8 @@ export default function Home() {
               {activeTab === 'documents' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                   
-                  {/* UPLOADER PANEL */}
+                  {/* UPLOADER PANEL (documents:ingest) */}
+                  {allow('documents:ingest') && (
                   <div className="glass-panel p-6 rounded-xl space-y-5 h-fit">
                     <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
                       Ingest New Document
@@ -1295,6 +1332,7 @@ export default function Home() {
                       </button>
                     </div>
                   </div>
+                  )}
 
                   {/* DOCUMENT LIST */}
                   <div className="col-span-2 glass-panel p-6 rounded-xl space-y-4">
@@ -1513,7 +1551,7 @@ export default function Home() {
                                 </span>
                                 {group.docId && (
                                   <div className="flex flex-wrap gap-2">
-                                    {hasPending && (
+                                    {hasPending && allow('assets:approve') && (
                                       <>
                                         <button
                                           onClick={async () => {
@@ -1541,7 +1579,7 @@ export default function Home() {
                                         </button>
                                       </>
                                     )}
-                                    {group.items.some(item => item.status === 'ARCHIVED') && (
+                                    {group.items.some(item => item.status === 'ARCHIVED') && allow('assets:delete') && (
                                       <button
                                         onClick={async () => {
                                           if (window.confirm(`Are you sure you want to permanently delete all ${rejectedGroup} rejected assets from this document?`)) {
@@ -1553,7 +1591,7 @@ export default function Home() {
                                         <Trash2 className="w-3 h-3" /> Delete {rejectedGroup} rejected
                                       </button>
                                     )}
-                                    {group.items.some(item => item.status === 'CANDIDATE') && (
+                                    {group.items.some(item => item.status === 'CANDIDATE') && allow('assets:delete') && (
                                       <button
                                         onClick={async () => {
                                           if (window.confirm(`Are you sure you want to permanently delete all ${candidateGroup} candidate assets from this document?`)) {
@@ -1565,6 +1603,7 @@ export default function Home() {
                                         <Trash2 className="w-3.5 h-3.5" /> Delete {candidateGroup} candidates
                                       </button>
                                     )}
+                                    {allow('assets:delete') && (
                                     <button
                                       onClick={async () => {
                                         if (window.confirm(`Are you sure you want to permanently delete ALL ${group.items.length} assets from this document? This action is destructive and cannot be undone.`)) {
@@ -1575,6 +1614,7 @@ export default function Home() {
                                     >
                                       <Trash2 className="w-3.5 h-3.5" /> Delete All {group.items.length} Assets
                                     </button>
+                                    )}
                                   </div>
                                 )}
                               </div>
@@ -1730,7 +1770,7 @@ export default function Home() {
                                       </div>
 
                                       <div className="flex items-center gap-2 pt-2 border-t border-slate-900/60">
-                                        {asset.status !== 'APPROVED' && (
+                                        {asset.status !== 'APPROVED' && allow('assets:approve') && (
                                           <button
                                             onClick={() => updateAssetStatus(asset.id, 'APPROVED')}
                                             className="flex-1 py-1.5 bg-emerald-950/40 hover:bg-emerald-900/40 text-emerald-400 font-semibold rounded text-xs border border-emerald-900/30 transition-colors"
@@ -1738,7 +1778,7 @@ export default function Home() {
                                             Approve
                                           </button>
                                         )}
-                                        {asset.status !== 'ARCHIVED' && (
+                                        {asset.status !== 'ARCHIVED' && allow('assets:approve') && (
                                           <button
                                             onClick={() => updateAssetStatus(asset.id, 'ARCHIVED')}
                                             className="px-3 py-1.5 bg-rose-950/30 hover:bg-rose-950/50 text-rose-450 hover:text-rose-400 font-semibold rounded text-xs border border-rose-900/30 transition-colors"
@@ -1746,7 +1786,7 @@ export default function Home() {
                                             Reject as Invalid
                                           </button>
                                         )}
-                                        {(asset.status === 'CANDIDATE' || asset.status === 'ARCHIVED') && (
+                                        {(asset.status === 'CANDIDATE' || asset.status === 'ARCHIVED') && allow('assets:delete') && (
                                           <button
                                             onClick={() => deleteAsset(asset.id)}
                                             className="px-2.5 py-1.5 bg-rose-950/30 hover:bg-rose-950/50 text-rose-450 hover:text-rose-400 rounded text-xs border border-rose-900/30 transition-colors"
@@ -2586,6 +2626,7 @@ export default function Home() {
                         Bulk ingestion from a local or mounted folder — discovered files become ordinary documents and CANDIDATE assets
                       </span>
                     </h3>
+                    {allow('connectors:manage') && (
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
@@ -2618,6 +2659,7 @@ export default function Home() {
                         Add Connector
                       </button>
                     </form>
+                    )}
 
                     {/* CONNECTOR LIST */}
                     {sourceConnectors.length > 0 && (
@@ -2630,6 +2672,7 @@ export default function Home() {
                               <span className="font-bold text-sm text-slate-200">{c.name}</span>
                               <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={c.root_path}>{c.root_path}</span>
                               <span className="text-[9px] font-mono text-slate-600">{c.include_extensions}</span>
+                              {allow('connectors:manage') && (
                               <button
                                 onClick={() => activeProjectId !== null && scanConnector(c.id, activeProjectId)}
                                 disabled={busy}
@@ -2637,6 +2680,7 @@ export default function Home() {
                               >
                                 {busy ? 'Scanning…' : 'Scan Now'}
                               </button>
+                              )}
                             </div>
                           );
                         })}
@@ -2657,6 +2701,7 @@ export default function Home() {
                         Auto-approve low-risk asset classes at ingestion — audit-logged &quot;approved by policy&quot;, revisions always reviewed by a human
                       </span>
                     </h3>
+                    {allow('assets:approve') && (
                     <form
                       onSubmit={async (e) => {
                         e.preventDefault();
@@ -2711,6 +2756,7 @@ export default function Home() {
                         </div>
                       </div>
                     </form>
+                    )}
 
                     {/* POLICY LIST */}
                     {approvalPolicies.length > 0 && (
@@ -2728,12 +2774,14 @@ export default function Home() {
                               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${p.enabled ? 'bg-emerald-950/40 text-emerald-400' : 'bg-slate-900 text-slate-500'}`}>
                                 {p.enabled ? 'ENABLED' : 'DISABLED'}
                               </span>
+                              {allow('assets:approve') && (
                               <button
                                 onClick={() => activeProjectId !== null && toggleApprovalPolicy(p.id, !p.enabled, activeProjectId)}
                                 className="text-[10px] text-violet-400 hover:text-violet-300 font-mono bg-violet-950/20 border border-violet-900/30 rounded px-3 py-1.5 uppercase tracking-wider"
                               >
                                 {p.enabled ? 'Disable' : 'Enable'}
                               </button>
+                              )}
                             </div>
                           );
                         })}
@@ -3456,7 +3504,7 @@ export default function Home() {
                                 </button>
                               </div>
                             </div>
-                          ) : (
+                          ) : allow('assets:approve') && (
                             <div className="flex gap-2 border-t border-slate-900/60 pt-3">
                               <button
                                 onClick={() => { setConflictReview({ id: rel.id, action: 'CONFIRMED' }); setConflictReviewReason(''); }}
@@ -3695,7 +3743,7 @@ export default function Home() {
                                       </span>
                                     )}
                                   </div>
-                                ) : (
+                                ) : allow('assets:approve') && (
                                   <div className="flex gap-2 border-t border-slate-900/60 pt-3">
                                     <button
                                       onClick={() => { setRevisionReview({ id: rev.id, action: 'APPROVE' }); setRevisionReviewReason(''); }}
@@ -3880,6 +3928,149 @@ export default function Home() {
                       })}
                     </div>
                   </div>
+
+                  {/* USERS & TOKENS (Identity Boundary v1.0 WS3, ADMIN only) */}
+                  {allow('identity:manage') && (
+                  <div className="glass-panel p-6 rounded-xl space-y-5">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-emerald-400" />
+                      Users &amp; Tokens
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Principal registry and credential lineage — the boundary decides actors; roles decide authority
+                      </span>
+                    </h3>
+
+                    {lastOneTimePassword && (
+                      <div className="bg-amber-950/40 border border-amber-900/50 rounded-lg px-4 py-3 text-xs text-amber-200 font-mono">
+                        One-time password for <b>{lastOneTimePassword.name}</b>: <b>{lastOneTimePassword.password}</b>
+                        <span className="block text-[10px] text-amber-400/70 mt-1">Shown once — it is never stored in plaintext. The user must change it at first login.</span>
+                      </div>
+                    )}
+                    {lastIssuedToken && (
+                      <div className="bg-cyan-950/40 border border-cyan-900/50 rounded-lg px-4 py-3 text-xs text-cyan-200 font-mono break-all">
+                        Token for <b>{lastIssuedToken.principal}</b> ({lastIssuedToken.fingerprint}): <b>{lastIssuedToken.token}</b>
+                        <span className="block text-[10px] text-cyan-400/70 mt-1">Shown once — only its hash is stored. Configure agents via EM_AGENT_TOKEN.</span>
+                      </div>
+                    )}
+
+                    {/* CREATE PRINCIPAL */}
+                    <form
+                      className="grid grid-cols-2 md:grid-cols-5 gap-3 items-end"
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!npName.trim()) return;
+                        const payload: { name: string; kind: string; role?: string; clearance?: string } = {
+                          name: npName.trim(), kind: npKind };
+                        if (npKind !== 'AGENT') payload.role = npRole;
+                        if (npKind === 'AGENT') payload.clearance = npClearance;
+                        if (await createPrincipal(payload)) setNpName('');
+                      }}
+                    >
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Name</label>
+                        <input value={npName} onChange={(e) => setNpName(e.target.value)} placeholder="username / agent id"
+                               className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] outline-none focus:border-emerald-700 text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Kind</label>
+                        <select value={npKind} onChange={(e) => setNpKind(e.target.value as 'HUMAN' | 'AGENT' | 'SERVICE')}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] outline-none text-slate-200">
+                          <option>HUMAN</option><option>AGENT</option><option>SERVICE</option>
+                        </select>
+                      </div>
+                      {npKind !== 'AGENT' ? (
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Role</label>
+                          <select value={npRole} onChange={(e) => setNpRole(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] outline-none text-slate-200">
+                            {npKind === 'HUMAN' && <option>ADMIN</option>}
+                            <option>GOVERNANCE_REVIEWER</option><option>KNOWLEDGE_OPERATOR</option><option>READ_ONLY</option>
+                          </select>
+                        </div>
+                      ) : (
+                        <div>
+                          <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Clearance</label>
+                          <select value={npClearance} onChange={(e) => setNpClearance(e.target.value)}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] outline-none text-slate-200">
+                            <option>PUBLIC</option><option>INTERNAL</option><option>RESTRICTED</option><option>EXECUTIVE</option>
+                          </select>
+                        </div>
+                      )}
+                      <button type="submit" disabled={!npName.trim()}
+                              className="py-1.5 px-4 bg-gradient-to-r from-emerald-500 to-emerald-600 text-slate-950 font-bold rounded text-[10px] tracking-wider uppercase disabled:opacity-40">
+                        Create Principal
+                      </button>
+                    </form>
+
+                    {/* PRINCIPAL REGISTRY */}
+                    <div className="space-y-1.5">
+                      {principals.filter(p => p.kind !== 'DELEGATED' && p.kind !== 'SYSTEM').map((p) => (
+                        <div key={p.id} className={`flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg px-3 py-2 ${p.active ? '' : 'opacity-50'}`}>
+                          <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">{p.kind}</span>
+                          <span className="font-semibold text-xs text-slate-200">{p.display_name}</span>
+                          <span className="text-[10px] font-mono text-slate-500">{p.name}</span>
+                          {p.kind !== 'AGENT' ? (
+                            <select value={p.role ?? ''} disabled={p.name === currentUser.name}
+                                    onChange={(e) => updatePrincipal(p.name, { role: e.target.value })}
+                                    className="text-[10px] font-mono bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-cyan-400 outline-none disabled:opacity-50">
+                              {p.kind === 'HUMAN' && <option>ADMIN</option>}
+                              <option>GOVERNANCE_REVIEWER</option><option>KNOWLEDGE_OPERATOR</option><option>READ_ONLY</option>
+                            </select>
+                          ) : (
+                            <select value={p.clearance ?? 'PUBLIC'}
+                                    onChange={(e) => updatePrincipal(p.name, { clearance: e.target.value })}
+                                    className="text-[10px] font-mono bg-slate-950 border border-slate-800 rounded px-2 py-0.5 text-purple-400 outline-none">
+                              <option>PUBLIC</option><option>INTERNAL</option><option>RESTRICTED</option><option>EXECUTIVE</option>
+                            </select>
+                          )}
+                          <span className="flex-1"></span>
+                          {p.kind === 'HUMAN' && (
+                            <button onClick={() => resetPrincipalPassword(p.name)}
+                                    className="text-[10px] font-mono text-amber-400 hover:text-amber-300 bg-amber-950/20 border border-amber-900/30 rounded px-2 py-0.5 uppercase">
+                              Reset PW
+                            </button>
+                          )}
+                          {(p.kind === 'AGENT' || p.kind === 'SERVICE') && (
+                            <button onClick={() => { setTokPrincipal(p.name); issueApiToken(p.name, tokLabel.trim() || undefined); }}
+                                    className="text-[10px] font-mono text-cyan-400 hover:text-cyan-300 bg-cyan-950/20 border border-cyan-900/30 rounded px-2 py-0.5 uppercase">
+                              Issue Token
+                            </button>
+                          )}
+                          {p.name !== currentUser.name && (
+                            <button onClick={() => updatePrincipal(p.name, { active: !p.active })}
+                                    className={`text-[10px] font-mono rounded px-2 py-0.5 uppercase border ${
+                                      p.active ? 'text-rose-400 bg-rose-950/20 border-rose-900/30' : 'text-emerald-400 bg-emerald-950/20 border-emerald-900/30'}`}>
+                              {p.active ? 'Deactivate' : 'Reactivate'}
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* TOKEN LINEAGE */}
+                    {apiTokens.length > 0 && (
+                      <div className="space-y-1.5 pt-2 border-t border-slate-900">
+                        <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">API Token Lineage (revoked tokens stay listed — lineage, not deletion)</h4>
+                        {apiTokens.map((t) => (
+                          <div key={t.fingerprint} className={`flex flex-wrap items-center gap-3 bg-slate-950/40 border border-slate-900 rounded px-3 py-1.5 text-[10px] font-mono ${t.revoked_at ? 'opacity-50' : ''}`}>
+                            <span className="text-slate-400">{t.fingerprint}</span>
+                            <span className="text-slate-300">{t.principal_name}</span>
+                            {t.label && <span className="text-slate-500">{t.label}</span>}
+                            <span className="flex-1"></span>
+                            {t.revoked_at ? (
+                              <span className="text-rose-500 uppercase">Revoked</span>
+                            ) : (
+                              <button onClick={() => revokeApiToken(t.fingerprint)}
+                                      className="text-rose-400 hover:text-rose-300 bg-rose-950/20 border border-rose-900/30 rounded px-2 py-0.5 uppercase">
+                                Revoke
+                              </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  )}
                 </div>
               )}
 

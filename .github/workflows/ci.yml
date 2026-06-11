@@ -41,6 +41,7 @@ jobs:
           python test_identity_boundary.py
           python test_identity_tokens.py
           python test_mcp_gateway.py
+          python test_authorization.py
       - name: Architectural seam suite (D18 boundary)
         working-directory: backend
         run: python test_connector_seam.py

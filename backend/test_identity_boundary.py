@@ -52,7 +52,7 @@ def main():
     # Part 2: the Alice test - facts survive every later mutation.
     print("\n--- Part 2: The Alice test (evidence survives principal mutation) ---")
     alice = identity.create_principal(session, name="alice", display_name="Alice Novak",
-                                      kind="HUMAN", role="GOVERNANCE_OFFICER", created_by="admin")
+                                      kind="HUMAN", role="GOVERNANCE_REVIEWER", created_by="admin")
     identity.set_password(session, alice, "correct horse battery staple", actor="alice")
     alice_token, _ = identity.authenticate_password(session, "alice", "correct horse battery staple")
     assert alice_token is not None
@@ -73,7 +73,7 @@ def main():
 
     # six months pass: everything about Alice changes
     alice.display_name = "Alice Svoboda"      # married name
-    alice.role = "VIEWER"                      # demoted
+    alice.role = "READ_ONLY"                   # demoted
     session.commit()
     identity.set_password(session, alice, "new password entirely", actor="alice")  # rotation
     alice.active = False                       # offboarded
@@ -82,7 +82,7 @@ def main():
     # the historical question, answered from evidence alone
     recorded = session.query(db.IdentityFact).filter_by(id=event.identity_fact_id).first()
     assert recorded.display_name == "Alice Novak", "name AT ACTION TIME, not today's"
-    assert recorded.role_snapshot == "GOVERNANCE_OFFICER", "role AT ACTION TIME, not today's"
+    assert recorded.role_snapshot == "GOVERNANCE_REVIEWER", "role AT ACTION TIME, not today's"
     assert recorded.authentication_method == "PASSWORD"
     assert recorded.credential_fingerprint == session_fingerprint, "which credential, provably"
     assert recorded.principal_kind == "HUMAN"
@@ -143,7 +143,7 @@ def main():
     p, c = identity.resolve_token(session, "emk_completely-made-up")
     assert p is None and c is None
     bob = identity.create_principal(session, name="bob", display_name="Bob", kind="HUMAN",
-                                    role="REVIEWER", created_by="admin")
+                                    role="GOVERNANCE_REVIEWER", created_by="admin")
     expired_plain, expired_cred = identity.issue_token(
         session, bob, kind="API_TOKEN", label="expired",
         expires_at=datetime.datetime.utcnow() - datetime.timedelta(minutes=1))
@@ -164,7 +164,7 @@ def main():
     # Part 6: delegated chains - identity delegation only, auto-registered.
     print("\n--- Part 6: DELEGATED chains (on_behalf_of carries WHO, not WHY) ---")
     carol = identity.create_principal(session, name="carol", display_name="Carol",
-                                      kind="HUMAN", role="GOVERNANCE_OFFICER", created_by="admin")
+                                      kind="HUMAN", role="GOVERNANCE_REVIEWER", created_by="admin")
     identity.set_password(session, carol, "carols password here", actor="carol")
     carol_token, _ = identity.authenticate_password(session, "carol", "carols password here")
     carol_p, carol_c = identity.resolve_token(session, carol_token)

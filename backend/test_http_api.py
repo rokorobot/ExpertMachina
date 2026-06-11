@@ -49,12 +49,12 @@ def main_test():
         # bearer token is the ONLY identity input any request carries.
         with db.SessionLocal() as boot:
             op = identity.create_principal(boot, name="smoke_tester", display_name="SmokeTester",
-                                           kind="HUMAN", role="GOVERNANCE_OFFICER", created_by="test-suite")
+                                           kind="HUMAN", role="ADMIN", created_by="test-suite")
             identity.set_password(boot, op, "smoke-password-123", actor="smoke_tester")
         r = client.post("/api/auth/login", json={"name": "smoke_tester", "password": "smoke-password-123"})
         assert r.status_code == 200, r.text
         login = r.json()
-        assert login["display_name"] == "SmokeTester" and login["role"] == "GOVERNANCE_OFFICER"
+        assert login["display_name"] == "SmokeTester" and login["role"] == "ADMIN"
         AUTH = {"Authorization": f"Bearer {login['token']}"}
 
         # Part 1: health + project lifecycle over HTTP.
@@ -86,7 +86,7 @@ def main_test():
 
         # Part 3: extraction produced CANDIDATE assets, listable over HTTP.
         print("\n--- Part 3: Assets listed, all CANDIDATE ---")
-        r = client.get(f"/api/projects/{project_id}/assets")
+        r = client.get(f"/api/projects/{project_id}/assets", headers=AUTH)
         assert r.status_code == 200, r.text
         assets = r.json()
         assert len(assets) >= 2, f"Expected at least 2 extracted assets, got {len(assets)}"
@@ -120,7 +120,7 @@ def main_test():
 
         # Part 6: audit trail records both approval paths identically shaped.
         print("\n--- Part 6: Audit events over HTTP ---")
-        r = client.get("/api/audit", params={"limit": 200})
+        r = client.get("/api/audit", params={"limit": 200}, headers=AUTH)
         assert r.status_code == 200, r.text
         events = r.json()
         approvals = [e for e in events if e["event_type"] == "ASSET_APPROVED"]
@@ -133,7 +133,7 @@ def main_test():
         # from birth: list, set (CONFIG wins), clear (falls back), reject
         # unknown functions.
         print("\n--- Part 7: LLM settings endpoints ---")
-        r = client.get("/api/settings/llm")
+        r = client.get("/api/settings/llm", headers=AUTH)
         assert r.status_code == 200, r.text
         settings = {s["function"]: s for s in r.json()}
         assert set(settings) == {"EXTRACTION", "CLAIM_DECOMPOSITION", "CLAIM_JUDGE", "ANSWER_GENERATION"}
@@ -144,7 +144,7 @@ def main_test():
         assert r.status_code == 200 and r.json()["source"] == "DEFAULT", r.text
         r = client.put("/api/settings/llm/NOT_A_FUNCTION", json={"model": "x"}, headers=AUTH)
         assert r.status_code == 400, f"Unknown function must 400: {r.status_code}"
-        r = client.get("/api/audit", params={"limit": 50})
+        r = client.get("/api/audit", params={"limit": 50}, headers=AUTH)
         assert any(e["event_type"] == "LLM_CONFIG_UPDATED" for e in r.json()), \
             "Config changes must be audited"
         print("Part 7 passed: settings listed, set/clear round-trip, unknown rejected, audited.")
@@ -167,7 +167,7 @@ def main_test():
                         params={"actor": "Mallory"},
                         headers=AUTH)
         assert r.status_code == 200, r.text
-        probe_assets = [a for a in client.get(f"/api/projects/{project_id}/assets").json()
+        probe_assets = [a for a in client.get(f"/api/projects/{project_id}/assets", headers=AUTH).json()
                         if a["status"] == "CANDIDATE"]
         assert probe_assets, "Probe upload should yield CANDIDATE assets"
         r = client.patch(f"/api/assets/{probe_assets[0]['id']}",
@@ -175,7 +175,7 @@ def main_test():
                          params={"actor": "Mallory", "reviewer": "Mallory"},
                          headers=AUTH)
         assert r.status_code == 200, r.text
-        r = client.get("/api/audit", params={"limit": 10, "event_prefix": "ASSET_APPROVED"})
+        r = client.get("/api/audit", params={"limit": 10, "event_prefix": "ASSET_APPROVED"}, headers=AUTH)
         latest = r.json()[0]
         assert latest["actor"] == "SmokeTester", \
             f"The boundary decides the actor; got {latest['actor']!r}"
@@ -188,7 +188,7 @@ def main_test():
             assert ev.identity_fact_id is not None, "Approval events must carry the fact"
             fact = check.query(db.IdentityFact).filter_by(id=ev.identity_fact_id).first()
             assert fact.principal_name == "smoke_tester"
-            assert fact.role_snapshot == "GOVERNANCE_OFFICER"
+            assert fact.role_snapshot == "ADMIN"
             assert fact.authentication_method == "PASSWORD"
             assert fact.credential_fingerprint, "Authenticated facts record their credential"
             review = check.query(db.AssetReview).filter_by(

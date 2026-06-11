@@ -30,7 +30,7 @@ class Principal(Base):
     name = Column(String, nullable=False, unique=True, index=True)  # stable slug: "alice", "policy:Low-risk docs", "system"
     display_name = Column(String, nullable=False)
     kind = Column(String, nullable=False)  # HUMAN | DELEGATED | SYSTEM | SERVICE | AGENT
-    role = Column(String, nullable=True)  # ADMIN | GOVERNANCE_OFFICER | REVIEWER | VIEWER (HUMAN/SERVICE); None for SYSTEM/DELEGATED
+    role = Column(String, nullable=True)  # identity.ROLES: ADMIN | GOVERNANCE_REVIEWER | KNOWLEDGE_OPERATOR | AGENT_CONSUMER | READ_ONLY; None for SYSTEM/DELEGATED
     clearance = Column(String, nullable=True)  # AGENT kind only: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
     active = Column(Boolean, default=True)
     must_change_password = Column(Boolean, default=False)

@@ -71,7 +71,12 @@ def resolve_agent(session) -> identity_boundary.Actor:
         raise PermissionError(
             f"Only AGENT principals may use the MCP gateway; this token belongs to a "
             f"{principal.kind} principal.")
-    return identity_boundary.Actor(principal, "API_TOKEN", credential=credential)
+    actor = identity_boundary.Actor(principal, "API_TOKEN", credential=credential)
+    # WS3: identity is trusted but powerless until authorized - the gateway
+    # itself requires mcp:consume (AGENT_CONSUMER grants it; a future role
+    # change can revoke gateway access without touching the token).
+    identity_boundary.authorize(session, actor, "mcp:consume")
+    return actor
 
 
 def agent_clearance(actor: identity_boundary.Actor) -> str:

@@ -17,7 +17,7 @@ _PASSWORD = "test-suite-password-123"
 _cache = {}
 
 
-def governed_actor(session, name="test_officer", role="GOVERNANCE_OFFICER"):
+def governed_actor(session, name="test_officer", role="GOVERNANCE_REVIEWER"):
     """Get-or-create a HUMAN principal with the given name, authenticate it,
     and return a boundary-decided Actor. display_name == name so suites that
     assert recorded actor strings keep asserting the same values."""

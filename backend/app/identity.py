@@ -27,9 +27,117 @@ from sqlalchemy.orm import Session
 from app import database as db
 
 PRINCIPAL_KINDS = {"HUMAN", "DELEGATED", "SYSTEM", "SERVICE", "AGENT"}
-ROLES = {"ADMIN", "GOVERNANCE_OFFICER", "REVIEWER", "VIEWER"}
 CREDENTIAL_KINDS = {"PASSWORD", "API_TOKEN", "SESSION"}
 AUTH_METHODS = {"PASSWORD", "API_TOKEN", "DELEGATED", "INTERNAL"}
+
+# ----------------------------------------------------------- authorization
+# WS3 (v1.0): identity is trusted but POWERLESS until authorized. The
+# matrix is deliberately small, code-resident (governed in code, versioned
+# with it), and enforced at the route boundary - the backend is the source
+# of truth; the UI merely hides what it knows will be refused.
+
+PERMISSIONS = {
+    "identity:manage",   # principals: create, role changes, activate/deactivate, password resets
+    "tokens:manage",     # API tokens: issue, list, revoke
+    "assets:read",       # governed knowledge, projects, experts, dashboards, inbox
+    "assets:review",     # asset review, candidate revisions, claim-verdict review, benchmarks/evaluations
+    "assets:approve",    # approvals, revision/conflict decisions, approval policies, expert models, package compile
+    "assets:delete",     # destructive asset operations
+    "documents:ingest",  # uploads, extraction
+    "connectors:manage", # source connectors: create, scan
+    "audit:read",        # the audit ledger and agent activity
+    "settings:manage",   # platform configuration (LLM provider settings)
+    "mcp:consume",       # the MCP gateway (read channel under clearance)
+}
+
+ROLE_PERMISSIONS = {
+    "ADMIN": frozenset(PERMISSIONS),
+    "GOVERNANCE_REVIEWER": frozenset({
+        "assets:read", "assets:review", "assets:approve", "audit:read"}),
+    "KNOWLEDGE_OPERATOR": frozenset({
+        "assets:read", "documents:ingest", "connectors:manage"}),
+    "AGENT_CONSUMER": frozenset({"mcp:consume"}),
+    "READ_ONLY": frozenset({"assets:read"}),
+}
+ROLES = set(ROLE_PERMISSIONS)
+
+# Kind-role discipline: a service must never become a quiet super-user,
+# and an agent's REST powerlessness is structural, not configured.
+ALLOWED_ROLES_BY_KIND = {
+    "HUMAN": {"ADMIN", "GOVERNANCE_REVIEWER", "KNOWLEDGE_OPERATOR", "READ_ONLY"},
+    "SERVICE": {"GOVERNANCE_REVIEWER", "KNOWLEDGE_OPERATOR", "READ_ONLY"},  # never ADMIN
+    "AGENT": {"AGENT_CONSUMER"},
+}
+
+# Pre-WS3 role names, migrated on startup (mutable registry ONLY -
+# IdentityFact.role_snapshot is historical evidence and is never rewritten).
+LEGACY_ROLE_MIGRATION = {
+    "GOVERNANCE_OFFICER": "GOVERNANCE_REVIEWER",
+    "REVIEWER": "GOVERNANCE_REVIEWER",
+    "VIEWER": "READ_ONLY",
+}
+
+# Read-bucket grants are not audited (reads were never audit events);
+# every other grant and EVERY denial is.
+UNAUDITED_GRANTS = {"assets:read", "audit:read"}
+
+
+def permissions_for(role: str) -> frozenset:
+    return ROLE_PERMISSIONS.get(role or "", frozenset())
+
+
+def is_authorized(principal: "db.Principal", permission: str) -> bool:
+    return permission in permissions_for(principal.role)
+
+
+def authorize(session: Session, actor: "Actor", permission: str):
+    """The central authorization decision. Grants for non-read permissions
+    and ALL denials are audit events carrying the actor's identity fact -
+    'who tried, holding what role, asking for what' is answerable forever."""
+    import json
+    if permission not in PERMISSIONS:
+        raise ValueError(f"Unknown permission: {permission}")
+    granted = is_authorized(actor.principal, permission)
+    if granted and permission in UNAUDITED_GRANTS:
+        return actor
+    _audit(session, actor=actor.display,
+           event_type="AUTHZ_GRANTED" if granted else "AUTHZ_DENIED",
+           details=json.dumps({"permission": permission,
+                               "role": actor.principal.role,
+                               "principal": actor.principal.name,
+                               "kind": actor.principal.kind}),
+           identity_fact_id=actor.fact(session).id)
+    if not granted:
+        raise PermissionError(
+            f"Not authorized: '{permission}' requires a role granting it; "
+            f"'{actor.principal.name}' holds {actor.principal.role or 'no role'}.")
+    return actor
+
+
+def migrate_legacy_roles(session: Session):
+    """Startup data migration (WS3): rename pre-matrix roles in the MUTABLE
+    registry. Historical role_snapshots keep the names that were true at
+    action time (D12 - evidence is never rewritten). Idempotent; audited
+    once per actually-changed principal."""
+    import json
+    changed = []
+    for principal in session.query(db.Principal).all():
+        new_role = None
+        if principal.role in LEGACY_ROLE_MIGRATION:
+            new_role = LEGACY_ROLE_MIGRATION[principal.role]
+        elif principal.kind == "AGENT" and principal.role is None:
+            new_role = "AGENT_CONSUMER"
+        elif principal.kind == "SERVICE" and principal.role is None:
+            new_role = "READ_ONLY"  # least privilege until explicitly granted
+        if new_role and new_role != principal.role:
+            changed.append({"principal": principal.name, "old": principal.role, "new": new_role})
+            principal.role = new_role
+    if changed:
+        session.commit()
+        _audit(session, actor="system", event_type="ROLE_VOCABULARY_MIGRATED",
+               details=json.dumps({"changes": changed,
+                                   "note": "mutable registry only; historical "
+                                           "role_snapshots intentionally untouched"}))
 
 # The platform acting as itself (observed vocabulary, v0.12.0 audit).
 SYSTEM_PRINCIPAL_NAMES = ["system", "conflict_engine", "verification_engine", "policy_engine"]
@@ -85,10 +193,19 @@ def create_principal(session: Session, name: str, display_name: str, kind: str,
                      identity_fact_id: int = None) -> db.Principal:
     if kind not in PRINCIPAL_KINDS:
         raise ValueError(f"Unknown principal kind: {kind}")
-    if role is not None and role not in ROLES:
-        raise ValueError(f"Unknown role: {role}")
-    if kind in ("SYSTEM", "DELEGATED") and role is not None:
-        raise ValueError(f"{kind} principals carry no role; authority is structural")
+    if kind in ("SYSTEM", "DELEGATED"):
+        if role is not None:
+            raise ValueError(f"{kind} principals carry no role; authority is structural")
+    else:
+        if kind == "AGENT" and role is None:
+            role = "AGENT_CONSUMER"
+        if kind == "SERVICE" and role is None:
+            role = "READ_ONLY"  # least privilege until explicitly granted
+        if role not in ROLES:
+            raise ValueError(f"Unknown role: {role}")
+        if role not in ALLOWED_ROLES_BY_KIND[kind]:
+            raise ValueError(f"{kind} principals may not hold role {role} "
+                             f"(allowed: {sorted(ALLOWED_ROLES_BY_KIND[kind])})")
     existing = session.query(db.Principal).filter_by(name=name).first()
     if existing:
         raise ValueError(f"Principal '{name}' already exists (principals are never deleted - reactivate instead)")

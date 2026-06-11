@@ -479,8 +479,15 @@ class LoginResponse(AuthIdentityResponse):
 class PrincipalCreate(BaseModel):
     name: str
     display_name: Optional[str] = None
-    kind: str  # AGENT | SERVICE (HUMAN administration arrives with WS3 roles)
+    kind: str  # HUMAN | AGENT | SERVICE (SYSTEM/DELEGATED are platform-managed)
+    role: Optional[str] = None  # HUMAN/SERVICE; AGENT is always AGENT_CONSUMER
     clearance: Optional[str] = None  # AGENT only: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+
+class PrincipalUpdate(BaseModel):
+    display_name: Optional[str] = None
+    role: Optional[str] = None
+    clearance: Optional[str] = None  # AGENT only
+    active: Optional[bool] = None
 
 class PrincipalResponse(BaseModel):
     id: int
@@ -494,6 +501,11 @@ class PrincipalResponse(BaseModel):
     created_at: datetime
     class Config:
         from_attributes = True
+
+class PrincipalCreatedResponse(PrincipalResponse):
+    # HUMAN creation returns a generated one-time password - shown exactly
+    # once (the bootstrap pattern); must_change_password forces rotation.
+    one_time_password: Optional[str] = None
 
 class TokenIssueRequest(BaseModel):
     principal_name: str

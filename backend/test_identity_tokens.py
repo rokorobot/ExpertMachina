@@ -37,7 +37,7 @@ def main_test():
                                               kind="HUMAN", role="ADMIN", created_by="test-suite")
             identity.set_password(boot, admin, "root-password-123", actor="root")
             reviewer = identity.create_principal(boot, name="reviewer", display_name="Reviewer",
-                                                 kind="HUMAN", role="REVIEWER", created_by="test-suite")
+                                                 kind="HUMAN", role="GOVERNANCE_REVIEWER", created_by="test-suite")
             identity.set_password(boot, reviewer, "reviewer-password-123", actor="reviewer")
         ADMIN = {"Authorization": "Bearer " + client.post(
             "/api/auth/login", json={"name": "root", "password": "root-password-123"}).json()["token"]}
@@ -52,21 +52,36 @@ def main_test():
         assert r.status_code == 200, r.text
         assert r.json()["kind"] == "AGENT" and r.json()["clearance"] == "INTERNAL"
         r = client.post("/api/identity/principals",
-                        json={"name": "ci-pipeline", "kind": "SERVICE"}, headers=ADMIN)
+                        json={"name": "ci-pipeline", "kind": "SERVICE", "role": "KNOWLEDGE_OPERATOR"},
+                        headers=ADMIN)
         assert r.status_code == 200 and r.json()["clearance"] is None, r.text
+        assert r.json()["role"] == "KNOWLEDGE_OPERATOR"
+        r = client.post("/api/identity/principals",
+                        json={"name": "ro-service", "kind": "SERVICE"}, headers=ADMIN)
+        assert r.status_code == 200 and r.json()["role"] == "READ_ONLY", \
+            "SERVICE defaults to least privilege, never a quiet super-user"
         r = client.post("/api/identity/principals",
                         json={"name": "claude-desktop-rk", "kind": "AGENT"}, headers=ADMIN)
         assert r.status_code == 400, "Duplicate principal must 400 (never deleted, so never reused)"
         r = client.post("/api/identity/principals",
-                        json={"name": "eve", "kind": "HUMAN"}, headers=ADMIN)
-        assert r.status_code == 400, "HUMAN administration arrives with WS3"
+                        json={"name": "eve", "kind": "HUMAN", "role": "GOVERNANCE_REVIEWER"},
+                        headers=ADMIN)
+        assert r.status_code == 200, r.text
+        eve = r.json()
+        assert eve["one_time_password"], "HUMAN creation returns a one-time password exactly once"
+        r = client.post("/api/auth/login", json={"name": "eve", "password": eve["one_time_password"]})
+        assert r.status_code == 200 and r.json()["must_change_password"] is True
+        r = client.post("/api/identity/principals",
+                        json={"name": "rogue-svc", "kind": "SERVICE", "role": "ADMIN"}, headers=ADMIN)
+        assert r.status_code == 400, "SERVICE may never hold ADMIN (quiet super-user guard)"
         r = client.post("/api/identity/principals",
                         json={"name": "svc2", "kind": "SERVICE", "clearance": "EXECUTIVE"}, headers=ADMIN)
         assert r.status_code == 400, "clearance is an AGENT concept"
         r = client.get("/api/identity/principals", headers=ADMIN)
         names = {p["name"] for p in r.json()}
-        assert {"root", "reviewer", "claude-desktop-rk", "ci-pipeline"} <= names
-        print("Part 1 passed: AGENT/SERVICE created; duplicates, HUMAN kind, and stray clearance refused.")
+        assert {"root", "reviewer", "claude-desktop-rk", "ci-pipeline", "ro-service", "eve"} <= names
+        print("Part 1 passed: AGENT/SERVICE/HUMAN created (one-time password, least-privilege")
+        print("               defaults); duplicates, SERVICE-ADMIN, and stray clearance refused.")
 
         # Part 2: token issuance - plaintext exactly once, fingerprint thereafter.
         print("\n--- Part 2: Token issuance (plaintext once, hashes never) ---")
@@ -106,21 +121,42 @@ def main_test():
             assert r.status_code == 403, f"{method} {url} must 403 for non-admin: {r.status_code}"
         print("Part 3 passed: all four admin endpoints 403 for a REVIEWER.")
 
-        # Part 4: the REST/gateway split - AGENT tokens are gateway-only;
-        # SERVICE tokens act on REST like operators (role matrix is WS3).
-        print("\n--- Part 4: AGENT tokens are MCP-only on the REST surface ---")
+        # Part 4: the REST/gateway split + WS3 role scoping - AGENT tokens
+        # are gateway-only; SERVICE tokens hold exactly their role's
+        # permissions, never a quiet super-user.
+        print("\n--- Part 4: AGENT tokens MCP-only; SERVICE tokens scoped by role ---")
         r = client.post("/api/projects", json={"name": "T", "description": "", "customer_id": 1},
                         headers={"Authorization": f"Bearer {agent_token}"})
         assert r.status_code == 403 and "MCP gateway" in r.json()["detail"], r.text
         r = client.post("/api/projects", json={"name": "Service Project", "description": "", "customer_id": 1},
                         headers={"Authorization": f"Bearer {service_token}"})
-        assert r.status_code == 200, f"SERVICE tokens act on REST until WS3 scopes them: {r.text}"
+        assert r.status_code == 200, f"KNOWLEDGE_OPERATOR service holds documents:ingest: {r.text}"
         with db.SessionLocal() as check:
             ev = check.query(db.AuditEvent).filter_by(event_type="PROJECT_CREATED").order_by(
                 db.AuditEvent.id.desc()).first()
             fact = check.query(db.IdentityFact).filter_by(id=ev.identity_fact_id).first()
             assert fact.principal_kind == "SERVICE" and fact.authentication_method == "API_TOKEN"
-        print("Part 4 passed: AGENT token 403s on REST; SERVICE write recorded with an API_TOKEN fact.")
+            assert fact.role_snapshot == "KNOWLEDGE_OPERATOR"
+        # the same service may NOT approve or manage identity (role-scoped)
+        r = client.post("/api/identity/tokens", json={"principal_name": "ro-service"},
+                        headers={"Authorization": f"Bearer {service_token}"})
+        assert r.status_code == 403, "KNOWLEDGE_OPERATOR lacks tokens:manage"
+        # a READ_ONLY service cannot ingest - no quiet super-user category
+        r = client.post("/api/identity/tokens", json={"principal_name": "ro-service"}, headers=ADMIN)
+        ro_token = r.json()["token"]
+        r = client.post("/api/projects", json={"name": "Nope", "description": "", "customer_id": 1},
+                        headers={"Authorization": f"Bearer {ro_token}"})
+        assert r.status_code == 403, "READ_ONLY service must not ingest"
+        r = client.get("/api/projects", headers={"Authorization": f"Bearer {ro_token}"})
+        assert r.status_code == 200, "READ_ONLY service may read"
+        with db.SessionLocal() as check:
+            denied = check.query(db.AuditEvent).filter_by(event_type="AUTHZ_DENIED").order_by(
+                db.AuditEvent.id.desc()).first()
+            assert denied is not None and denied.identity_fact_id is not None
+            d = json.loads(denied.details)
+            assert d["permission"] == "documents:ingest" and d["role"] == "READ_ONLY"
+        print("Part 4 passed: AGENT 403s on REST; SERVICE scoped to its role's permissions;")
+        print("               denial audited with permission, role, and identity fact.")
 
         # Part 5: revocation over HTTP - lineage kept, token dead, all audited.
         print("\n--- Part 5: Revocation (revoke-not-delete, audited with facts) ---")

@@ -448,6 +448,47 @@ export interface AuthUser {
   must_change_password: boolean;
 }
 
+export interface Principal {
+  id: number;
+  name: string;
+  display_name: string;
+  kind: string;
+  role: string | null;
+  clearance: string | null;
+  active: boolean;
+  created_by: string | null;
+  created_at: string;
+  one_time_password?: string | null;
+}
+
+export interface ApiToken {
+  fingerprint: string;
+  principal_name: string;
+  principal_kind: string;
+  label: string | null;
+  created_at: string;
+  expires_at: string | null;
+  revoked_at: string | null;
+  last_used_at: string | null;
+}
+
+// WS3: a MIRROR of identity.ROLE_PERMISSIONS for hiding what the backend
+// would refuse. The backend is the source of truth - this only shapes UI.
+const ROLE_PERMISSIONS: Record<string, string[]> = {
+  ADMIN: ['identity:manage', 'tokens:manage', 'assets:read', 'assets:review', 'assets:approve',
+          'assets:delete', 'documents:ingest', 'connectors:manage', 'audit:read',
+          'settings:manage', 'mcp:consume'],
+  GOVERNANCE_REVIEWER: ['assets:read', 'assets:review', 'assets:approve', 'audit:read'],
+  KNOWLEDGE_OPERATOR: ['assets:read', 'documents:ingest', 'connectors:manage'],
+  AGENT_CONSUMER: ['mcp:consume'],
+  READ_ONLY: ['assets:read'],
+};
+
+export function can(user: AuthUser | null, permission: string): boolean {
+  if (!user || !user.role) return false;
+  return (ROLE_PERMISSIONS[user.role] || []).includes(permission);
+}
+
 interface AppState {
   // Identity Boundary v1.0: who is logged in. The backend decides the
   // actor from the bearer token - the frontend never sends actor names.
@@ -516,6 +557,19 @@ interface AppState {
   llmSettings: LLMFunctionSetting[];
   fetchLLMSettings: () => Promise<void>;
   updateLLMSetting: (fn: string, model: string | null) => Promise<void>;
+
+  // Identity administration (WS3, ADMIN only)
+  principals: Principal[];
+  apiTokens: ApiToken[];
+  lastOneTimePassword: { name: string; password: string } | null;
+  lastIssuedToken: { principal: string; token: string; fingerprint: string } | null;
+  fetchPrincipals: () => Promise<void>;
+  createPrincipal: (payload: { name: string; kind: string; role?: string; clearance?: string; display_name?: string }) => Promise<boolean>;
+  updatePrincipal: (name: string, payload: { role?: string; active?: boolean; clearance?: string; display_name?: string }) => Promise<boolean>;
+  resetPrincipalPassword: (name: string) => Promise<void>;
+  fetchApiTokens: () => Promise<void>;
+  issueApiToken: (principalName: string, label?: string, expiresDays?: number) => Promise<void>;
+  revokeApiToken: (fingerprint: string) => Promise<void>;
 
   approvalPolicies: ApprovalPolicy[];
   fetchApprovalPolicies: (projectId: number) => Promise<void>;
@@ -1032,6 +1086,124 @@ export const useAppStore = create<AppState>((set, get) => ({
         throw new Error(body?.detail || 'Failed to update LLM setting');
       }
       await get().fetchLLMSettings();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // Identity administration (WS3, ADMIN only). One-time secrets are held in
+  // transient state for a single display and never persisted client-side.
+  principals: [],
+  apiTokens: [],
+  lastOneTimePassword: null,
+  lastIssuedToken: null,
+
+  fetchPrincipals: async () => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/principals`);
+      if (res.ok) set({ principals: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  createPrincipal: async (payload) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/principals`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to create principal');
+      }
+      const created = await res.json();
+      if (created.one_time_password) {
+        set({ lastOneTimePassword: { name: created.name, password: created.one_time_password } });
+      }
+      await get().fetchPrincipals();
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  updatePrincipal: async (name, payload) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/principals/${encodeURIComponent(name)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to update principal');
+      }
+      await get().fetchPrincipals();
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
+    }
+  },
+
+  resetPrincipalPassword: async (name) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/principals/${encodeURIComponent(name)}/reset-password`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to reset password');
+      }
+      const data = await res.json();
+      set({ lastOneTimePassword: { name: data.name, password: data.one_time_password } });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  fetchApiTokens: async () => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/tokens`);
+      if (res.ok) set({ apiTokens: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  issueApiToken: async (principalName, label, expiresDays) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ principal_name: principalName, label: label || null,
+                               expires_days: expiresDays ?? null }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to issue token');
+      }
+      const data = await res.json();
+      set({ lastIssuedToken: { principal: data.principal_name, token: data.token, fingerprint: data.fingerprint } });
+      await get().fetchApiTokens();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  revokeApiToken: async (fingerprint) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/identity/tokens/${encodeURIComponent(fingerprint)}/revoke`, {
+        method: 'POST',
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to revoke token');
+      }
+      await get().fetchApiTokens();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
