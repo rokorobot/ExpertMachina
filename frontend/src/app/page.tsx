@@ -125,7 +125,7 @@ export default function Home() {
     fetchJobFiles
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'connectors' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -236,15 +236,15 @@ export default function Home() {
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (activeTab === 'connectors' && activeProjectId !== null) {
+    if (activeTab === 'documents' && activeProjectId !== null) {
       fetchConnectors(activeProjectId);
       fetchIngestionJobs(activeProjectId);
     }
   }, [activeTab, activeProjectId]);
 
-  // Live progress: poll while any job is pending/running on the connectors tab.
+  // Live progress: poll while any job is pending/running on the documents tab.
   useEffect(() => {
-    if (activeTab !== 'connectors' || activeProjectId === null) return;
+    if (activeTab !== 'documents' || activeProjectId === null) return;
     const active = ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING');
     if (!active) return;
     const timer = setInterval(() => {
@@ -449,7 +449,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'connectors', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
+    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -542,12 +542,12 @@ export default function Home() {
       const documentIdParam = searchParams.get('documentId');
       const documentParam = searchParams.get('document');
       const tabParam = searchParams.get('tab');
-      const urlTabs = ['inbox', 'connectors', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
+      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
 
       if (pathname.includes('/knowledge-assets')) {
         setActiveTab('assets');
       } else if (tabParam && urlTabs.includes(tabParam)) {
-        setActiveTab(tabParam as 'inbox' | 'connectors' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
+        setActiveTab(tabParam as 'inbox' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
       } else {
         setActiveTab('dashboard');
       }
@@ -732,26 +732,13 @@ export default function Home() {
             >
               <FileText className="w-4 h-4" />
               <span>Document Inventory</span>
-              {documents.length > 0 && (
-                <span className="ml-auto bg-slate-800 text-[10px] text-slate-300 font-mono px-2 py-0.5 rounded-full">
-                  {documents.length}
-                </span>
-              )}
-            </button>
-
-            <button
-              onClick={() => setActiveTab('connectors')}
-              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
-                activeTab === 'connectors'
-                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
-                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
-              }`}
-            >
-              <Folder className="w-4 h-4" />
-              <span>Source Connectors</span>
-              {ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING') && (
+              {ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING') ? (
                 <span className="ml-auto bg-cyan-950/40 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-900/40 animate-pulse">
                   scanning
+                </span>
+              ) : documents.length > 0 && (
+                <span className="ml-auto bg-slate-800 text-[10px] text-slate-300 font-mono px-2 py-0.5 rounded-full">
+                  {documents.length}
                 </span>
               )}
             </button>
@@ -2376,17 +2363,21 @@ export default function Home() {
                 </div>
               )}
 
-              {/* TAB: SOURCE CONNECTORS (MVP 0.10.0 - Local Folder, scan now) */}
-              {activeTab === 'connectors' && (
-                <div className="space-y-6">
+              {/* SCAN FOLDER + INGESTION JOBS (MVP 0.10.0) — second ingestion
+                  method inside Document Inventory, NOT a separate area: one
+                  source type does not justify a connector administration
+                  surface (that arrives with multiple source types in v0.11+).
+                  Output is ordinary documents and CANDIDATE assets. */}
+              {activeTab === 'documents' && (
+                <div className="space-y-6 mt-6">
 
-                  {/* CREATE CONNECTOR */}
+                  {/* SCAN FOLDER */}
                   <div className="glass-panel p-6 rounded-xl space-y-4">
                     <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
                       <Folder className="w-4 h-4 text-cyan-400" />
-                      Source Connectors
+                      Scan Folder
                       <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
-                        Read-only discovery over local or mounted folders — output enters the ordinary governance pipeline as CANDIDATE assets
+                        Bulk ingestion from a local or mounted folder — discovered files become ordinary documents and CANDIDATE assets
                       </span>
                     </h3>
                     <form
@@ -2447,13 +2438,16 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* INGESTION JOBS */}
-                  {ingestionJobs.length === 0 ? (
-                    <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
-                      No ingestion jobs yet. Add a connector and run a scan — discovered files become ordinary documents and CANDIDATE assets.
-                    </div>
-                  ) : (
+                  {/* RECENT INGESTION JOBS */}
+                  {ingestionJobs.length > 0 && (
                     <div className="space-y-4">
+                      <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
+                        <Clock className="w-3.5 h-3.5 text-cyan-400" />
+                        Recent Ingestion Jobs
+                        <span className="text-slate-500 font-mono text-[10px] font-normal">
+                          {ingestionJobs.length} job{ingestionJobs.length > 1 ? 's' : ''}
+                        </span>
+                      </h4>
                       {ingestionJobs.map((job) => {
                         const connector = sourceConnectors.find(c => c.id === job.connector_id);
                         const expanded = expandedJobId === job.id;
