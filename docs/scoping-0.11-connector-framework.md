@@ -24,9 +24,21 @@ requirements, not guessed against providers that don't exist yet.
 successfully retrofitted.** Cloud providers needing stored credentials remain
 blocked on the v1.x identity layer regardless (D14).
 
+## Agreed package layout
+
+```
+backend/app/connectors/
+  framework.py            # universal sync/reconciliation engine
+  providers/
+    local_folder.py       # filesystem discovery + file reading only
+```
+
+(The v0.10.x `connectors.py` module becomes this package; callers —
+main.py, tests — import paths update but behavior must not.)
+
 ## Responsibility split
 
-Framework (`connectors/framework.py` or equivalent) owns the universal
+Framework (`framework.py`) owns the universal
 sync/reconciliation engine — identical for every provider:
 
 ```
@@ -69,6 +81,32 @@ The existing suites (test_local_connector.py parts 1–7, test_auto_approval.py
 parts 1–6) must pass unchanged — they ARE the acceptance test in executable
 form. New tests cover only the framework/provider seam itself.
 
+## Seam tests (new in v0.11): prove the boundary, not the behavior
+
+Architecture tests against a FAKE provider — no filesystem, no UI:
+
+1. Fake provider returns one new, one unchanged, one changed item →
+   framework classifies NEW / DUPLICATE / CHANGED correctly and routes each
+   (document / skip / candidate revision).
+2. Provider fetch fails for one item → framework records the failure with a
+   reason and continues the scan (no silent skip, no aborted job).
+3. Provider supplies stable URI + metadata → framework uses URI as identity
+   and content hash as the only change signal (provider metadata like
+   modified_at is informational, never the change verdict).
+
+These prove future providers can plug in safely; they are the contract's
+test double.
+
+## Interface honesty constraint
+
+The `ConnectorItem` contract must NOT assume one file = one source item.
+Enumeration shapes the interface has to survive (even before any of these
+are built): a Slack export where one JSON channel file yields many
+message-derived items; a git working copy where identity may include repo
+path + branch; a Notion export of markdown pages plus nested assets. The
+provider owns the mapping from its native shape to items; the framework
+only ever sees items.
+
 ## Starting point in current code
 
 `connectors.py` already contains both halves mixed: `discover_files` is
@@ -81,5 +119,7 @@ not a rewrite.
 - A first-class "Sources & Connectors" UI area — justified by plurality (D8)
   only once a second provider type actually exists.
 - Second provider candidates after the retrofit proves out: ones that need no
-  stored credentials first (e.g. local Slack/Notion exports, git working
-  copies) — cloud OAuth providers wait for v1.x identity.
+  stored credentials first (Slack export folder, Notion export folder, git
+  working copy, markdown directory, ZIP export) — chosen to exercise a
+  DIFFERENT enumeration shape, not for connector coverage. Cloud OAuth
+  providers wait for v1.x identity.
