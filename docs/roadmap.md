@@ -22,7 +22,7 @@
 | MVP 0.11 | Source Connector Framework | ✅ Completed |
 | MVP 0.11.1 | Transport Hardening (audit) + CI enforcement | ✅ Completed |
 | MVP 0.12 | LLM Provider Settings (governed model-per-function config) | ✅ Completed |
-| MVP 1.0 | Enterprise Platform (identity, roles, credentials, deployment) | 📋 Planned |
+| MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | 📐 Scoped — see docs/identity-boundary-v1.md |
 
 ---
 
@@ -335,9 +335,43 @@ The read-only gateway is complete — six tools, exactly as the Governance Contr
 
 No write actions in 0.9 — delivered as specified. Progression: read-only (0.9 ✅) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
 
-## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned, NEXT)
+## MVP 1.0 — Enterprise Agent Knowledge Platform (Scoped, NEXT)
 
 The defensible position: agents consume *semantically verified, conflict-checked, revision-controlled, audit-traceable* company knowledge.
+
+**SCOPING RATIFIED (June 2026 session, post-v0.12.0) — full build contract
+in `docs/identity-boundary-v1.md`.** The rulings:
+
+1. **One constitutional release, not phased releases.** Identity evidence,
+   authentication, roles, and API tokens ship together as v1.0.0 with four
+   internal workstreams (evidence → authentication → authorization →
+   migration/hardening). An evidence-only release (`authentication_method =
+   ASSERTED` everywhere) would be technically honest but operationally still
+   let any local browser claim to be GovernanceOfficer — the false assurance
+   D14 forbids. A boundary either exists or it doesn't; the milestone is the
+   boundary, not its ingredients.
+2. **v1.0.0 core**: Principal registry, IdentityFact, password
+   authentication, API tokens, role assignment, authorization checks, actor
+   resolution dependency, migration of existing actor strings.
+3. **v1.1 enterprise extensions**: OIDC/SAML/SSO/SCIM/LDAP/Azure AD/Google
+   Workspace — integrations that provide alternative ways to establish
+   identity without changing the boundary's shape. Stored provider/connector
+   credentials (the D19/D14 cloud-connector unblock) also land here, after
+   the boundary exists.
+4. **IdentityFact is a real table** (D1): immutable evidence in the
+   ClaimVerdict pattern. "Who approved revision 42?" resolves to
+   `IdentityFact #183`, never to details-JSON parsing or today's users
+   table. The symmetry: Principal changes; IdentityFact never changes —
+   mirroring KnowledgeAsset / AssetRevision.
+5. **Five principal kinds**: HUMAN, DELEGATED (policy:X, connector:Y —
+   authority from a governed object + causal chain), SYSTEM (the engines),
+   SERVICE (webhooks/CI/schedulers — credentialed automation), AGENT (MCP
+   consumers — tokens + governed clearance).
+
+Evidence base: the v0.12.0 actor-flow audit found 11 routes accepting
+caller-supplied actor strings, frontend-hardcoded names, env-asserted MCP
+identity, and zero authentication — the precise ingress inventory the
+boundary closes.
 
 **Framing (agreed June 2026, at v0.12.0 release): v1.0 is the enterprise
 BOUNDARY milestone, not "add login."** The central question it answers:
