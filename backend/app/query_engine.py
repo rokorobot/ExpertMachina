@@ -147,6 +147,8 @@ def verify_answer_claims(
 
     api_key = os.environ.get("OPENAI_API_KEY")
     has_api_key = api_key and not api_key.startswith("mock-")
+    from app import llm as llm_settings
+    judge_model = llm_settings.model_for("CLAIM_JUDGE") if has_api_key else None
     stop_words = {"a", "the", "and", "or", "in", "on", "at", "to", "for", "with", "is", "was", "are", "were", "be", "all", "must", "of", "an", "should", "weekly"}
 
     for claim in claims:
@@ -155,8 +157,8 @@ def verify_answer_claims(
         if has_api_key:
             try:
                 from llama_index.llms.openai import OpenAI
-                llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
-                
+                llm = OpenAI(model=judge_model, api_key=api_key)
+
                 evidence_items = []
                 for cite in validated_citations:
                     evidence_items.append(f"Asset ID: {cite['asset_id']} | Content: {cite['content']}")
@@ -213,7 +215,9 @@ def verify_answer_claims(
 
     fallback_verifier = {
         "method": "LLM_JUDGE" if has_api_key else "KEYWORD_OVERLAP",
-        "model_id": "gpt-4o-mini" if has_api_key else None,
+        # The fingerprint reports the RESOLVED model, never a hardcoded
+        # string (D12: honest measurement).
+        "model_id": judge_model,
         "engine_version": "legacy-v1",
         "claim_decomposition": decomposition_method
     }
@@ -297,8 +301,9 @@ def generate_evidence_answer(
     if api_key and not api_key.startswith("mock-"):
         try:
             from llama_index.llms.openai import OpenAI
-            llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
-            
+            from app import llm as llm_settings
+            llm = OpenAI(model=llm_settings.model_for("ANSWER_GENERATION"), api_key=api_key)
+
             prompt = (
                 "You are a strict compliance QA system. Answer the user's question based ONLY on the validated evidence below.\n"
                 f"Expert Model Scope: {model_name}\n\n"

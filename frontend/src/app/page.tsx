@@ -30,7 +30,8 @@ import {
   ShieldAlert,
   Scale,
   ExternalLink,
-  Inbox
+  Inbox,
+  Settings
 } from 'lucide-react';
 import { useAppStore } from '../store';
 
@@ -129,10 +130,13 @@ export default function Home() {
     approvalPolicies,
     fetchApprovalPolicies,
     createApprovalPolicy,
-    toggleApprovalPolicy
+    toggleApprovalPolicy,
+    llmSettings,
+    fetchLLMSettings,
+    updateLLMSetting
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -241,6 +245,15 @@ export default function Home() {
   const [connectorPath, setConnectorPath] = useState('');
   const [connectorExts, setConnectorExts] = useState('.txt,.md,.pdf,.docx');
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+
+  // LLM Provider Settings state (MVP 0.12)
+  const [llmDrafts, setLlmDrafts] = useState<Record<string, string>>({});
+
+  useEffect(() => {
+    if (activeTab === 'settings') {
+      fetchLLMSettings();
+    }
+  }, [activeTab]);
 
   // Approval Policies state (MVP 0.10.2)
   const [policyName, setPolicyName] = useState('');
@@ -475,7 +488,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'] as const;
+    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console', 'settings'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -568,12 +581,12 @@ export default function Home() {
       const documentIdParam = searchParams.get('documentId');
       const documentParam = searchParams.get('document');
       const tabParam = searchParams.get('tab');
-      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console'];
+      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console', 'settings'];
 
       if (pathname.includes('/knowledge-assets')) {
         setActiveTab('assets');
       } else if (tabParam && urlTabs.includes(tabParam)) {
-        setActiveTab(tabParam as 'inbox' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console');
+        setActiveTab(tabParam as 'inbox' | 'documents' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console' | 'settings');
       } else {
         setActiveTab('dashboard');
       }
@@ -888,6 +901,18 @@ export default function Home() {
             >
               <History className="w-4 h-4" />
               <span>Audit Ledger</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('settings')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'settings'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Settings className="w-4 h-4" />
+              <span>Settings</span>
             </button>
           </nav>
         </div>
@@ -3667,6 +3692,66 @@ export default function Home() {
               )}
 
               {/* TAB 5: AUDIT LEDGER EXPLORER */}
+              {/* TAB: SETTINGS (MVP 0.12) — governed runtime configuration.
+                  LLM Models: model-per-function selection; stores model
+                  choice, never credentials (keys stay env-based until v1.x). */}
+              {activeTab === 'settings' && (
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <Settings className="w-4 h-4 text-cyan-400" />
+                      LLM Models
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Model per function — empty config falls through to the OPENAI_MODEL env var, then gpt-4o-mini. API keys stay in the environment, never in the database.
+                      </span>
+                    </h3>
+                    <div className="space-y-2">
+                      {llmSettings.map((s) => {
+                        const draft = llmDrafts[s.function] ?? (s.configured_model || '');
+                        return (
+                          <div key={s.function} className="flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3">
+                            <div className="min-w-[220px]">
+                              <div className="font-bold text-sm text-slate-200 font-mono">{s.function}</div>
+                              <div className="text-[10px] text-slate-500">{s.description}</div>
+                            </div>
+                            <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">{s.provider}</span>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                              s.source === 'CONFIG' ? 'bg-violet-950/40 text-violet-400 border border-violet-900/40' :
+                              s.source === 'ENV' ? 'bg-yellow-950/40 text-yellow-400 border border-yellow-900/40' :
+                              'bg-slate-950 text-slate-500 border border-slate-900'
+                            }`} title="Resolution source: CONFIG (database) > ENV (OPENAI_MODEL) > DEFAULT">
+                              {s.source}: {s.effective_model}
+                            </span>
+                            <input
+                              type="text"
+                              value={draft}
+                              onChange={(e) => setLlmDrafts(prev => ({ ...prev, [s.function]: e.target.value }))}
+                              placeholder="e.g. gpt-4o"
+                              className="flex-1 min-w-[140px] bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono"
+                            />
+                            <button
+                              onClick={async () => { await updateLLMSetting(s.function, draft.trim() || null); setLlmDrafts(prev => ({ ...prev, [s.function]: '' })); }}
+                              className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider"
+                            >
+                              Save
+                            </button>
+                            {s.configured_model && (
+                              <button
+                                onClick={async () => { await updateLLMSetting(s.function, null); setLlmDrafts(prev => ({ ...prev, [s.function]: '' })); }}
+                                className="text-[10px] text-slate-400 hover:text-slate-200 font-mono bg-slate-900 border border-slate-800 rounded px-3 py-1.5 uppercase tracking-wider"
+                                title="Reset to env/default resolution"
+                              >
+                                Clear
+                              </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+              )}
+
               {activeTab === 'audit' && (
                 <div className="space-y-6">
                   <div className="glass-panel p-6 rounded-xl space-y-4">

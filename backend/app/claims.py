@@ -70,7 +70,8 @@ def _decompose_llm(text: str) -> list:
         return None
     try:
         from llama_index.llms.openai import OpenAI
-        llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
+        from app import llm as llm_settings
+        llm = OpenAI(model=llm_settings.model_for("CLAIM_DECOMPOSITION"), api_key=api_key)
         prompt = (
             "Decompose the following text into atomic factual claims. Each claim must be "
             "a single self-contained assertion, preserving any conditions (e.g. 'unless "

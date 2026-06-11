@@ -109,6 +109,23 @@ class ApprovalPolicy(Base):
         return json.loads(self.asset_types_json) if self.asset_types_json else []
 
 
+class LLMFunctionConfig(Base):
+    """LLM Provider Settings (MVP 0.12). Governed model-per-function
+    configuration: WHICH model serves an LLM-using function. Stores model
+    selection, never credentials - API keys stay env-based until the v1.x
+    identity layer (D14). Empty table = prior behavior: resolution falls
+    through to the OPENAI_MODEL env var, then the gpt-4o-mini default.
+    Clearing a row's model resets the function; no delete endpoint needed.
+    Changes are LLM_CONFIG_UPDATED audit events."""
+    __tablename__ = "llm_function_configs"
+    id = Column(Integer, primary_key=True, index=True)
+    function = Column(String, nullable=False, unique=True)  # EXTRACTION | CLAIM_DECOMPOSITION | CLAIM_JUDGE | ANSWER_GENERATION
+    provider = Column(String, default="OPENAI")  # only OPENAI for now (D11); adapter abstraction earned with a second provider
+    model = Column(String, nullable=True)  # None = fall through to env/default
+    updated_by = Column(String, nullable=True)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)

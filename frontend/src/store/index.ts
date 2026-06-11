@@ -243,6 +243,15 @@ export interface SourceConnector {
   created_at: string;
 }
 
+export interface LLMFunctionSetting {
+  function: string;
+  description: string;
+  provider: string;
+  configured_model: string | null; // DB row (null = unset)
+  effective_model: string;         // what resolution yields
+  source: string;                  // CONFIG | ENV | DEFAULT
+}
+
 export interface ApprovalPolicy {
   id: number;
   project_id: number;
@@ -485,6 +494,10 @@ interface AppState {
   scanConnector: (connectorId: number, projectId: number) => Promise<void>;
   fetchIngestionJobs: (projectId: number) => Promise<void>;
   fetchJobFiles: (jobId: number) => Promise<void>;
+
+  llmSettings: LLMFunctionSetting[];
+  fetchLLMSettings: () => Promise<void>;
+  updateLLMSetting: (fn: string, model: string | null) => Promise<void>;
 
   approvalPolicies: ApprovalPolicy[];
   fetchApprovalPolicies: (projectId: number) => Promise<void>;
@@ -877,6 +890,34 @@ export const useAppStore = create<AppState>((set, get) => ({
         const data = await res.json();
         set({ jobFiles: { ...get().jobFiles, [jobId]: data } });
       }
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  llmSettings: [],
+
+  fetchLLMSettings: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/settings/llm`);
+      if (res.ok) set({ llmSettings: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  updateLLMSetting: async (fn: string, model: string | null) => {
+    try {
+      const res = await fetch(`${API_BASE}/settings/llm/${fn}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ model, actor: 'GovernanceOfficer' }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to update LLM setting');
+      }
+      await get().fetchLLMSettings();
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

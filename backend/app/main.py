@@ -21,6 +21,7 @@ from app import trust
 from app import governance_inbox
 from app import connectors
 from app import policy
+from app import llm
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -349,6 +350,54 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
                              target_id=str(pol.id),
                              details=json.dumps({"name": pol.name, "version": pol.version}))
     return pol
+
+# LLM Provider Settings routes (MVP 0.12): governed model-per-function
+# configuration. Stores model selection, never credentials (D14/D19
+# candidate). Empty config preserves prior behavior:
+# DB config missing -> OPENAI_MODEL env -> gpt-4o-mini default.
+@app.get("/api/settings/llm", response_model=List[schemas.LLMFunctionSettingResponse])
+def list_llm_settings(db_session: Session = Depends(get_db)):
+    out = []
+    for function, description in llm.FUNCTIONS.items():
+        row = db_session.query(db.LLMFunctionConfig).filter(
+            db.LLMFunctionConfig.function == function).first()
+        resolved = llm.resolve(function, db_session)
+        out.append(schemas.LLMFunctionSettingResponse(
+            function=function, description=description,
+            provider=resolved["provider"],
+            configured_model=row.model if row else None,
+            effective_model=resolved["model"], source=resolved["source"]))
+    return out
+
+@app.put("/api/settings/llm/{function}", response_model=schemas.LLMFunctionSettingResponse)
+def update_llm_setting(function: str, update: schemas.LLMFunctionSettingUpdate,
+                       db_session: Session = Depends(get_db)):
+    function = function.upper()
+    if function not in llm.FUNCTIONS:
+        raise HTTPException(status_code=400,
+                            detail=f"Unknown LLM function '{function}'. Known: {sorted(llm.FUNCTIONS)}")
+    new_model = (update.model or "").strip() or None
+    row = db_session.query(db.LLMFunctionConfig).filter(
+        db.LLMFunctionConfig.function == function).first()
+    old_model = row.model if row else None
+    if not row:
+        row = db.LLMFunctionConfig(function=function, provider="OPENAI")
+        db_session.add(row)
+    row.model = new_model
+    row.updated_by = update.actor or "operator"
+    row.updated_at = datetime.datetime.utcnow()
+    db_session.commit()
+    crud.log_audit_event(
+        db_session, actor=row.updated_by, event_type="LLM_CONFIG_UPDATED",
+        target_id=function,
+        details=json.dumps({"function": function, "old_model": old_model,
+                            "new_model": new_model,
+                            "note": "model selection only - credentials never stored (env-based until v1.x)"}))
+    resolved = llm.resolve(function, db_session)
+    return schemas.LLMFunctionSettingResponse(
+        function=function, description=llm.FUNCTIONS[function],
+        provider=resolved["provider"], configured_model=new_model,
+        effective_model=resolved["model"], source=resolved["source"])
 
 # Knowledge Assets routes
 @app.get("/api/projects/{project_id}/assets", response_model=List[schemas.KnowledgeAssetResponse])

@@ -6,6 +6,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 os.environ["EM_NLI_VERIFICATION"] = "off"
 os.environ["OPENAI_API_KEY"] = "mock-key"  # deterministic rule-based extraction
+os.environ.pop("OPENAI_MODEL", None)  # settings part asserts the DEFAULT tier
 
 # HTTP smoke layer (audit M0.2): the function-level suites exercise crud and
 # the engines directly, so a broken ROUTE (ordering, params, serialization)
@@ -111,6 +112,26 @@ def main_test():
         assert any("via bulk update" in (e["details"] or "") for e in approvals), \
             "Bulk approvals keep their distinguishing audit detail"
         print(f"Part 6 passed: {len(approvals)} ASSET_APPROVED events, bulk detail preserved.")
+
+        # Part 7: LLM Provider Settings (MVP 0.12) over HTTP - third layer
+        # from birth: list, set (CONFIG wins), clear (falls back), reject
+        # unknown functions.
+        print("\n--- Part 7: LLM settings endpoints ---")
+        r = client.get("/api/settings/llm")
+        assert r.status_code == 200, r.text
+        settings = {s["function"]: s for s in r.json()}
+        assert set(settings) == {"EXTRACTION", "CLAIM_DECOMPOSITION", "CLAIM_JUDGE", "ANSWER_GENERATION"}
+        assert all(s["source"] == "DEFAULT" and s["effective_model"] == "gpt-4o-mini" for s in settings.values())
+        r = client.put("/api/settings/llm/extraction", json={"model": "gpt-4o", "actor": "SmokeTester"})
+        assert r.status_code == 200 and r.json()["source"] == "CONFIG" and r.json()["effective_model"] == "gpt-4o", r.text
+        r = client.put("/api/settings/llm/EXTRACTION", json={"model": None, "actor": "SmokeTester"})
+        assert r.status_code == 200 and r.json()["source"] == "DEFAULT", r.text
+        r = client.put("/api/settings/llm/NOT_A_FUNCTION", json={"model": "x"})
+        assert r.status_code == 400, f"Unknown function must 400: {r.status_code}"
+        r = client.get("/api/audit", params={"limit": 50})
+        assert any(e["event_type"] == "LLM_CONFIG_UPDATED" for e in r.json()), \
+            "Config changes must be audited"
+        print("Part 7 passed: settings listed, set/clear round-trip, unknown rejected, audited.")
 
     print("\nAll HTTP smoke checks passed.")
 

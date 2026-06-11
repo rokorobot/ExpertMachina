@@ -74,7 +74,8 @@ def extract_via_llm(session: Session, project_id: int, doc: db.Document, chunk: 
         class AssetList(BaseModel):
             assets: List[ExtractedAsset]
 
-        llm = OpenAI(model="gpt-4o-mini", api_key=api_key)
+        from app import llm as llm_settings
+        llm = OpenAI(model=llm_settings.model_for("EXTRACTION", session), api_key=api_key)
         
         prompt_tmpl = (
             "Analyze the following document chunk and extract distinct organizational knowledge assets.\n"

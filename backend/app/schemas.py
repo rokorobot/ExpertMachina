@@ -163,6 +163,18 @@ class SourceConnectorResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class LLMFunctionSettingUpdate(BaseModel):
+    model: Optional[str] = None  # None/empty clears the row -> env/default resolution
+    actor: Optional[str] = "operator"
+
+class LLMFunctionSettingResponse(BaseModel):
+    function: str
+    description: str
+    provider: str
+    configured_model: Optional[str] = None  # what the DB row says (None = unset)
+    effective_model: str                    # what resolution actually yields
+    source: str                             # CONFIG | ENV | DEFAULT
+
 class ApprovalPolicyCreate(BaseModel):
     name: str
     asset_types: List[str]  # subset of the allowed KnowledgeAsset types
