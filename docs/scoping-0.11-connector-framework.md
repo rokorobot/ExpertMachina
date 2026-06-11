@@ -71,14 +71,33 @@ only source-specific knowledge: how to walk/enumerate the source, filter
 unsupported types, open an item, build its URI, read modified time, report
 fetch errors. The provider SUPPLIES items; the framework DECIDES everything
 (seen this URI? same hash? duplicate? changed? new document or candidate
-revision? does policy fire?). Sketch of the interface shape:
+revision? does policy fire?).
+
+## Provider contract (discovered in Phase 1 — supersedes the discover/fetch sketch)
 
 ```
-ConnectorProvider: discover() -> [ConnectorItem(uri, name, modified_at, ...)]
-                   fetch(item) -> raw content
-```
+ConnectorProvider must expose:
 
-(Exact interface to be discovered during the retrofit — that's the point.)
+1. validate()
+   Confirms the source is reachable/usable.
+   Provider-specific. LocalFolder checks os.path.isdir.
+   The framework must not know what "reachable" means.
+
+2. describe()
+   Returns audit-safe source context.
+   LocalFolder returns root_path and extensions.
+   The framework logs it without understanding provider-specific fields.
+   (Regression constraint: INGESTION_JOB_STARTED payloads stay identical.)
+
+3. discover()
+   Enumerates source items as ConnectorItems.
+   Provider owns traversal and URI construction.
+
+4. fetch(item)
+   Returns bytes + metadata for one item.
+   Provider metadata is informational only.
+   Content hash remains the framework's change verdict.
+```
 
 ## Invariants that must survive the retrofit (the regression contract)
 
@@ -140,6 +159,11 @@ Architecture tests against a FAKE provider — no filesystem, no UI:
    `modified_at` changes while content hash is unchanged → verdict is
    **NOT CHANGED** (duplicate). This test is the D18 candidate made runnable.
 
+4. (From Phase 1, seam 5) Within one scan, a CHANGED item's new hash enters
+   the in-scan dedup set before reconciliation, so a second item with the
+   same new content in the same scan is classified DUPLICATE, not a second
+   change.
+
 These prove future providers can plug in safely; they are the contract's
 test double.
 
@@ -176,6 +200,60 @@ only ever sees items.
 provider-ish; `_ingest_one` / `_apply_source_change` / job accounting are
 framework-ish; the policy hook is framework-ish. The retrofit is a separation,
 not a rewrite.
+
+## Phase 1 discovery: concern map (2026-06-11, baseline `b008512`)
+
+Baseline: test_local_connector (1–7), test_auto_approval (1–6),
+test_revision_workflow, test_governance_inbox — all green at HEAD `b008512`.
+Public import surface to preserve: exactly `discover_files`,
+`execute_ingestion_job`, `run_ingestion_job` (main.py + both test suites,
+via `from app import connectors`).
+
+Concern classification of connectors.py:
+
+- **Provider** (filesystem knowledge): `discover_files` (43–52);
+  `os.path.abspath` URI construction (168); `os.stat` + open/read = fetch
+  (171–175, size/mtime are described context, never verdicts);
+  `os.path.basename` → item name (225, 310); `os.path.isdir` preflight
+  (83–84 — currently embedded in framework code, becomes `validate()`).
+- **Framework** (provider-independent): job lifecycle, counters,
+  per-file commits, job audit events, extraction call, policy hook
+  (55–158); sha256 of fetched bytes (176); the reconciliation core —
+  prior-URI lookup, hash compare, DUPLICATE/CHANGED/NEW verdicts, in-scan
+  + cross-document dedup (183–221, D7 made code); document creation,
+  parse, failed-parse retry cleanup (230–261, D6); `_apply_source_change`
+  reconciliation incl. revisions, possibly_stale, skipped_pending_review,
+  SOURCE_CHANGE_DETECTED (291–295, 318–390).
+
+The five seams (contract decisions, preserve exactly):
+
+1. **Extension filtering fuses two concerns**:
+   `SUPPORTED_EXTENSIONS` = framework parser capability;
+   `include_extensions` = operator/provider config;
+   actual enumeration = the intersection ("never ingest a type the parser
+   can't handle — declared, not silent"). Framework exposes its parseable
+   formats; provider filters enumeration against both.
+2. **Staging to UPLOAD_DIR stays framework-side** — the parser and
+   `Document.file_path` need local paths, for every provider. Dest-path
+   naming (`{project}_c{connector}_{hash8}_{filename}`) stays
+   byte-identical.
+3. **`_extract_text` is format knowledge, not source knowledge** — a .docx
+   parses identically regardless of source; framework-side. It duplicates
+   ingestion.py fallbacks — KNOWN DEBT, do NOT unify in v0.11 (behavior-
+   change risk outside this contract).
+4. **Audit payloads carry provider fields** — INGESTION_JOB_STARTED logs
+   root_path/extensions; the framework logs `provider.describe()` output
+   without understanding it; payloads stay identical.
+5. **`seen_hashes` ordering must be preserved**: on the CHANGED path the
+   new hash enters the in-scan dedup set BEFORE source-change
+   reconciliation runs (line 201), so a same-scan copy of the changed
+   content still dedupes. Exactly the kind of tiny behavior that
+   disappears in refactors and causes duplicate/revision weirdness later
+   — covered by seam test 4.
+
+Phase 1 verdict: nothing resists separation — every line classified as
+provider, framework, or a nameable seam. The hypothesis is alive, and more
+honest than the original sketch.
 
 ## Status of this brief: hypothesis under test, not destiny
 
