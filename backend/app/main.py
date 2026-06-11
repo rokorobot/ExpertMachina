@@ -135,6 +135,11 @@ def startup_event():
         # WS3: pre-matrix role names migrate in the mutable registry only;
         # historical role_snapshots keep what was true at action time.
         identity.migrate_legacy_roles(session)
+        # WS4 hardening: the boundary validates its own data at startup.
+        # Report-only (authorization fails closed regardless), but LOUD.
+        findings = identity.validate_boundary(session)
+        for finding in findings:
+            print(f"BOUNDARY VALIDATION: {finding}", flush=True)
 
 # Status Check
 @app.get("/api/health")

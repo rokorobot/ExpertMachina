@@ -184,3 +184,62 @@ provider reachability.
 **Evidence:** backend/test_llm_settings.py — six-part precedence suite,
 including a structural assertion that no credential-shaped column exists
 on the config table; HTTP smoke Part 7 covers the endpoints.
+
+## D20 — Callers propose identity; the identity boundary decides the actor (v1.0.0, RATIFIED)
+> Callers propose identity. The identity boundary decides actor.
+> Governed actions must record identity facts as immutable historical
+> evidence at action time. Future user-table state must never be
+> required to explain past governed actions.
+> Identity evidence records authentication at action time; authorization
+> and user state may change later without altering historical identity
+> facts.
+
+The fourth instance of the family principle (D17/D18/D19): *Proposal
+and Decision must be separated. Convenience proposes. Governance
+decides.* Governance distrusts **reconstruction**, not users.
+
+The shape: Principal (mutable registry — five kinds: HUMAN, DELEGATED,
+SYSTEM, SERVICE, AGENT) / Credential (hash-only lineage — revoke, never
+delete) / IdentityFact (immutable evidence: who, kind, role-at-action-
+time, method, credential fingerprint, on_behalf_of identity chain).
+The symmetry: Principal changes; IdentityFact never changes —
+KnowledgeAsset/AssetRevision applied to actors. Purity rule:
+IdentityFact answers only "who was authenticated?"; request-context
+responsibilities go to a future RequestFact, never here (enforced
+structurally in CI). Identity delegation (`on_behalf_of`) and causal
+ActionContext (D17 provenance) evolve independently. Authorization is a
+separate layer: a small code-resident permission matrix enforced at the
+route boundary; grants for non-read permissions and ALL denials are
+audit events carrying the actor's fact. Legacy records keep their
+caller-supplied strings with NULL facts — "we did not know," never
+reconstructed (D12); role-vocabulary migrations touch the mutable
+registry only, never historical role_snapshots.
+
+**Why:** `user_id = 7` answers "who is Alice today?" — a governed action
+must answer "who was Alice when the approval occurred?"
+**Tradeoff accepted:** every write requires authentication (no
+anonymous local convenience); agents must be re-provisioned with
+governed tokens (`EM_AGENT_TOKEN`); env-asserted MCP identity is
+refused explicitly rather than silently ignored.
+**Evidence:** backend/test_identity_boundary.py (the Alice test: rename,
+demotion, rotation, and deactivation cannot change what the fact
+answers; structural purity assertions); test_http_api.py Part 8
+(?actor=Mallory is inert over HTTP; records point to facts);
+test_mcp_gateway.py Part 7 (hostile EM_AGENT_ID/EM_AGENT_CLEARANCE
+inert; live revocation); test_authorization.py (least-privilege grid;
+the denied-as-READ_ONLY fact survives Alice's promotion);
+test_migration.py (pre-boundary databases upgrade with legacy rows
+honestly legacy; snapshots never rewritten).
+
+## D21 — Recovery is a documented procedure, never a bypass mechanism (v1.0.0)
+Root-admin lockout on a local node is recovered by the DOCUMENTED manual
+procedure in docs/identity-boundary-v1.md — filesystem access to the
+database is the actual trust anchor of a local deployment, and the
+procedure routes through identity.set_password so the rotation stays a
+governed, audited credential event with intact lineage. There is
+deliberately NO recovery command or backdoor flag: a standing mechanism
+whose purpose is to defeat the boundary is a standing attack surface.
+Non-lockout resets are ordinary administration (Users & Tokens).
+identity_facts are never edited in any recovery scenario — they are
+historical evidence. Startup self-validation (identity.validate_boundary)
+reports a missing active ADMIN loudly and points at the procedure.

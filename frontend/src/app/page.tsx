@@ -816,7 +816,7 @@ export default function Home() {
             </div>
             <div>
               <span className="font-bold text-lg tracking-wider text-gradient-cyan">EXPERTMACHINA</span>
-              <span className="text-[10px] block text-slate-500 tracking-widest font-mono">GOVERNANCE & RAG v0.1</span>
+              <span className="text-[10px] block text-slate-500 tracking-widest font-mono">GOVERNANCE CORE v1.0</span>
             </div>
           </div>
 

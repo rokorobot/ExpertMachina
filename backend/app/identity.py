@@ -20,6 +20,7 @@ Request-context responsibilities go to a future RequestFact, never here.
 import datetime
 import hashlib
 import hmac
+import os
 import secrets as _secrets
 
 from sqlalchemy.orm import Session
@@ -77,9 +78,24 @@ LEGACY_ROLE_MIGRATION = {
     "VIEWER": "READ_ONLY",
 }
 
-# Read-bucket grants are not audited (reads were never audit events);
-# every other grant and EVERY denial is.
-UNAUDITED_GRANTS = {"assets:read", "audit:read"}
+# Read-bucket grant auditing (WS4 architecture hook, ruled at WS3 review):
+# write grants and ALL denials are always audited; read grants follow
+# EM_READ_AUDIT_MODE because enterprise customers eventually ask "who
+# VIEWED this?", not only "who edited this?".
+#   OFF     (default) - read grants unaudited; preserves pre-WS4 behavior
+#                       (the D19 invariant: empty config changes nothing)
+#   SAMPLED           - one in READ_AUDIT_SAMPLE_RATE read grants audited,
+#                       the sampling declared in the event (D12)
+#   FULL              - every read grant audited
+READ_PERMISSIONS = {"assets:read", "audit:read"}
+READ_AUDIT_MODES = ("OFF", "SAMPLED", "FULL")
+READ_AUDIT_SAMPLE_RATE = 20
+_read_grant_counter = 0
+
+
+def read_audit_mode() -> str:
+    mode = os.environ.get("EM_READ_AUDIT_MODE", "OFF").upper()
+    return mode if mode in READ_AUDIT_MODES else "OFF"
 
 
 def permissions_for(role: str) -> frozenset:
@@ -95,23 +111,79 @@ def authorize(session: Session, actor: "Actor", permission: str):
     and ALL denials are audit events carrying the actor's identity fact -
     'who tried, holding what role, asking for what' is answerable forever."""
     import json
+    global _read_grant_counter
     if permission not in PERMISSIONS:
         raise ValueError(f"Unknown permission: {permission}")
     granted = is_authorized(actor.principal, permission)
-    if granted and permission in UNAUDITED_GRANTS:
-        return actor
+    details = {"permission": permission,
+               "role": actor.principal.role,
+               "principal": actor.principal.name,
+               "kind": actor.principal.kind}
+    if granted and permission in READ_PERMISSIONS:
+        mode = read_audit_mode()
+        if mode == "OFF":
+            return actor
+        if mode == "SAMPLED":
+            _read_grant_counter += 1
+            if _read_grant_counter % READ_AUDIT_SAMPLE_RATE != 1:
+                return actor
+            details["read_audit"] = {"mode": "SAMPLED", "sample_rate": READ_AUDIT_SAMPLE_RATE}
+        else:
+            details["read_audit"] = {"mode": "FULL"}
     _audit(session, actor=actor.display,
            event_type="AUTHZ_GRANTED" if granted else "AUTHZ_DENIED",
-           details=json.dumps({"permission": permission,
-                               "role": actor.principal.role,
-                               "principal": actor.principal.name,
-                               "kind": actor.principal.kind}),
+           details=json.dumps(details),
            identity_fact_id=actor.fact(session).id)
     if not granted:
         raise PermissionError(
             f"Not authorized: '{permission}' requires a role granting it; "
             f"'{actor.principal.name}' holds {actor.principal.role or 'no role'}.")
     return actor
+
+
+def validate_boundary(session: Session) -> list:
+    """Startup hardening (WS4): structural self-checks over the boundary's
+    own data - matrix sanity, kind-role discipline, credential integrity,
+    recoverability. Findings are reported and audited, never silently
+    absorbed; they are report-only because authorization already fails
+    closed (an unknown role grants nothing), so a finding means
+    'investigate', not 'the boundary is open'."""
+    import json
+    findings = []
+    for role, perms in ROLE_PERMISSIONS.items():
+        unknown = set(perms) - PERMISSIONS
+        if unknown:
+            findings.append(f"matrix: role {role} grants unknown permissions {sorted(unknown)}")
+    principals = session.query(db.Principal).all()
+    principal_ids = {p.id for p in principals}
+    for p in principals:
+        if p.kind not in PRINCIPAL_KINDS:
+            findings.append(f"principal '{p.name}': unknown kind {p.kind!r}")
+            continue
+        if p.kind in ("SYSTEM", "DELEGATED"):
+            if p.role is not None:
+                findings.append(f"principal '{p.name}' ({p.kind}): must not hold a role, has {p.role!r}")
+        else:
+            if p.role not in ROLES:
+                findings.append(f"principal '{p.name}' ({p.kind}): unknown role {p.role!r} (authorizes nothing - fails closed)")
+            elif p.role not in ALLOWED_ROLES_BY_KIND[p.kind]:
+                findings.append(f"principal '{p.name}' ({p.kind}): role {p.role} violates kind-role discipline")
+    by_id = {p.id: p for p in principals}
+    for c in session.query(db.Credential).all():
+        if c.principal_id not in principal_ids:
+            findings.append(f"credential {c.fingerprint}: orphaned (principal {c.principal_id} missing)")
+        elif c.kind == "PASSWORD" and by_id[c.principal_id].kind != "HUMAN":
+            findings.append(f"credential {c.fingerprint}: PASSWORD on non-HUMAN principal '{by_id[c.principal_id].name}'")
+        elif c.kind not in CREDENTIAL_KINDS:
+            findings.append(f"credential {c.fingerprint}: unknown kind {c.kind!r}")
+    admins = [p for p in principals if p.kind == "HUMAN" and p.role == "ADMIN" and p.active]
+    if not admins:
+        findings.append("recovery: no active HUMAN ADMIN exists - see the documented "
+                        "manual recovery procedure (docs/identity-boundary-v1.md)")
+    _audit(session, actor="system", event_type="BOUNDARY_VALIDATION",
+           details=json.dumps({"ok": not findings, "findings": findings,
+                               "principals": len(principals)}))
+    return findings
 
 
 def migrate_legacy_roles(session: Session):

@@ -242,6 +242,59 @@ new checkpoints; the only hard gate remains compile time.
   hardcoded actor names deleted, Settings gains Users & Tokens
   administration (ADMIN only), role-aware action visibility.
 
+## Recovery (ruled at WS4: documented procedure, never a bypass)
+
+The one unresolved governance question — **root admin locked out** (lost
+password, no other active ADMIN) — is answered with **Option A:
+documented manual recovery**. Governance-first systems prefer explicit
+recovery procedures over hidden bypass mechanisms; a recovery command
+would be a standing attack surface that exists precisely to defeat the
+boundary.
+
+Non-lockout cases need no procedure: any active ADMIN resets any HUMAN
+principal's password via Settings → Users & Tokens (generated one-time
+password, forced rotation, live sessions revoked — fully audited).
+
+**The procedure** (local node; requires filesystem access to the
+database, which is the actual trust anchor of a local deployment):
+
+1. Stop the backend.
+2. From `backend/`, run with the venv python:
+   ```
+   .venv\Scripts\python -c "import sys; sys.path.insert(0, '.'); \
+     from app import database as db, identity; s = db.SessionLocal(); \
+     admin = identity.get_principal(s, 'admin'); \
+     admin.active = True; admin.must_change_password = True; s.commit(); \
+     identity.set_password(s, admin, '<NEW-ONE-TIME-PASSWORD>', actor='system')"
+   ```
+3. Restart the backend, log in, and rotate the password at the banner.
+
+This path goes through `identity.set_password`, so the rotation is a
+governed credential event: the old credential is revoked (never
+deleted), the new one is audited, and the lineage stays intact. The
+audit trail will show `actor: system` rotation events — recovery is
+visible, never silent. **Never edit `identity_facts`** — they are
+historical evidence, and no recovery scenario justifies rewriting them.
+
+## Boundary self-validation (WS4 hardening)
+
+Startup runs `identity.validate_boundary`: matrix sanity (roles grant
+only known permissions), kind-role discipline, credential integrity
+(no orphans, passwords only on HUMANs), and recoverability (an active
+HUMAN ADMIN exists). Findings are printed loudly and audited as
+`BOUNDARY_VALIDATION` — report-only by design, because authorization
+already fails closed (an unknown role authorizes nothing; proven in
+test_migration.py Part 5).
+
+## Read-grant auditing (WS4 architecture hook)
+
+Write grants and ALL denials are always audited. Read grants follow
+`EM_READ_AUDIT_MODE`: `OFF` (default — preserves prior behavior, the
+D19 invariant), `SAMPLED` (1-in-20, each event declaring its sample
+rate per D12), `FULL` (every read grant — the enterprise "who VIEWED
+this?" question). The hook ships in v1.0; enterprise editions turn it
+on.
+
 ## Workstreams (internal phases of ONE release)
 
 | WS | Content | Checkpoint |

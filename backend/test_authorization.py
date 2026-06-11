@@ -179,6 +179,40 @@ def main_test():
         print("Part 5 passed: self-demotion/self-deactivation refused; reset and deactivation")
         print("               fail live sessions closed.")
 
+        # Part 6: READ_AUDIT_MODE (WS4 architecture hook). OFF by default -
+        # the D19 invariant: absent configuration changes nothing. FULL
+        # audits read grants for the enterprise "who VIEWED this?" question.
+        print("\n--- Part 6: READ_AUDIT_MODE (OFF default, FULL opt-in) ---")
+        def read_grant_count():
+            with db.SessionLocal() as check:
+                return check.query(db.AuditEvent).filter(
+                    db.AuditEvent.event_type == "AUTHZ_GRANTED",
+                    db.AuditEvent.details.like('%assets:read%')).count()
+        baseline = read_grant_count()
+        r = client.get(f"/api/projects/{project_id}/assets", headers=ADMIN)
+        assert r.status_code == 200
+        assert read_grant_count() == baseline, "OFF (default): read grants stay unaudited"
+        os.environ["EM_READ_AUDIT_MODE"] = "FULL"
+        r = client.get(f"/api/projects/{project_id}/assets", headers=ADMIN)
+        assert r.status_code == 200
+        assert read_grant_count() == baseline + 1, "FULL: every read grant audited"
+        with db.SessionLocal() as check:
+            ev = check.query(db.AuditEvent).filter(
+                db.AuditEvent.event_type == "AUTHZ_GRANTED",
+                db.AuditEvent.details.like('%assets:read%')).order_by(
+                db.AuditEvent.id.desc()).first()
+            d = json.loads(ev.details)
+            assert d["read_audit"]["mode"] == "FULL" and ev.identity_fact_id is not None
+        os.environ["EM_READ_AUDIT_MODE"] = "SAMPLED"
+        for _ in range(3):
+            client.get(f"/api/projects/{project_id}/assets", headers=ADMIN)
+        sampled = read_grant_count()
+        assert baseline + 1 <= sampled <= baseline + 2, \
+            "SAMPLED: roughly 1-in-N, each event declaring its sample rate (D12)"
+        os.environ.pop("EM_READ_AUDIT_MODE", None)
+        print("Part 6 passed: OFF default preserves behavior; FULL and SAMPLED audit read")
+        print("               grants with the mode declared on each event.")
+
     print("\nAll WS3 authorization checks passed.")
 
 

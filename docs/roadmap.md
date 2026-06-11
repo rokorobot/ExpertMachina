@@ -22,7 +22,7 @@
 | MVP 0.11 | Source Connector Framework | ✅ Completed |
 | MVP 0.11.1 | Transport Hardening (audit) + CI enforcement | ✅ Completed |
 | MVP 0.12 | LLM Provider Settings (governed model-per-function config) | ✅ Completed |
-| MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | 📐 Scoped — see docs/identity-boundary-v1.md |
+| MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | ✅ Completed — Governance Core Complete (D20 ratified, D21) |
 
 ---
 
@@ -335,9 +335,45 @@ The read-only gateway is complete — six tools, exactly as the Governance Contr
 
 No write actions in 0.9 — delivered as specified. Progression: read-only (0.9 ✅) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
 
-## MVP 1.0 — Enterprise Agent Knowledge Platform (Scoped, NEXT)
+## MVP 1.0 — Enterprise Agent Knowledge Platform (✅ COMPLETED — Governance Core Complete)
 
 The defensible position: agents consume *semantically verified, conflict-checked, revision-controlled, audit-traceable* company knowledge.
+
+**DELIVERED (June 2026) — D20 ratified with evidence, D21 ruled.** The
+boundary shipped as one constitutional release in four workstreams:
+
+- **WS1** (`eea76e5`, `6aef4ae`): Principal/Credential/IdentityFact + the
+  Alice test; the actor resolution dependency; every caller-supplied actor
+  ingress removed (`?actor=Mallory` proven inert); delegated WHO-chains
+  (human → connector → policy) with D17 ActionContext independent; login UI.
+- **WS2b** (`675ca12`): governed agent identity — MCP resolves
+  EM_AGENT_TOKEN per call (live revocation, registry clearance);
+  env-asserted identity refused explicitly; token lifecycle endpoints
+  (plaintext once, revoke-never-delete lineage).
+- **WS3** (`decb173`): authorization — 11 permissions × 5 roles,
+  code-resident, enforced on every route; authenticated identity is
+  powerless until authorized; AUTHZ decisions are audit evidence carrying
+  identity facts; role-aware UI + Users & Tokens; least-privilege Alice
+  story proven (the denial fact keeps READ_ONLY forever after promotion).
+- **WS4**: migration verification (pre-boundary databases upgrade, legacy
+  rows honestly legacy, snapshots never rewritten, idempotent startup);
+  boundary self-validation at startup; EM_READ_AUDIT_MODE hook
+  (OFF/SAMPLED/FULL); recovery ruled as documented procedure (D21).
+
+The operating principle achieved: **every human, service, and agent is a
+governed principal whose permissions are explicitly granted, auditable,
+and revocable** — the architecture rejects "AI can access everything
+because it is trusted."
+
+Development now shifts to the strategic differentiator: transforming
+unstructured enterprise knowledge into governed, auditable,
+evidence-backed expert systems safely consumable by AI agents (the
+consumption arc in Future Direction; SSO-family integrations and stored
+provider credentials land in v1.1 without changing the boundary's shape).
+
+---
+
+### Original scoping record (June 2026, preserved)
 
 **SCOPING RATIFIED (June 2026 session, post-v0.12.0) — full build contract
 in `docs/identity-boundary-v1.md`.** The rulings:
