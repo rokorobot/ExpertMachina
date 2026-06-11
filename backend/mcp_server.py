@@ -97,5 +97,42 @@ def check_gate_status(expert_model_id: int) -> dict:
     return mcp_gateway.check_gate_status(expert_model_id)
 
 
+@mcp.tool()
+def get_provenance(asset_id: int) -> dict:
+    """Get the chain of custody for a knowledge asset.
+
+    Returns source document, page, section, source hash, extraction method,
+    recorded approver identity and timestamp, and the active revision number.
+    Subject to this agent's clearance: assets above the agent's tier are
+    denied (and the denial is audit-logged).
+    """
+    return mcp_gateway.get_provenance(asset_id)
+
+
+@mcp.tool()
+def get_conflicts(expert_model_id: int) -> dict:
+    """Get semantic conflict relationships for an Expert Model.
+
+    Returns the conflict score with summary and all detected/reviewed
+    relationships (classification, confidence, review state, decision
+    reasons, verifier fingerprint). Use with get_trust_score to explain why
+    trust is below 100. Relationship metadata only - asset content stays
+    behind clearance-checked tools.
+    """
+    return mcp_gateway.get_conflicts(expert_model_id)
+
+
+@mcp.tool()
+def get_revision_history(asset_id: int) -> dict:
+    """Get the immutable revision chain for a knowledge asset.
+
+    Returns every revision with status, content, content hash, creator,
+    approver, supersession links, and change reasons - approved knowledge is
+    never edited in place, so this is the asset's complete content history.
+    Subject to this agent's clearance.
+    """
+    return mcp_gateway.get_revision_history(asset_id)
+
+
 if __name__ == "__main__":
     mcp.run()

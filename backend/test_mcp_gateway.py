@@ -55,12 +55,13 @@ def main():
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
         name="Gateway Expert", description="", project_id=project.id, asset_ids=[internal.id, executive.id]))
 
-    # Part 1: tool surface is exactly the three read-only Tier 1 tools.
+    # Part 1: tool surface is exactly the six read-only tools (Tier 1 + Tier 2).
     print("\n--- Part 1: Read-only tool surface ---")
     import mcp_server
     tools = asyncio.run(mcp_server.mcp.list_tools())
     names = sorted(t.name for t in tools)
-    assert names == ["ask_expert", "check_gate_status", "get_trust_score"], f"Unexpected tool surface: {names}"
+    assert names == ["ask_expert", "check_gate_status", "get_conflicts",
+                     "get_provenance", "get_revision_history", "get_trust_score"], f"Unexpected tool surface: {names}"
     forbidden = {"approve_revision", "dismiss_conflict", "publish_package"}
     assert not forbidden.intersection(names), "Write tools must not be exposed in v0.9"
     print(f"Part 1 passed: surface = {names}, no write tools.")
@@ -110,6 +111,44 @@ def main():
     ask_event = session.query(db.AuditEvent).filter(db.AuditEvent.event_type.like("ASK_EXPERT%")).order_by(db.AuditEvent.id.desc()).first()
     assert ask_event.actor == "test-agent-007", "Underlying query event must carry the agent identity"
     print("Part 4 passed: gateway calls audited with agent id, clearance, tool, model, timestamp.")
+
+    # Part 5: Tier 2 governance surface.
+    print("\n--- Part 5: Tier 2 - provenance, conflicts, revision history ---")
+    prov = mcp_gateway.get_provenance(internal.id, session=session)
+    assert prov["asset_id"] == internal.id
+    assert prov["source_hash"] and prov["approved_by"] == "qa"
+    assert prov["revision"] == 1 and prov["revision_count"] == 1, \
+        f"Approved asset must carry its baseline revision: {prov['revision']}/{prov['revision_count']}"
+    assert "extraction_method" in prov and "access_level" in prov
+
+    conflicts = mcp_gateway.get_conflicts(model.id, session=session)
+    assert conflicts["semantic_conflict_score"] is not None
+    assert len(conflicts["relationships"]) == 1
+    rel = conflicts["relationships"][0]
+    assert rel["classification"] == "DIRECT_CONTRADICTION" and rel["status"] == "DETECTED"
+    assert "content" not in rel, "Conflict relationships must not leak asset content"
+
+    history = mcp_gateway.get_revision_history(internal.id, session=session)
+    assert history["asset_id"] == internal.id and isinstance(history["revisions"], list)
+    print("Part 5 passed: Tier 2 tools return contract-shaped governance metadata.")
+
+    # Part 6: clearance denial on Tier 2 tools is itself an audit event.
+    print("\n--- Part 6: Access denial for above-clearance assets ---")
+    try:
+        mcp_gateway.get_provenance(executive.id, session=session)
+        raise AssertionError("EXECUTIVE asset provenance served to INTERNAL agent!")
+    except ValueError as e:
+        assert "Access denied" in str(e)
+    try:
+        mcp_gateway.get_revision_history(executive.id, session=session)
+        raise AssertionError("EXECUTIVE revision history served to INTERNAL agent!")
+    except ValueError:
+        pass
+    denials = session.query(db.AuditEvent).filter(db.AuditEvent.event_type == "MCP_ACCESS_DENIED").all()
+    assert len(denials) == 2, f"Expected 2 MCP_ACCESS_DENIED events, got {len(denials)}"
+    d = json.loads(denials[0].details)
+    assert d["agent_id"] == "test-agent-007" and d["required_access_level"] == "EXECUTIVE"
+    print("Part 6 passed: denials enforced and audit-logged with required clearance.")
 
     session.close()
     print("\n=== All MCP Gateway tests passed successfully! ===")

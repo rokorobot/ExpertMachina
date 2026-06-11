@@ -25,6 +25,7 @@ import {
   MessageSquare,
   Send,
   FileCode2,
+  Bot,
   AlertTriangle,
   ShieldAlert,
   Scale,
@@ -104,10 +105,18 @@ export default function Home() {
     fetchEvaluations,
     createBenchmark,
     deleteBenchmark,
-    startEvaluation
+    startEvaluation,
+    agentActivity,
+    fetchAgentActivity
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
+
+  useEffect(() => {
+    if (activeTab === 'agents') {
+      fetchAgentActivity();
+    }
+  }, [activeTab]);
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -624,6 +633,23 @@ export default function Home() {
             >
               <MessageSquare className="w-4 h-4" />
               <span>Ask Expert Console</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('agents')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'agents'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Bot className="w-4 h-4" />
+              <span>Agent Center</span>
+              {agentActivity && agentActivity.agents.length > 0 && (
+                <span className="ml-auto bg-purple-950/40 text-[10px] text-purple-400 font-mono px-2 py-0.5 rounded-full border border-purple-900/40">
+                  {agentActivity.agents.length}
+                </span>
+              )}
             </button>
 
             <button
@@ -2457,6 +2483,107 @@ export default function Home() {
                 </div>
               )}
 
+              {/* TAB: AGENT CENTER (MCP gateway operations) */}
+              {activeTab === 'agents' && (
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
+                        <Bot className="w-4 h-4 text-purple-400" />
+                        Agent Center
+                        <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                          MCP gateway activity — read-only governance surface, every call audit-logged
+                        </span>
+                      </h3>
+                      <button onClick={() => fetchAgentActivity()}
+                        className="text-[10px] text-purple-400 hover:text-purple-300 font-mono bg-purple-950/30 border border-purple-900/40 rounded px-3 py-1.5 uppercase tracking-wider">
+                        Refresh
+                      </button>
+                    </div>
+
+                    {agentActivity && (
+                      <div className="grid grid-cols-3 gap-3 font-mono text-center">
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Connected Agents</span>
+                          <span className="text-purple-400 font-bold text-xl">{agentActivity.agents.length}</span>
+                        </div>
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Gateway Calls</span>
+                          <span className="text-cyan-400 font-bold text-xl">{agentActivity.total_calls}</span>
+                        </div>
+                        <div className="bg-slate-950/80 border border-slate-900 rounded-lg p-3">
+                          <span className="text-slate-500 block text-[9px] uppercase">Access Denials</span>
+                          <span className={`font-bold text-xl ${agentActivity.total_denied > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{agentActivity.total_denied}</span>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {!agentActivity || agentActivity.agents.length === 0 ? (
+                    <div className="glass-panel rounded-xl p-12 text-center space-y-3">
+                      <Bot className="w-10 h-10 text-slate-600 mx-auto" />
+                      <p className="text-xs text-slate-500 italic">
+                        No agent activity yet. Connect an MCP client (Claude Desktop, Claude Code, Cursor) to
+                        backend/mcp_server.py with EM_AGENT_ID and EM_AGENT_CLEARANCE set — every tool call will appear here.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      {agentActivity.agents.map((a) => (
+                        <div key={a.agent_id} className="glass-panel rounded-xl p-5 space-y-3.5 border-l-4 border-l-purple-500/70">
+                          <div className="flex flex-wrap justify-between items-center gap-2">
+                            <div className="flex items-center gap-2">
+                              <Bot className="w-4 h-4 text-purple-400" />
+                              <span className="font-bold text-sm text-slate-100 font-mono">{a.agent_id}</span>
+                            </div>
+                            <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                              a.clearance === 'EXECUTIVE' ? 'bg-rose-950/40 text-rose-400 border-rose-900/50' :
+                              a.clearance === 'RESTRICTED' ? 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50' :
+                              a.clearance === 'INTERNAL' ? 'bg-cyan-950/30 text-cyan-400 border-cyan-900/40' :
+                              'bg-slate-900 text-slate-400 border-slate-800'
+                            }`}>
+                              Clearance: {a.clearance || 'UNKNOWN'}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-3 gap-2 bg-slate-950/80 p-2.5 rounded border border-slate-900 text-center font-mono text-[10px]">
+                            <div>
+                              <span className="text-slate-500 block text-[8px] uppercase">Calls</span>
+                              <span className="text-slate-200 font-bold text-xs">{a.calls}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block text-[8px] uppercase">Denied</span>
+                              <span className={`font-bold text-xs ${a.denied > 0 ? 'text-rose-400' : 'text-emerald-400'}`}>{a.denied}</span>
+                            </div>
+                            <div>
+                              <span className="text-slate-500 block text-[8px] uppercase">Refused Answers</span>
+                              <span className={`font-bold text-xs ${a.blocked_answers > 0 ? 'text-yellow-400' : 'text-slate-200'}`}>{a.blocked_answers}</span>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5">
+                            <span className="text-[9px] text-slate-500 font-mono uppercase block">Tools Used</span>
+                            <div className="flex flex-wrap gap-1.5">
+                              {Object.entries(a.tools).sort((x, y) => y[1] - x[1]).map(([tool, count]) => (
+                                <span key={tool} className="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
+                                  {tool} × {count}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+
+                          <div className="text-[9px] font-mono text-slate-500 border-t border-slate-900/60 pt-2 flex flex-wrap gap-x-4 gap-y-1">
+                            <span>Models: {a.expert_models.length ? a.expert_models.map(m => `EM-${m}`).join(', ') : '—'}</span>
+                            <span>Last seen: {new Date(a.last_seen).toLocaleString()}</span>
+                            <span>{a.gateway_version}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
+
               {/* TAB 5: AUDIT LEDGER EXPLORER */}
               {activeTab === 'audit' && (
                 <div className="space-y-6">
@@ -2576,7 +2703,12 @@ export default function Home() {
                             {(d.access_blocked_assets || []).length > 0 && (
                               <Row label="Blocked by clearance"><span className="text-rose-400">{d.access_blocked_assets.join(', ')}</span></Row>
                             )}
-                            <Row label="Validated citations">{(d.used_evidence_ids || []).join(', ') || 'none'}</Row>
+                            <Row label="Validated citations">
+                              {Array.isArray(d.citations) && d.citations.length > 0
+                                ? d.citations.map((c: { asset_id: number; revision: number | null }) =>
+                                    `asset ${c.asset_id}${c.revision != null ? ` (rev ${c.revision})` : ''}`).join(', ')
+                                : (d.used_evidence_ids || []).join(', ') || 'none'}
+                            </Row>
                             {(d.contradicted_claims || []).length > 0 && (
                               <Row label="Contradicted claims"><span className="text-rose-400">{d.contradicted_claims.join(' | ')}</span></Row>
                             )}

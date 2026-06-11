@@ -196,6 +196,24 @@ export interface EvaluationRun {
   results: EvaluationQuestionResult[];
 }
 
+export interface AgentActivity {
+  agent_id: string;
+  clearance: string | null;
+  calls: number;
+  denied: number;
+  blocked_answers: number;
+  tools: Record<string, number>;
+  expert_models: number[];
+  last_seen: string;
+  gateway_version: string | null;
+}
+
+export interface AgentActivitySummary {
+  agents: AgentActivity[];
+  total_calls: number;
+  total_denied: number;
+}
+
 export interface TrustComponent {
   key: string;
   label: string;
@@ -279,6 +297,9 @@ interface AppState {
   reviewRevision: (revisionId: number, action: string, notes: string, projectId: number) => Promise<void>;
 
   trustScores: TrustScore[];
+
+  agentActivity: AgentActivitySummary | null;
+  fetchAgentActivity: () => Promise<void>;
 
   benchmarks: BenchmarkQuestion[];
   evaluationRuns: EvaluationRun[];
@@ -586,6 +607,19 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   trustScores: [],
   revisionQueue: [],
+  agentActivity: null,
+
+  fetchAgentActivity: async () => {
+    try {
+      const res = await fetch(`${API_BASE}/agents/activity`);
+      if (!res.ok) throw new Error('Failed to fetch agent activity');
+      const data = await res.json();
+      set({ agentActivity: data });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
   benchmarks: [],
   evaluationRuns: [],
   evaluationRunning: false,

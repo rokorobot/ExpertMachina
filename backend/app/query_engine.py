@@ -598,6 +598,7 @@ def execute_expert_query(
         "caller_access_level": caller_access_level,
         "access_blocked_assets": retrieval_res.get("access_blocked_asset_ids", []),
         "used_evidence_ids": gen_result["used_evidence_ids"],
+        "citations": [{"asset_id": c["asset_id"], "revision": c.get("revision")} for c in citations],
         "unsupported_claims": verification["unsupported_claims"],
         "contradicted_claims": verification.get("contradicted_claims", []),
         "coverage_score": verification["coverage_score"],

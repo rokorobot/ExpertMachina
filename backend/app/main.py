@@ -271,6 +271,54 @@ def get_compile_gate(expert_model_id: int, db_session: Session = Depends(get_db)
         raise HTTPException(status_code=404, detail=f"Expert Model with ID {expert_model_id} not found")
     return conflict_engine.evaluate_compile_gate(db_session, expert_model_id)
 
+# Agent Center: gateway activity aggregated from the audit ledger.
+@app.get("/api/agents/activity")
+def get_agent_activity(db_session: Session = Depends(get_db)):
+    events = db_session.query(db.AuditEvent).filter(
+        db.AuditEvent.event_type.in_(["MCP_TOOL_CALLED", "MCP_ACCESS_DENIED"])
+    ).order_by(db.AuditEvent.timestamp.desc()).limit(2000).all()
+
+    agents = {}
+    for e in events:
+        try:
+            d = json.loads(e.details)
+        except Exception:
+            continue
+        agent_id = d.get("agent_id", e.actor)
+        a = agents.setdefault(agent_id, {
+            "agent_id": agent_id,
+            "clearance": d.get("clearance"),  # newest event first = current clearance
+            "calls": 0,
+            "denied": 0,
+            "blocked_answers": 0,
+            "tools": {},
+            "expert_models": set(),
+            "last_seen": e.timestamp.isoformat(),
+            "gateway_version": d.get("gateway_version")
+        })
+        if e.event_type == "MCP_ACCESS_DENIED":
+            a["denied"] += 1
+        else:
+            a["calls"] += 1
+            tool = d.get("tool_name", "unknown")
+            a["tools"][tool] = a["tools"].get(tool, 0) + 1
+            if d.get("expert_model_id") is not None:
+                a["expert_models"].add(d["expert_model_id"])
+
+    # Verification-blocked answers per agent (the agent asked; the system refused).
+    for agent_id, a in agents.items():
+        a["blocked_answers"] = db_session.query(db.AuditEvent).filter(
+            db.AuditEvent.actor == agent_id,
+            db.AuditEvent.event_type.like("ASK_EXPERT_BLOCKED%")
+        ).count()
+        a["expert_models"] = sorted(a["expert_models"])
+
+    return {
+        "agents": sorted(agents.values(), key=lambda x: x["last_seen"], reverse=True),
+        "total_calls": sum(a["calls"] for a in agents.values()),
+        "total_denied": sum(a["denied"] for a in agents.values())
+    }
+
 # Audit Trail routes
 @app.get("/api/audit", response_model=List[schemas.AuditEventResponse])
 def get_audit_trail(

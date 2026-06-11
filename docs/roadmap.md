@@ -11,7 +11,7 @@
 | MVP 0.6 | Semantic Verification (Knowledge Integrity Engine) | ✅ Completed |
 | MVP 0.7 | Knowledge QA | ✅ Completed |
 | MVP 0.8 | Governance Enforcement & Trust Framework | ✅ Completed — governance core frozen |
-| MVP 0.9 | Agent Gateway (MCP) | 🔄 In Progress (Sprint 1 done) |
+| MVP 0.9 | Agent Gateway (MCP) | ✅ Completed — full read-only surface |
 | MVP 1.0 | Enterprise Agent Knowledge Platform | 📋 Planned |
 
 ---
@@ -249,11 +249,19 @@ Prioritized UI work activating backend capabilities, ordered by leverage:
 3. **Trust Center** — unified view of the governance objects (trust score, conflict score, compile gate, governance health, freshness) per Expert Model.
 4. **Settings** — deferred until an identity model exists (policy knobs are env vars today).
 
-### Sprint 2 — Tier 2 Governance Surface (Next)
+### Sprint 2 — Tier 2 Governance Surface + Agent Center (Completed)
 
-`get_provenance`, `get_conflicts`, `get_revision_history` — the tools that let an advanced agent answer "why is trust only 87?" by walking the governance evidence itself.
+The read-only gateway is complete — six tools, exactly as the Governance Contract maps them:
 
-- No write actions in 0.9: the governance core must be observable before it becomes agent-writable. Progression: read-only (0.9) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
+- **`get_provenance(asset_id)`** — chain of custody: document, page, section, hashes, approver identity, active revision. Clearance-checked: assets above the agent's tier are **denied, and the denial is itself an audit event** (`MCP_ACCESS_DENIED` with agent, tool, and required tier).
+- **`get_conflicts(expert_model_id)`** — conflict score + all relationships (classification, confidence, review state, decision reasons, verifier fingerprint). Relationship metadata only; asset content stays behind clearance-checked tools.
+- **`get_revision_history(asset_id)`** — the immutable revision chain with supersession links and change reasons. Clearance-checked.
+- Answer-trace audit details now include citations with **revision numbers**, completing the trace specification.
+- Verified live over stdio: a governance-analyst agent walked the "why is trust only 90?" chain (conflicts → provenance → revision history) against the dev knowledge base, and a PUBLIC-clearance agent was denied INTERNAL provenance with the denial recorded.
+
+**Agent Center** (operator console): MCP gateway operations made visible — connected agents with clearance badges, call counts, access denials, refused answers (the system declining to answer an agent), per-tool usage, models touched, and last-seen times. All derived from the audit ledger; the gateway has no state of its own.
+
+No write actions in 0.9 — delivered as specified. Progression: read-only (0.9 ✅) → human-supervised writes (1.1) → autonomous governance workflows (1.2+).
 
 ## MVP 1.0 — Enterprise Agent Knowledge Platform (Planned)
 
