@@ -355,6 +355,37 @@ Build the identity model as a governed platform boundary** — the fourth
 instance of the D17/D18/D19 shape: callers propose actors; the identity
 boundary decides who they are.
 
+**The family principle these articles share** (named at v0.12.0 release,
+ratification earned per-instance, never as abstract philosophy):
+
+> Proposal and Decision must be separated.
+> Convenience proposes. Governance decides.
+
+D17: policy proposes approval → the transition path decides.
+D18: provider proposes source state → reconciliation decides.
+D19: configuration proposes a model → resolver precedence decides.
+**D20 (candidate, earned at v1.0): caller proposes identity → the
+identity boundary decides the actor.**
+
+The real v1.0 question is not "how do users sign in?" but **"how does
+the system establish who performed a governed action?"** — today
+`"GovernanceOfficer"`, `"policy:X"`, `"connector:Y"` are caller-supplied
+strings; after v1.0, actor identity is a governed fact
+(authenticated → authorized → audited), touching AuditEvent.actor,
+approvals, revisions, policy administration, connector ownership, LLM
+settings changes, package compilation, and MCP access at once.
+
+**Candidate acceptance test (start scoping from this, not from a
+schema):** Operator Alice approves asset 42; six months later the system
+can prove who Alice was, what role she had at that moment, what action
+she performed, and which credential authenticated her. If the answer is
+only `user_id = 7`, the model is too shallow — a mutable users table
+resolves to TODAY'S Alice, not the Alice who acted. Identity facts must
+be recorded the way this platform records everything else it trusts:
+immutable at action time (the ClaimVerdict/AssetRevision pattern applied
+to actors). Until v1.0 ships, D14 remains correct: single operator,
+actor strings, no false assurance.
+
 ## Future Direction
 
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
