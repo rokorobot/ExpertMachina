@@ -339,3 +339,15 @@ The defensible position: agents consume *semantically verified, conflict-checked
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
 - **Knowledge freshness policies** — expiry and re-review schedules per asset class.
 - **Multi-operator roles** — reviewer / approver separation of duties.
+- **Expert Agent consumption arc (post-v1.0)** — the agentic layer is
+  CONSUMPTION, not orchestration (autonomous multi-agent systems, swarms, and
+  agent runtimes stay explicitly out of scope). The primitives already exist:
+  read-only Expert Agents = the MCP gateway (v0.9) and versioned Expert
+  Packages = .empkg (v0.9.4), per D10's two channels. After v1.0 identity
+  (the prerequisite for deployable agents), the arc is: versioned Expert
+  Package → **per-package model evaluation** (run the existing benchmark
+  harness across GPT / Claude / Gemini / open models consuming the same
+  package) → best-model selection ("this Expert Package performs best on
+  Model X" — a claim one-model-fits-all RAG cannot make) → deployable Expert
+  Agent (HR / Compliance / Clinical Ops experts). Dovetails with D11's
+  model-per-function configuration via the LLM Provider Settings milestone.
