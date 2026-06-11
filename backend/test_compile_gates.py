@@ -15,6 +15,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import conflict_engine
+import test_support
 
 
 def add_conflict(session, model, a_id, b_id, classification, status):
@@ -38,7 +39,7 @@ def add_conflict(session, model, a_id, b_id, classification, status):
 def compile_package(session, project, model, name):
     return crud.create_agent_package(session, schemas.AgentPackageCreate(
         name=name, project_id=project.id, expert_model_id=model.id, governance_version="0.1.0"
-    ))
+    ), actor=test_support.governed_actor(session, "qa"))
 
 
 def main():
@@ -49,8 +50,9 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
-    project = crud.create_project(session, schemas.ProjectCreate(name="Gate Test", description="Compile gates", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="Policies.txt", file_path="uploads/p.txt")
+    qa = test_support.governed_actor(session, "qa")
+    project = crud.create_project(session, schemas.ProjectCreate(name="Gate Test", description="Compile gates", customer_id=customer.id), actor=qa)
+    doc = crud.create_document(session, project_id=project.id, filename="Policies.txt", file_path="uploads/p.txt", actor=qa)
 
     asset_ids = []
     for i, text in enumerate(["Customer data must be deleted after 30 days.", "Customer data must be retained indefinitely."]):
@@ -62,11 +64,11 @@ def main():
             type="POLICY", name=f"Policy {i+1}", content=text, project_id=project.id,
             document_id=doc.id, chunk_id=chunk.id, source_page=1, source_section="S1",
             source_hash=hashlib.sha256(text.encode()).hexdigest()))
-        crud.update_knowledge_asset(session, asset_id=a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+        crud.update_knowledge_asset(session, asset_id=a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=qa)
         asset_ids.append(a.id)
 
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Gate Expert", description="", project_id=project.id, asset_ids=asset_ids))
+        name="Gate Expert", description="", project_id=project.id, asset_ids=asset_ids), actor=qa)
 
     # Part 1: clean model compiles (vacuous gate pass, gate verdict audit-logged).
     print("\n--- Part 1: Clean model compiles; publication records the gate verdict ---")
@@ -93,7 +95,8 @@ def main():
 
     # Part 3: dismissing the conflict re-opens the gate.
     print("\n--- Part 3: Dismissed conflicts do not block ---")
-    conflict_engine.review_relationship(session, rel.id, status="DISMISSED", reviewer="gov", notes="Contextual")
+    conflict_engine.review_relationship(session, rel.id, status="DISMISSED",
+                                        reviewer=test_support.governed_actor(session, "gov"), notes="Contextual")
     pkg2 = compile_package(session, project, model, "Unblocked Package")
     assert pkg2 is not None
     details2 = json.loads(session.query(db.AuditEvent).filter(

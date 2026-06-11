@@ -9,6 +9,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import ingestion
+import test_support
 
 def test_docx_ingestion():
     print("Initializing test database for DOCX review...")
@@ -49,19 +50,21 @@ def test_docx_ingestion():
         
         # Log Document
         customer = crud.get_or_create_default_customer(session)
+        actor = test_support.governed_actor(session)
         project = crud.create_project(session, schemas.ProjectCreate(
             name="DOCX Verification Project",
             description="Testing DOCX parser",
             customer_id=customer.id
-        ))
-        
+        ), actor=actor)
+
         db_doc = crud.create_document(
             session,
             project_id=project.id,
             filename="real_clinical_sop.docx",
             file_path=docx_path,
             department="Clinical Labs",
-            owner="Lab Director"
+            owner="Lab Director",
+            actor=actor
         )
         
         print("\nTriggering parse pipeline...")

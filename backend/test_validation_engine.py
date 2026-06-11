@@ -11,6 +11,7 @@ from app import schemas
 from app import crud
 from app import query_engine
 from app import ingestion
+import test_support
 
 def test_tampered_chunk_rejection():
     print("\nInitializing test database for Evidence Validation checks...")
@@ -25,14 +26,17 @@ def test_tampered_chunk_rejection():
     # Prepopulate default customer
     customer = crud.get_or_create_default_customer(session)
     
+    auditor = test_support.governed_actor(session, "QualityAuditor")
+
     # 1. Create Project
     project = crud.create_project(
-        session, 
-        schemas.ProjectCreate(name="Validation Test Project", description="Testing tampering detection", customer_id=customer.id)
+        session,
+        schemas.ProjectCreate(name="Validation Test Project", description="Testing tampering detection", customer_id=customer.id),
+        actor=auditor
     )
-    
+
     # 2. Ingest document and chunk
-    doc = crud.create_document(session, project_id=project.id, filename="SOP_Compliance.txt", file_path="uploads/SOP_Compliance.txt")
+    doc = crud.create_document(session, project_id=project.id, filename="SOP_Compliance.txt", file_path="uploads/SOP_Compliance.txt", actor=auditor)
     
     chunk_text = "Standard Operating Procedure: All changes must be verified through the validation engine."
     correct_hash = hashlib.sha256(chunk_text.encode('utf-8')).hexdigest()
@@ -59,12 +63,13 @@ def test_tampered_chunk_rejection():
     )
     
     # Approve Asset
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="QualityAuditor")
-    
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=auditor)
+
     # Build Expert Model containing this asset
     model = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Safety Expert Model", description="Grounded checks", project_id=project.id, asset_ids=[asset.id])
+        schemas.ExpertModelCreate(name="Safety Expert Model", description="Grounded checks", project_id=project.id, asset_ids=[asset.id]),
+        actor=auditor
     )
 
     # --- TEST A: Valid Evidence Retrieval ---

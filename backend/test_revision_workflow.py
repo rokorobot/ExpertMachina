@@ -15,6 +15,7 @@ from app import schemas
 from app import crud
 from app import revisions
 from app import query_engine
+import test_support
 
 
 def setup():
@@ -24,11 +25,14 @@ def setup():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
+    setup_actor = test_support.governed_actor(session)
     project = crud.create_project(
         session,
-        schemas.ProjectCreate(name="Revision Test", description="Immutable history checks", customer_id=customer.id)
+        schemas.ProjectCreate(name="Revision Test", description="Immutable history checks", customer_id=customer.id),
+        actor=setup_actor
     )
-    doc = crud.create_document(session, project_id=project.id, filename="SOP_Deviations.txt", file_path="uploads/sop.txt")
+    doc = crud.create_document(session, project_id=project.id, filename="SOP_Deviations.txt", file_path="uploads/sop.txt",
+                               actor=setup_actor)
     original = "Critical deviations must be logged within 24 hours."
     chunk = db.DocumentChunk(document_id=doc.id, text=original, chunk_index=0)
     session.add(chunk)
@@ -48,10 +52,13 @@ def setup():
 def main():
     print("\nInitializing test database for Asset Revision Workflow checks...")
     session, asset = setup()
+    gov = test_support.governed_actor(session, "governance_officer_01")
+    sop_editor = test_support.governed_actor(session, "sop_editor_01")
 
     # 1. First approval lazily creates baseline revision 1.
     print("\n--- Part 1: Lazy baseline revision on first approval ---")
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa_lead_01")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
+                                actor=test_support.governed_actor(session, "qa_lead_01"))
     session.refresh(asset)
     assert len(asset.revisions) == 1, f"Expected baseline revision, got {len(asset.revisions)}"
     baseline = asset.revisions[0]
@@ -64,7 +71,7 @@ def main():
     print("\n--- Part 2: Approved content is never edited in place ---")
     original_content = asset.content
     edited = "Critical deviations must be logged within 12 hours."
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(content=edited), actor="sop_editor_01")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(content=edited), actor=sop_editor)
     session.refresh(asset)
     assert asset.content == original_content, "Approved asset content was mutated in place!"
     candidates = [r for r in asset.revisions if r.status == "CANDIDATE"]
@@ -80,7 +87,8 @@ def main():
     # 3. Linear rule: no second candidate while one is pending.
     print("\n--- Part 3: Strictly linear (one pending candidate) ---")
     try:
-        revisions.create_candidate_revision(session, asset.id, "Another edit.", actor="sop_editor_02")
+        revisions.create_candidate_revision(session, asset.id, "Another edit.",
+                                            actor=test_support.governed_actor(session, "sop_editor_02"))
         raise AssertionError("Second concurrent candidate revision was allowed")
     except ValueError:
         pass
@@ -88,7 +96,7 @@ def main():
 
     # 4. Approving the candidate supersedes the old revision and updates the projection.
     print("\n--- Part 4: Approval supersedes and promotes ---")
-    revisions.review_revision(session, candidate.id, action="APPROVE", actor="governance_officer_01", notes="12h SLA per 2026 policy update")
+    revisions.review_revision(session, candidate.id, action="APPROVE", actor=gov, notes="12h SLA per 2026 policy update")
     session.refresh(asset)
     session.refresh(baseline)
     session.refresh(candidate)
@@ -106,8 +114,9 @@ def main():
 
     # 5. Rejection leaves the active revision untouched.
     print("\n--- Part 5: Rejected revisions change nothing ---")
-    rejected = revisions.create_candidate_revision(session, asset.id, "Deviations need not be logged.", actor="rogue_editor")
-    revisions.review_revision(session, rejected.id, action="REJECT", actor="governance_officer_01", notes="Contradicts regulatory requirement")
+    rejected = revisions.create_candidate_revision(session, asset.id, "Deviations need not be logged.",
+                                                   actor=test_support.governed_actor(session, "rogue_editor"))
+    revisions.review_revision(session, rejected.id, action="REJECT", actor=gov, notes="Contradicts regulatory requirement")
     session.refresh(asset)
     assert asset.content == edited
     assert asset.active_revision_number == 2
@@ -132,11 +141,11 @@ def main():
     print("\n--- Part 7: Post-approval conflict rescan is scheduled, then runs in background ---")
     import json as _json
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Affected Expert", description="", project_id=asset.project_id, asset_ids=[asset.id]))
+        name="Affected Expert", description="", project_id=asset.project_id, asset_ids=[asset.id]), actor=gov)
     fix = revisions.create_candidate_revision(
         session, asset.id, "Critical deviations must be logged within 12 hours.",
-        actor="sop_editor_01", change_reason="Restore content after tamper test")
-    revisions.review_revision(session, fix.id, action="APPROVE", actor="governance_officer_01")
+        actor=sop_editor, change_reason="Restore content after tamper test")
+    revisions.review_revision(session, fix.id, action="APPROVE", actor=gov)
     approved_event = session.query(db.AuditEvent).filter(
         db.AuditEvent.event_type == "ASSET_REVISION_APPROVED"
     ).order_by(db.AuditEvent.id.desc()).first()

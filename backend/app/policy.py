@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import crud
 from app import schemas
+from app import identity
 
 # Policy-Based Auto Approval (MVP 0.10.2).
 #
@@ -43,11 +44,18 @@ def policies_for_scope(session: Session, project_id: int, connector_id: int = No
 
 
 def apply_auto_approval(session: Session, project_id: int, document_ids: list,
-                        connector_id: int = None, ingestion_job_id: int = None) -> dict:
+                        connector_id: int = None, ingestion_job_id: int = None,
+                        on_behalf_of_fact=None) -> dict:
     """Evaluate enabled policies against the CANDIDATE assets created from
     the given documents (one ingestion event). Returns a declared summary;
     writes per-asset ASSET_AUTO_APPROVED events and one
-    POLICY_AUTOAPPROVAL_COMPLETED summary event when policies were in scope."""
+    POLICY_AUTOAPPROVAL_COMPLETED summary event when policies were in scope.
+
+    Identity Boundary v1.0: each firing policy acts as a DELEGATED actor
+    `policy:<name>` whose identity fact chains to on_behalf_of_fact (the
+    connector's fact for a scan, the human's fact for upload/extract) -
+    the WHO chain. The causal WHY stays where D17 put it: the provenance
+    JSON on the ASSET_AUTO_APPROVED event (ActionContext, independent)."""
     summary = {
         "policies_evaluated": 0,
         "assets_considered": 0,
@@ -70,11 +78,15 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
     summary["assets_considered"] = len(assets)
 
     approved_ids = []
+    policy_actors = {}  # one DELEGATED actor (one fact) per firing policy per run
     for asset in assets:
         matched = next((p for p in policies if asset.type in p.asset_types), None)
         if not matched:
             summary["skipped_type_not_covered"] += 1
             continue
+        if matched.id not in policy_actors:
+            policy_actors[matched.id] = identity.delegated_actor(
+                session, f"policy:{matched.name}", on_behalf_of=on_behalf_of_fact)
         # Immutable provenance: six months later, "why was this approved
         # automatically?" must be answerable from this event alone.
         provenance = {
@@ -90,7 +102,7 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
         }
         crud.update_knowledge_asset(
             session, asset.id, schemas.KnowledgeAssetUpdate(status="APPROVED"),
-            actor=f"policy:{matched.name}",
+            actor=policy_actors[matched.id],
             audit_event_type="ASSET_AUTO_APPROVED",
             audit_details=json.dumps(provenance),
             review_notes=f"approved by policy: {matched.name} (v{matched.version})",
@@ -98,8 +110,10 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
         summary["auto_approved"] += 1
         approved_ids.append(asset.id)
 
+    engine_actor = identity.system_actor(session, "policy_engine")
     crud.log_audit_event(
-        session, actor="policy_engine", event_type="POLICY_AUTOAPPROVAL_COMPLETED",
+        session, actor=engine_actor.display, identity_fact_id=engine_actor.fact(session).id,
+        event_type="POLICY_AUTOAPPROVAL_COMPLETED",
         target_id=str(ingestion_job_id) if ingestion_job_id else None,
         details=json.dumps({
             **summary,

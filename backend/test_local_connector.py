@@ -15,6 +15,7 @@ from app import schemas
 from app import crud
 from app import connectors
 from app import ingestion
+import test_support
 
 # Isolated vector store: the dev server holds a lock on ./qdrant_db, and the
 # test process must not depend on (or interfere with) a running server.
@@ -47,8 +48,9 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
+    qa = test_support.governed_actor(session, "qa")
     project = crud.create_project(session, schemas.ProjectCreate(
-        name="Connector Test", description="Local folder connector", customer_id=customer.id))
+        name="Connector Test", description="Local folder connector", customer_id=customer.id), actor=qa)
 
     source_root = tempfile.mkdtemp(prefix="em_connector_src_")
     make_source_tree(source_root)
@@ -154,7 +156,7 @@ def main():
     assert sop_b_assets, "SOP-B must have extracted assets"
     target = sop_b_assets[0]
     crud.update_knowledge_asset(session, asset_id=target.id,
-                                update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+                                update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=qa)
     session.refresh(target)
     old_content = target.content
 
@@ -223,7 +225,8 @@ def main():
         db.AssetRevision.status == "CANDIDATE").count() == 1, "Strictly linear: one pending candidate"
 
     # Approving the pending revision then rescanning picks up the newest content.
-    revisions_module.review_revision(session, candidate.id, action="APPROVE", actor="governance_officer")
+    revisions_module.review_revision(session, candidate.id, action="APPROVE",
+                                     actor=test_support.governed_actor(session, "governance_officer"))
     job6 = db.IngestionJob(project_id=project.id, connector_id=connector.id, status="PENDING")
     session.add(job6)
     session.commit()

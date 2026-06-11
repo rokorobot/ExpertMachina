@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app import database as db
 from app import crud
+from app import identity
 
 # Asset Revision Workflow (MVP 0.7 Sprint 4).
 #
@@ -27,20 +28,23 @@ def _active_revision(asset: db.KnowledgeAsset):
     return max(approved, key=lambda r: r.revision_number) if approved else None
 
 
-def ensure_baseline_revision(session: Session, asset: db.KnowledgeAsset, actor: str = "system"):
+def ensure_baseline_revision(session: Session, asset: db.KnowledgeAsset, actor: identity.Actor = None):
     """Revision 1, created lazily from the asset's current state."""
+    actor = identity.require_actor_object(actor)
     if asset.revisions:
         return None
+    approved = asset.status == "APPROVED"
     baseline = db.AssetRevision(
         asset_id=asset.id,
         revision_number=1,
-        status="APPROVED" if asset.status == "APPROVED" else "CANDIDATE",
+        status="APPROVED" if approved else "CANDIDATE",
         content=asset.content,
         source_hash=asset.source_hash,
         content_hash=_content_hash(asset.content),
-        created_by=actor,
-        approved_by=actor if asset.status == "APPROVED" else None,
-        approved_at=datetime.datetime.utcnow() if asset.status == "APPROVED" else None,
+        created_by=actor.display,
+        approved_by=actor.display if approved else None,
+        approved_at=datetime.datetime.utcnow() if approved else None,
+        identity_fact_id=actor.fact(session).id if approved else None,
         change_reason="Baseline revision created from existing asset state"
     )
     session.add(baseline)
@@ -50,7 +54,8 @@ def ensure_baseline_revision(session: Session, asset: db.KnowledgeAsset, actor: 
 
 
 def create_candidate_revision(session: Session, asset_id: int, content: str,
-                              actor: str = "user", change_reason: str = None) -> db.AssetRevision:
+                              actor: identity.Actor = None, change_reason: str = None) -> db.AssetRevision:
+    actor = identity.require_actor_object(actor)
     asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
     if not asset:
         raise LookupError(f"Asset {asset_id} not found")
@@ -71,7 +76,7 @@ def create_candidate_revision(session: Session, asset_id: int, content: str,
         content=content,
         source_hash=asset.source_hash,
         content_hash=_content_hash(content),
-        created_by=actor,
+        created_by=actor.display,
         supersedes_revision_id=active.id if active else None,
         change_reason=change_reason
     )
@@ -81,7 +86,8 @@ def create_candidate_revision(session: Session, asset_id: int, content: str,
 
     crud.log_audit_event(
         session,
-        actor=actor,
+        actor=actor.display,
+        identity_fact_id=actor.fact(session).id,
         event_type="ASSET_REVISION_CREATED",
         target_id=str(asset.id),
         details=json.dumps({
@@ -97,7 +103,8 @@ def create_candidate_revision(session: Session, asset_id: int, content: str,
 
 
 def review_revision(session: Session, revision_id: int, action: str,
-                    actor: str = "user", notes: str = None) -> db.AssetRevision:
+                    actor: identity.Actor = None, notes: str = None) -> db.AssetRevision:
+    actor = identity.require_actor_object(actor)
     if action not in ("APPROVE", "REJECT"):
         raise ValueError("Review action must be APPROVE or REJECT")
     revision = session.query(db.AssetRevision).filter(db.AssetRevision.id == revision_id).first()
@@ -115,7 +122,8 @@ def review_revision(session: Session, revision_id: int, action: str,
         session.refresh(revision)
         crud.log_audit_event(
             session,
-            actor=actor,
+            actor=actor.display,
+            identity_fact_id=actor.fact(session).id,
             event_type="ASSET_REVISION_REJECTED",
             target_id=str(asset.id),
             details=json.dumps({
@@ -135,13 +143,15 @@ def review_revision(session: Session, revision_id: int, action: str,
         old_active.superseded_by_revision_id = revision.id
 
     revision.status = "APPROVED"
-    revision.approved_by = actor
+    revision.approved_by = actor.display
     revision.approved_at = datetime.datetime.utcnow()
+    revision.identity_fact_id = actor.fact(session).id
     asset.content = revision.content
 
     session.add(db.AssetReview(
         asset_id=asset.id,
-        approver=actor,
+        approver=actor.display,
+        identity_fact_id=actor.fact(session).id,
         notes=f"Revision {revision.revision_number} approved" + (f": {notes}" if notes else "")
     ))
     session.commit()
@@ -157,7 +167,8 @@ def review_revision(session: Session, revision_id: int, action: str,
 
     crud.log_audit_event(
         session,
-        actor=actor,
+        actor=actor.display,
+        identity_fact_id=actor.fact(session).id,
         event_type="ASSET_REVISION_APPROVED",
         target_id=str(asset.id),
         details=json.dumps({

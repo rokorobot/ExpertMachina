@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import database as db
 from app import crud
+from app import identity
 from app import ingestion
 from app import extraction
 from app import policy
@@ -50,17 +51,19 @@ def discover_files(connector: db.SourceConnector) -> list:
     return [item.uri for item in _provider_for(connector).discover()]
 
 
-def run_ingestion_job(job_id: int):
+def run_ingestion_job(job_id: int, on_behalf_of_fact_id: int = None):
     """Background-task entry point: owns its session (the request that
-    scheduled the scan has already returned)."""
+    scheduled the scan has already returned). Receives the scheduling
+    actor's IdentityFact by ID, never as a live ORM object."""
     session = db.SessionLocal()
     try:
-        execute_ingestion_job(session, job_id)
+        execute_ingestion_job(session, job_id, on_behalf_of_fact_id=on_behalf_of_fact_id)
     finally:
         session.close()
 
 
-def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = True) -> db.IngestionJob:
+def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = True,
+                          on_behalf_of_fact_id: int = None) -> db.IngestionJob:
     job = session.query(db.IngestionJob).filter(db.IngestionJob.id == job_id).first()
     if not job:
         print(f"Ingestion job {job_id} not found")
@@ -70,13 +73,22 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
 
     provider = _provider_for(connector)
 
+    # Identity Boundary v1.0: the connector is a DELEGATED actor whose fact
+    # chains to whoever scheduled the scan (the WHO chain); the job row and
+    # audit payloads remain the causal ActionContext, independent of it.
+    connector_actor = identity.delegated_actor(
+        session, f"connector:{connector.name}",
+        on_behalf_of=identity.get_fact(session, on_behalf_of_fact_id))
+    connector_fact = connector_actor.fact(session)
+
     job.status = "RUNNING"
     job.started_at = datetime.datetime.utcnow()
     session.commit()
     # describe(): provider-specific source context, logged without
     # interpretation. Key order keeps the payload identical to pre-0.11.
     crud.log_audit_event(
-        session, actor=f"connector:{connector.name}", event_type="INGESTION_JOB_STARTED",
+        session, actor=connector_actor.display, identity_fact_id=connector_fact.id,
+        event_type="INGESTION_JOB_STARTED",
         target_id=str(job.id),
         details=json.dumps({"connector_id": connector.id, **provider.describe()}))
 
@@ -93,7 +105,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         seen_hashes_this_job = set()
 
         for item in items:
-            outcome = _ingest_one(session, connector, job, provider, item, seen_hashes_this_job)
+            outcome = _ingest_one(session, connector, job, provider, item, seen_hashes_this_job,
+                                  connector_actor)
             if outcome == "INGESTED":
                 job.files_ingested += 1
             elif outcome == "DUPLICATE":
@@ -125,7 +138,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                         db.SourceDocument.document_id.isnot(None)).all()]
                     auto_approval = policy.apply_auto_approval(
                         session, job.project_id, new_doc_ids,
-                        connector_id=connector.id, ingestion_job_id=job.id)
+                        connector_id=connector.id, ingestion_job_id=job.id,
+                        on_behalf_of_fact=connector_fact)
                 except Exception as e:
                     job.error = f"Policy auto-approval failed after extraction: {e}"
                     session.commit()
@@ -134,7 +148,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         job.completed_at = datetime.datetime.utcnow()
         session.commit()
         crud.log_audit_event(
-            session, actor=f"connector:{connector.name}", event_type="INGESTION_JOB_COMPLETED",
+            session, actor=connector_actor.display, identity_fact_id=connector_fact.id,
+            event_type="INGESTION_JOB_COMPLETED",
             target_id=str(job.id),
             details=json.dumps({
                 "files_discovered": job.files_discovered,
@@ -151,7 +166,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         job.completed_at = datetime.datetime.utcnow()
         session.commit()
         crud.log_audit_event(
-            session, actor=f"connector:{connector.name}", event_type="INGESTION_JOB_FAILED",
+            session, actor=connector_actor.display, identity_fact_id=connector_fact.id,
+            event_type="INGESTION_JOB_FAILED",
             target_id=str(job.id),
             details=json.dumps({"error": str(e),
                                 "files_discovered": job.files_discovered,
@@ -161,7 +177,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
 
 
 def _ingest_one(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
-                provider: LocalFolderProvider, item: ConnectorItem, seen_hashes: set) -> str:
+                provider: LocalFolderProvider, item: ConnectorItem, seen_hashes: set,
+                connector_actor: identity.Actor) -> str:
     """Process one discovered item; always writes a SourceDocument row.
     The provider fetches (at ingest time, not discovery time); the
     framework hashes - the sha256 of the fetched bytes is the only change
@@ -203,7 +220,8 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
             doc = session.query(db.Document).filter(db.Document.id == prior.document_id).first()
             if doc:
                 seen_hashes.add(record.file_hash)
-                return _apply_source_change(session, connector, job, record, doc, item, data)
+                return _apply_source_change(session, connector, job, record, doc, item, data,
+                                            connector_actor)
 
         duplicate_of = None
         if record.file_hash in seen_hashes:
@@ -240,6 +258,7 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
             file_path=dest_path,
             department="General",
             owner=f"connector:{connector.name}",
+            actor=connector_actor,
         )
         doc.content_hash = record.file_hash
         session.commit()
@@ -303,7 +322,8 @@ def _discard_temp_asset(session: Session, asset: db.KnowledgeAsset):
 
 def _apply_source_change(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
                          record: db.SourceDocument, doc: db.Document,
-                         item: ConnectorItem, data: bytes) -> str:
+                         item: ConnectorItem, data: bytes,
+                         connector_actor: identity.Actor = None) -> str:
     """A source file changed (MVP 0.10.1): re-extract the new content and
     reconcile it against the document's existing assets through the EXISTING
     governance machinery -
@@ -372,7 +392,7 @@ def _apply_source_change(session: Session, connector: db.SourceConnector, job: d
                 try:
                     rev = revisions.create_candidate_revision(
                         session, match.id, new_asset.content,
-                        actor=f"connector:{connector.name}",
+                        actor=connector_actor,
                         change_reason=f"Source file changed: {record.source_uri}")
                     summary["revisions_created"].append({"asset_id": match.id, "revision_id": rev.id})
                 except ValueError as e:
@@ -394,7 +414,8 @@ def _apply_source_change(session: Session, connector: db.SourceConnector, job: d
         record.details_json = json.dumps(summary)
         session.add(record)
         crud.log_audit_event(
-            session, actor=f"connector:{connector.name}", event_type="SOURCE_CHANGE_DETECTED",
+            session, actor=connector_actor.display, identity_fact_id=connector_actor.fact(session).id,
+            event_type="SOURCE_CHANGE_DETECTED",
             target_id=str(doc.id),
             details=json.dumps({"source_uri": record.source_uri, "new_hash": record.file_hash, **summary}))
         return "CHANGED"

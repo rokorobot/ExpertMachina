@@ -19,6 +19,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import mcp_gateway
+import test_support
 
 
 def _disabled_qdrant():
@@ -34,7 +35,8 @@ def make_asset(session, project, doc, name, content, access_level="INTERNAL"):
         type="POLICY", name=name, content=content, project_id=project.id,
         document_id=doc.id, chunk_id=chunk.id, source_page=1, source_section="S1",
         source_hash=hashlib.sha256(content.encode()).hexdigest(), access_level=access_level))
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
+                                actor=test_support.governed_actor(session, "qa"))
     return asset
 
 
@@ -47,13 +49,14 @@ def main():
     ingestion.get_qdrant_client = _disabled_qdrant
 
     customer = crud.get_or_create_default_customer(session)
-    project = crud.create_project(session, schemas.ProjectCreate(name="Gateway Test", description="", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="P.txt", file_path="uploads/p.txt")
+    qa = test_support.governed_actor(session, "qa")
+    project = crud.create_project(session, schemas.ProjectCreate(name="Gateway Test", description="", customer_id=customer.id), actor=qa)
+    doc = crud.create_document(session, project_id=project.id, filename="P.txt", file_path="uploads/p.txt", actor=qa)
 
     internal = make_asset(session, project, doc, "Internal Policy", "Critical deviations must be logged within 24 hours.")
     executive = make_asset(session, project, doc, "Executive Policy", "Executive bonus pool is 4 percent of net profit.", access_level="EXECUTIVE")
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Gateway Expert", description="", project_id=project.id, asset_ids=[internal.id, executive.id]))
+        name="Gateway Expert", description="", project_id=project.id, asset_ids=[internal.id, executive.id]), actor=qa)
 
     # Part 1: tool surface is exactly the six read-only tools (Tier 1 + Tier 2).
     print("\n--- Part 1: Read-only tool surface ---")

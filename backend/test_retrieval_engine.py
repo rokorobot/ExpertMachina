@@ -12,6 +12,7 @@ from app import schemas
 from app import crud
 from app import query_engine
 from app import ingestion
+import test_support
 
 def test_expert_model_isolation():
     print("\nInitializing test database for retrieval engine isolation checks...")
@@ -26,15 +27,18 @@ def test_expert_model_isolation():
     # Prepopulate default customer
     customer = crud.get_or_create_default_customer(session)
     
+    admin = test_support.governed_actor(session, "admin")
+
     # 1. Create Project
     project = crud.create_project(
-        session, 
-        schemas.ProjectCreate(name="Retrieval Engine Test", description="Testing isolation", customer_id=customer.id)
+        session,
+        schemas.ProjectCreate(name="Retrieval Engine Test", description="Testing isolation", customer_id=customer.id),
+        actor=admin
     )
-    
+
     # 2. Create mock documents to generate chunk indices
-    doc_a = crud.create_document(session, project_id=project.id, filename="DocA.txt", file_path="uploads/DocA.txt")
-    doc_b = crud.create_document(session, project_id=project.id, filename="DocB.txt", file_path="uploads/DocB.txt")
+    doc_a = crud.create_document(session, project_id=project.id, filename="DocA.txt", file_path="uploads/DocA.txt", actor=admin)
+    doc_b = crud.create_document(session, project_id=project.id, filename="DocB.txt", file_path="uploads/DocB.txt", actor=admin)
     
     # Add dummy chunks directly to database
     chunk_a = db.DocumentChunk(document_id=doc_a.id, text="This is content for Asset A1.", chunk_index=0)
@@ -102,19 +106,21 @@ def test_expert_model_isolation():
     )
     
     # Approve assets to cross governance check
-    crud.update_knowledge_asset(session, asset_id=asset_a1.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="admin")
-    crud.update_knowledge_asset(session, asset_id=asset_b1.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="admin")
+    crud.update_knowledge_asset(session, asset_id=asset_a1.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=admin)
+    crud.update_knowledge_asset(session, asset_id=asset_b1.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=admin)
 
     # 4. Compile Expert Model A (Asset A1)
     model_a = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Expert Model A", description="Has Asset A1", project_id=project.id, asset_ids=[asset_a1.id])
+        schemas.ExpertModelCreate(name="Expert Model A", description="Has Asset A1", project_id=project.id, asset_ids=[asset_a1.id]),
+        actor=admin
     )
-    
+
     # Compile Expert Model B (Asset B1)
     model_b = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Expert Model B", description="Has Asset B1", project_id=project.id, asset_ids=[asset_b1.id])
+        schemas.ExpertModelCreate(name="Expert Model B", description="Has Asset B1", project_id=project.id, asset_ids=[asset_b1.id]),
+        actor=admin
     )
 
     # --- SUCCESS TEST 1 ---

@@ -3,7 +3,7 @@ import shutil
 import hashlib
 import json
 import datetime
-from fastapi import FastAPI, Depends, UploadFile, File, Form, HTTPException, status, BackgroundTasks
+from fastapi import FastAPI, Depends, Header, UploadFile, File, Form, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
@@ -11,6 +11,7 @@ from typing import List, Optional
 from app import database as db
 from app import schemas
 from app import crud
+from app import identity
 from app import ingestion
 from app import extraction
 from app import query_engine
@@ -51,17 +52,108 @@ def get_db():
     finally:
         db_session.close()
 
+
+# Identity Boundary v1.0 (docs/identity-boundary-v1.md, D20 candidate):
+# callers propose identity (a bearer token); this dependency decides the
+# actor. Every state-changing route depends on it - caller-supplied actor
+# strings (?actor=, body reviewer/created_by fields) no longer exist, and
+# unknown fields a stale client still sends are ignored by the schemas.
+def require_actor(authorization: Optional[str] = Header(None),
+                  db_session: Session = Depends(get_db)) -> identity.Actor:
+    token = None
+    if authorization and authorization.lower().startswith("bearer "):
+        token = authorization[7:].strip()
+    principal, credential = identity.resolve_token(db_session, token)
+    if principal is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Authentication required: the identity boundary decides actors; "
+                   "callers cannot assert them. Log in at /api/auth/login.")
+    method = "PASSWORD" if credential.kind == "SESSION" else "API_TOKEN"
+    return identity.Actor(principal, method, credential=credential)
+
+
 @app.on_event("startup")
 def startup_event():
     db.init_db()
     with db.SessionLocal() as session:
         # Create default customer
         crud.get_or_create_default_customer(session)
+        # Identity Boundary bootstrap: platform principals, the one-time
+        # admin, and DELEGATED registrations for pre-boundary governed
+        # objects (their historical audit rows stay legacy - D12).
+        identity.ensure_system_principals(session)
+        admin, one_time_password = identity.bootstrap_admin(session)
+        if one_time_password:
+            # flush=True: under uvicorn, stdout is block-buffered - without
+            # an explicit flush the one-time credential can sit invisible in
+            # the buffer, which operationally means a locked-out admin.
+            print("=" * 64, flush=True)
+            print("IDENTITY BOUNDARY BOOTSTRAP - one-time admin credential", flush=True)
+            print("  username: admin", flush=True)
+            print(f"  password: {one_time_password}", flush=True)
+            print("  Shown once, never stored in plaintext. Change it after login.", flush=True)
+            print("=" * 64, flush=True)
+        for pol in session.query(db.ApprovalPolicy).all():
+            identity.ensure_delegated_principal(session, f"policy:{pol.name}")
+        for conn in session.query(db.SourceConnector).all():
+            identity.ensure_delegated_principal(session, f"connector:{conn.name}")
 
 # Status Check
 @app.get("/api/health")
 def health_check():
     return {"status": "healthy", "service": "ExpertMachina Backend"}
+
+# Identity Boundary v1.0: authentication endpoints. Login verifies the
+# proposed name+password and issues a SESSION credential that records
+# which password generation authenticated it (lineage); everything else
+# resolves bearer tokens through require_actor.
+@app.post("/api/auth/login", response_model=schemas.LoginResponse)
+def auth_login(body: schemas.LoginRequest, db_session: Session = Depends(get_db)):
+    token, principal = identity.authenticate_password(db_session, body.name.strip(), body.password)
+    if token is None:
+        raise HTTPException(status_code=401, detail="Invalid credentials")
+    return schemas.LoginResponse(
+        token=token, name=principal.name, display_name=principal.display_name,
+        role=principal.role, kind=principal.kind,
+        must_change_password=bool(principal.must_change_password))
+
+@app.get("/api/auth/me", response_model=schemas.AuthIdentityResponse)
+def auth_me(actor: identity.Actor = Depends(require_actor)):
+    p = actor.principal
+    return schemas.AuthIdentityResponse(
+        name=p.name, display_name=p.display_name, role=p.role, kind=p.kind,
+        must_change_password=bool(p.must_change_password))
+
+@app.post("/api/auth/logout")
+def auth_logout(actor: identity.Actor = Depends(require_actor),
+                db_session: Session = Depends(get_db)):
+    if actor.credential is not None and actor.credential.kind == "SESSION":
+        identity.revoke_credential(db_session, actor.credential, actor=actor.name, reason="logout")
+    return {"ok": True}
+
+@app.post("/api/auth/change-password", response_model=schemas.AuthIdentityResponse)
+def auth_change_password(body: schemas.ChangePasswordRequest,
+                         actor: identity.Actor = Depends(require_actor),
+                         db_session: Session = Depends(get_db)):
+    p = actor.principal
+    if p.kind != "HUMAN":
+        raise HTTPException(status_code=400, detail="Only HUMAN principals hold passwords")
+    if len(body.new_password or "") < 8:
+        raise HTTPException(status_code=400, detail="New password must be at least 8 characters")
+    verify_token, verified = identity.authenticate_password(db_session, p.name, body.current_password)
+    if verify_token is None:
+        raise HTTPException(status_code=401, detail="Current password is incorrect")
+    # the verification login minted a session we don't need - revoke it
+    vp, vc = identity.resolve_token(db_session, verify_token)
+    if vc is not None:
+        identity.revoke_credential(db_session, vc, actor=p.name, reason="password-change verification")
+    identity.set_password(db_session, p, body.new_password, actor=p.name)
+    p.must_change_password = False
+    db_session.commit()
+    return schemas.AuthIdentityResponse(
+        name=p.name, display_name=p.display_name, role=p.role, kind=p.kind,
+        must_change_password=False)
 
 # Customer / Workspace Project routes
 @app.get("/api/projects", response_model=List[schemas.ProjectResponse])
@@ -70,8 +162,9 @@ def get_projects(db_session: Session = Depends(get_db)):
     return crud.get_projects(db_session, customer_id=cust.id)
 
 @app.post("/api/projects", response_model=schemas.ProjectResponse)
-def create_project(project: schemas.ProjectCreate, db_session: Session = Depends(get_db)):
-    return crud.create_project(db_session, project)
+def create_project(project: schemas.ProjectCreate, db_session: Session = Depends(get_db),
+                   actor: identity.Actor = Depends(require_actor)):
+    return crud.create_project(db_session, project, actor=actor)
 
 # Documents routes
 @app.get("/api/projects/{project_id}/documents", response_model=List[schemas.DocumentResponse])
@@ -80,11 +173,12 @@ def get_documents(project_id: int, db_session: Session = Depends(get_db)):
 
 @app.post("/api/projects/{project_id}/documents", response_model=schemas.DocumentResponse)
 def upload_document(
-    project_id: int, 
-    file: UploadFile = File(...), 
-    department: str = Form("General"), 
-    owner: str = Form("User"),
-    db_session: Session = Depends(get_db)
+    project_id: int,
+    file: UploadFile = File(...),
+    department: str = Form("General"),
+    owner: str = Form("User"),  # document METADATA (content owner) - the acting identity is boundary-decided
+    db_session: Session = Depends(get_db),
+    actor: identity.Actor = Depends(require_actor)
 ):
     # Sanitize the client-supplied filename: strip any path components so a
     # crafted name can never escape UPLOAD_DIR (defense in depth - the
@@ -104,24 +198,28 @@ def upload_document(
         filename=filename,
         file_path=file_path,
         department=department,
-        owner=owner
+        owner=owner,
+        actor=actor
     )
-    
+
     # Process asynchronously (for MVP sync parsing is fast enough, we execute inline)
     ingestion.parse_and_index_document(db_session, doc.id)
     db_session.refresh(doc)
-    
+
     if doc.status == "PARSED":
         extraction.extract_knowledge_assets_from_project(db_session, project_id)
         # Policy-Based Auto Approval (MVP 0.10.2): unscoped policies apply to
         # uploads too - the same rules regardless of how a document arrived.
-        policy.apply_auto_approval(db_session, project_id, [doc.id])
+        # The firing policy's identity chains to the uploader's fact.
+        policy.apply_auto_approval(db_session, project_id, [doc.id],
+                                   on_behalf_of_fact=actor.fact(db_session))
         db_session.refresh(doc)
 
     return doc
 
 @app.post("/api/projects/{project_id}/documents/batch-demo")
-def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db)):
+def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db),
+                      actor: identity.Actor = Depends(require_actor)):
     # Pre-built standard mock SOPs to test ingestion of 100+ simulated nodes/documents quickly
     sample_docs = [
         {
@@ -181,7 +279,8 @@ def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db)):
             filename=d["filename"],
             file_path=file_path,
             department=d["department"],
-            owner=d["owner"]
+            owner=d["owner"],
+            actor=actor
         )
         ingestion.parse_and_index_document(db_session, doc.id)
         docs_created.append(doc.filename)
@@ -192,7 +291,8 @@ def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db)):
 # only. Connector output becomes ordinary documents and CANDIDATE assets in
 # the existing governance pipeline - no connector-specific review flow.
 @app.post("/api/projects/{project_id}/connectors", response_model=schemas.SourceConnectorResponse)
-def create_source_connector(project_id: int, connector_in: schemas.SourceConnectorCreate, db_session: Session = Depends(get_db)):
+def create_source_connector(project_id: int, connector_in: schemas.SourceConnectorCreate, db_session: Session = Depends(get_db),
+                            actor: identity.Actor = Depends(require_actor)):
     if (connector_in.type or "LOCAL_FOLDER").upper() != "LOCAL_FOLDER":
         raise HTTPException(status_code=400, detail="Only LOCAL_FOLDER connectors are supported in this release")
     if not connector_in.root_path.strip():
@@ -207,10 +307,13 @@ def create_source_connector(project_id: int, connector_in: schemas.SourceConnect
     db_session.add(connector)
     db_session.commit()
     db_session.refresh(connector)
-    crud.log_audit_event(db_session, actor="operator", event_type="SOURCE_CONNECTOR_CREATED",
+    identity.ensure_delegated_principal(db_session, f"connector:{connector.name}",
+                                        created_by=actor.name)
+    crud.log_audit_event(db_session, actor=actor.display, event_type="SOURCE_CONNECTOR_CREATED",
                          target_id=str(connector.id),
                          details=json.dumps({"name": connector.name, "type": connector.type,
-                                             "root_path": connector.root_path}))
+                                             "root_path": connector.root_path}),
+                         identity_fact_id=actor.fact(db_session).id)
     return connector
 
 @app.get("/api/projects/{project_id}/connectors", response_model=List[schemas.SourceConnectorResponse])
@@ -219,7 +322,8 @@ def list_source_connectors(project_id: int, db_session: Session = Depends(get_db
         db.SourceConnector.project_id == project_id).order_by(db.SourceConnector.id).all()
 
 @app.post("/api/connectors/{connector_id}/scan", response_model=schemas.IngestionJobResponse)
-def scan_source_connector(connector_id: int, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db)):
+def scan_source_connector(connector_id: int, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db),
+                          actor: identity.Actor = Depends(require_actor)):
     connector = db_session.query(db.SourceConnector).filter(db.SourceConnector.id == connector_id).first()
     if not connector:
         raise HTTPException(status_code=404, detail=f"Connector {connector_id} not found")
@@ -234,7 +338,10 @@ def scan_source_connector(connector_id: int, background_tasks: BackgroundTasks, 
     db_session.commit()
     db_session.refresh(job)
     # v0.9.2a discipline: return immediately; the scan owns its own session.
-    background_tasks.add_task(connectors.run_ingestion_job, job.id)
+    # The scheduling actor's fact is minted NOW (request session) and handed
+    # to the job by ID - the connector's DELEGATED fact will chain to it.
+    background_tasks.add_task(connectors.run_ingestion_job, job.id,
+                              on_behalf_of_fact_id=actor.fact(db_session).id)
     return job
 
 @app.get("/api/projects/{project_id}/ingestion-jobs", response_model=List[schemas.IngestionJobResponse])
@@ -275,7 +382,8 @@ def _validated_policy_fields(db_session: Session, project_id: int, asset_types: 
     return types
 
 @app.post("/api/projects/{project_id}/approval-policies", response_model=schemas.ApprovalPolicyResponse)
-def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCreate, db_session: Session = Depends(get_db)):
+def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCreate, db_session: Session = Depends(get_db),
+                           actor: identity.Actor = Depends(require_actor)):
     if not policy_in.name.strip():
         raise HTTPException(status_code=400, detail="name is required")
     types = _validated_policy_fields(db_session, project_id, policy_in.asset_types, policy_in.connector_id)
@@ -286,15 +394,17 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
         connector_id=policy_in.connector_id,
         enabled=True,
         version=1,
-        created_by=policy_in.created_by or "operator",
+        created_by=actor.display,
     )
     db_session.add(pol)
     db_session.commit()
     db_session.refresh(pol)
-    crud.log_audit_event(db_session, actor=pol.created_by, event_type="POLICY_CREATED",
+    identity.ensure_delegated_principal(db_session, f"policy:{pol.name}", created_by=actor.name)
+    crud.log_audit_event(db_session, actor=actor.display, event_type="POLICY_CREATED",
                          target_id=str(pol.id),
                          details=json.dumps({"name": pol.name, "version": pol.version,
-                                             "asset_types": types, "connector_id": pol.connector_id}))
+                                             "asset_types": types, "connector_id": pol.connector_id}),
+                         identity_fact_id=actor.fact(db_session).id)
     return pol
 
 @app.get("/api/projects/{project_id}/approval-policies", response_model=List[schemas.ApprovalPolicyResponse])
@@ -303,8 +413,9 @@ def list_approval_policies(project_id: int, db_session: Session = Depends(get_db
         db.ApprovalPolicy.project_id == project_id).order_by(db.ApprovalPolicy.id).all()
 
 @app.patch("/api/approval-policies/{policy_id}", response_model=schemas.ApprovalPolicyResponse)
-def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate, actor: str = "operator",
-                           db_session: Session = Depends(get_db)):
+def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
+                           db_session: Session = Depends(get_db),
+                           actor: identity.Actor = Depends(require_actor)):
     pol = db_session.query(db.ApprovalPolicy).filter(db.ApprovalPolicy.id == policy_id).first()
     if not pol:
         raise HTTPException(status_code=404, detail=f"Approval policy {policy_id} not found")
@@ -339,16 +450,19 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
     db_session.refresh(pol)
 
     if definition_changed:
-        crud.log_audit_event(db_session, actor=actor, event_type="POLICY_UPDATED",
+        identity.ensure_delegated_principal(db_session, f"policy:{pol.name}", created_by=actor.name)
+        crud.log_audit_event(db_session, actor=actor.display, event_type="POLICY_UPDATED",
                              target_id=str(pol.id),
                              details=json.dumps({"old": old_snapshot,
                                                  "new": {"name": pol.name, "asset_types": pol.asset_types,
-                                                         "connector_id": pol.connector_id, "version": pol.version}}))
+                                                         "connector_id": pol.connector_id, "version": pol.version}}),
+                             identity_fact_id=actor.fact(db_session).id)
     if toggled is not None:
-        crud.log_audit_event(db_session, actor=actor,
+        crud.log_audit_event(db_session, actor=actor.display,
                              event_type="POLICY_ENABLED" if toggled else "POLICY_DISABLED",
                              target_id=str(pol.id),
-                             details=json.dumps({"name": pol.name, "version": pol.version}))
+                             details=json.dumps({"name": pol.name, "version": pol.version}),
+                             identity_fact_id=actor.fact(db_session).id)
     return pol
 
 # LLM Provider Settings routes (MVP 0.12): governed model-per-function
@@ -371,7 +485,8 @@ def list_llm_settings(db_session: Session = Depends(get_db)):
 
 @app.put("/api/settings/llm/{function}", response_model=schemas.LLMFunctionSettingResponse)
 def update_llm_setting(function: str, update: schemas.LLMFunctionSettingUpdate,
-                       db_session: Session = Depends(get_db)):
+                       db_session: Session = Depends(get_db),
+                       actor: identity.Actor = Depends(require_actor)):
     function = function.upper()
     if function not in llm.FUNCTIONS:
         raise HTTPException(status_code=400,
@@ -384,15 +499,16 @@ def update_llm_setting(function: str, update: schemas.LLMFunctionSettingUpdate,
         row = db.LLMFunctionConfig(function=function, provider="OPENAI")
         db_session.add(row)
     row.model = new_model
-    row.updated_by = update.actor or "operator"
+    row.updated_by = actor.display
     row.updated_at = datetime.datetime.utcnow()
     db_session.commit()
     crud.log_audit_event(
-        db_session, actor=row.updated_by, event_type="LLM_CONFIG_UPDATED",
+        db_session, actor=actor.display, event_type="LLM_CONFIG_UPDATED",
         target_id=function,
         details=json.dumps({"function": function, "old_model": old_model,
                             "new_model": new_model,
-                            "note": "model selection only - credentials never stored (env-based until v1.x)"}))
+                            "note": "model selection only - credentials never stored (env-based until v1.x)"}),
+        identity_fact_id=actor.fact(db_session).id)
     resolved = llm.resolve(function, db_session)
     return schemas.LLMFunctionSettingResponse(
         function=function, description=llm.FUNCTIONS[function],
@@ -405,7 +521,8 @@ def get_assets(project_id: int, db_session: Session = Depends(get_db)):
     return crud.get_knowledge_assets(db_session, project_id)
 
 @app.post("/api/projects/{project_id}/extract")
-def extract_assets(project_id: int, db_session: Session = Depends(get_db)):
+def extract_assets(project_id: int, db_session: Session = Depends(get_db),
+                   actor: identity.Actor = Depends(require_actor)):
     # Documents without assets BEFORE extraction are the ones this call will
     # extract for - the auto-approval scope for this ingestion event.
     fresh_doc_ids = [d.id for d in db_session.query(db.Document).filter(
@@ -414,7 +531,8 @@ def extract_assets(project_id: int, db_session: Session = Depends(get_db)):
     success = extraction.extract_knowledge_assets_from_project(db_session, project_id)
     if not success:
         raise HTTPException(status_code=400, detail="No parsed documents found to extract assets from. Please upload documents first.")
-    auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids)
+    auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids,
+                                               on_behalf_of_fact=actor.fact(db_session))
     return {"message": "Knowledge assets extracted successfully.", "auto_approval": auto_approval}
 
 # NOTE: /api/assets/bulk MUST be registered BEFORE /api/assets/{asset_id} -
@@ -422,7 +540,8 @@ def extract_assets(project_id: int, db_session: Session = Depends(get_db)):
 # otherwise swallow "bulk" and 422 on int parsing (audit finding C1: the
 # bulk endpoint was unreachable from v0.2 until this fix).
 @app.patch("/api/assets/bulk", response_model=List[schemas.KnowledgeAssetResponse])
-def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, actor: str = "User", db_session: Session = Depends(get_db)):
+def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, db_session: Session = Depends(get_db),
+                       actor: identity.Actor = Depends(require_actor)):
     # One approval path for every species of approval (the D17/D18 lesson):
     # delegate to crud.update_knowledge_asset so bulk approvals get the same
     # AssetReview, baseline revision, and lifecycle side effects as single
@@ -443,7 +562,8 @@ def bulk_update_assets(bulk_in: schemas.AssetBulkUpdate, actor: str = "User", db
     return updated_assets
 
 @app.patch("/api/assets/{asset_id}", response_model=schemas.KnowledgeAssetResponse)
-def update_asset(asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "User", db_session: Session = Depends(get_db)):
+def update_asset(asset_id: int, update: schemas.KnowledgeAssetUpdate, db_session: Session = Depends(get_db),
+                 actor: identity.Actor = Depends(require_actor)):
     asset = crud.update_knowledge_asset(db_session, asset_id, update, actor=actor)
     if not asset:
         raise HTTPException(status_code=404, detail="Asset not found")
@@ -456,27 +576,31 @@ def get_experts(project_id: int, db_session: Session = Depends(get_db)):
     return crud.get_expert_models(db_session, project_id)
 
 @app.post("/api/projects/{project_id}/experts", response_model=schemas.ExpertModelResponse)
-def create_expert(project_id: int, expert_in: schemas.ExpertModelCreate, db_session: Session = Depends(get_db)):
+def create_expert(project_id: int, expert_in: schemas.ExpertModelCreate, db_session: Session = Depends(get_db),
+                  actor: identity.Actor = Depends(require_actor)):
     # Validate project_id matches
     if expert_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="Project ID mismatch")
     try:
-        return crud.create_expert_model(db_session, expert_in)
+        return crud.create_expert_model(db_session, expert_in, actor=actor)
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
 @app.post("/api/projects/{project_id}/query", response_model=schemas.QueryResponse)
-def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Session = Depends(get_db)):
+def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Session = Depends(get_db),
+                  actor: identity.Actor = Depends(require_actor)):
     if not query_in.question.strip():
         raise HTTPException(status_code=400, detail="Question cannot be empty")
 
     # Single shared pipeline (Verified Answer v1) - also used by the MCP gateway.
+    # The boundary-decided display replaces the old hardcoded operator string;
+    # query_engine's internal audit trail keeps its own event shapes.
     result = query_engine.execute_expert_query(
         db_session,
         expert_model_id=query_in.expert_model_id,
         question=query_in.question,
         caller_access_level=query_in.access_level,
-        actor="operator_admin_02"
+        actor=actor.display
     )
     return schemas.QueryResponse(**result)
 
@@ -486,11 +610,12 @@ def get_packages(project_id: int, db_session: Session = Depends(get_db)):
     return crud.get_agent_packages(db_session, project_id)
 
 @app.post("/api/projects/{project_id}/packages", response_model=schemas.AgentPackageResponse)
-def create_package(project_id: int, pkg_in: schemas.AgentPackageCreate, db_session: Session = Depends(get_db)):
+def create_package(project_id: int, pkg_in: schemas.AgentPackageCreate, db_session: Session = Depends(get_db),
+                   actor: identity.Actor = Depends(require_actor)):
     if pkg_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="Project ID mismatch")
     try:
-        pkg = crud.create_agent_package(db_session, pkg_in)
+        pkg = crud.create_agent_package(db_session, pkg_in, actor=actor)
     except ValueError as e:
         # Governance gate block: 409 Conflict, with the reason for the operator.
         raise HTTPException(status_code=409, detail=str(e))
@@ -626,13 +751,15 @@ def get_benchmarks(project_id: int, limit: int = 100, db_session: Session = Depe
     return crud.get_benchmark_questions(db_session, project_id, limit=limit)
 
 @app.post("/api/projects/{project_id}/benchmarks", response_model=schemas.BenchmarkQuestionResponse)
-def create_benchmark(project_id: int, q_in: schemas.BenchmarkQuestionCreate, db_session: Session = Depends(get_db)):
+def create_benchmark(project_id: int, q_in: schemas.BenchmarkQuestionCreate, db_session: Session = Depends(get_db),
+                     actor: identity.Actor = Depends(require_actor)):
     if q_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="Project ID mismatch")
     return crud.create_benchmark_question(db_session, q_in)
 
 @app.put("/api/projects/{project_id}/benchmarks/{benchmark_id}", response_model=schemas.BenchmarkQuestionResponse)
-def update_benchmark(project_id: int, benchmark_id: int, q_update: schemas.BenchmarkQuestionUpdate, db_session: Session = Depends(get_db)):
+def update_benchmark(project_id: int, benchmark_id: int, q_update: schemas.BenchmarkQuestionUpdate, db_session: Session = Depends(get_db),
+                     actor: identity.Actor = Depends(require_actor)):
     q = crud.get_benchmark_question(db_session, benchmark_id)
     if not q or q.project_id != project_id:
         raise HTTPException(status_code=404, detail="Benchmark question not found")
@@ -640,7 +767,8 @@ def update_benchmark(project_id: int, benchmark_id: int, q_update: schemas.Bench
     return updated
 
 @app.delete("/api/projects/{project_id}/benchmarks/{benchmark_id}")
-def delete_benchmark(project_id: int, benchmark_id: int, db_session: Session = Depends(get_db)):
+def delete_benchmark(project_id: int, benchmark_id: int, db_session: Session = Depends(get_db),
+                     actor: identity.Actor = Depends(require_actor)):
     q = crud.get_benchmark_question(db_session, benchmark_id)
     if not q or q.project_id != project_id:
         raise HTTPException(status_code=404, detail="Benchmark question not found")
@@ -650,10 +778,11 @@ def delete_benchmark(project_id: int, benchmark_id: int, db_session: Session = D
 # Evaluation runs routes
 @app.post("/api/projects/{project_id}/evaluations", response_model=schemas.EvaluationRunResponse)
 def trigger_evaluation(
-    project_id: int, 
-    run_in: schemas.EvaluationRunCreate, 
+    project_id: int,
+    run_in: schemas.EvaluationRunCreate,
     background_tasks: BackgroundTasks,
-    db_session: Session = Depends(get_db)
+    db_session: Session = Depends(get_db),
+    actor: identity.Actor = Depends(require_actor)
 ):
     if run_in.project_id != project_id:
         raise HTTPException(status_code=400, detail="Project ID mismatch")
@@ -680,14 +809,16 @@ def get_evaluation(project_id: int, run_id: int, db_session: Session = Depends(g
 
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")
-def delete_asset(asset_id: int, actor: str = "GovernanceOfficer", db_session: Session = Depends(get_db)):
+def delete_asset(asset_id: int, db_session: Session = Depends(get_db),
+                 actor: identity.Actor = Depends(require_actor)):
     deleted = crud.delete_knowledge_asset(db_session, asset_id, actor=actor)
     if not deleted:
         raise HTTPException(status_code=404, detail="Asset not found")
     return {"message": f"Asset {asset_id} deleted successfully"}
 
 @app.delete("/api/documents/{document_id}/knowledge-assets")
-def delete_document_assets(document_id: int, status: Optional[str] = None, actor: str = "GovernanceOfficer", db_session: Session = Depends(get_db)):
+def delete_document_assets(document_id: int, status: Optional[str] = None, db_session: Session = Depends(get_db),
+                           actor: identity.Actor = Depends(require_actor)):
     count = crud.delete_knowledge_assets_by_document(db_session, document_id, status=status, actor=actor)
     return {"message": f"Deleted {count} assets from document {document_id}"}
 
@@ -730,11 +861,12 @@ def get_asset_revisions(asset_id: int, db_session: Session = Depends(get_db)):
     return revisions.get_revisions(db_session, asset_id)
 
 @app.post("/api/assets/{asset_id}/revisions", response_model=schemas.AssetRevisionResponse)
-def create_asset_revision(asset_id: int, revision_in: schemas.AssetRevisionCreate, db_session: Session = Depends(get_db)):
+def create_asset_revision(asset_id: int, revision_in: schemas.AssetRevisionCreate, db_session: Session = Depends(get_db),
+                          actor: identity.Actor = Depends(require_actor)):
     try:
         return revisions.create_candidate_revision(
             db_session, asset_id, revision_in.content,
-            actor=revision_in.actor, change_reason=revision_in.change_reason
+            actor=actor, change_reason=revision_in.change_reason
         )
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -742,11 +874,13 @@ def create_asset_revision(asset_id: int, revision_in: schemas.AssetRevisionCreat
         raise HTTPException(status_code=400, detail=str(e))
 
 @app.post("/api/revisions/{revision_id}/review", response_model=schemas.AssetRevisionResponse)
-def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate, background_tasks: BackgroundTasks, db_session: Session = Depends(get_db)):
+def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate, background_tasks: BackgroundTasks,
+                          db_session: Session = Depends(get_db),
+                          actor: identity.Actor = Depends(require_actor)):
     try:
         revision = revisions.review_revision(
             db_session, revision_id, action=review.action,
-            actor=review.reviewer, notes=review.notes
+            actor=actor, notes=review.notes
         )
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
@@ -761,7 +895,8 @@ def review_asset_revision(revision_id: int, review: schemas.RevisionReviewUpdate
 
 # Knowledge Integrity Engine routes (MVP 0.7: Semantic Conflict Engine)
 @app.post("/api/experts/{expert_model_id}/conflict-scan", response_model=schemas.ConflictScanResponse)
-def run_conflict_scan(expert_model_id: int, db_session: Session = Depends(get_db)):
+def run_conflict_scan(expert_model_id: int, db_session: Session = Depends(get_db),
+                      actor: identity.Actor = Depends(require_actor)):
     try:
         return conflict_engine.scan_expert_model_conflicts(db_session, expert_model_id)
     except ValueError as e:
@@ -794,10 +929,11 @@ def get_expert_model_conflicts(expert_model_id: int, relationship_type: Optional
     return query.order_by(db.AssetRelationship.confidence.desc()).all()
 
 @app.patch("/api/conflicts/{relationship_id}", response_model=schemas.AssetRelationshipResponse)
-def review_conflict(relationship_id: int, review: schemas.ConflictReviewUpdate, db_session: Session = Depends(get_db)):
+def review_conflict(relationship_id: int, review: schemas.ConflictReviewUpdate, db_session: Session = Depends(get_db),
+                    actor: identity.Actor = Depends(require_actor)):
     try:
         return conflict_engine.review_relationship(
-            db_session, relationship_id, status=review.status, reviewer=review.reviewer, notes=review.notes
+            db_session, relationship_id, status=review.status, reviewer=actor, notes=review.notes
         )
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -834,13 +970,15 @@ def get_run_claim_verdicts(run_id: int, verdict: Optional[str] = None, db_sessio
     return query.order_by(db.ClaimVerdict.id).all()
 
 @app.post("/api/claim-verdicts/{verdict_id}/review")
-def review_claim_verdict(verdict_id: int, review: schemas.VerificationReviewCreate, db_session: Session = Depends(get_db)):
+def review_claim_verdict(verdict_id: int, review: schemas.VerificationReviewCreate, db_session: Session = Depends(get_db),
+                         actor: identity.Actor = Depends(require_actor)):
     v = db_session.query(db.ClaimVerdict).filter(db.ClaimVerdict.id == verdict_id).first()
     if not v:
         raise HTTPException(status_code=404, detail=f"Claim verdict {verdict_id} not found")
     crud.log_audit_event(
         db_session,
-        actor=review.reviewer or "operator",
+        actor=actor.display,
+        identity_fact_id=actor.fact(db_session).id,
         event_type="VERIFICATION_REVIEWED",
         target_id=str(v.id),
         details=json.dumps({
@@ -854,5 +992,5 @@ def review_claim_verdict(verdict_id: int, review: schemas.VerificationReviewCrea
             "comment": review.comment
         })
     )
-    return {"claim_verdict_id": v.id, "reviewed_by": review.reviewer, "event_type": "VERIFICATION_REVIEWED"}
+    return {"claim_verdict_id": v.id, "reviewed_by": actor.display, "event_type": "VERIFICATION_REVIEWED"}
 

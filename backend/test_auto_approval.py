@@ -20,6 +20,7 @@ from app import connectors
 from app import ingestion
 from app import policy
 from app.main import create_approval_policy, update_approval_policy
+import test_support
 
 # Isolated vector store: the dev server holds a lock on ./qdrant_db.
 ingestion.QDRANT_DIR = tempfile.mkdtemp(prefix="em_policy_qdrant_")
@@ -64,8 +65,9 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
+    officer = test_support.governed_actor(session, "GovernanceOfficer")
     project = crud.create_project(session, schemas.ProjectCreate(
-        name="Policy Test", description="Auto approval", customer_id=customer.id))
+        name="Policy Test", description="Auto approval", customer_id=customer.id), actor=officer)
 
     folder_a = tempfile.mkdtemp(prefix="em_policy_src_a_")
     folder_b = tempfile.mkdtemp(prefix="em_policy_src_b_")
@@ -95,8 +97,8 @@ def main():
     # candidates from earlier ingestion events are untouched.
     print("\n--- Part 2: SYSTEM policy fires on a new scan with provenance ---")
     pol = create_approval_policy(project.id, schemas.ApprovalPolicyCreate(
-        name="Low-risk system docs", asset_types=["SYSTEM"], created_by="GovernanceOfficer"),
-        db_session=session)
+        name="Low-risk system docs", asset_types=["SYSTEM"]),
+        db_session=session, actor=officer)
     assert pol.version == 1 and pol.enabled
     assert events_of(session, "POLICY_CREATED"), "Policy creation must be audited"
 
@@ -155,7 +157,7 @@ def main():
     # the version; connector B scans are no longer covered.
     print("\n--- Part 4: Connector scope + version bump ---")
     pol = update_approval_policy(pol.id, schemas.ApprovalPolicyUpdate(connector_id=connector_a.id),
-                                 actor="GovernanceOfficer", db_session=session)
+                                 actor=officer, db_session=session)
     assert pol.version == 2, "Definition change must bump the version"
     assert events_of(session, "POLICY_UPDATED")
     write_file(folder_b, "doc3.txt", "The analytics platform stores metrics in a Qdrant database node.")
@@ -169,7 +171,7 @@ def main():
     # Part 5: disabling is an audited operational toggle, not a new version.
     print("\n--- Part 5: Disabled policy is a no-op ---")
     pol = update_approval_policy(pol.id, schemas.ApprovalPolicyUpdate(enabled=False),
-                                 actor="GovernanceOfficer", db_session=session)
+                                 actor=officer, db_session=session)
     assert pol.enabled is False and pol.version == 2, "Enable/disable must not bump the version"
     assert events_of(session, "POLICY_DISABLED")
     write_file(folder_a, "doc4.txt", "The backup server replicates the database to a standby platform node.")
@@ -184,13 +186,13 @@ def main():
     print("\n--- Part 6: Validation ---")
     try:
         create_approval_policy(project.id, schemas.ApprovalPolicyCreate(
-            name="Bad", asset_types=["SYSTEM", "SALARY"]), db_session=session)
+            name="Bad", asset_types=["SYSTEM", "SALARY"]), db_session=session, actor=officer)
         raise AssertionError("Invalid asset type must be rejected")
     except Exception as e:
         assert "SALARY" in str(e), str(e)
     try:
         create_approval_policy(project.id, schemas.ApprovalPolicyCreate(
-            name="Empty", asset_types=[]), db_session=session)
+            name="Empty", asset_types=[]), db_session=session, actor=officer)
         raise AssertionError("Empty asset type list must be rejected")
     except Exception as e:
         assert "non-empty" in str(e), str(e)

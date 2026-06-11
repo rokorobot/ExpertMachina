@@ -416,21 +416,24 @@ def evaluate_compile_gate(session: Session, expert_model_id: int) -> dict:
 
 
 def review_relationship(session: Session, relationship_id: int, status: str,
-                        reviewer: str = "operator", notes: str = None):
+                        reviewer=None, notes: str = None):
+    from app import identity
+    reviewer = identity.require_actor_object(reviewer)
     if status not in ("CONFIRMED", "DISMISSED"):
         raise ValueError("Review status must be CONFIRMED or DISMISSED")
     rel = session.query(db.AssetRelationship).filter(db.AssetRelationship.id == relationship_id).first()
     if not rel:
         raise LookupError(f"Relationship {relationship_id} not found")
     rel.status = status
-    rel.reviewed_by = reviewer
+    rel.reviewed_by = reviewer.display
     rel.reviewed_at = datetime.datetime.utcnow()
     rel.notes = notes
     session.commit()
     session.refresh(rel)
     crud.log_audit_event(
         session,
-        actor=reviewer,
+        actor=reviewer.display,
+        identity_fact_id=reviewer.fact(session).id,
         event_type=f"KNOWLEDGE_CONFLICT_{status}",
         target_id=str(rel.id),
         details=json.dumps({

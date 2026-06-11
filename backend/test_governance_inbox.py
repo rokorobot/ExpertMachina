@@ -17,6 +17,7 @@ from app import crud
 from app import conflict_engine
 from app import governance_inbox
 from app import revisions
+import test_support
 
 
 def add_conflict(session, model, a_id, b_id, classification, status):
@@ -49,8 +50,10 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
-    project = crud.create_project(session, schemas.ProjectCreate(name="Inbox Test", description="Governance inbox", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="Policies.txt", file_path="uploads/p.txt")
+    qa = test_support.governed_actor(session, "qa")
+    gov = test_support.governed_actor(session, "gov")
+    project = crud.create_project(session, schemas.ProjectCreate(name="Inbox Test", description="Governance inbox", customer_id=customer.id), actor=qa)
+    doc = crud.create_document(session, project_id=project.id, filename="Policies.txt", file_path="uploads/p.txt", actor=qa)
 
     asset_ids = []
     texts = [
@@ -67,11 +70,11 @@ def main():
             type="POLICY", name=f"Policy {i+1}", content=text, project_id=project.id,
             document_id=doc.id, chunk_id=chunk.id, source_page=1, source_section="S1",
             source_hash=hashlib.sha256(text.encode()).hexdigest()))
-        crud.update_knowledge_asset(session, asset_id=a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+        crud.update_knowledge_asset(session, asset_id=a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=qa)
         asset_ids.append(a.id)
 
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Inbox Expert", description="", project_id=project.id, asset_ids=asset_ids))
+        name="Inbox Expert", description="", project_id=project.id, asset_ids=asset_ids), actor=qa)
 
     # Part 1: clean project - no work items, readiness present, gate open.
     print("\n--- Part 1: Clean project inbox is empty but readiness reports the model ---")
@@ -121,8 +124,8 @@ def main():
 
     # Part 4: dismissal moves the conflict to RESOLVED and reopens the gate.
     print("\n--- Part 4: Dismissed conflict lands in recently-resolved ---")
-    conflict_engine.review_relationship(session, rel.id, status="DISMISSED", reviewer="gov", notes="Contextual")
-    conflict_engine.review_relationship(session, rel_adv.id, status="DISMISSED", reviewer="gov", notes="Superseded")
+    conflict_engine.review_relationship(session, rel.id, status="DISMISSED", reviewer=gov, notes="Contextual")
+    conflict_engine.review_relationship(session, rel_adv.id, status="DISMISSED", reviewer=gov, notes="Superseded")
     inbox = governance_inbox.build_inbox(session, project.id)
     resolved = [i for i in inbox["items"] if i["bucket"] == "RESOLVED"]
     assert {r["source_id"] for r in resolved} == {rel.id, rel_adv.id}
@@ -154,7 +157,7 @@ def main():
     print("\n--- Part 6: Revision lifecycle moves through the inbox buckets ---")
     candidate = revisions.create_candidate_revision(
         session, asset_ids[2], "Passwords must be rotated every 180 days.",
-        actor="it-sec", change_reason="NIST update")
+        actor=test_support.governed_actor(session, "it-sec"), change_reason="NIST update")
     inbox = governance_inbox.build_inbox(session, project.id)
     revs = items_of(inbox, "REVISION")
     assert len(revs) == 1
@@ -162,7 +165,7 @@ def main():
     assert rev_item["severity"] == "MEDIUM" and rev_item["bucket"] == "NEEDS_REVIEW"
     assert rev_item["deep_link"] == f"/?tab=revisions&revision={candidate.id}"
 
-    revisions.review_revision(session, candidate.id, action="APPROVE", actor="gov", notes="ok")
+    revisions.review_revision(session, candidate.id, action="APPROVE", actor=gov, notes="ok")
     inbox = governance_inbox.build_inbox(session, project.id)
     revs = items_of(inbox, "REVISION")
     assert all(r["bucket"] == "RESOLVED" for r in revs)

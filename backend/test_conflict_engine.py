@@ -14,6 +14,7 @@ from app import schemas
 from app import crud
 from app import verification_engine
 from app import conflict_engine
+import test_support
 
 
 def make_asset(session, project, doc, name, content, access_level="INTERNAL", asset_type="POLICY"):
@@ -36,7 +37,8 @@ def make_asset(session, project, doc, name, content, access_level="INTERNAL", as
             access_level=access_level
         )
     )
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa_lead_01")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
+                                actor=test_support.governed_actor(session, "qa_lead_01"))
     return asset
 
 
@@ -50,8 +52,9 @@ def find_rel(rels, a, b, rel_type):
 
 def test_classifier_unit(session, project):
     print("\n--- Part 1: Conflict classifier (metadata rules, no NLI required) ---")
-    doc_v1 = crud.create_document(session, project_id=project.id, filename="Retention_2023.txt", file_path="uploads/r23.txt")
-    doc_v2 = crud.create_document(session, project_id=project.id, filename="Retention_2026.txt", file_path="uploads/r26.txt")
+    qa = test_support.governed_actor(session, "qa_lead_01")
+    doc_v1 = crud.create_document(session, project_id=project.id, filename="Retention_2023.txt", file_path="uploads/r23.txt", actor=qa)
+    doc_v2 = crud.create_document(session, project_id=project.id, filename="Retention_2026.txt", file_path="uploads/r26.txt", actor=qa)
     a = make_asset(session, project, doc_v1, "Backup Retention Policy", "Backups are kept for twelve months.")
     b = make_asset(session, project, doc_v2, "Backup Retention Policy", "Backups are kept for three months.")
     assert conflict_engine.classify_conflict(session, a, b) == "TEMPORAL_SUPERSESSION", \
@@ -61,8 +64,9 @@ def test_classifier_unit(session, project):
 
 def test_conflict_scan(session, project):
     print("\n--- Part 2: Semantic conflict scan over an Expert Model ---")
-    doc_clinical = crud.create_document(session, project_id=project.id, filename="Clinical_SOPs.txt", file_path="uploads/c.txt", department="Clinical")
-    doc_mfg = crud.create_document(session, project_id=project.id, filename="Manufacturing_SOPs.txt", file_path="uploads/m.txt", department="Manufacturing")
+    qa = test_support.governed_actor(session, "qa_lead_01")
+    doc_clinical = crud.create_document(session, project_id=project.id, filename="Clinical_SOPs.txt", file_path="uploads/c.txt", department="Clinical", actor=qa)
+    doc_mfg = crud.create_document(session, project_id=project.id, filename="Manufacturing_SOPs.txt", file_path="uploads/m.txt", department="Manufacturing", actor=qa)
 
     a = make_asset(session, project, doc_clinical, "Data Deletion", "Customer data must be deleted after 30 days.")
     b = make_asset(session, project, doc_clinical, "Data Retention", "Customer data must be retained indefinitely.")
@@ -80,7 +84,8 @@ def test_conflict_scan(session, project):
             description="Knowledge QA test",
             project_id=project.id,
             asset_ids=[x.id for x in (a, b, c, d, e, f, i, j)]
-        )
+        ),
+        actor=qa
     )
 
     summary = conflict_engine.scan_expert_model_conflicts(session, model.id)
@@ -132,7 +137,8 @@ def test_conflict_scan(session, project):
 def test_review_survives_rescan(session, model, conflict_rel):
     print("\n--- Part 3: Operator review survives rescans ---")
     reviewed = conflict_engine.review_relationship(
-        session, conflict_rel.id, status="DISMISSED", reviewer="governance_officer_01",
+        session, conflict_rel.id, status="DISMISSED",
+        reviewer=test_support.governed_actor(session, "governance_officer_01"),
         notes="Retention policy applies only to anonymized aggregates - not a true conflict."
     )
     assert reviewed.status == "DISMISSED"
@@ -178,7 +184,8 @@ def test_semantic_conflict_score(session, model):
         db.AssetRelationship.status == "DETECTED"
     ).first()
     conflict_engine.review_relationship(session, detected_direct.id, status="CONFIRMED",
-                                        reviewer="governance_officer_01", notes="Genuine retention conflict.")
+                                        reviewer=test_support.governed_actor(session, "governance_officer_01"),
+                                        notes="Genuine retention conflict.")
     confirmed_score = conflict_engine.compute_semantic_conflict_score(session, model.id)
     # penalty = 12 (confirmed direct x1.2) + 8 + 5 + 1 = 26
     assert confirmed_score["semantic_conflict_score"] == 74.0, \
@@ -190,7 +197,8 @@ def test_semantic_conflict_score(session, model):
     # A model with no recorded conflicts scores a clean 100.
     clean = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Clean Expert", description="No conflicts", project_id=model.project_id, asset_ids=[])
+        schemas.ExpertModelCreate(name="Clean Expert", description="No conflicts", project_id=model.project_id, asset_ids=[]),
+        actor=test_support.governed_actor(session, "qa_lead_01")
     )
     clean_score = conflict_engine.compute_semantic_conflict_score(session, clean.id)
     assert clean_score["semantic_conflict_score"] == 100.0
@@ -209,7 +217,8 @@ if __name__ == "__main__":
     customer = crud.get_or_create_default_customer(session)
     project = crud.create_project(
         session,
-        schemas.ProjectCreate(name="Knowledge QA Test", description="Conflict engine checks", customer_id=customer.id)
+        schemas.ProjectCreate(name="Knowledge QA Test", description="Conflict engine checks", customer_id=customer.id),
+        actor=test_support.governed_actor(session, "qa_lead_01")
     )
 
     test_classifier_unit(session, project)

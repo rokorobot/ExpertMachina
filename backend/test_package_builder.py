@@ -18,6 +18,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import package_builder
+import test_support
 
 
 def make_asset(session, project, doc, name, text, access_level="INTERNAL", idx=0):
@@ -31,7 +32,7 @@ def make_asset(session, project, doc, name, text, access_level="INTERNAL", idx=0
         source_hash=hashlib.sha256(text.encode()).hexdigest()))
     crud.update_knowledge_asset(session, asset_id=a.id,
                                 update=schemas.KnowledgeAssetUpdate(status="APPROVED", access_level=access_level),
-                                actor="qa")
+                                actor=test_support.governed_actor(session, "qa"))
     session.refresh(a)
     return a
 
@@ -44,9 +45,10 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
+    qa = test_support.governed_actor(session, "qa")
     project = crud.create_project(session, schemas.ProjectCreate(
-        name="Package Test", description="Agent package builder", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="Safety.txt", file_path="uploads/s.txt")
+        name="Package Test", description="Agent package builder", customer_id=customer.id), actor=qa)
+    doc = crud.create_document(session, project_id=project.id, filename="Safety.txt", file_path="uploads/s.txt", actor=qa)
 
     a_public = make_asset(session, project, doc, "Evacuation Protocol",
                           "During thermal runaway, evacuate the battery hall immediately.", "INTERNAL", 0)
@@ -60,13 +62,13 @@ def main():
 
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
         name="Facility Safety Expert", description="", project_id=project.id,
-        asset_ids=[a_public.id, a_internal.id, a_exec.id]))
+        asset_ids=[a_public.id, a_internal.id, a_exec.id]), actor=qa)
 
     # Part 1: compile emits a hashed, well-formed .empkg artifact.
     print("\n--- Part 1: Compile emits the .empkg with a tamper-evident hash chain ---")
     pkg = crud.create_agent_package(session, schemas.AgentPackageCreate(
         name="Facility Safety Expert", project_id=project.id,
-        expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"))
+        expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"), actor=qa)
     assert pkg.file_path and os.path.exists(pkg.file_path), "No .empkg file emitted"
     assert pkg.package_hash and pkg.manifest, "Package hash / manifest not persisted"
     with zipfile.ZipFile(pkg.file_path) as zf:
@@ -98,7 +100,7 @@ def main():
     print("\n--- Part 3: Clearance level filters assets, exclusions are reported ---")
     pkg_internal = crud.create_agent_package(session, schemas.AgentPackageCreate(
         name="Facility Safety Expert", project_id=project.id,
-        expert_model_id=model.id, governance_version="1.0", clearance_level="INTERNAL"))
+        expert_model_id=model.id, governance_version="1.0", clearance_level="INTERNAL"), actor=qa)
     with zipfile.ZipFile(pkg_internal.file_path) as zf:
         knowledge = json.loads(zf.read("knowledge.json"))
         manifest = json.loads(zf.read("manifest.json"))
@@ -115,7 +117,7 @@ def main():
     print("\n--- Part 4: Same model state produces the same knowledge hash ---")
     pkg_repeat = crud.create_agent_package(session, schemas.AgentPackageCreate(
         name="Facility Safety Expert", project_id=project.id,
-        expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"))
+        expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"), actor=qa)
     assert pkg_repeat.manifest["knowledge_hash"] == pkg.manifest["knowledge_hash"], \
         "Knowledge hash must be deterministic for identical model state"
     print("Part 4 passed: knowledge hash is reproducible (compiled_at varies, content does not).")
@@ -134,7 +136,7 @@ def main():
     try:
         crud.create_agent_package(session, schemas.AgentPackageCreate(
             name="Should Not Exist", project_id=project.id,
-            expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"))
+            expert_model_id=model.id, governance_version="1.0", clearance_level="EXECUTIVE"), actor=qa)
         raise AssertionError("Compile was allowed despite a blocking conflict")
     except ValueError:
         pass

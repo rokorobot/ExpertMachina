@@ -9,6 +9,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import query_engine
+import test_support
 
 def test_claims_verification_rules():
     print("\nInitializing test database for Answer Verification checks...")
@@ -23,14 +24,17 @@ def test_claims_verification_rules():
     # Prepopulate default customer
     customer = crud.get_or_create_default_customer(session)
     
+    admin = test_support.governed_actor(session, "Admin")
+
     # 1. Create Project
     project = crud.create_project(
-        session, 
-        schemas.ProjectCreate(name="Verification System Test", description="Testing claim mappings", customer_id=customer.id)
+        session,
+        schemas.ProjectCreate(name="Verification System Test", description="Testing claim mappings", customer_id=customer.id),
+        actor=admin
     )
-    
+
     # 2. Ingest document and chunks
-    doc = crud.create_document(session, project_id=project.id, filename="DeviationsSOP.txt", file_path="uploads/DeviationsSOP.txt")
+    doc = crud.create_document(session, project_id=project.id, filename="DeviationsSOP.txt", file_path="uploads/DeviationsSOP.txt", actor=admin)
     
     chunk_a = db.DocumentChunk(document_id=doc.id, text="Critical deviations must be logged within 24 hours.", chunk_index=0)
     chunk_b = db.DocumentChunk(document_id=doc.id, text="Quality managers review deviations weekly.", chunk_index=1)
@@ -69,13 +73,14 @@ def test_claims_verification_rules():
         )
     )
     
-    crud.update_knowledge_asset(session, asset_id=asset_a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="Admin")
-    crud.update_knowledge_asset(session, asset_id=asset_b.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="Admin")
+    crud.update_knowledge_asset(session, asset_id=asset_a.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=admin)
+    crud.update_knowledge_asset(session, asset_id=asset_b.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=admin)
 
     # Build Expert Model with both assets
     model = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Deviation Expert Model", description="Checks", project_id=project.id, asset_ids=[asset_a.id, asset_b.id])
+        schemas.ExpertModelCreate(name="Deviation Expert Model", description="Checks", project_id=project.id, asset_ids=[asset_a.id, asset_b.id]),
+        actor=admin
     )
 
     # 4. Mock retrieve validated evidence context

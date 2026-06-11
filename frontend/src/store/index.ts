@@ -440,7 +440,25 @@ export interface DashboardStats {
   };
 }
 
+export interface AuthUser {
+  name: string;
+  display_name: string;
+  role: string | null;
+  kind: string;
+  must_change_password: boolean;
+}
+
 interface AppState {
+  // Identity Boundary v1.0: who is logged in. The backend decides the
+  // actor from the bearer token - the frontend never sends actor names.
+  currentUser: AuthUser | null;
+  authReady: boolean;
+  authError: string | null;
+  login: (name: string, password: string) => Promise<boolean>;
+  logout: () => Promise<void>;
+  changePassword: (currentPassword: string, newPassword: string) => Promise<boolean>;
+  restoreSession: () => Promise<void>;
+
   projects: Project[];
   activeProjectId: number | null;
   documents: Document[];
@@ -484,7 +502,7 @@ interface AppState {
   governanceInbox: GovernanceInbox | null;
   governanceInboxLoading: boolean;
   fetchGovernanceInbox: (projectId: number) => Promise<void>;
-  reviewClaimVerdict: (verdictId: number, reviewer: string, comment: string) => Promise<void>;
+  reviewClaimVerdict: (verdictId: number, comment: string) => Promise<void>;
 
   sourceConnectors: SourceConnector[];
   ingestionJobs: IngestionJob[];
@@ -520,7 +538,103 @@ interface AppState {
 
 const API_BASE = 'http://localhost:8000/api';
 
+// Identity Boundary v1.0: the bearer token is the only identity input any
+// request carries (?actor= params and reviewer fields are gone - the
+// boundary decides the actor). apiFetch injects the token; a 401 clears
+// the session so the login gate re-renders.
+let AUTH_TOKEN: string | null =
+  typeof window !== 'undefined' ? window.localStorage.getItem('em_token') : null;
+
+const apiFetch = async (input: string, init: RequestInit = {}): Promise<Response> => {
+  const headers = new Headers(init.headers || {});
+  if (AUTH_TOKEN) headers.set('Authorization', `Bearer ${AUTH_TOKEN}`);
+  const res = await globalThis.fetch(input, { ...init, headers });
+  if (res.status === 401 && AUTH_TOKEN) {
+    AUTH_TOKEN = null;
+    window.localStorage.removeItem('em_token');
+    useAppStore.setState({ currentUser: null });
+  }
+  return res;
+};
+
 export const useAppStore = create<AppState>((set, get) => ({
+  currentUser: null,
+  authReady: false,
+  authError: null,
+
+  restoreSession: async () => {
+    if (!AUTH_TOKEN) {
+      set({ authReady: true, currentUser: null });
+      return;
+    }
+    try {
+      const res = await apiFetch(`${API_BASE}/auth/me`);
+      if (res.ok) {
+        set({ currentUser: await res.json(), authReady: true });
+      } else {
+        set({ currentUser: null, authReady: true });
+      }
+    } catch {
+      set({ currentUser: null, authReady: true });
+    }
+  },
+
+  login: async (name: string, password: string) => {
+    set({ authError: null });
+    try {
+      const res = await globalThis.fetch(`${API_BASE}/auth/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, password }),
+      });
+      if (!res.ok) {
+        set({ authError: 'Invalid credentials' });
+        return false;
+      }
+      const data = await res.json();
+      AUTH_TOKEN = data.token;
+      window.localStorage.setItem('em_token', data.token);
+      set({
+        currentUser: {
+          name: data.name, display_name: data.display_name, role: data.role,
+          kind: data.kind, must_change_password: data.must_change_password,
+        },
+        authReady: true,
+      });
+      return true;
+    } catch {
+      set({ authError: 'Backend unreachable' });
+      return false;
+    }
+  },
+
+  logout: async () => {
+    try {
+      await apiFetch(`${API_BASE}/auth/logout`, { method: 'POST' });
+    } catch {
+      // session revocation is best-effort; the local token is cleared regardless
+    }
+    AUTH_TOKEN = null;
+    window.localStorage.removeItem('em_token');
+    set({ currentUser: null });
+  },
+
+  changePassword: async (currentPassword: string, newPassword: string) => {
+    set({ authError: null });
+    const res = await apiFetch(`${API_BASE}/auth/change-password`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ current_password: currentPassword, new_password: newPassword }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      set({ authError: body?.detail || 'Password change failed' });
+      return false;
+    }
+    set({ currentUser: await res.json() });
+    return true;
+  },
+
   projects: [],
   activeProjectId: null,
   documents: [],
@@ -535,7 +649,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchProjects: async () => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects`);
+      const res = await apiFetch(`${API_BASE}/projects`);
       if (!res.ok) throw new Error('Failed to fetch projects');
       const data = await res.json();
       set({ projects: data, loading: false });
@@ -557,7 +671,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   createProject: async (name: string, description: string) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects`, {
+      const res = await apiFetch(`${API_BASE}/projects`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, customer_id: 1 }),
@@ -574,12 +688,12 @@ export const useAppStore = create<AppState>((set, get) => ({
     try {
       // Fetch stats, docs, assets, experts, packages in parallel
       const [docsRes, assetsRes, expertsRes, packagesRes, statsRes, trustRes] = await Promise.all([
-        fetch(`${API_BASE}/projects/${projectId}/documents`),
-        fetch(`${API_BASE}/projects/${projectId}/assets`),
-        fetch(`${API_BASE}/projects/${projectId}/experts`),
-        fetch(`${API_BASE}/projects/${projectId}/packages`),
-        fetch(`${API_BASE}/dashboard/${projectId}`),
-        fetch(`${API_BASE}/projects/${projectId}/trust-scores`)
+        apiFetch(`${API_BASE}/projects/${projectId}/documents`),
+        apiFetch(`${API_BASE}/projects/${projectId}/assets`),
+        apiFetch(`${API_BASE}/projects/${projectId}/experts`),
+        apiFetch(`${API_BASE}/projects/${projectId}/packages`),
+        apiFetch(`${API_BASE}/dashboard/${projectId}`),
+        apiFetch(`${API_BASE}/projects/${projectId}/trust-scores`)
       ]);
 
       const documents = docsRes.ok ? await docsRes.json() : [];
@@ -604,7 +718,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       formData.append('department', department);
       formData.append('owner', owner);
 
-      const res = await fetch(`${API_BASE}/projects/${projectId}/documents`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/documents`, {
         method: 'POST',
         body: formData,
       });
@@ -619,7 +733,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   triggerBatchDemo: async (projectId: number) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/documents/batch-demo`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/documents/batch-demo`, {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Failed to load batch demo documents');
@@ -632,7 +746,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   triggerExtraction: async (projectId: number) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/extract`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/extract`, {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Failed to extract knowledge assets');
@@ -647,7 +761,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!pid) return;
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/assets/${assetId}?actor=ExpertReviewer`, {
+      const res = await apiFetch(`${API_BASE}/assets/${assetId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ status }),
@@ -667,7 +781,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     if (!pid) return;
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/assets/bulk?actor=ExpertReviewer`, {
+      const res = await apiFetch(`${API_BASE}/assets/bulk`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ asset_ids: assetIds, status }),
@@ -682,7 +796,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   createExpertModel: async (projectId: number, name: string, description: string, assetIds: number[]) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/experts`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/experts`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, description, project_id: projectId, asset_ids: assetIds }),
@@ -697,7 +811,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   createAgentPackage: async (projectId: number, name: string, expertModelId: number, version?: string, clearanceLevel?: string) => {
     set({ loading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/packages`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/packages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, expert_model_id: expertModelId, project_id: projectId, governance_version: version || '0.1.0', clearance_level: clearanceLevel || 'INTERNAL' }),
@@ -721,7 +835,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       if (filters?.target_id) params.set('target_id', filters.target_id);
       if (filters?.since) params.set('since', filters.since);
       if (filters?.until) params.set('until', filters.until);
-      const res = await fetch(`${API_BASE}/audit?${params.toString()}`);
+      const res = await apiFetch(`${API_BASE}/audit?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         set({ auditEvents: data });
@@ -740,7 +854,7 @@ export const useAppStore = create<AppState>((set, get) => ({
     set({ assets: currentAssets.filter(a => a.id !== assetId) });
     
     try {
-      const res = await fetch(`${API_BASE}/knowledge-assets/${assetId}`, {
+      const res = await apiFetch(`${API_BASE}/knowledge-assets/${assetId}`, {
         method: 'DELETE',
       });
       if (!res.ok) throw new Error('Failed to delete asset');
@@ -785,8 +899,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchConflicts: async (expertModelId: number) => {
     try {
       const [relsRes, scoreRes] = await Promise.all([
-        fetch(`${API_BASE}/experts/${expertModelId}/conflicts`),
-        fetch(`${API_BASE}/experts/${expertModelId}/conflict-score`)
+        apiFetch(`${API_BASE}/experts/${expertModelId}/conflicts`),
+        apiFetch(`${API_BASE}/experts/${expertModelId}/conflict-score`)
       ]);
       if (!relsRes.ok) throw new Error('Failed to fetch conflict relationships');
       const conflicts = await relsRes.json();
@@ -800,7 +914,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   runConflictScan: async (expertModelId: number) => {
     set({ conflictScanLoading: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/experts/${expertModelId}/conflict-scan`, {
+      const res = await apiFetch(`${API_BASE}/experts/${expertModelId}/conflict-scan`, {
         method: 'POST',
       });
       if (!res.ok) throw new Error('Conflict scan failed');
@@ -822,7 +936,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchGovernanceInbox: async (projectId: number) => {
     set({ governanceInboxLoading: true });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/governance/inbox`);
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/governance/inbox`);
       if (!res.ok) throw new Error('Failed to fetch governance inbox');
       const data = await res.json();
       set({ governanceInbox: data, governanceInboxLoading: false });
@@ -837,7 +951,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchConnectors: async (projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/connectors`);
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/connectors`);
       if (res.ok) set({ sourceConnectors: await res.json() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -846,7 +960,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   createConnector: async (projectId: number, name: string, rootPath: string, extensions?: string) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/connectors`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/connectors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, root_path: rootPath, include_extensions: extensions || null }),
@@ -863,7 +977,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   scanConnector: async (connectorId: number, projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/connectors/${connectorId}/scan`, { method: 'POST' });
+      const res = await apiFetch(`${API_BASE}/connectors/${connectorId}/scan`, { method: 'POST' });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.detail || 'Failed to start scan');
@@ -876,7 +990,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchIngestionJobs: async (projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/ingestion-jobs`);
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/ingestion-jobs`);
       if (res.ok) set({ ingestionJobs: await res.json() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -885,7 +999,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchJobFiles: async (jobId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/ingestion-jobs/${jobId}/files`);
+      const res = await apiFetch(`${API_BASE}/ingestion-jobs/${jobId}/files`);
       if (res.ok) {
         const data = await res.json();
         set({ jobFiles: { ...get().jobFiles, [jobId]: data } });
@@ -899,7 +1013,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchLLMSettings: async () => {
     try {
-      const res = await fetch(`${API_BASE}/settings/llm`);
+      const res = await apiFetch(`${API_BASE}/settings/llm`);
       if (res.ok) set({ llmSettings: await res.json() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -908,10 +1022,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   updateLLMSetting: async (fn: string, model: string | null) => {
     try {
-      const res = await fetch(`${API_BASE}/settings/llm/${fn}`, {
+      const res = await apiFetch(`${API_BASE}/settings/llm/${fn}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ model, actor: 'GovernanceOfficer' }),
+        body: JSON.stringify({ model }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -927,7 +1041,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchApprovalPolicies: async (projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/approval-policies`);
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/approval-policies`);
       if (res.ok) set({ approvalPolicies: await res.json() });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
@@ -936,10 +1050,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   createApprovalPolicy: async (projectId: number, name: string, assetTypes: string[], connectorId: number | null) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/approval-policies`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/approval-policies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, asset_types: assetTypes, connector_id: connectorId, created_by: 'GovernanceOfficer' }),
+        body: JSON.stringify({ name, asset_types: assetTypes, connector_id: connectorId }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -953,7 +1067,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   toggleApprovalPolicy: async (policyId: number, enabled: boolean, projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/approval-policies/${policyId}?actor=GovernanceOfficer`, {
+      const res = await apiFetch(`${API_BASE}/approval-policies/${policyId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ enabled }),
@@ -970,12 +1084,12 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   // Records a VERIFICATION_REVIEWED audit event; the verdict artifact itself
   // is immutable and never changes.
-  reviewClaimVerdict: async (verdictId: number, reviewer: string, comment: string) => {
+  reviewClaimVerdict: async (verdictId: number, comment: string) => {
     try {
-      const res = await fetch(`${API_BASE}/claim-verdicts/${verdictId}/review`, {
+      const res = await apiFetch(`${API_BASE}/claim-verdicts/${verdictId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ reviewer, comment }),
+        body: JSON.stringify({ comment }),
       });
       if (!res.ok) throw new Error('Failed to record verification review');
       get().fetchAuditTrail();
@@ -986,7 +1100,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchAgentActivity: async () => {
     try {
-      const res = await fetch(`${API_BASE}/agents/activity`);
+      const res = await apiFetch(`${API_BASE}/agents/activity`);
       if (!res.ok) throw new Error('Failed to fetch agent activity');
       const data = await res.json();
       set({ agentActivity: data });
@@ -1002,7 +1116,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchCoverageTrend: async (expertModelId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/experts/${expertModelId}/coverage-trend`);
+      const res = await apiFetch(`${API_BASE}/experts/${expertModelId}/coverage-trend`);
       if (!res.ok) throw new Error('Failed to fetch coverage trend');
       const data = await res.json();
       set({ coverageTrend: data });
@@ -1014,8 +1128,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   fetchEvaluations: async (projectId: number) => {
     try {
       const [bRes, rRes] = await Promise.all([
-        fetch(`${API_BASE}/projects/${projectId}/benchmarks`),
-        fetch(`${API_BASE}/projects/${projectId}/evaluations`)
+        apiFetch(`${API_BASE}/projects/${projectId}/benchmarks`),
+        apiFetch(`${API_BASE}/projects/${projectId}/evaluations`)
       ]);
       const benchmarks = bRes.ok ? await bRes.json() : [];
       const evaluationRuns = rRes.ok ? await rRes.json() : [];
@@ -1027,7 +1141,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   createBenchmark: async (projectId: number, payload: Record<string, unknown>) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/benchmarks`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/benchmarks`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ ...payload, project_id: projectId }),
@@ -1044,7 +1158,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   deleteBenchmark: async (projectId: number, benchmarkId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/benchmarks/${benchmarkId}`, { method: 'DELETE' });
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/benchmarks/${benchmarkId}`, { method: 'DELETE' });
       if (!res.ok) throw new Error('Failed to delete benchmark question');
       await get().fetchEvaluations(projectId);
     } catch (err) {
@@ -1055,7 +1169,7 @@ export const useAppStore = create<AppState>((set, get) => ({
   startEvaluation: async (projectId: number, expertModelId: number) => {
     set({ evaluationRunning: true, error: null });
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/evaluations`, {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/evaluations`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ project_id: projectId, expert_model_id: expertModelId }),
@@ -1068,7 +1182,7 @@ export const useAppStore = create<AppState>((set, get) => ({
       // The batch executes server-side in the background: poll until terminal.
       for (let i = 0; i < 200; i++) {
         await new Promise(resolve => setTimeout(resolve, 3000));
-        const statusRes = await fetch(`${API_BASE}/projects/${projectId}/evaluations/${run.id}`);
+        const statusRes = await apiFetch(`${API_BASE}/projects/${projectId}/evaluations/${run.id}`);
         if (!statusRes.ok) continue;
         const current = await statusRes.json();
         await get().fetchEvaluations(projectId);
@@ -1085,7 +1199,7 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   fetchRevisionQueue: async (projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/projects/${projectId}/revisions`);
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/revisions`);
       if (!res.ok) throw new Error('Failed to fetch revision queue');
       const data = await res.json();
       set({ revisionQueue: data });
@@ -1096,10 +1210,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reviewRevision: async (revisionId: number, action: string, notes: string, projectId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/revisions/${revisionId}/review`, {
+      const res = await apiFetch(`${API_BASE}/revisions/${revisionId}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action, reviewer: 'GovernanceOfficer', notes }),
+        body: JSON.stringify({ action, notes }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -1116,10 +1230,10 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   reviewConflict: async (relationshipId: number, status: string, notes: string | null, expertModelId: number) => {
     try {
-      const res = await fetch(`${API_BASE}/conflicts/${relationshipId}`, {
+      const res = await apiFetch(`${API_BASE}/conflicts/${relationshipId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ status, reviewer: 'GovernanceOfficer', notes }),
+        body: JSON.stringify({ status, notes }),
       });
       if (!res.ok) throw new Error('Failed to record conflict review');
       await get().fetchConflicts(expertModelId);

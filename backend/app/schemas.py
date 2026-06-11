@@ -165,7 +165,7 @@ class SourceConnectorResponse(BaseModel):
 
 class LLMFunctionSettingUpdate(BaseModel):
     model: Optional[str] = None  # None/empty clears the row -> env/default resolution
-    actor: Optional[str] = "operator"
+    # v1.0: no actor field - the identity boundary decides the actor.
 
 class LLMFunctionSettingResponse(BaseModel):
     function: str
@@ -179,7 +179,7 @@ class ApprovalPolicyCreate(BaseModel):
     name: str
     asset_types: List[str]  # subset of the allowed KnowledgeAsset types
     connector_id: Optional[int] = None  # None = applies to any source, incl. manual upload
-    created_by: Optional[str] = "operator"
+    # v1.0: no created_by field - the identity boundary decides the actor.
 
 class ApprovalPolicyUpdate(BaseModel):
     name: Optional[str] = None
@@ -341,8 +341,8 @@ class ConflictScoreResponse(BaseModel):
 
 class ConflictReviewUpdate(BaseModel):
     status: str # CONFIRMED | DISMISSED
-    reviewer: Optional[str] = "operator"
     notes: Optional[str] = None
+    # v1.0: no reviewer field - the identity boundary decides the actor.
 
 class TrustComponent(BaseModel):
     key: str
@@ -363,12 +363,12 @@ class TrustScoreResponse(BaseModel):
 class AssetRevisionCreate(BaseModel):
     content: str
     change_reason: Optional[str] = None
-    actor: Optional[str] = "operator"
+    # v1.0: no actor field - the identity boundary decides the actor.
 
 class RevisionReviewUpdate(BaseModel):
     action: str # APPROVE | REJECT
-    reviewer: Optional[str] = "operator"
     notes: Optional[str] = None
+    # v1.0: no reviewer field - the identity boundary decides the actor.
 
 class AssetRevisionResponse(BaseModel):
     id: int
@@ -453,8 +453,27 @@ class ClaimVerdictResponse(BaseModel):
         from_attributes = True
 
 class VerificationReviewCreate(BaseModel):
-    reviewer: Optional[str] = "operator"
     comment: Optional[str] = None
+    # v1.0: no reviewer field - the identity boundary decides the actor.
+
+# Identity Boundary v1.0 (docs/identity-boundary-v1.md)
+class LoginRequest(BaseModel):
+    name: str
+    password: str
+
+class ChangePasswordRequest(BaseModel):
+    current_password: str
+    new_password: str
+
+class AuthIdentityResponse(BaseModel):
+    name: str
+    display_name: str
+    role: Optional[str] = None
+    kind: str
+    must_change_password: bool = False
+
+class LoginResponse(AuthIdentityResponse):
+    token: str
 
 class EvaluationQuestionResultResponse(BaseModel):
     id: int

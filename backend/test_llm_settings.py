@@ -15,6 +15,7 @@ from app import schemas
 from app import crud
 from app import llm
 from app.main import list_llm_settings, update_llm_setting
+import test_support
 
 # v0.12.0 resolver precedence suite - the executable form of the central
 # invariant (D19 candidate): DB config missing -> OPENAI_MODEL env ->
@@ -29,6 +30,7 @@ def main():
     db.SessionLocal = TestingSessionLocal  # sessionless resolver calls use this
     session = TestingSessionLocal()
     crud.get_or_create_default_customer(session)
+    officer = test_support.governed_actor(session, "GovernanceOfficer")
 
     # Part 1: empty config + no env = prior behavior, for every function.
     print("\n--- Part 1: Empty config -> gpt-4o-mini default ---")
@@ -48,7 +50,7 @@ def main():
     # Part 3: DB config wins over env; audited with old/new.
     print("\n--- Part 3: Config tier wins; LLM_CONFIG_UPDATED audited ---")
     resp = update_llm_setting("extraction", schemas.LLMFunctionSettingUpdate(
-        model="gpt-4.1-mini", actor="GovernanceOfficer"), db_session=session)
+        model="gpt-4.1-mini"), db_session=session, actor=officer)
     assert resp.configured_model == "gpt-4.1-mini" and resp.source == "CONFIG"
     r = llm.resolve("EXTRACTION", session)
     assert r["model"] == "gpt-4.1-mini" and r["source"] == "CONFIG", r
@@ -63,7 +65,7 @@ def main():
     # Part 4: clearing the model resets the function to env/default.
     print("\n--- Part 4: Clearing resets resolution ---")
     resp = update_llm_setting("EXTRACTION", schemas.LLMFunctionSettingUpdate(
-        model=None, actor="GovernanceOfficer"), db_session=session)
+        model=None), db_session=session, actor=officer)
     assert resp.configured_model is None and resp.source == "ENV" and resp.effective_model == "gpt-4o"
     os.environ.pop("OPENAI_MODEL", None)
     r = llm.resolve("EXTRACTION", session)
@@ -77,7 +79,7 @@ def main():
     print("\n--- Part 5: Validation and listing ---")
     try:
         update_llm_setting("SALARY_NEGOTIATION", schemas.LLMFunctionSettingUpdate(model="x"),
-                           db_session=session)
+                           db_session=session, actor=officer)
         raise AssertionError("Unknown function must be rejected")
     except Exception as e:
         assert "Unknown LLM function" in str(e), str(e)

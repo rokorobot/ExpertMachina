@@ -9,6 +9,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import query_engine
+import test_support
 
 def test_grounded_generation():
     print("\nInitializing test database for Answer Generation checks...")
@@ -23,16 +24,20 @@ def test_grounded_generation():
     # Prepopulate default customer
     customer = crud.get_or_create_default_customer(session)
     
+    actor = test_support.governed_actor(session)
+
     # 1. Create Project
     project = crud.create_project(
-        session, 
-        schemas.ProjectCreate(name="Generation Test Project", description="Testing grounded prompts", customer_id=customer.id)
+        session,
+        schemas.ProjectCreate(name="Generation Test Project", description="Testing grounded prompts", customer_id=customer.id),
+        actor=actor
     )
-    
+
     # Create Expert Model with NO assets
     model_empty = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Empty Expert Model", description="No assets", project_id=project.id, asset_ids=[])
+        schemas.ExpertModelCreate(name="Empty Expert Model", description="No assets", project_id=project.id, asset_ids=[]),
+        actor=actor
     )
 
     # --- TEST A: Fallback with no evidence ---

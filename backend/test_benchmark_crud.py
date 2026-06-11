@@ -9,6 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from app import database as db
 from app import schemas
 from app import crud
+import test_support
 
 def test_benchmark_crud():
     print("\nInitializing test database for Benchmark CRUD...")
@@ -24,7 +25,8 @@ def test_benchmark_crud():
     # Create Project
     project = crud.create_project(
         session,
-        schemas.ProjectCreate(name="Benchmark Test Project", description="Testing Sprint 1", customer_id=customer.id)
+        schemas.ProjectCreate(name="Benchmark Test Project", description="Testing Sprint 1", customer_id=customer.id),
+        actor=test_support.governed_actor(session)
     )
 
     # 1. Create Benchmark Question

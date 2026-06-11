@@ -10,6 +10,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import extraction
+import test_support
 
 def run_audit_test():
     print("Initializing test database for security and audit checks...")
@@ -19,13 +20,15 @@ def run_audit_test():
     try:
         # Setup customer & project
         customer = crud.get_or_create_default_customer(session)
+        auditor = test_support.governed_actor(session, "Auditor")
         project = crud.create_project(
             session,
             schemas.ProjectCreate(
                 name="Security Audit Project",
                 description="Testing provenance, bypass prevention, and manifest reproducibility.",
                 customer_id=customer.id
-            )
+            ),
+            actor=auditor
         )
         
         # Ingest document
@@ -35,7 +38,7 @@ def run_audit_test():
         with open(file_path, "w", encoding="utf-8") as f:
             f.write("SOP-888: Thermal Control Procedures.\nPolicy: Thermal sensors must be calibrated daily by Safety Officers.\nProcedure: 1. Calibrate sensor A. 2. Verify limits.")
             
-        doc = crud.create_document(session, project.id, filename, file_path, "Safety", "Safety Officer")
+        doc = crud.create_document(session, project.id, filename, file_path, "Safety", "Safety Officer", actor=auditor)
         ingestion.parse_and_index_document(session, doc.id)
         extraction.extract_knowledge_assets_from_project(session, project.id)
         
@@ -53,7 +56,7 @@ def run_audit_test():
             session,
             asset_id=target_asset.id,
             update=schemas.KnowledgeAssetUpdate(status="ARCHIVED"),
-            actor="Auditor"
+            actor=auditor
         )
         # Attempt direct database/API grouping of this rejected asset into an Expert Model
         model_in = schemas.ExpertModelCreate(
@@ -64,7 +67,7 @@ def run_audit_test():
         )
         
         try:
-            crud.create_expert_model(session, model_in)
+            crud.create_expert_model(session, model_in, actor=auditor)
             assert False, "Bypass Failed: Rejected asset was grouped into model without raising an error!"
         except ValueError as e:
             print(f"Bypass prevention successfully threw error: {e}")
@@ -83,7 +86,7 @@ def run_audit_test():
             session,
             asset_id=target_asset.id,
             update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
-            actor="Auditor"
+            actor=auditor
         )
         # Re-build expert model with now approved asset
         model_ok = crud.create_expert_model(
@@ -93,7 +96,8 @@ def run_audit_test():
                 description="Governed grouping",
                 project_id=project.id,
                 asset_ids=[target_asset.id]
-            )
+            ),
+            actor=auditor
         )
         assert model_ok.asset_count == 1
         
@@ -105,7 +109,8 @@ def run_audit_test():
                 expert_model_id=model_ok.id,
                 project_id=project.id,
                 governance_version="1.0.0"
-            )
+            ),
+            actor=auditor
         )
         
         # Parse serialized metadata
@@ -140,7 +145,8 @@ def run_audit_test():
                 expert_model_id=model_ok.id,
                 project_id=project.id,
                 governance_version="1.0.0"
-            )
+            ),
+            actor=auditor
         )
         
         # Manifest comparison

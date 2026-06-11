@@ -17,6 +17,7 @@ from app import schemas
 from app import crud
 from app import revisions
 from app import trust
+import test_support
 
 
 def make_asset(session, project, doc, name, content):
@@ -28,7 +29,8 @@ def make_asset(session, project, doc, name, content):
         type="POLICY", name=name, content=content, project_id=project.id,
         document_id=doc.id, chunk_id=chunk.id, source_page=1, source_section="S1",
         source_hash=hashlib.sha256(content.encode()).hexdigest()))
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa_lead")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
+                                actor=test_support.governed_actor(session, "qa_lead"))
     return asset
 
 
@@ -40,14 +42,15 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
-    project = crud.create_project(session, schemas.ProjectCreate(name="Trust Test", description="", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="P.txt", file_path="uploads/p.txt")
+    qa_lead = test_support.governed_actor(session, "qa_lead")
+    project = crud.create_project(session, schemas.ProjectCreate(name="Trust Test", description="", customer_id=customer.id), actor=qa_lead)
+    doc = crud.create_document(session, project_id=project.id, filename="P.txt", file_path="uploads/p.txt", actor=qa_lead)
 
     # --- Model A: rich data with governance debt ---
     a1 = make_asset(session, project, doc, "Policy A", "Customer data must be deleted after 30 days.")
     a2 = make_asset(session, project, doc, "Policy B", "Customer data must be retained indefinitely.")
     model_a = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Rich Model", description="", project_id=project.id, asset_ids=[a1.id, a2.id]))
+        name="Rich Model", description="", project_id=project.id, asset_ids=[a1.id, a2.id]), actor=qa_lead)
 
     # Completed evaluation run: pass rate 0.8, avg coverage 0.9.
     session.add(db.EvaluationRun(
@@ -64,7 +67,7 @@ def main():
     session.commit()
     # One pending candidate revision.
     revisions.create_candidate_revision(session, a1.id, "Customer data must be deleted after 60 days.",
-                                        actor="editor", change_reason="test")
+                                        actor=test_support.governed_actor(session, "editor"), change_reason="test")
 
     print("\n--- Part 1: Hierarchical score with full breakdown ---")
     result = trust.compute_trust_score(session, model_a.id)
@@ -88,7 +91,7 @@ def main():
     print("\n--- Part 2: Unmeasured components are excluded, never fabricated ---")
     b1 = make_asset(session, project, doc, "Clean Policy", "Visitors must sign in at reception.")
     model_b = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Bare Model", description="", project_id=project.id, asset_ids=[b1.id]))
+        name="Bare Model", description="", project_id=project.id, asset_ids=[b1.id]), actor=qa_lead)
     result_b = trust.compute_trust_score(session, model_b.id)
     by_key_b = {c["key"]: c for c in result_b["components"]}
     assert by_key_b["evaluation_reliability"]["measured"] is False

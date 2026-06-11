@@ -4,6 +4,7 @@ import uuid
 from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
+from app import identity
 
 # Customer helpers
 def get_or_create_default_customer(session: Session) -> db.Customer:
@@ -38,7 +39,8 @@ def log_audit_event(session: Session, actor: str, event_type: str, target_id: st
 def get_projects(session: Session, customer_id: int):
     return session.query(db.Project).filter(db.Project.customer_id == customer_id).all()
 
-def create_project(session: Session, project: schemas.ProjectCreate):
+def create_project(session: Session, project: schemas.ProjectCreate, actor: identity.Actor = None):
+    actor = identity.require_actor_object(actor)
     db_project = db.Project(
         name=project.name,
         description=project.description,
@@ -48,7 +50,8 @@ def create_project(session: Session, project: schemas.ProjectCreate):
     session.add(db_project)
     session.commit()
     session.refresh(db_project)
-    log_audit_event(session, actor="user", event_type="PROJECT_CREATED", target_id=str(db_project.id), details=f"Project '{db_project.name}' created.")
+    log_audit_event(session, actor=actor.display, event_type="PROJECT_CREATED", target_id=str(db_project.id),
+                    details=f"Project '{db_project.name}' created.", identity_fact_id=actor.fact(session).id)
     return db_project
 
 def update_project_status(session: Session, project_id: int, status: str):
@@ -110,7 +113,11 @@ def update_document_lifecycle(session: Session, document_id: int):
         
     session.commit()
 
-def create_document(session: Session, project_id: int, filename: str, file_path: str, department: str = "General", owner: str = "System"):
+def create_document(session: Session, project_id: int, filename: str, file_path: str, department: str = "General", owner: str = "System",
+                    actor: identity.Actor = None):
+    # owner/department are DOCUMENT METADATA (who owns the content); actor is
+    # WHO PERFORMED the upload - boundary-decided, never caller-asserted.
+    actor = identity.require_actor_object(actor)
     db_doc = db.Document(
         project_id=project_id,
         filename=filename,
@@ -126,7 +133,8 @@ def create_document(session: Session, project_id: int, filename: str, file_path:
     session.add(db_doc)
     session.commit()
     session.refresh(db_doc)
-    log_audit_event(session, actor=owner, event_type="DOCUMENT_UPLOADED", target_id=str(db_doc.id), details=f"Uploaded document: {filename}")
+    log_audit_event(session, actor=actor.display, event_type="DOCUMENT_UPLOADED", target_id=str(db_doc.id),
+                    details=f"Uploaded document: {filename}", identity_fact_id=actor.fact(session).id)
     return db_doc
 
 def get_document_chunks(session: Session, document_id: int):
@@ -164,12 +172,13 @@ def create_knowledge_asset(session: Session, asset: schemas.KnowledgeAssetCreate
     log_audit_event(session, actor="system", event_type="ASSET_GENERATED", target_id=str(db_asset.id), details=f"Generated asset: [{db_asset.type}] {db_asset.name} via {db_asset.extraction_method}")
     return db_asset
 
-def update_knowledge_asset(session: Session, asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "user",
+def update_knowledge_asset(session: Session, asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: identity.Actor = None,
                            audit_event_type: str = None, audit_details: str = None, review_notes: str = None):
     # audit_event_type/audit_details/review_notes let a policy approval carry
     # its own audit fingerprint (ASSET_AUTO_APPROVED + provenance JSON) while
     # going through this single approval transition path - same AssetReview,
     # same baseline revision, same document lifecycle as a human approval.
+    actor = identity.require_actor_object(actor)
     asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
     if not asset:
         return None
@@ -203,13 +212,15 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
     if status_change:
         old_st, new_st = status_change
         event_t = audit_event_type or ("ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED")
-        log_audit_event(session, actor=actor, event_type=event_t, target_id=str(asset.id),
-                        details=audit_details or f"Asset status updated from {old_st} to {new_st}")
+        log_audit_event(session, actor=actor.display, event_type=event_t, target_id=str(asset.id),
+                        details=audit_details or f"Asset status updated from {old_st} to {new_st}",
+                        identity_fact_id=actor.fact(session).id)
         if new_st == "APPROVED":
             # Record the approval as a review row so citations carry real
             # approver provenance instead of fabricated defaults.
-            session.add(db.AssetReview(asset_id=asset.id, approver=actor,
-                                       notes=review_notes or f"Approved (status changed from {old_st})"))
+            session.add(db.AssetReview(asset_id=asset.id, approver=actor.display,
+                                       notes=review_notes or f"Approved (status changed from {old_st})",
+                                       identity_fact_id=actor.fact(session).id))
             session.commit()
             # Lazy revision adoption: first approval creates revision 1
             # from the asset's current state.
@@ -218,8 +229,9 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
         if asset.document_id:
             update_document_lifecycle(session, asset.document_id)
     else:
-        log_audit_event(session, actor=actor, event_type="ASSET_UPDATED", target_id=str(asset.id), details="Asset metadata updated manually")
-        
+        log_audit_event(session, actor=actor.display, event_type="ASSET_UPDATED", target_id=str(asset.id),
+                        details="Asset metadata updated manually", identity_fact_id=actor.fact(session).id)
+
     return asset
 
 # Asset Reviews
@@ -256,23 +268,25 @@ def create_quality_score(session: Session, asset_id: int, score: schemas.Quality
 def get_expert_models(session: Session, project_id: int):
     return session.query(db.ExpertModel).filter(db.ExpertModel.project_id == project_id).all()
 
-def create_expert_model(session: Session, model_in: schemas.ExpertModelCreate):
+def create_expert_model(session: Session, model_in: schemas.ExpertModelCreate, actor: identity.Actor = None):
+    actor = identity.require_actor_object(actor)
     # Retrieve all requested assets to verify status
     assets = session.query(db.KnowledgeAsset).filter(
         db.KnowledgeAsset.id.in_(model_in.asset_ids)
     ).all()
-    
+
     if len(assets) != len(model_in.asset_ids):
         raise ValueError("One or more asset IDs are invalid or do not exist in the workspace.")
-        
+
     for asset in assets:
         if asset.status != "APPROVED":
             log_audit_event(
-                session, 
-                actor="system", 
-                event_type="GOVERNANCE_BLOCKED_NON_APPROVED_ASSET", 
-                target_id=str(asset.id), 
-                details=f"Expert Model compilation blocked: asset '{asset.name}' (ID: {asset.id}) is in status '{asset.status}' (must be APPROVED)."
+                session,
+                actor=actor.display,
+                event_type="GOVERNANCE_BLOCKED_NON_APPROVED_ASSET",
+                target_id=str(asset.id),
+                details=f"Expert Model compilation blocked: asset '{asset.name}' (ID: {asset.id}) is in status '{asset.status}' (must be APPROVED).",
+                identity_fact_id=actor.fact(session).id
             )
             raise ValueError(f"Asset '{asset.name}' (ID: {asset.id}) is in status '{asset.status}'. Only APPROVED assets can be grouped.")
     
@@ -309,14 +323,17 @@ def create_expert_model(session: Session, model_in: schemas.ExpertModelCreate):
     session.commit()
     session.refresh(db_model)
     
-    log_audit_event(session, actor="user", event_type="EXPERT_MODEL_CREATED", target_id=str(db_model.id), details=f"Expert model '{db_model.name}' constructed with {count} grouped assets.")
+    log_audit_event(session, actor=actor.display, event_type="EXPERT_MODEL_CREATED", target_id=str(db_model.id),
+                    details=f"Expert model '{db_model.name}' constructed with {count} grouped assets.",
+                    identity_fact_id=actor.fact(session).id)
     return db_model
 
 # Agent Packages
 def get_agent_packages(session: Session, project_id: int):
     return session.query(db.AgentPackage).filter(db.AgentPackage.project_id == project_id).all()
 
-def create_agent_package(session: Session, package_in: schemas.AgentPackageCreate):
+def create_agent_package(session: Session, package_in: schemas.AgentPackageCreate, actor: identity.Actor = None):
+    actor = identity.require_actor_object(actor)
     model = session.query(db.ExpertModel).filter(db.ExpertModel.id == package_in.expert_model_id).first()
     if not model:
         return None
@@ -327,14 +344,15 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
     if not gate["allowed"]:
         log_audit_event(
             session,
-            actor="user",
+            actor=actor.display,
             event_type="GOVERNANCE_BLOCKED_UNRESOLVED_CONFLICTS",
             target_id=str(package_in.expert_model_id),
             details=json.dumps({
                 "attempted_package_name": package_in.name,
                 "blocking_conflicts": gate["blocking_conflicts"],
                 "policy": gate["policy"]
-            })
+            }),
+            identity_fact_id=actor.fact(session).id
         )
         reasons = sorted({b["reason"] for b in gate["blocking_conflicts"]})
         raise ValueError(
@@ -389,8 +407,9 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
     # it and the tamper-evident package hash.
     log_audit_event(
         session,
-        actor="user",
+        actor=actor.display,
         event_type="AGENT_PACKAGE_CREATED",
+        identity_fact_id=actor.fact(session).id,
         target_id=str(db_package.id),
         details=json.dumps({
             "package_name": db_package.name,
@@ -432,14 +451,17 @@ def get_audit_events(session: Session, limit: int = 100, event_prefix: str = Non
     return query.order_by(db.AuditEvent.timestamp.desc()).limit(limit).all()
 
 # Delete Operations
-def delete_knowledge_asset(session: Session, asset_id: int, actor: str = "system"):
+def delete_knowledge_asset(session: Session, asset_id: int, actor: identity.Actor = None):
+    actor = identity.require_actor_object(actor)
     asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
     if asset:
         asset_name = asset.name
         asset_type = asset.type
         doc_id = asset.document_id
         # Log to ledger
-        log_audit_event(session, actor=actor, event_type="ASSET_DELETED", target_id=str(asset_id), details=f"Permanently deleted asset: [{asset_type}] {asset_name}")
+        log_audit_event(session, actor=actor.display, event_type="ASSET_DELETED", target_id=str(asset_id),
+                        details=f"Permanently deleted asset: [{asset_type}] {asset_name}",
+                        identity_fact_id=actor.fact(session).id)
         session.delete(asset)
         session.commit()
         
@@ -448,20 +470,23 @@ def delete_knowledge_asset(session: Session, asset_id: int, actor: str = "system
         return True
     return False
 
-def delete_knowledge_assets_by_document(session: Session, document_id: int, status: str = None, actor: str = "system"):
+def delete_knowledge_assets_by_document(session: Session, document_id: int, status: str = None, actor: identity.Actor = None):
+    actor = identity.require_actor_object(actor)
     query = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.document_id == document_id)
     if status:
         query = query.filter(db.KnowledgeAsset.status == status)
-    
+
     assets = query.all()
     count = len(assets)
     if count > 0:
         doc = session.query(db.Document).filter(db.Document.id == document_id).first()
         doc_name = doc.filename if doc else f"Doc #{document_id}"
         status_label = f" with status '{status}'" if status else ""
-        
+
         # Log bulk deletion
-        log_audit_event(session, actor=actor, event_type="BULK_ASSETS_DELETED", target_id=str(document_id), details=f"Bulk deleted {count} assets{status_label} from document '{doc_name}'")
+        log_audit_event(session, actor=actor.display, event_type="BULK_ASSETS_DELETED", target_id=str(document_id),
+                        details=f"Bulk deleted {count} assets{status_label} from document '{doc_name}'",
+                        identity_fact_id=actor.fact(session).id)
         
         for asset in assets:
             session.delete(asset)

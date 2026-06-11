@@ -18,13 +18,15 @@ from app import crud
 from app import evaluation
 from app import governance_inbox
 from app import main as app_main
+import test_support
 
 
 def make_fixture(session):
     customer = crud.get_or_create_default_customer(session)
+    qa = test_support.governed_actor(session, "qa")
     project = crud.create_project(session, schemas.ProjectCreate(
-        name="Verdict Test", description="Persisted verification verdicts", customer_id=customer.id))
-    doc = crud.create_document(session, project_id=project.id, filename="SLA.txt", file_path="uploads/sla.txt")
+        name="Verdict Test", description="Persisted verification verdicts", customer_id=customer.id), actor=qa)
+    doc = crud.create_document(session, project_id=project.id, filename="SLA.txt", file_path="uploads/sla.txt", actor=qa)
     text = "Deliveries exceeding SLA deadline by 48 hours receive 15% refund."
     chunk = db.DocumentChunk(document_id=doc.id, text=text, chunk_index=0)
     session.add(chunk)
@@ -34,9 +36,9 @@ def make_fixture(session):
         type="POLICY", name="SLA Refund Policy", content=text, project_id=project.id,
         document_id=doc.id, chunk_id=chunk.id, source_page=1, source_section="S1",
         source_hash=hashlib.sha256(text.encode()).hexdigest()))
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=qa)
     model = crud.create_expert_model(session, schemas.ExpertModelCreate(
-        name="Verdict Expert", description="", project_id=project.id, asset_ids=[asset.id]))
+        name="Verdict Expert", description="", project_id=project.id, asset_ids=[asset.id]), actor=qa)
     crud.create_benchmark_question(session, schemas.BenchmarkQuestionCreate(
         project_id=project.id, question="What is the SLA refund percentage?",
         expected_claims=[text], expected_answer_type="FACTUAL",
@@ -128,8 +130,8 @@ def main():
     before = (gap_unsup.verdict, gap_unsup.confidence, gap_unsup.evaluator_id)
     response = app_main.review_claim_verdict(
         gap_unsup.id,
-        schemas.VerificationReviewCreate(reviewer="robert", comment="Evidence exists in SOP-17 appendix."),
-        db_session=session)
+        schemas.VerificationReviewCreate(comment="Evidence exists in SOP-17 appendix."),
+        db_session=session, actor=test_support.governed_actor(session, "robert"))
     assert response["event_type"] == "VERIFICATION_REVIEWED"
     event = session.query(db.AuditEvent).filter(
         db.AuditEvent.event_type == "VERIFICATION_REVIEWED",

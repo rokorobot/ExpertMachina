@@ -18,6 +18,7 @@ from app import ingestion
 from app.connectors import framework
 from app.connectors.exceptions import FetchError
 from app.connectors.models import ConnectorFetchResult, ConnectorItem
+import test_support
 
 # Seam tests (MVP 0.11 Step 10): prove the provider/framework BOUNDARY, not
 # the behavior - behavior is proven by the unchanged pre-0.11 suites. A fake
@@ -85,8 +86,9 @@ def main():
     session = TestingSessionLocal()
 
     customer = crud.get_or_create_default_customer(session)
+    seam_tester = test_support.governed_actor(session, "SeamTester")
     project = crud.create_project(session, schemas.ProjectCreate(
-        name="Seam Test", description="Provider/framework boundary", customer_id=customer.id))
+        name="Seam Test", description="Provider/framework boundary", customer_id=customer.id), actor=seam_tester)
     connector = db.SourceConnector(project_id=project.id, name="Fake Source", type="LOCAL_FOLDER",
                                    root_path="fake://nowhere", include_extensions=".txt")
     session.add(connector)
@@ -163,7 +165,7 @@ def main():
         db.KnowledgeAsset.type == "SYSTEM").first()
     assert system_asset, "Seed extraction must produce the SYSTEM asset"
     crud.update_knowledge_asset(session, system_asset.id,
-                                schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="SeamTester")
+                                schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=seam_tester)
 
     both = FakeProvider([
         ("fake://docs/h", "h.txt", SYSTEM_V2.encode(), meta_t1),   # CHANGED first

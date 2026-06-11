@@ -261,6 +261,80 @@ def resolve_token(session: Session, token: str):
     return principal, cred
 
 
+# ------------------------------------------------------------------ actor
+
+class Actor:
+    """Boundary-decided identity, handed to routes and the service layer.
+    This object is the ONLY way a write path learns who acts - crud and
+    the governance modules refuse plain strings (the structural seam:
+    `?actor=GovernanceOfficer` cannot influence what gets recorded).
+    fact() mints the IdentityFact lazily, once per Actor - one fact per
+    authenticated request performing a governed write."""
+
+    def __init__(self, principal: db.Principal, method: str,
+                 credential: db.Credential = None,
+                 on_behalf_of: db.IdentityFact = None):
+        if method not in AUTH_METHODS:
+            raise ValueError(f"Unknown authentication method: {method}")
+        self.principal = principal
+        self.method = method
+        self.credential = credential
+        self.on_behalf_of = on_behalf_of
+        self._fact = None
+
+    @property
+    def name(self) -> str:
+        return self.principal.name
+
+    @property
+    def display(self) -> str:
+        return self.principal.display_name
+
+    def fact(self, session: Session) -> db.IdentityFact:
+        if self._fact is None:
+            self._fact = mint_fact(session, self.principal, self.method,
+                                   credential=self.credential,
+                                   on_behalf_of=self.on_behalf_of)
+        return self._fact
+
+
+def require_actor_object(actor) -> "Actor":
+    """The seam guarantee, callable from any governed write path: a string
+    actor is a caller proposing identity past the boundary - refused."""
+    if not isinstance(actor, Actor):
+        raise TypeError(
+            "String actors no longer cross the boundary (D20): governed writes "
+            "take an identity.Actor decided by the boundary, not a caller-"
+            f"supplied value (got {type(actor).__name__!r})")
+    return actor
+
+
+def system_actor(session: Session, name: str = "system") -> Actor:
+    """The platform acting as itself."""
+    principal = get_principal(session, name)
+    if principal is None:
+        ensure_system_principals(session)
+        principal = get_principal(session, name)
+    if principal is None or principal.kind != "SYSTEM":
+        raise ValueError(f"'{name}' is not a SYSTEM principal")
+    return Actor(principal, method="INTERNAL")
+
+
+def delegated_actor(session: Session, name: str, display_name: str = None,
+                    on_behalf_of: db.IdentityFact = None) -> Actor:
+    """policy:X / connector:Y acting under delegated authority.
+    on_behalf_of carries WHO authorized (identity chain only); the causal
+    WHY stays in ActionContext - governed objects and D17 provenance."""
+    principal = ensure_delegated_principal(session, name, display_name)
+    return Actor(principal, method="DELEGATED", on_behalf_of=on_behalf_of)
+
+
+def get_fact(session: Session, fact_id: int) -> db.IdentityFact:
+    """Re-fetch a fact in a different session (background tasks receive
+    fact IDs, never live ORM objects)."""
+    return session.query(db.IdentityFact).filter_by(id=fact_id).first() if fact_id else None
+
+
 # ------------------------------------------------------------------ facts
 
 def mint_fact(session: Session, principal: db.Principal, method: str,

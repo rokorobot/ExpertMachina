@@ -11,6 +11,7 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import evaluation
+import test_support
 
 def test_evaluation_engine():
     print("\nInitializing database for Evaluation Engine checks...")
@@ -23,14 +24,17 @@ def test_evaluation_engine():
     # Prepopulate default customer
     customer = crud.get_or_create_default_customer(session)
     
+    admin = test_support.governed_actor(session, "Admin")
+
     # Create Project
     project = crud.create_project(
-        session, 
-        schemas.ProjectCreate(name="Evaluation Validation Project", description="Benchmarking tests", customer_id=customer.id)
+        session,
+        schemas.ProjectCreate(name="Evaluation Validation Project", description="Benchmarking tests", customer_id=customer.id),
+        actor=admin
     )
-    
+
     # Create mock document and chunk
-    doc = crud.create_document(session, project_id=project.id, filename="SLA_Refund.txt", file_path="uploads/SLA_Refund.txt")
+    doc = crud.create_document(session, project_id=project.id, filename="SLA_Refund.txt", file_path="uploads/SLA_Refund.txt", actor=admin)
     chunk = db.DocumentChunk(document_id=doc.id, text="Deliveries exceeding SLA deadline by 48 hours receive 15% refund.", chunk_index=0)
     session.add(chunk)
     session.commit()
@@ -53,12 +57,13 @@ def test_evaluation_engine():
             source_hash=correct_hash
         )
     )
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="Admin")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=admin)
 
     # Build Expert Model with SLA asset
     model = crud.create_expert_model(
         session,
-        schemas.ExpertModelCreate(name="Refund Expert", description="SLA rules", project_id=project.id, asset_ids=[asset.id])
+        schemas.ExpertModelCreate(name="Refund Expert", description="SLA rules", project_id=project.id, asset_ids=[asset.id]),
+        actor=admin
     )
 
     # Add Benchmark Questions representing different expected answer types and metrics constraints
@@ -136,7 +141,8 @@ def test_evaluation_engine():
     # --- SNAPSHOT REPRODUCIBILITY TEST ---
     print("\n--- Testing Snapshot Reproducibility ---")
     # Archive/Reject the SLA asset so new queries fail
-    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="ARCHIVED"), actor="Auditor")
+    crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="ARCHIVED"),
+                                actor=test_support.governed_actor(session, "Auditor"))
     
     # If we run a live query, it should return INSUFFICIENT EVIDENCE now
     from app import query_engine

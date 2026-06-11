@@ -70,6 +70,13 @@ interface ConsoleHistoryEntry {
 
 export default function Home() {
   const {
+    currentUser,
+    authReady,
+    authError,
+    login,
+    logout,
+    changePassword,
+    restoreSession,
     projects,
     activeProjectId,
     documents,
@@ -146,6 +153,14 @@ export default function Home() {
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
+
+  // Identity Boundary v1.0: login gate + change-password state
+  const [loginName, setLoginName] = useState('');
+  const [loginPassword, setLoginPassword] = useState('');
+  const [loginBusy, setLoginBusy] = useState(false);
+  const [pwCurrent, setPwCurrent] = useState('');
+  const [pwNew, setPwNew] = useState('');
+  const [pwBusy, setPwBusy] = useState(false);
   const [selectedDocFilterId, setSelectedDocFilterId] = useState<number | null>(null);
   
   // Doc Upload forms
@@ -479,8 +494,12 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchProjects();
+    restoreSession();
   }, []);
+
+  useEffect(() => {
+    if (currentUser) fetchProjects();
+  }, [currentUser]);
 
   // Hydrate governance deep-link state (?tab=conflicts&expert=11&relationship=42)
   // from the URL once on load. The assets tab stays path-based (/knowledge-assets).
@@ -685,9 +704,78 @@ export default function Home() {
   // Computed approved assets
   const approvedAssets = assets.filter(a => a.status === 'APPROVED');
 
+  // Identity Boundary v1.0 login gate: the backend refuses unauthenticated
+  // writes (401) - the UI is honest about it and asks for identity first.
+  if (!authReady) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#070b12] text-slate-400 font-mono text-sm">
+        <div className="w-4 h-4 mr-3 border-2 border-cyan-400 border-t-transparent rounded-full animate-spin"></div>
+        restoring session...
+      </div>
+    );
+  }
+  if (!currentUser) {
+    return (
+      <div className="flex h-screen items-center justify-center bg-[#070b12] text-slate-100 font-sans">
+        <div className="glass-panel rounded-2xl p-8 w-96 space-y-5 border border-slate-800">
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-cyan-400 to-emerald-500 flex items-center justify-center">
+              <Boxes className="w-5 h-5 text-[#070b12]" />
+            </div>
+            <div>
+              <span className="font-bold text-lg tracking-wider text-gradient-cyan">EXPERTMACHINA</span>
+              <span className="text-[10px] block text-slate-500 tracking-widest font-mono">IDENTITY BOUNDARY v1.0</span>
+            </div>
+          </div>
+          <form
+            className="space-y-3"
+            onSubmit={async (e) => {
+              e.preventDefault();
+              setLoginBusy(true);
+              await login(loginName.trim(), loginPassword);
+              setLoginBusy(false);
+              setLoginPassword('');
+            }}
+          >
+            <input
+              value={loginName}
+              onChange={(e) => setLoginName(e.target.value)}
+              placeholder="username"
+              autoFocus
+              className="w-full bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:border-cyan-700 outline-none"
+            />
+            <input
+              type="password"
+              value={loginPassword}
+              onChange={(e) => setLoginPassword(e.target.value)}
+              placeholder="password"
+              className="w-full bg-slate-950/70 border border-slate-800 rounded-lg px-3 py-2 text-sm focus:border-cyan-700 outline-none"
+            />
+            {authError && (
+              <div className="text-xs text-rose-400 flex items-center gap-2">
+                <AlertCircle className="w-3.5 h-3.5" /> {authError}
+              </div>
+            )}
+            <button
+              type="submit"
+              disabled={loginBusy || !loginName.trim() || !loginPassword}
+              className="w-full bg-gradient-to-r from-cyan-500 to-emerald-500 text-slate-950 font-semibold px-4 py-2 rounded-lg text-xs tracking-wider uppercase disabled:opacity-40"
+            >
+              {loginBusy ? 'Authenticating…' : 'Sign in'}
+            </button>
+          </form>
+          <p className="text-[10px] text-slate-600 leading-relaxed">
+            First run? The backend printed a one-time <span className="font-mono text-slate-500">admin</span> password
+            to its console at startup.
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="flex h-screen bg-[#070b12] text-slate-100 overflow-hidden font-sans">
-      
+
       {/* SIDEBAR NAVIGATION */}
       <aside className="w-64 border-r border-slate-900 bg-[#090d16]/95 flex flex-col justify-between z-10">
         <div>
@@ -958,8 +1046,51 @@ export default function Home() {
                 <span>processing engine...</span>
               </div>
             )}
+            <div className="flex items-center gap-3 pl-4 border-l border-slate-800">
+              <div className="text-right">
+                <div className="text-xs font-semibold text-slate-200">{currentUser.display_name}</div>
+                <div className="text-[10px] font-mono text-cyan-600 uppercase tracking-wider">{currentUser.role || currentUser.kind}</div>
+              </div>
+              <button
+                onClick={() => logout()}
+                title="Sign out"
+                className="text-[10px] font-mono uppercase tracking-wider px-2 py-1 rounded border border-slate-800 text-slate-400 hover:text-rose-300 hover:border-rose-900/60 transition-colors"
+              >
+                Sign out
+              </button>
+            </div>
           </div>
         </header>
+
+        {/* Identity Boundary: forced credential rotation after bootstrap */}
+        {currentUser.must_change_password && (
+          <div className="bg-amber-950/40 border-b border-amber-900/50 px-8 py-3 flex items-center gap-4 text-xs text-amber-200">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span className="shrink-0">One-time password in use — set your own:</span>
+            <form
+              className="flex items-center gap-2"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                setPwBusy(true);
+                const ok = await changePassword(pwCurrent, pwNew);
+                setPwBusy(false);
+                if (ok) { setPwCurrent(''); setPwNew(''); }
+              }}
+            >
+              <input type="password" value={pwCurrent} onChange={(e) => setPwCurrent(e.target.value)}
+                     placeholder="current password"
+                     className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-40 outline-none focus:border-amber-700" />
+              <input type="password" value={pwNew} onChange={(e) => setPwNew(e.target.value)}
+                     placeholder="new password (min 8)"
+                     className="bg-slate-950/70 border border-slate-800 rounded px-2 py-1 text-xs w-40 outline-none focus:border-amber-700" />
+              <button type="submit" disabled={pwBusy || pwNew.length < 8 || !pwCurrent}
+                      className="px-2 py-1 rounded bg-amber-600/80 text-slate-950 font-semibold uppercase tracking-wider text-[10px] disabled:opacity-40">
+                {pwBusy ? 'Saving…' : 'Save'}
+              </button>
+              {authError && <span className="text-rose-400">{authError}</span>}
+            </form>
+          </div>
+        )}
 
         {/* WORKSPACE DETAILED VIEWS */}
         <div className="p-8 max-w-7xl w-full mx-auto space-y-6">
@@ -2403,7 +2534,7 @@ export default function Home() {
                                                         <button
                                                           disabled={!verdictReviewComment.trim()}
                                                           onClick={async () => {
-                                                            await reviewClaimVerdict(v.id, 'GovernanceOfficer', verdictReviewComment.trim());
+                                                            await reviewClaimVerdict(v.id, verdictReviewComment.trim());
                                                             setReviewedVerdictIds(prev => new Set(prev).add(v.id));
                                                             setVerdictReview(null);
                                                             setVerdictReviewComment('');

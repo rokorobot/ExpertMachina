@@ -31,6 +31,7 @@ ingestion.QDRANT_DIR = tempfile.mkdtemp(prefix="em_http_smoke_qdrant_")
 
 from fastapi.testclient import TestClient
 from app import main
+from app import identity
 
 DOC_TEXT = (
     "The platform runs on a PostgreSQL database server cluster.\n"
@@ -43,11 +44,25 @@ def main_test():
     print("\nStarting HTTP smoke checks against the real FastAPI app...")
     with TestClient(main.app) as client:
 
+        # Identity Boundary v1.0: writes require authentication. Create a
+        # known operator the production way and log in over HTTP - the
+        # bearer token is the ONLY identity input any request carries.
+        with db.SessionLocal() as boot:
+            op = identity.create_principal(boot, name="smoke_tester", display_name="SmokeTester",
+                                           kind="HUMAN", role="GOVERNANCE_OFFICER", created_by="test-suite")
+            identity.set_password(boot, op, "smoke-password-123", actor="smoke_tester")
+        r = client.post("/api/auth/login", json={"name": "smoke_tester", "password": "smoke-password-123"})
+        assert r.status_code == 200, r.text
+        login = r.json()
+        assert login["display_name"] == "SmokeTester" and login["role"] == "GOVERNANCE_OFFICER"
+        AUTH = {"Authorization": f"Bearer {login['token']}"}
+
         # Part 1: health + project lifecycle over HTTP.
         print("\n--- Part 1: Health and project creation ---")
         r = client.get("/api/health")
         assert r.status_code == 200 and r.json()["status"] == "healthy", r.text
-        r = client.post("/api/projects", json={"name": "HTTP Smoke", "description": "smoke", "customer_id": 1})
+        r = client.post("/api/projects", json={"name": "HTTP Smoke", "description": "smoke", "customer_id": 1},
+                        headers=AUTH)
         assert r.status_code == 200, r.text
         project_id = r.json()["id"]
         print("Part 1 passed: health OK, project created over HTTP.")
@@ -55,7 +70,8 @@ def main_test():
         # Part 2: upload with a hostile filename - sanitized, not traversed.
         print("\n--- Part 2: Upload filename sanitization ---")
         r = client.post(f"/api/projects/{project_id}/documents",
-                        files={"file": ("..\\..\\evil_smoke.txt", DOC_TEXT.encode(), "text/plain")})
+                        files={"file": ("..\\..\\evil_smoke.txt", DOC_TEXT.encode(), "text/plain")},
+                        headers=AUTH)
         assert r.status_code == 200, r.text
         assert r.json()["filename"] == "evil_smoke.txt", \
             f"Path components must be stripped: {r.json()['filename']}"
@@ -63,7 +79,8 @@ def main_test():
         assert not os.path.exists(os.path.join(backend_root, "..", "evil_smoke.txt")), \
             "File must never land outside the uploads dir"
         r = client.post(f"/api/projects/{project_id}/documents",
-                        files={"file": ("..", b"x", "text/plain")})
+                        files={"file": ("..", b"x", "text/plain")},
+                        headers=AUTH)
         assert r.status_code == 400, f"Pure-dot filename must be rejected: {r.status_code}"
         print("Part 2 passed: traversal name sanitized to basename; '..' rejected with 400.")
 
@@ -79,8 +96,7 @@ def main_test():
         # Part 4: single approve - baseline revision visible in the response.
         print("\n--- Part 4: Single approval creates revision 1 ---")
         first_id = assets[0]["id"]
-        r = client.patch(f"/api/assets/{first_id}", json={"status": "APPROVED"},
-                         params={"actor": "SmokeTester"})
+        r = client.patch(f"/api/assets/{first_id}", json={"status": "APPROVED"}, headers=AUTH)
         assert r.status_code == 200, r.text
         body = r.json()
         assert body["status"] == "APPROVED" and body["active_revision_number"] == 1, body
@@ -93,7 +109,7 @@ def main_test():
         rest = [a["id"] for a in assets[1:]]
         r = client.patch("/api/assets/bulk",
                          json={"asset_ids": rest, "status": "APPROVED"},
-                         params={"actor": "SmokeTester"})
+                         headers=AUTH)
         assert r.status_code == 200, f"Bulk route must be reachable, got {r.status_code}: {r.text[:200]}"
         bulk_body = r.json()
         assert len(bulk_body) == len(rest)
@@ -122,16 +138,75 @@ def main_test():
         settings = {s["function"]: s for s in r.json()}
         assert set(settings) == {"EXTRACTION", "CLAIM_DECOMPOSITION", "CLAIM_JUDGE", "ANSWER_GENERATION"}
         assert all(s["source"] == "DEFAULT" and s["effective_model"] == "gpt-4o-mini" for s in settings.values())
-        r = client.put("/api/settings/llm/extraction", json={"model": "gpt-4o", "actor": "SmokeTester"})
+        r = client.put("/api/settings/llm/extraction", json={"model": "gpt-4o"}, headers=AUTH)
         assert r.status_code == 200 and r.json()["source"] == "CONFIG" and r.json()["effective_model"] == "gpt-4o", r.text
-        r = client.put("/api/settings/llm/EXTRACTION", json={"model": None, "actor": "SmokeTester"})
+        r = client.put("/api/settings/llm/EXTRACTION", json={"model": None}, headers=AUTH)
         assert r.status_code == 200 and r.json()["source"] == "DEFAULT", r.text
-        r = client.put("/api/settings/llm/NOT_A_FUNCTION", json={"model": "x"})
+        r = client.put("/api/settings/llm/NOT_A_FUNCTION", json={"model": "x"}, headers=AUTH)
         assert r.status_code == 400, f"Unknown function must 400: {r.status_code}"
         r = client.get("/api/audit", params={"limit": 50})
         assert any(e["event_type"] == "LLM_CONFIG_UPDATED" for e in r.json()), \
             "Config changes must be audited"
         print("Part 7 passed: settings listed, set/clear round-trip, unknown rejected, audited.")
+
+        # Part 8: the identity boundary over HTTP (v1.0 WS1c proof).
+        # Caller cannot choose the actor anymore - the boundary decides it,
+        # and the written records point to IdentityFacts.
+        print("\n--- Part 8: Identity boundary - caller cannot choose the actor ---")
+        # 8a: unauthenticated writes are refused.
+        r = client.patch(f"/api/assets/{first_id}", json={"status": "REVIEWED"})
+        assert r.status_code == 401, f"Unauthenticated write must 401: {r.status_code}"
+        r = client.patch(f"/api/assets/{first_id}", json={"status": "REVIEWED"},
+                         headers={"Authorization": "Bearer emk_forged-token"})
+        assert r.status_code == 401, f"Forged token must 401: {r.status_code}"
+        # 8b: the dead ingress - ?actor= and body reviewer fields are inert.
+        # An authenticated caller claiming to be Mallory is recorded as who
+        # they actually are.
+        r = client.post(f"/api/projects/{project_id}/documents",
+                        files={"file": ("boundary_probe.txt", DOC_TEXT.encode(), "text/plain")},
+                        params={"actor": "Mallory"},
+                        headers=AUTH)
+        assert r.status_code == 200, r.text
+        probe_assets = [a for a in client.get(f"/api/projects/{project_id}/assets").json()
+                        if a["status"] == "CANDIDATE"]
+        assert probe_assets, "Probe upload should yield CANDIDATE assets"
+        r = client.patch(f"/api/assets/{probe_assets[0]['id']}",
+                         json={"status": "APPROVED"},
+                         params={"actor": "Mallory", "reviewer": "Mallory"},
+                         headers=AUTH)
+        assert r.status_code == 200, r.text
+        r = client.get("/api/audit", params={"limit": 10, "event_prefix": "ASSET_APPROVED"})
+        latest = r.json()[0]
+        assert latest["actor"] == "SmokeTester", \
+            f"The boundary decides the actor; got {latest['actor']!r}"
+        assert latest["actor"] != "Mallory", "?actor= must be inert"
+        # 8c: the records point to identity facts with the right evidence.
+        with db.SessionLocal() as check:
+            ev = check.query(db.AuditEvent).filter(
+                db.AuditEvent.event_type == "ASSET_APPROVED").order_by(
+                db.AuditEvent.id.desc()).first()
+            assert ev.identity_fact_id is not None, "Approval events must carry the fact"
+            fact = check.query(db.IdentityFact).filter_by(id=ev.identity_fact_id).first()
+            assert fact.principal_name == "smoke_tester"
+            assert fact.role_snapshot == "GOVERNANCE_OFFICER"
+            assert fact.authentication_method == "PASSWORD"
+            assert fact.credential_fingerprint, "Authenticated facts record their credential"
+            review = check.query(db.AssetReview).filter_by(
+                asset_id=probe_assets[0]["id"]).first()
+            assert review.identity_fact_id == fact.id or review.identity_fact_id is not None, \
+                "The AssetReview carries identity evidence too"
+        # 8d: login refusals.
+        r = client.post("/api/auth/login", json={"name": "smoke_tester", "password": "wrong"})
+        assert r.status_code == 401
+        r = client.post("/api/auth/login", json={"name": "mallory", "password": "x"})
+        assert r.status_code == 401
+        # 8e: logout revokes the session; the token dies.
+        r = client.post("/api/auth/logout", headers=AUTH)
+        assert r.status_code == 200
+        r = client.patch(f"/api/assets/{first_id}", json={"status": "REVIEWED"}, headers=AUTH)
+        assert r.status_code == 401, "A revoked session must fail closed"
+        print("Part 8 passed: writes 401 without auth; ?actor=Mallory is inert; records")
+        print("               point to facts (who/role/method/credential); logout fails closed.")
 
     print("\nAll HTTP smoke checks passed.")
 

@@ -15,6 +15,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import query_engine
+import test_support
 
 
 def _disabled_qdrant():
@@ -23,11 +24,13 @@ def _disabled_qdrant():
 
 def build_fixture(session):
     customer = crud.get_or_create_default_customer(session)
+    qa_lead = test_support.governed_actor(session, "qa_lead_01")
     project = crud.create_project(
         session,
-        schemas.ProjectCreate(name="Integrity Test", description="Access and provenance checks", customer_id=customer.id)
+        schemas.ProjectCreate(name="Integrity Test", description="Access and provenance checks", customer_id=customer.id),
+        actor=qa_lead
     )
-    doc = crud.create_document(session, project_id=project.id, filename="Tiered_Policies.txt", file_path="uploads/Tiered_Policies.txt")
+    doc = crud.create_document(session, project_id=project.id, filename="Tiered_Policies.txt", file_path="uploads/Tiered_Policies.txt", actor=qa_lead)
 
     assets = {}
     tiers = [
@@ -55,7 +58,7 @@ def build_fixture(session):
                 access_level=tier
             )
         )
-        crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa_lead_01")
+        crud.update_knowledge_asset(session, asset_id=asset.id, update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor=qa_lead)
         assets[tier] = asset
 
     model = crud.create_expert_model(
@@ -65,7 +68,8 @@ def build_fixture(session):
             description="Access tier checks",
             project_id=project.id,
             asset_ids=[a.id for a in assets.values()]
-        )
+        ),
+        actor=qa_lead
     )
     return assets, model
 

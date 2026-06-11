@@ -9,6 +9,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import extraction
+import test_support
 
 def run_test():
     print("Initializing test database...")
@@ -28,7 +29,8 @@ def run_test():
             description="Testing ingestion of SOP documents and QA validation extraction.",
             customer_id=customer.id
         )
-        project = crud.create_project(session, proj_in)
+        auditor = test_support.governed_actor(session, "Lead Auditor")
+        project = crud.create_project(session, proj_in, actor=auditor)
         print(f"Project created: {project.name} (Status: {project.status})")
         
         # 3. Create simulated document file
@@ -58,7 +60,8 @@ def run_test():
             filename=sample_filename,
             file_path=sample_path,
             department="Facilities",
-            owner="Facility Manager"
+            owner="Facility Manager",
+            actor=auditor
         )
         print(f"Document logged: {doc.filename} (Status: {doc.status})")
         
@@ -94,10 +97,10 @@ def run_test():
         print("\nSimulating Asset Review & Approval...")
         for a in assets:
             crud.update_knowledge_asset(
-                session, 
-                asset_id=a.id, 
+                session,
+                asset_id=a.id,
                 update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
-                actor="Lead Auditor"
+                actor=auditor
             )
             
         # 8. Build Expert Model
@@ -109,7 +112,7 @@ def run_test():
             project_id=project.id,
             asset_ids=asset_ids
         )
-        expert = crud.create_expert_model(session, model_in)
+        expert = crud.create_expert_model(session, model_in, actor=auditor)
         print(f"Expert Model created: {expert.name} (Assets grouped: {expert.asset_count}, Avg Quality: {expert.quality_score}%, Avg Coverage: {expert.coverage_score}%)")
         
         # 9. Build Agent Package
@@ -120,7 +123,7 @@ def run_test():
             project_id=project.id,
             governance_version="0.1.0"
         )
-        pkg = crud.create_agent_package(session, pkg_in)
+        pkg = crud.create_agent_package(session, pkg_in, actor=auditor)
         print(f"Agent Package compiled: {pkg.name} (Quality score: {pkg.quality_score}%, Governance version: {pkg.governance_version})")
         print(f"References serialized: {pkg.asset_references[:200]}...")
         

@@ -9,6 +9,7 @@ from app import schemas
 from app import crud
 from app import ingestion
 from app import extraction
+import test_support
 
 def run_lifecycle_test():
     print("Initializing test database for lifecycle checks...")
@@ -18,14 +19,15 @@ def run_lifecycle_test():
     try:
         # 1. Setup default customer
         customer = crud.get_or_create_default_customer(session)
-        
+        auditor = test_support.governed_actor(session, "Lead Auditor")
+
         # 2. Create a test project
         proj_in = schemas.ProjectCreate(
             name="Lifecycle Test Project",
             description="Testing document lifecycle state transitions.",
             customer_id=customer.id
         )
-        project = crud.create_project(session, proj_in)
+        project = crud.create_project(session, proj_in, actor=auditor)
         print(f"Project created: {project.name}")
         
         # 3. Create simulated document file
@@ -53,7 +55,8 @@ def run_lifecycle_test():
             filename=sample_filename,
             file_path=sample_path,
             department="Facilities",
-            owner="Facility Manager"
+            owner="Facility Manager",
+            actor=auditor
         )
         print(f"Initial doc status: {doc.status} (Expected: INGESTED)")
         assert doc.status == "INGESTED"
@@ -82,10 +85,10 @@ def run_lifecycle_test():
 
         # 7. Approve one asset (mixed state: 1 APPROVED, 1 CANDIDATE)
         crud.update_knowledge_asset(
-            session, 
-            asset_id=assets[0].id, 
+            session,
+            asset_id=assets[0].id,
             update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
-            actor="Lead Auditor"
+            actor=auditor
         )
         session.refresh(doc)
         print(f"One approved asset doc status: {doc.status} (Expected: PARTIALLY_APPROVED)")
@@ -99,10 +102,10 @@ def run_lifecycle_test():
         # 8. Approve all remaining assets
         for a in assets[1:]:
             crud.update_knowledge_asset(
-                session, 
-                asset_id=a.id, 
+                session,
+                asset_id=a.id,
                 update=schemas.KnowledgeAssetUpdate(status="APPROVED"),
-                actor="Lead Auditor"
+                actor=auditor
             )
         session.refresh(doc)
         print(f"All approved assets doc status: {doc.status} (Expected: APPROVED)")
@@ -119,7 +122,7 @@ def run_lifecycle_test():
             session,
             asset_id=assets[0].id,
             update=schemas.KnowledgeAssetUpdate(status="ARCHIVED"),
-            actor="Lead Auditor"
+            actor=auditor
         )
         model_in = schemas.ExpertModelCreate(
             name="Compliance Expert Model",
@@ -128,7 +131,7 @@ def run_lifecycle_test():
             asset_ids=[assets[0].id, assets[1].id]
         )
         try:
-            model = crud.create_expert_model(session, model_in)
+            model = crud.create_expert_model(session, model_in, actor=auditor)
             assert False, "Expert Model creation should have been blocked because an asset is ARCHIVED"
         except ValueError as e:
             print(f"Expert Model creation blocked as expected: {e}")
@@ -136,10 +139,10 @@ def run_lifecycle_test():
         # 9. Reject / Archive all assets
         for a in assets:
             crud.update_knowledge_asset(
-                session, 
-                asset_id=a.id, 
+                session,
+                asset_id=a.id,
                 update=schemas.KnowledgeAssetUpdate(status="ARCHIVED"),
-                actor="Lead Auditor"
+                actor=auditor
             )
         session.refresh(doc)
         print(f"All rejected assets doc status: {doc.status} (Expected: ALL_ASSETS_REJECTED)")
@@ -157,7 +160,7 @@ def run_lifecycle_test():
         assert extraction_run is False
 
         # 10. Delete all assets from document
-        crud.delete_knowledge_assets_by_document(session, doc.id)
+        crud.delete_knowledge_assets_by_document(session, doc.id, actor=auditor)
         session.refresh(doc)
         print(f"All assets deleted doc status: {doc.status} (Expected: DELETED)")
         assert doc.status == "DELETED"
