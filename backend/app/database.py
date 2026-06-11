@@ -15,6 +15,83 @@ class Customer(Base):
     name = Column(String, nullable=False)
     api_key = Column(String, unique=True, index=True)
 
+
+class Principal(Base):
+    """Identity Boundary v1.0 (docs/identity-boundary-v1.md): the MUTABLE
+    registry of actors. Five kinds: HUMAN | DELEGATED | SYSTEM | SERVICE |
+    AGENT. The constitutional symmetry: Principal changes; IdentityFact
+    never changes - KnowledgeAsset/AssetRevision applied to identity.
+    No delete - deactivate (D17 pattern): audit history references
+    principals indefinitely. DELEGATED principals (policy:X, connector:Y)
+    are auto-registered when their governed object is created and never
+    authenticate; their authority is the causal chain."""
+    __tablename__ = "principals"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False, unique=True, index=True)  # stable slug: "alice", "policy:Low-risk docs", "system"
+    display_name = Column(String, nullable=False)
+    kind = Column(String, nullable=False)  # HUMAN | DELEGATED | SYSTEM | SERVICE | AGENT
+    role = Column(String, nullable=True)  # ADMIN | GOVERNANCE_OFFICER | REVIEWER | VIEWER (HUMAN/SERVICE); None for SYSTEM/DELEGATED
+    clearance = Column(String, nullable=True)  # AGENT kind only: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+    active = Column(Boolean, default=True)
+    must_change_password = Column(Boolean, default=False)
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    credentials = relationship("Credential", back_populates="principal", foreign_keys="Credential.principal_id")
+
+
+class Credential(Base):
+    """Governed credential lineage (revoke, never delete). Stores HASHES
+    only - hashes verify, they don't reveal (D19); plaintext tokens are
+    shown once at creation and never persisted. Rotation revokes the old
+    row and creates a new one, so 'which credential authenticated Alice
+    six months ago' stays answerable forever via the fingerprint.
+    Credential lineage is first-class: enterprise forensics interrogate
+    credentials (which token? which generation? revoked when?) more often
+    than principals. SESSION rows record which credential authenticated
+    the login via issued_by_credential_id - lineage is complete."""
+    __tablename__ = "credentials"
+    id = Column(Integer, primary_key=True, index=True)
+    principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
+    kind = Column(String, nullable=False)  # PASSWORD | API_TOKEN | SESSION
+    secret_hash = Column(String, nullable=False)  # pbkdf2 (PASSWORD) / sha256 (API_TOKEN, SESSION)
+    fingerprint = Column(String, nullable=False, unique=True, index=True)  # stable public identifier: cred_<id>:<hash-prefix>
+    label = Column(String, nullable=True)
+    issued_by_credential_id = Column(Integer, ForeignKey("credentials.id"), nullable=True)  # SESSION: the credential that authenticated the login
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    revoked_at = Column(DateTime, nullable=True)
+    last_used_at = Column(DateTime, nullable=True)
+
+    principal = relationship("Principal", back_populates="credentials", foreign_keys=[principal_id])
+
+
+class IdentityFact(Base):
+    """IMMUTABLE identity evidence - the ClaimVerdict pattern applied to
+    actors (D3: observe, record - not negotiate). Answers exactly one
+    question: WHO was authenticated at action time. Snapshots survive any
+    later change to the principal: rename, role change, password rotation,
+    deactivation - future user-table state is never required to explain
+    past governed actions (D20 candidate).
+    PURITY RULE (design review ruling): never add request-context columns
+    (route, operation, parameters, write inventory) - that is a future
+    RequestFact between this table and the written records. The Alice test
+    asserts this column set structurally, so creep fails CI.
+    on_behalf_of_fact_id carries identity delegation only (WHO authorized);
+    the causal WHY lives in ActionContext (governed objects + D17
+    provenance) and evolves independently."""
+    __tablename__ = "identity_facts"
+    id = Column(Integer, primary_key=True, index=True)
+    principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
+    principal_name = Column(String, nullable=False)  # as at action time
+    display_name = Column(String, nullable=False)  # as at action time
+    principal_kind = Column(String, nullable=False)
+    role_snapshot = Column(String, nullable=True)  # role held at that moment
+    authentication_method = Column(String, nullable=False)  # PASSWORD | API_TOKEN | DELEGATED | INTERNAL
+    credential_fingerprint = Column(String, nullable=True)  # NULL for SYSTEM/DELEGATED
+    on_behalf_of_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
 class Project(Base):
     __tablename__ = "projects"
     id = Column(Integer, primary_key=True, index=True)
@@ -215,6 +292,7 @@ class AssetRevision(Base):
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     approved_by = Column(String, nullable=True)
     approved_at = Column(DateTime, nullable=True)
+    identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)  # approver's fact; NULL = pre-boundary legacy (D12)
     supersedes_revision_id = Column(Integer, ForeignKey("asset_revisions.id"), nullable=True)
     superseded_by_revision_id = Column(Integer, ForeignKey("asset_revisions.id"), nullable=True)
     change_reason = Column(Text, nullable=True)
@@ -229,6 +307,7 @@ class AssetReview(Base):
     approver = Column(String, nullable=True)
     notes = Column(Text, nullable=True)
     reviewed_at = Column(DateTime, default=datetime.datetime.utcnow)
+    identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)  # NULL = pre-boundary legacy (D12)
 
     asset = relationship("KnowledgeAsset", back_populates="reviews")
 
@@ -289,6 +368,10 @@ class AuditEvent(Base):
     event_type = Column(String, nullable=False) # DOCUMENT_UPLOADED, DOCUMENT_PARSED, ASSET_GENERATED, ASSET_REVIEWED, ASSET_APPROVED, AGENT_PACKAGE_CREATED
     target_id = Column(String, nullable=True)
     details = Column(Text, nullable=True)
+    # Identity Boundary v1.0: NULL = pre-boundary legacy ("we did not
+    # know"), never reconstructed later (D12). actor stays populated as
+    # the readable display string; the fact is the source of truth.
+    identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)
 
 class AssetRelationship(Base):
     """Semantic relationships between approved assets, detected by the
@@ -444,6 +527,18 @@ def _ensure_columns():
         },
         "source_documents": {
             "details_json": "TEXT",
+        },
+        # Identity Boundary v1.0: nullable fact references on the landing
+        # pads. NULL on pre-boundary rows means "we did not know" - facts
+        # are never retroactively fabricated (D12).
+        "audit_events": {
+            "identity_fact_id": "INTEGER",
+        },
+        "asset_reviews": {
+            "identity_fact_id": "INTEGER",
+        },
+        "asset_revisions": {
+            "identity_fact_id": "INTEGER",
         },
     }
     with engine.connect() as conn:

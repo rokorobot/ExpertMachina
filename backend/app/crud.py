@@ -17,13 +17,18 @@ def get_or_create_default_customer(session: Session) -> db.Customer:
     return cust
 
 # Audit Ledger Helper
-def log_audit_event(session: Session, actor: str, event_type: str, target_id: str = None, details: str = None):
+def log_audit_event(session: Session, actor: str, event_type: str, target_id: str = None, details: str = None,
+                    identity_fact_id: int = None):
+    # identity_fact_id (Identity Boundary v1.0): the immutable evidence of
+    # WHO acted. NULL = pre-boundary legacy; actor remains the readable
+    # display string either way.
     event = db.AuditEvent(
         timestamp=datetime.datetime.utcnow(),
         actor=actor,
         event_type=event_type,
         target_id=target_id,
-        details=details
+        details=details,
+        identity_fact_id=identity_fact_id
     )
     session.add(event)
     session.commit()
