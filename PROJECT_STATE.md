@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-11 · current version **v0.11.1** (transport hardening) · HEAD `c3c0d16` · branch `main`
+**Snapshot:** 2026-06-11 · current version **v0.12.0** · HEAD `413c02a` · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -57,6 +57,7 @@ Readiness per model; deep links into specialized workbenches; URL-addressable.
 | `connectors/models.py` | provider contract: ConnectorItem, ConnectorFetchResult, ConnectorProvider (validate/describe/discover/fetch) |
 | `connectors/providers/local_folder.py` | LocalFolderProvider: walk, URIs, read, stat — nothing else (~85 lines) |
 | `policy.py` | Policy-Based Auto Approval engine: deterministic type+scope match, policy snapshot provenance |
+| `llm.py` | model-per-function resolver (v0.12): DB config → OPENAI_MODEL env → gpt-4o-mini; selection only, never credentials (D19) |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools over Governance Contract v1 |
 | `query_engine.py` | retrieval + validation + generation + claim verification; `ACCESS_RANK` |
 
@@ -66,7 +67,9 @@ ExpertModel, AgentPackage(+clearance/file/hash/manifest), AuditEvent,
 BenchmarkQuestion, EvaluationRun, EvaluationQuestionResult, ClaimVerdict (immutable),
 SourceConnector, IngestionJob, SourceDocument (per-scan version history),
 ApprovalPolicy (versioned governed fact: asset_types JSON, optional connector
-scope, enabled flag, version; no delete — disable preserves audit history).
+scope, enabled flag, version; no delete — disable preserves audit history),
+LLMFunctionConfig (v0.12: function→model selection, OPENAI-only provider for
+now, NO credential columns by ruling D19; clearing model resets resolution).
 
 Auto-approval mechanics (v0.10.2, ruling D17): `policy.apply_auto_approval`
 runs after extraction in all three ingestion paths (connector scan — newly
@@ -84,7 +87,9 @@ Single-page Next.js + Zustand. Tabs: dashboard, **inbox**, documents (upload + *
 Folder** + **Approval Policies** panel + ingestion jobs), assets (review queue with
 "Policy: <name>" badge + policy-approved spot-check filter), experts (+trust explainer,
 package compiler/export), evaluations (+coverage trend, claim verdicts), conflicts,
-revisions, console (mock), agents, audit. Governance workflows are URL-addressable
+revisions, console (mock), agents, audit, **settings** (v0.12: LLM Models —
+model-per-function with CONFIG/ENV/DEFAULT source badges). Governance
+workflows are URL-addressable
 (`?tab=conflicts&expert=11&relationship=42` etc. hydrate on cold load).
 
 ## Release log (this development line)
@@ -103,6 +108,7 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 | v0.10.2 | `051d00a` | Policy-Based Auto Approval (versioned policies, snapshot provenance, D17) |
 | v0.11.0 | `77e1408` | Source Connector Framework — LocalFolder retrofitted as a thin provider, behavior identical (zero assertion edits), seam tests, D18 ratified |
 | v0.11.1 | `c3c0d16` | Transport hardening (audit): bulk route unshadowed + unified through crud (revision parity — D17 generalized to HTTP), filename sanitization, CORS narrowed, HTTP smoke layer (3rd regression layer), CI enforcement |
+| v0.12.0 | `413c02a` | LLM Provider Settings: governed model-per-function config (LLMFunctionConfig + llm.py resolver, DB→env→default invariant, D19), Settings tab, LLM_CONFIG_UPDATED audit |
 
 ## How to run
 
@@ -140,14 +146,14 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 
 ## Next milestones (agreed order)
 
-1. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
-   config store — app currently has env-vars only). Framing ruling (June 2026):
-   future model evaluation is a MEANS — select the best engine for a governed
-   Expert Package's deployment — never an LLM-benchmarking end in itself; the
+1. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred
+   until here by explicit decision; also unblocks stored provider keys per D19
+   and cloud connectors per D14). Framing ruling (June 2026): future model
+   evaluation is a MEANS — select the best engine for a governed Expert
+   Package's deployment — never an LLM-benchmarking end in itself; the
    knowledge and its expert representation are the primary asset, the agent is
-   the delivery mechanism.
-2. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until
-   here by explicit decision)
+   the delivery mechanism. v0.12's model-per-function config is that arc's
+   first rail.
 
 A second credential-free provider (Slack/Notion export, git working copy) is
 backlog, not scheduled — chosen for a different enumeration shape when wanted;

@@ -163,3 +163,24 @@ that could not exist under the original design). The seam suite is part of
 the named regression contract: it protects the architecture the way the
 product suites protect behavior — user-visible tests can all pass while
 "provider decides" quietly returns; only the seam tests catch that.
+
+## D19 — Runtime config stores selection, never credentials; empty config preserves prior behavior (v0.12.0)
+Governed runtime configuration (LLMFunctionConfig and any future config
+table) stores WHAT was chosen (model, provider name, function mapping) and
+never credentials — API keys and secrets stay environment-based until the
+v1.x identity/credentials layer exists (D14). Config rows may name which
+env var holds a key; never the key itself.
+The resolution invariant: explicit config → environment override →
+hardcoded default, and an EMPTY config store must preserve the behavior
+that existed before the store did. Configuration is opt-in acceleration,
+never a migration burden.
+**Why:** half-stored credentials would give false assurance exactly as
+half-built auth would (D14's reasoning, applied to secrets); and a config
+subsystem that changes behavior merely by existing makes every upgrade a
+breaking change.
+**Tradeoff accepted:** no test-connection buttons or stored multi-provider
+keys until v1.x — the Settings UI can select models but cannot validate
+provider reachability.
+**Evidence:** backend/test_llm_settings.py — six-part precedence suite,
+including a structural assertion that no credential-shaped column exists
+on the config table; HTTP smoke Part 7 covers the endpoints.
