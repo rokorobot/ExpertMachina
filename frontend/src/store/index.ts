@@ -251,6 +251,7 @@ export interface IngestionJob {
   files_discovered: number;
   files_ingested: number;
   files_duplicate: number;
+  files_changed: number;
   files_failed: number;
   error: string | null;
   started_at: string;
@@ -264,8 +265,16 @@ export interface SourceDocument {
   file_hash: string | null;
   size_bytes: number | null;
   source_modified_at: string | null;
-  status: string; // INGESTED | DUPLICATE | FAILED
+  status: string; // INGESTED | DUPLICATE | CHANGED | FAILED
   error: string | null;
+  details: {
+    revisions_created: { asset_id: number; revision_id: number }[];
+    updated_in_place: number;
+    assets_added: number;
+    unchanged: number;
+    skipped_pending_review: { asset_id: number; reason: string }[];
+    possibly_stale: { asset_id: number; name: string }[];
+  } | null;
   document_id: number | null;
   created_at: string;
 }

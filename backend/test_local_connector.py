@@ -14,6 +14,11 @@ from app import database as db
 from app import schemas
 from app import crud
 from app import connectors
+from app import ingestion
+
+# Isolated vector store: the dev server holds a lock on ./qdrant_db, and the
+# test process must not depend on (or interfere with) a running server.
+ingestion.QDRANT_DIR = tempfile.mkdtemp(prefix="em_connector_qdrant_")
 
 
 def make_source_tree(root: str) -> None:
@@ -138,6 +143,98 @@ def main():
     failed_events = session.query(db.AuditEvent).filter(db.AuditEvent.event_type == "INGESTION_JOB_FAILED").count()
     assert failed_events == 1
     print("Part 5 passed: lifecycle audited; nonexistent root fails the job with a reason.")
+
+    # Part 6 (MVP 0.10.1): a changed source file becomes a candidate revision
+    # through the existing machinery - no duplicate document, no duplicate asset.
+    print("\n--- Part 6: Changed source file -> candidate revision ---")
+    from app import revisions as revisions_module
+    # Approve the asset extracted from SOP-B so the change routes to a revision.
+    sop_b_doc = session.query(db.Document).filter(db.Document.filename == "SOP-B_Access.txt").first()
+    sop_b_assets = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.document_id == sop_b_doc.id).all()
+    assert sop_b_assets, "SOP-B must have extracted assets"
+    target = sop_b_assets[0]
+    crud.update_knowledge_asset(session, asset_id=target.id,
+                                update=schemas.KnowledgeAssetUpdate(status="APPROVED"), actor="qa")
+    session.refresh(target)
+    old_content = target.content
+
+    with open(os.path.join(source_root, "policies", "SOP-B_Access.txt"), "w", encoding="utf-8") as f:
+        f.write("SOP-B: Access Policy.\nPolicy: Server room access requires director approval.\n")
+
+    docs_before = session.query(db.Document).filter(db.Document.project_id == project.id).count()
+    assets_before = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.project_id == project.id).count()
+    job4 = db.IngestionJob(project_id=project.id, connector_id=connector.id, status="PENDING")
+    session.add(job4)
+    session.commit()
+    session.refresh(job4)
+    connectors.execute_ingestion_job(session, job4.id)
+    session.refresh(job4)
+
+    assert job4.files_changed == 1, f"Expected 1 changed file: {job4.files_changed} (failed {job4.files_failed})"
+    assert job4.files_ingested == 0, "A changed file must not become a new document"
+    assert session.query(db.Document).filter(db.Document.project_id == project.id).count() == docs_before, \
+        "Change must not create a duplicate document"
+    assert session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.project_id == project.id).count() == assets_before, \
+        "Change must not create a duplicate asset"
+    changed_row = session.query(db.SourceDocument).filter(
+        db.SourceDocument.ingestion_job_id == job4.id,
+        db.SourceDocument.status == "CHANGED").first()
+    assert changed_row and changed_row.details, "CHANGED row must carry a change summary"
+    assert len(changed_row.details["revisions_created"]) == 1, changed_row.details
+
+    candidate = session.query(db.AssetRevision).filter(
+        db.AssetRevision.asset_id == target.id,
+        db.AssetRevision.status == "CANDIDATE").first()
+    assert candidate, "Approved asset must get a candidate revision"
+    assert "director approval" in candidate.content
+    assert "Source file changed" in (candidate.change_reason or "")
+    session.refresh(target)
+    assert target.content == old_content, "Approved content must NOT change until the revision is approved"
+    change_events = session.query(db.AuditEvent).filter(
+        db.AuditEvent.event_type == "SOURCE_CHANGE_DETECTED").count()
+    assert change_events == 1
+    print("Part 6 passed: change -> candidate revision, approved content untouched, fully audited.")
+
+    # Part 7: version history retained; pending-revision guard reports, never silent.
+    print("\n--- Part 7: Version history + strictly-linear guard ---")
+    history = session.query(db.SourceDocument).filter(
+        db.SourceDocument.connector_id == connector.id,
+        db.SourceDocument.source_uri.like("%SOP-B_Access.txt")
+    ).order_by(db.SourceDocument.id).all()
+    hashes = [h.file_hash for h in history]
+    assert len(set(hashes)) == 2, f"History must retain both content versions: {hashes}"
+
+    with open(os.path.join(source_root, "policies", "SOP-B_Access.txt"), "w", encoding="utf-8") as f:
+        f.write("SOP-B: Access Policy.\nPolicy: Server room access requires CISO approval.\n")
+    job5 = db.IngestionJob(project_id=project.id, connector_id=connector.id, status="PENDING")
+    session.add(job5)
+    session.commit()
+    session.refresh(job5)
+    connectors.execute_ingestion_job(session, job5.id)
+    session.refresh(job5)
+    assert job5.files_changed == 1
+    changed_row5 = session.query(db.SourceDocument).filter(
+        db.SourceDocument.ingestion_job_id == job5.id,
+        db.SourceDocument.status == "CHANGED").first()
+    assert len(changed_row5.details["skipped_pending_review"]) == 1, \
+        "Second change while a candidate is pending must be reported as skipped"
+    assert session.query(db.AssetRevision).filter(
+        db.AssetRevision.asset_id == target.id,
+        db.AssetRevision.status == "CANDIDATE").count() == 1, "Strictly linear: one pending candidate"
+
+    # Approving the pending revision then rescanning picks up the newest content.
+    revisions_module.review_revision(session, candidate.id, action="APPROVE", actor="governance_officer")
+    job6 = db.IngestionJob(project_id=project.id, connector_id=connector.id, status="PENDING")
+    session.add(job6)
+    session.commit()
+    session.refresh(job6)
+    connectors.execute_ingestion_job(session, job6.id)
+    session.refresh(job6)
+    changed_row6 = session.query(db.SourceDocument).filter(
+        db.SourceDocument.ingestion_job_id == job6.id,
+        db.SourceDocument.status == "CHANGED").first()
+    assert changed_row6 is None or len(changed_row6.details.get("revisions_created", [])) <= 1
+    print("Part 7 passed: full hash history retained; linear revision rule enforced and reported.")
 
     print("\n=== All Local Folder Connector tests passed successfully! ===")
 

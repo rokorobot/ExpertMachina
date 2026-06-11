@@ -171,6 +171,7 @@ class IngestionJobResponse(BaseModel):
     files_discovered: int
     files_ingested: int
     files_duplicate: int
+    files_changed: int = 0
     files_failed: int
     error: Optional[str] = None
     started_at: datetime
@@ -185,8 +186,9 @@ class SourceDocumentResponse(BaseModel):
     file_hash: Optional[str] = None
     size_bytes: Optional[int] = None
     source_modified_at: Optional[datetime] = None
-    status: str # INGESTED | DUPLICATE | FAILED
+    status: str # INGESTED | DUPLICATE | CHANGED | FAILED
     error: Optional[str] = None
+    details: Optional[dict] = None # change summary for CHANGED rows
     document_id: Optional[int] = None
     created_at: datetime
     class Config:

@@ -9,6 +9,7 @@ from app import database as db
 from app import crud
 from app import ingestion
 from app import extraction
+from app import revisions
 
 # Enterprise Source Connector - LOCAL_FOLDER (MVP 0.10.0).
 #
@@ -92,6 +93,8 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                 job.files_ingested += 1
             elif outcome == "DUPLICATE":
                 job.files_duplicate += 1
+            elif outcome == "CHANGED":
+                job.files_changed += 1
             else:
                 job.files_failed += 1
             session.commit()  # per-file commit: progress polling sees live counts
@@ -116,6 +119,7 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                 "files_discovered": job.files_discovered,
                 "files_ingested": job.files_ingested,
                 "files_duplicate": job.files_duplicate,
+                "files_changed": job.files_changed,
                 "files_failed": job.files_failed,
                 "extraction_error": job.error,
             }))
@@ -150,6 +154,32 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
         with open(source_path, "rb") as f:
             data = f.read()
         record.file_hash = hashlib.sha256(data).hexdigest()
+
+        # Change detection (MVP 0.10.1): within a connector, the source URI is
+        # the file's identity. Same URI + different content = CHANGED - routed
+        # through the EXISTING revision machinery, never a duplicate, never a
+        # second document. The per-scan SourceDocument rows are the version
+        # history: every hash this URI has ever presented is retained.
+        prior = session.query(db.SourceDocument).filter(
+            db.SourceDocument.connector_id == connector.id,
+            db.SourceDocument.source_uri == record.source_uri,
+            db.SourceDocument.document_id.isnot(None),
+        ).order_by(db.SourceDocument.id.desc()).first()
+        if prior and prior.file_hash == record.file_hash:
+            # Unchanged at this URI since the last scan - stays a duplicate
+            # even if its document's content has since moved on via another
+            # path's change (the inventory, not the document hash, is the
+            # source of truth for tracked files).
+            record.status = "DUPLICATE"
+            record.error = f"Unchanged since last scan (document {prior.document_id})"
+            record.document_id = prior.document_id
+            session.add(record)
+            return "DUPLICATE"
+        if prior and prior.file_hash and prior.file_hash != record.file_hash:
+            doc = session.query(db.Document).filter(db.Document.id == prior.document_id).first()
+            if doc:
+                seen_hashes.add(record.file_hash)
+                return _apply_source_change(session, connector, job, record, doc, data)
 
         duplicate_of = None
         if record.file_hash in seen_hashes:
@@ -212,5 +242,134 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
     except Exception as e:
         record.status = "FAILED"
         record.error = str(e)
+        session.add(record)
+        return "FAILED"
+
+
+def _extract_text(file_path: str) -> str:
+    """Text extraction for changed files - mirrors the ingestion fallbacks
+    (.txt/.md read, .pdf via pypdf, .docx via python-docx)."""
+    lower = file_path.lower()
+    if lower.endswith(".docx"):
+        import docx
+        d = docx.Document(file_path)
+        parts = [p.text for p in d.paragraphs if p.text.strip()]
+        for table in d.tables:
+            for row in table.rows:
+                row_text = " | ".join(c.text.strip() for c in row.cells if c.text.strip())
+                if row_text:
+                    parts.append(row_text)
+        return "\n\n".join(parts)
+    if lower.endswith(".pdf"):
+        import pypdf
+        reader = pypdf.PdfReader(file_path)
+        return "\n\n".join(page.extract_text() or "" for page in reader.pages)
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        return f.read()
+
+
+def _discard_temp_asset(session: Session, asset: db.KnowledgeAsset):
+    """Temp extraction rows that reconciled into existing assets are removed
+    with their quality scores - they were never reviewable objects."""
+    session.query(db.QualityScore).filter(db.QualityScore.asset_id == asset.id).delete(synchronize_session=False)
+    session.delete(asset)
+
+
+def _apply_source_change(session: Session, connector: db.SourceConnector, job: db.IngestionJob,
+                         record: db.SourceDocument, doc: db.Document, data: bytes) -> str:
+    """A source file changed (MVP 0.10.1): re-extract the new content and
+    reconcile it against the document's existing assets through the EXISTING
+    governance machinery -
+      approved asset, content differs   -> candidate revision (Revision Workbench)
+      non-approved asset, differs       -> edited in place (the platform rule)
+      no matching asset                 -> new CANDIDATE asset
+      asset with no counterpart anymore -> reported as possibly_stale, untouched
+    Old chunks are kept so approved assets retain verifiable provenance to the
+    content they were approved against until their revisions are approved."""
+    try:
+        filename = os.path.basename(record.source_uri)
+        dest_path = os.path.join(UPLOAD_DIR, f"{job.project_id}_c{connector.id}_{record.file_hash[:8]}_{filename}")
+        with open(dest_path, "wb") as out:
+            out.write(data)
+        new_text = _extract_text(dest_path)
+        if not new_text.strip():
+            raise ValueError("Changed file produced no extractable text")
+
+        # Same Document row, updated source facts - never a second document.
+        doc.file_path = dest_path
+        doc.content_hash = record.file_hash
+        doc.modified_at = datetime.datetime.utcnow()
+        session.commit()
+
+        next_index = session.query(db.DocumentChunk).filter(
+            db.DocumentChunk.document_id == doc.id).count()
+        chunk = db.DocumentChunk(document_id=doc.id, text=new_text, chunk_index=next_index)
+        session.add(chunk)
+        session.commit()
+        session.refresh(chunk)
+
+        # Scoped re-extraction of just the new content, with the same
+        # extractors first ingestion used.
+        before_ids = {a.id for a in session.query(db.KnowledgeAsset).filter(
+            db.KnowledgeAsset.document_id == doc.id).all()}
+        api_key = os.environ.get("OPENAI_API_KEY")
+        if api_key and not api_key.startswith("mock-"):
+            extraction.extract_via_llm(session, job.project_id, doc, chunk, api_key)
+        else:
+            extraction.extract_via_rules(session, job.project_id, doc, chunk)
+
+        all_assets = session.query(db.KnowledgeAsset).filter(
+            db.KnowledgeAsset.document_id == doc.id).all()
+        fresh = [a for a in all_assets if a.id not in before_ids]
+        existing = [a for a in all_assets if a.id in before_ids]
+
+        summary = {"revisions_created": [], "updated_in_place": 0, "assets_added": 0,
+                   "unchanged": 0, "skipped_pending_review": [], "possibly_stale": []}
+        matched_ids = set()
+        for new_asset in fresh:
+            match = next((a for a in existing
+                          if a.type == new_asset.type and a.name == new_asset.name
+                          and a.id not in matched_ids), None)
+            if not match:
+                summary["assets_added"] += 1
+                continue  # genuinely new knowledge stays as an ordinary CANDIDATE
+            matched_ids.add(match.id)
+            if (match.content or "").strip() == (new_asset.content or "").strip():
+                summary["unchanged"] += 1
+                _discard_temp_asset(session, new_asset)
+                continue
+            if match.status == "APPROVED":
+                try:
+                    rev = revisions.create_candidate_revision(
+                        session, match.id, new_asset.content,
+                        actor=f"connector:{connector.name}",
+                        change_reason=f"Source file changed: {record.source_uri}")
+                    summary["revisions_created"].append({"asset_id": match.id, "revision_id": rev.id})
+                except ValueError as e:
+                    # One pending candidate per asset (strictly linear) -
+                    # reported, never silent. The next scan retries.
+                    summary["skipped_pending_review"].append({"asset_id": match.id, "reason": str(e)})
+            else:
+                match.content = new_asset.content
+                match.chunk_id = new_asset.chunk_id
+                match.source_hash = new_asset.source_hash
+                summary["updated_in_place"] += 1
+            _discard_temp_asset(session, new_asset)
+        summary["possibly_stale"] = [
+            {"asset_id": a.id, "name": a.name} for a in existing if a.id not in matched_ids]
+        session.commit()
+
+        record.status = "CHANGED"
+        record.document_id = doc.id
+        record.details_json = json.dumps(summary)
+        session.add(record)
+        crud.log_audit_event(
+            session, actor=f"connector:{connector.name}", event_type="SOURCE_CHANGE_DETECTED",
+            target_id=str(doc.id),
+            details=json.dumps({"source_uri": record.source_uri, "new_hash": record.file_hash, **summary}))
+        return "CHANGED"
+    except Exception as e:
+        record.status = "FAILED"
+        record.error = f"Change handling failed: {e}"
         session.add(record)
         return "FAILED"

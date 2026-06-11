@@ -51,6 +51,7 @@ class IngestionJob(Base):
     files_discovered = Column(Integer, default=0)
     files_ingested = Column(Integer, default=0)
     files_duplicate = Column(Integer, default=0)
+    files_changed = Column(Integer, default=0) # MVP 0.10.1: source changed -> candidate revisions
     files_failed = Column(Integer, default=0)
     error = Column(Text, nullable=True) # job-level failure / non-fatal extraction error
     started_at = Column(DateTime, default=datetime.datetime.utcnow)
@@ -69,10 +70,16 @@ class SourceDocument(Base):
     file_hash = Column(String, nullable=True) # sha256 of file content
     size_bytes = Column(Integer, nullable=True)
     source_modified_at = Column(DateTime, nullable=True)
-    status = Column(String, default="INGESTED") # INGESTED | DUPLICATE | FAILED
+    status = Column(String, default="INGESTED") # INGESTED | DUPLICATE | CHANGED | FAILED
     error = Column(Text, nullable=True)
+    details_json = Column(Text, nullable=True) # MVP 0.10.1: change summary (revisions created, assets added, ...)
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def details(self):
+        import json
+        return json.loads(self.details_json) if self.details_json else None
 
 
 class Document(Base):
@@ -387,6 +394,12 @@ def _ensure_columns():
         },
         "documents": {
             "content_hash": "TEXT",
+        },
+        "ingestion_jobs": {
+            "files_changed": "INTEGER DEFAULT 0",
+        },
+        "source_documents": {
+            "details_json": "TEXT",
         },
     }
     with engine.connect() as conn:

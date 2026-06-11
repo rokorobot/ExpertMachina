@@ -2486,6 +2486,10 @@ export default function Home() {
                                   <span className="text-yellow-400 font-bold">{job.files_duplicate}</span>
                                 </div>
                                 <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                  <span className="text-slate-500 block text-[8px] uppercase">Changed</span>
+                                  <span className={`font-bold ${job.files_changed > 0 ? 'text-cyan-400' : 'text-slate-500'}`}>{job.files_changed}</span>
+                                </div>
+                                <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
                                   <span className="text-slate-500 block text-[8px] uppercase">Failed</span>
                                   <span className={`font-bold ${job.files_failed > 0 ? 'text-rose-400' : 'text-slate-500'}`}>{job.files_failed}</span>
                                 </div>
@@ -2505,12 +2509,30 @@ export default function Home() {
                                     <span className={`px-1.5 py-0.5 rounded font-bold ${
                                       f.status === 'INGESTED' ? 'bg-emerald-950/40 text-emerald-400' :
                                       f.status === 'DUPLICATE' ? 'bg-yellow-950/40 text-yellow-400' :
+                                      f.status === 'CHANGED' ? 'bg-cyan-950/40 text-cyan-400' :
                                       'bg-rose-950/40 text-rose-400'
                                     }`}>{f.status}</span>
                                     <span className="text-slate-300 flex-1 min-w-[200px] truncate" title={f.source_uri}>{f.source_uri}</span>
                                     {f.size_bytes !== null && <span className="text-slate-600">{f.size_bytes} B</span>}
                                     {f.document_id && <span className="text-cyan-400">DOC-{f.document_id}</span>}
                                     {f.error && <span className="text-slate-400 italic w-full pl-1">{f.error}</span>}
+                                    {f.status === 'CHANGED' && f.details && (
+                                      <span className="text-slate-400 w-full pl-1">
+                                        {f.details.revisions_created.length > 0 && (
+                                          <button
+                                            onClick={() => openDeepLink(`/?tab=revisions&revision=${f.details!.revisions_created[0].revision_id}`)}
+                                            className="text-cyan-400 hover:text-cyan-300 underline decoration-dotted mr-2"
+                                          >
+                                            {f.details.revisions_created.length} candidate revision{f.details.revisions_created.length > 1 ? 's' : ''} created — review
+                                          </button>
+                                        )}
+                                        {f.details.assets_added > 0 && <span className="mr-2">{f.details.assets_added} new asset{f.details.assets_added > 1 ? 's' : ''}</span>}
+                                        {f.details.updated_in_place > 0 && <span className="mr-2">{f.details.updated_in_place} updated in place</span>}
+                                        {f.details.skipped_pending_review.length > 0 && (
+                                          <span className="text-yellow-400 mr-2">{f.details.skipped_pending_review.length} skipped (revision already pending)</span>
+                                        )}
+                                      </span>
+                                    )}
                                   </div>
                                 ))}
                               </div>
