@@ -124,8 +124,10 @@ revisions, console (mock), agents, audit. Governance workflows are URL-addressab
 
 ## Next milestones (agreed order)
 
-1. **v0.11.0 — Source Connector Framework** (multi-source; "Sources & Connectors"
-   becomes a first-class UI area only then)
+1. **v0.11.0 — Source Connector Framework** (framework-first: retrofit
+   LocalFolder as the first provider; design contract + acceptance test in
+   docs/scoping-0.11-connector-framework.md; "Sources & Connectors" becomes a
+   first-class UI area only then)
 2. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
    config store — app currently has env-vars only)
 3. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until

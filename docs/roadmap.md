@@ -76,7 +76,10 @@ maintain it at enterprise scale?":
   real provider before adding more — then reused by SharePoint / Drive /
   Confluence / Notion / S3 / Git plugins. A first-class "Sources & Connectors"
   UI area becomes justified by plurality (D8); cloud connectors needing stored
-  credentials stay blocked on the v1.x identity layer.
+  credentials stay blocked on the v1.x identity layer. Full design contract:
+  [scoping-0.11-connector-framework.md](scoping-0.11-connector-framework.md) —
+  acceptance test: LocalFolder gets thinner, behavior stays identical, existing
+  test suites pass unchanged; hard rule: no cloud provider before the retrofit.
 
 ---
 
