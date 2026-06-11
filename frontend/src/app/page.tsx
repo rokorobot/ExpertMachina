@@ -159,6 +159,14 @@ export default function Home() {
     }
   }, [activeTab, experts]);
 
+  // Audit Ledger Explorer state
+  const [auditCategory, setAuditCategory] = useState<'ALL' | 'QUERIES' | 'GATEWAY' | 'PUBLICATION' | 'REVISIONS' | 'CONFLICTS' | 'ASSETS' | 'DOCUMENTS'>('ALL');
+  const [auditActor, setAuditActor] = useState('');
+  const [auditTarget, setAuditTarget] = useState('');
+  const [auditSince, setAuditSince] = useState('');
+  const [auditUntil, setAuditUntil] = useState('');
+  const [expandedEventId, setExpandedEventId] = useState<number | null>(null);
+
   // Revision Review Workbench state
   const [revisionStatusFilter, setRevisionStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
   const [revisionReview, setRevisionReview] = useState<{ id: number; action: 'APPROVE' | 'REJECT' } | null>(null);
@@ -2449,55 +2457,249 @@ export default function Home() {
                 </div>
               )}
 
-              {/* TAB 5: AUDIT LEDGER */}
+              {/* TAB 5: AUDIT LEDGER EXPLORER */}
               {activeTab === 'audit' && (
-                <div className="glass-panel p-6 rounded-xl space-y-6">
-                  <div className="flex justify-between items-center border-b border-slate-900 pb-3">
-                    <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
-                      <History className="w-4 h-4 text-cyan-400" />
-                      Immutable Transformation Ledger (Audit Trial Log)
-                    </h3>
-                    <button 
-                      onClick={fetchAuditTrail}
-                      className="text-[10px] text-slate-400 hover:text-slate-200 font-mono bg-slate-900 border border-slate-800 rounded px-2.5 py-1"
-                    >
-                      SYNC REFRESH
-                    </button>
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
+                        <History className="w-4 h-4 text-cyan-400" />
+                        Audit Ledger Explorer
+                        <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                          Immutable event stream — what did the agent know, cite, and rely on?
+                        </span>
+                      </h3>
+                      <button
+                        onClick={() => fetchAuditTrail({
+                          actor: auditActor.trim() || undefined,
+                          target_id: auditTarget.trim() || undefined,
+                          since: auditSince || undefined,
+                          until: auditUntil || undefined,
+                        })}
+                        className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/30 border border-cyan-900/40 rounded px-3 py-1.5 uppercase tracking-wider"
+                      >
+                        Apply Filters
+                      </button>
+                    </div>
+
+                    {/* FILTER BAR */}
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Actor / Agent</label>
+                        <input type="text" placeholder="e.g. live-verification-agent" value={auditActor}
+                          onChange={(e) => setAuditActor(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] focus:border-cyan-500 outline-none text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">Target (model / asset)</label>
+                        <input type="text" placeholder="e.g. 11" value={auditTarget}
+                          onChange={(e) => setAuditTarget(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] focus:border-cyan-500 outline-none text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">From</label>
+                        <input type="date" value={auditSince} onChange={(e) => setAuditSince(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] focus:border-cyan-500 outline-none text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-[10px] text-slate-400 font-mono mb-1 uppercase">To</label>
+                        <input type="date" value={auditUntil} onChange={(e) => setAuditUntil(e.target.value)}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-1.5 text-[11px] focus:border-cyan-500 outline-none text-slate-200" />
+                      </div>
+                    </div>
+
+                    {/* CATEGORY CHIPS */}
+                    <div className="flex flex-wrap gap-2">
+                      {([
+                        ['ALL', 'All'], ['QUERIES', 'Answer Traces'], ['GATEWAY', 'Agent Gateway'],
+                        ['PUBLICATION', 'Compile Gates'], ['REVISIONS', 'Revisions'],
+                        ['CONFLICTS', 'Conflicts'], ['ASSETS', 'Assets'], ['DOCUMENTS', 'Documents']
+                      ] as const).map(([key, label]) => (
+                        <button key={key} onClick={() => setAuditCategory(key)}
+                          className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                            auditCategory === key
+                              ? 'bg-cyan-950/40 text-cyan-400 border-cyan-800'
+                              : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                          }`}>
+                          {label}
+                        </button>
+                      ))}
+                    </div>
                   </div>
 
-                  <div className="relative border-l border-slate-900 ml-4 pl-6 space-y-6 py-4 max-h-[500px] overflow-y-auto">
-                    {auditEvents.length === 0 ? (
-                      <div className="text-slate-500 italic text-xs text-center pr-6 py-10">
-                        No events logged in the secure ledger yet.
+                  {/* EVENT LIST WITH TRACE VIEWS */}
+                  {(() => {
+                    const inCategory = (t: string) => {
+                      switch (auditCategory) {
+                        case 'QUERIES': return t.startsWith('ASK_EXPERT');
+                        case 'GATEWAY': return t === 'MCP_TOOL_CALLED';
+                        case 'PUBLICATION': return t === 'AGENT_PACKAGE_CREATED' || t.startsWith('GOVERNANCE_BLOCKED');
+                        case 'REVISIONS': return t.startsWith('ASSET_REVISION');
+                        case 'CONFLICTS': return t.startsWith('KNOWLEDGE_CONFLICT') || t === 'CONFLICT_SCAN_COMPLETED';
+                        case 'ASSETS': return t.startsWith('ASSET_') && !t.startsWith('ASSET_REVISION');
+                        case 'DOCUMENTS': return t.startsWith('DOCUMENT');
+                        default: return true;
+                      }
+                    };
+                    const visible = auditEvents.filter(e => inCategory(e.event_type));
+
+                    const chipClass = (t: string) =>
+                      t.startsWith('ASK_EXPERT_BLOCKED') || t.startsWith('GOVERNANCE_BLOCKED') ? 'bg-rose-950/40 text-rose-400 border-rose-900/50' :
+                      t.startsWith('ASK_EXPERT') ? 'bg-cyan-950/40 text-cyan-400 border-cyan-900/40' :
+                      t === 'MCP_TOOL_CALLED' ? 'bg-purple-950/40 text-purple-400 border-purple-900/50' :
+                      t.startsWith('ASSET_REVISION') ? 'bg-yellow-950/40 text-yellow-400 border-yellow-900/50' :
+                      t.startsWith('KNOWLEDGE_CONFLICT') || t === 'CONFLICT_SCAN_COMPLETED' ? 'bg-orange-950/40 text-orange-400 border-orange-900/50' :
+                      t === 'AGENT_PACKAGE_CREATED' ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/50' :
+                      'bg-slate-900 text-slate-400 border-slate-800';
+
+                    const parse = (details: string) => { try { return JSON.parse(details); } catch { return null; } };
+                    const short = (h: unknown) => typeof h === 'string' && h.length > 18 ? h.slice(0, 18) + '…' : String(h ?? '—');
+
+                    const Row = ({ label, children }: { label: string; children: React.ReactNode }) => (
+                      <div className="flex gap-2 items-baseline">
+                        <span className="text-[9px] font-mono text-slate-500 uppercase w-40 shrink-0">{label}</span>
+                        <span className="text-[11px] text-slate-300 font-mono break-all">{children}</span>
                       </div>
-                    ) : (
-                      auditEvents.map((evt) => (
-                        <div key={evt.id} className="relative">
-                          {/* Dot marker */}
-                          <span className="absolute -left-[30px] top-1.5 w-3 h-3 rounded-full bg-slate-900 border-2 border-cyan-400 flex items-center justify-center">
-                            <span className="w-1 h-1 rounded-full bg-slate-950"></span>
-                          </span>
-                          
-                          <div className="space-y-1">
-                            <div className="flex items-center gap-2">
-                              <span className="text-[10px] text-slate-500 font-mono">
-                                {new Date(evt.timestamp).toLocaleString()}
+                    );
+
+                    const renderTrace = (evt: typeof auditEvents[number]) => {
+                      const t = evt.event_type;
+                      const d = parse(evt.details);
+                      if (!d) return <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap">{evt.details}</pre>;
+
+                      if (t.startsWith('ASK_EXPERT')) {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Who asked">{d.operator} <span className="text-slate-500">· clearance {d.caller_access_level}</span></Row>
+                            <Row label="Question">{d.question}</Row>
+                            <Row label="Retrieved assets">{(d.retrieved_assets || []).join(', ') || 'none'}</Row>
+                            {(d.access_blocked_assets || []).length > 0 && (
+                              <Row label="Blocked by clearance"><span className="text-rose-400">{d.access_blocked_assets.join(', ')}</span></Row>
+                            )}
+                            <Row label="Validated citations">{(d.used_evidence_ids || []).join(', ') || 'none'}</Row>
+                            {(d.contradicted_claims || []).length > 0 && (
+                              <Row label="Contradicted claims"><span className="text-rose-400">{d.contradicted_claims.join(' | ')}</span></Row>
+                            )}
+                            {(d.unsupported_claims || []).length > 0 && (
+                              <Row label="Unsupported claims">{d.unsupported_claims.join(' | ')}</Row>
+                            )}
+                            <Row label="Verdict">
+                              <span className={d.verification_status === 'VERIFIED' ? 'text-emerald-400' : d.verification_status === 'PARTIALLY_VERIFIED' ? 'text-yellow-400' : 'text-rose-400'}>
+                                {d.verification_status}
                               </span>
-                              <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-cyan-400 border border-slate-850 uppercase">
-                                {evt.event_type}
-                              </span>
-                            </div>
-                            <p className="text-xs text-slate-300 font-mono">
-                              {evt.details}
-                            </p>
-                            <div className="text-[9px] text-slate-500 font-mono">
-                              Actor: {evt.actor} | Target Node: {evt.target_id || 'System'}
-                            </div>
+                              <span className="text-slate-500"> · coverage {d.coverage_score} · confidence {d.confidence_score}</span>
+                            </Row>
+                            {d.verifier && (
+                              <Row label="Verifier">{d.verifier.method} · {d.verifier.model_id || '—'} · weights {short(d.verifier.weights_hash)} · claims via {d.verifier.claim_decomposition || '—'}</Row>
+                            )}
+                            <Row label="Answer hash">{short(d.answer_hash)}</Row>
                           </div>
+                        );
+                      }
+                      if (t === 'MCP_TOOL_CALLED') {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Agent">{d.agent_id} <span className="text-slate-500">· clearance {d.clearance}</span></Row>
+                            <Row label="Tool">{d.tool_name} <span className="text-slate-500">({d.gateway_version})</span></Row>
+                            <Row label="Expert model">EM-{d.expert_model_id}</Row>
+                            {d.question && <Row label="Question">{d.question}</Row>}
+                          </div>
+                        );
+                      }
+                      if (t === 'GOVERNANCE_BLOCKED_UNRESOLVED_CONFLICTS') {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Attempted package">{d.attempted_package_name}</Row>
+                            <Row label="Verdict"><span className="text-rose-400">PUBLICATION BLOCKED</span></Row>
+                            {(d.blocking_conflicts || []).map((b: { reason: string; classification: string | null; source_asset_id: number | null; target_asset_id: number | null; confidence: number | null }, i: number) => (
+                              <Row key={i} label={`Blocking conflict ${i + 1}`}>
+                                {b.reason}{b.classification ? ` · ${b.classification}` : ''}{b.source_asset_id ? ` · assets ${b.source_asset_id}↔${b.target_asset_id}` : ''}{b.confidence ? ` · conf ${b.confidence}` : ''}
+                              </Row>
+                            ))}
+                            <Row label="Policy">confirmed={d.policy?.confirmed_policy} · blocking classes: {(d.policy?.blocking_classifications || []).join(', ')}</Row>
+                          </div>
+                        );
+                      }
+                      if (t === 'AGENT_PACKAGE_CREATED' && d.compile_gate) {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Package">{d.package_name} <span className="text-slate-500">· EM-{d.expert_model_id} · v{d.governance_version}</span></Row>
+                            <Row label="Gate verdict"><span className="text-emerald-400">ALLOWED</span></Row>
+                            <Row label="Conflict scan performed">{String(d.compile_gate.conflict_scan_performed)}</Row>
+                            <Row label="Advisory / dismissed">{d.compile_gate.advisory_conflicts} / {d.compile_gate.dismissed_conflicts}</Row>
+                            <Row label="Policy">confirmed={d.compile_gate.policy?.confirmed_policy}</Row>
+                          </div>
+                        );
+                      }
+                      if (t.startsWith('ASSET_REVISION')) {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Asset / revision">asset {d.asset_id} · rev {d.revision_number}</Row>
+                            {d.supersedes_revision_id != null && <Row label="Supersedes">revision row {d.supersedes_revision_id}</Row>}
+                            {d.superseded_revision_id != null && <Row label="Superseded">revision row {d.superseded_revision_id}</Row>}
+                            {d.change_reason && <Row label="Change reason">{d.change_reason}</Row>}
+                            {d.notes && <Row label="Review notes">{d.notes}</Row>}
+                            {d.content_hash && <Row label="Content hash">{short(d.content_hash)}</Row>}
+                            {(d.post_approval_scans || []).map((s: { expert_model_id: number; conflicts_found?: number; invalidated_reviews?: number; semantic_conflict_score?: number }, i: number) => (
+                              <Row key={i} label={`Auto-rescan EM-${s.expert_model_id}`}>
+                                {s.conflicts_found ?? 0} conflicts · {s.invalidated_reviews ?? 0} verdicts invalidated · score {s.semantic_conflict_score}
+                              </Row>
+                            ))}
+                          </div>
+                        );
+                      }
+                      if (t.startsWith('KNOWLEDGE_CONFLICT')) {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Pair">assets {d.source_asset_id} ↔ {d.target_asset_id}</Row>
+                            {d.classification && <Row label="Classification">{d.classification}</Row>}
+                            {d.confidence != null && <Row label="Confidence">{d.confidence}</Row>}
+                            {d.notes && <Row label="Decision reason">{d.notes}</Row>}
+                            {d.verifier && <Row label="Verifier">{d.verifier.method} · weights {short(d.verifier.weights_hash)}</Row>}
+                          </div>
+                        );
+                      }
+                      if (t === 'CONFLICT_SCAN_COMPLETED') {
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Scanned / pairs">{d.scanned_assets} assets · {d.compared_pairs} pairs{d.dropped_pairs ? ` · ${d.dropped_pairs} dropped` : ''}</Row>
+                            <Row label="Found">{d.conflicts_found} conflicts · {d.supports_found} supports</Row>
+                            {d.semantic_conflict_score != null && <Row label="Conflict score">{d.semantic_conflict_score} — {d.semantic_conflict_summary}</Row>}
+                          </div>
+                        );
+                      }
+                      return <pre className="text-[10px] text-slate-400 font-mono whitespace-pre-wrap max-h-48 overflow-y-auto">{JSON.stringify(d, null, 2)}</pre>;
+                    };
+
+                    return (
+                      <div className="glass-panel p-6 rounded-xl">
+                        <div className="text-[10px] font-mono text-slate-500 pb-3">{visible.length} event{visible.length === 1 ? '' : 's'}</div>
+                        <div className="space-y-2 max-h-[560px] overflow-y-auto pr-2">
+                          {visible.length === 0 ? (
+                            <div className="text-slate-500 italic text-xs text-center py-10">No events match the current filters.</div>
+                          ) : visible.map((evt) => {
+                            const expanded = expandedEventId === evt.id;
+                            return (
+                              <div key={evt.id} className={`bg-slate-950/50 border rounded-lg transition-colors ${expanded ? 'border-cyan-900/60' : 'border-slate-900 hover:border-slate-800'}`}>
+                                <div className="flex flex-wrap items-center gap-2 p-2.5 cursor-pointer"
+                                  onClick={() => setExpandedEventId(expanded ? null : evt.id)}>
+                                  <span className="text-[10px] text-slate-500 font-mono w-36 shrink-0">{new Date(evt.timestamp).toLocaleString()}</span>
+                                  <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase ${chipClass(evt.event_type)}`}>{evt.event_type}</span>
+                                  <span className="text-[10px] text-slate-400 font-mono">{evt.actor}</span>
+                                  {evt.target_id && <span className="text-[9px] text-slate-600 font-mono ml-auto">target {evt.target_id}</span>}
+                                </div>
+                                {expanded && (
+                                  <div className="border-t border-slate-900/60 p-3.5">
+                                    {renderTrace(evt)}
+                                  </div>
+                                )}
+                              </div>
+                            );
+                          })}
                         </div>
-                      ))
-                    )}
-                  </div>
+                      </div>
+                    );
+                  })()}
                 </div>
               )}
 

@@ -273,8 +273,19 @@ def get_compile_gate(expert_model_id: int, db_session: Session = Depends(get_db)
 
 # Audit Trail routes
 @app.get("/api/audit", response_model=List[schemas.AuditEventResponse])
-def get_audit_trail(limit: int = 100, db_session: Session = Depends(get_db)):
-    return crud.get_audit_events(db_session, limit=limit)
+def get_audit_trail(
+    limit: int = 100,
+    event_prefix: Optional[str] = None,
+    actor: Optional[str] = None,
+    target_id: Optional[str] = None,
+    since: Optional[datetime.datetime] = None,
+    until: Optional[datetime.datetime] = None,
+    db_session: Session = Depends(get_db)
+):
+    return crud.get_audit_events(
+        db_session, limit=limit, event_prefix=event_prefix,
+        actor=actor, target_id=target_id, since=since, until=until
+    )
 
 # Dashboard summaries
 @app.get("/api/dashboard/{project_id}")

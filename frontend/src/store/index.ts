@@ -262,7 +262,7 @@ interface AppState {
   bulkUpdateAssetStatus: (assetIds: number[], status: string) => Promise<void>;
   createExpertModel: (projectId: number, name: string, description: string, assetIds: number[]) => Promise<void>;
   createAgentPackage: (projectId: number, name: string, expertModelId: number, version?: string) => Promise<void>;
-  fetchAuditTrail: () => Promise<void>;
+  fetchAuditTrail: (filters?: { actor?: string; target_id?: string; since?: string; until?: string; limit?: number }) => Promise<void>;
   deleteAsset: (assetId: number) => Promise<void>;
   deleteDocumentAssets: (documentId: number, status?: string) => Promise<void>;
 
@@ -484,9 +484,15 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  fetchAuditTrail: async () => {
+  fetchAuditTrail: async (filters?: { actor?: string; target_id?: string; since?: string; until?: string; limit?: number }) => {
     try {
-      const res = await fetch(`${API_BASE}/audit`);
+      const params = new URLSearchParams();
+      params.set('limit', String(filters?.limit ?? 300));
+      if (filters?.actor) params.set('actor', filters.actor);
+      if (filters?.target_id) params.set('target_id', filters.target_id);
+      if (filters?.since) params.set('since', filters.since);
+      if (filters?.until) params.set('until', filters.until);
+      const res = await fetch(`${API_BASE}/audit?${params.toString()}`);
       if (res.ok) {
         const data = await res.json();
         set({ auditEvents: data });

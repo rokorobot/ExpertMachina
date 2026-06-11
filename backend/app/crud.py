@@ -393,8 +393,23 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
     return db_package
 
 # Audit Ledger Retrieves
-def get_audit_events(session: Session, limit: int = 100):
-    return session.query(db.AuditEvent).order_by(db.AuditEvent.timestamp.desc()).limit(limit).all()
+def get_audit_events(session: Session, limit: int = 100, event_prefix: str = None,
+                     actor: str = None, target_id: str = None,
+                     since: datetime.datetime = None, until: datetime.datetime = None):
+    """Audit Ledger Explorer query: every filter narrows the immutable event
+    stream; no filter ever mutates it."""
+    query = session.query(db.AuditEvent)
+    if event_prefix:
+        query = query.filter(db.AuditEvent.event_type.like(f"{event_prefix}%"))
+    if actor:
+        query = query.filter(db.AuditEvent.actor == actor)
+    if target_id:
+        query = query.filter(db.AuditEvent.target_id == str(target_id))
+    if since:
+        query = query.filter(db.AuditEvent.timestamp >= since)
+    if until:
+        query = query.filter(db.AuditEvent.timestamp <= until)
+    return query.order_by(db.AuditEvent.timestamp.desc()).limit(limit).all()
 
 # Delete Operations
 def delete_knowledge_asset(session: Session, asset_id: int, actor: str = "system"):
