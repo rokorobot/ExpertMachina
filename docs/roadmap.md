@@ -18,8 +18,8 @@
 | MVP 0.9.4 | Agent Package Builder (.empkg) | ✅ Completed |
 | MVP 0.10.0 | Local Folder Connector | ✅ Completed |
 | MVP 0.10.1 | Change Detection / Incremental Sync | ✅ Completed |
-| MVP 0.10.2 | Policy-Based Auto Approval | 📋 Next |
-| MVP 0.11 | Source Connector Framework (multi-source) | 📋 Planned |
+| MVP 0.10.2 | Policy-Based Auto Approval | ✅ Completed |
+| MVP 0.11 | Source Connector Framework (multi-source) | 📋 Next |
 | — | LLM Provider Settings (model-per-function) | 📋 Planned (utility) |
 | MVP 1.0 | Enterprise Platform (identity, roles, credentials, deployment) | 📋 Planned |
 
@@ -60,10 +60,16 @@ maintain it at enterprise scale?":
 - **0.10.1 Change Detection (✅)** — a changed source file becomes a candidate
   revision through the existing revision machinery; per-scan source rows retain
   the full hash history; approved content never changes until a human approves.
-- **0.10.2 Policy-Based Auto Approval (next)** — auto-approve configured low-risk
-  document classes (audit-logged "approved by policy"), keeping manual review
-  for regulated classes; the pressure valve bulk ingestion requires.
-- **0.11 Source Connector Framework** — multiple source types (SharePoint,
+- **0.10.2 Policy-Based Auto Approval (✅)** — deterministic, versioned
+  per-project rules (asset types, optional connector scope) auto-approve
+  low-risk CANDIDATE assets at ingestion through the same transition path a
+  human approval uses; every auto-approval carries machine-verifiable policy
+  snapshot provenance (`ASSET_AUTO_APPROVED`) and declined assets are declared,
+  never silent. Candidate revisions of approved assets remain human-gated by
+  ruling (D17). **Explicitly deferred**: semantic/condition-based rules
+  (formatting-only diffs, NLI contradiction checks) and revision auto-approval
+  — those belong to the phased validation track (deterministic → NLI → LLM).
+- **0.11 Source Connector Framework (next)** — multiple source types (SharePoint,
   Drive, Confluence, S3, Git); a first-class "Sources & Connectors" area becomes
   justified; cloud connectors blocked on the v1.x credentials/identity layer.
 

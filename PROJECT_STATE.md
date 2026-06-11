@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-11 · current version **v0.10.1** · HEAD `a66c83d` · branch `main`
+**Snapshot:** 2026-06-11 · current version **v0.10.2** · HEAD `051d00a` · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -21,7 +21,8 @@ revision-controlled.
 Folder (Local Connector)          v0.10.0  scan-now bulk ingestion, dedup, per-file status
   ↓ change detection              v0.10.1  changed source → candidate revision
 Documents → CANDIDATE assets               existing extraction pipeline (OpenAI gpt-4o-mini or rules)
-  ↓ human approval                         review queue (bulk + hotkeys)
+  ↓ policy auto-approval          v0.10.2  versioned per-project rules, new candidates only (D17)
+  ↓ human approval                         review queue (bulk + hotkeys); revisions ALWAYS human-gated
 APPROVED assets                            revision-controlled (never edited in place)
   ↓ governance engines                     conflicts (NLI), claims, verification, trust
 Expert Model                               trust score (5 explainable components)
@@ -52,6 +53,7 @@ Readiness per model; deep links into specialized workbenches; URL-addressable.
 | `governance_inbox.py` | computed inbox + readiness (NO work-item table by design) |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
 | `connectors.py` | LOCAL_FOLDER scan worker: dedup, change detection → revisions |
+| `policy.py` | Policy-Based Auto Approval engine: deterministic type+scope match, policy snapshot provenance |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools over Governance Contract v1 |
 | `query_engine.py` | retrieval + validation + generation + claim verification; `ACCESS_RANK` |
 
@@ -59,14 +61,27 @@ Key tables: Project, Document(+content_hash), DocumentChunk, KnowledgeAsset,
 AssetRevision, AssetReview, AssetRelationship (conflicts, per expert model),
 ExpertModel, AgentPackage(+clearance/file/hash/manifest), AuditEvent,
 BenchmarkQuestion, EvaluationRun, EvaluationQuestionResult, ClaimVerdict (immutable),
-SourceConnector, IngestionJob, SourceDocument (per-scan version history).
+SourceConnector, IngestionJob, SourceDocument (per-scan version history),
+ApprovalPolicy (versioned governed fact: asset_types JSON, optional connector
+scope, enabled flag, version; no delete — disable preserves audit history).
+
+Auto-approval mechanics (v0.10.2, ruling D17): `policy.apply_auto_approval`
+runs after extraction in all three ingestion paths (connector scan — newly
+INGESTED files only, manual upload, manual extract), approves matching
+CANDIDATE assets via the SAME `crud.update_knowledge_asset` path a human uses,
+actor `policy:<name>`. Never touches CHANGED files / candidate revisions.
+Audit event types: POLICY_CREATED / POLICY_UPDATED (version bump) /
+POLICY_ENABLED / POLICY_DISABLED (no bump), ASSET_AUTO_APPROVED (per-asset
+policy snapshot provenance incl. approved_without_human), and
+POLICY_AUTOAPPROVAL_COMPLETED (per-run summary incl. declared skips).
 
 ## Frontend (`frontend/src/app/page.tsx` + `src/store/index.ts`)
 
 Single-page Next.js + Zustand. Tabs: dashboard, **inbox**, documents (upload + **Scan
-Folder** + ingestion jobs), assets, experts (+trust explainer, package compiler/export),
-evaluations (+coverage trend, claim verdicts), conflicts, revisions, console (mock),
-agents, audit. Governance workflows are URL-addressable
+Folder** + **Approval Policies** panel + ingestion jobs), assets (review queue with
+"Policy: <name>" badge + policy-approved spot-check filter), experts (+trust explainer,
+package compiler/export), evaluations (+coverage trend, claim verdicts), conflicts,
+revisions, console (mock), agents, audit. Governance workflows are URL-addressable
 (`?tab=conflicts&expert=11&relationship=42` etc. hydrate on cold load).
 
 ## Release log (this development line)
@@ -82,6 +97,7 @@ agents, audit. Governance workflows are URL-addressable
 | v0.10.0 | `e9dfb56` | Local Folder Connector (scan-now, dedup, per-file status) |
 | — | `05ef588` | Folder ingestion folded into Document Inventory (UI ruling) |
 | v0.10.1 | `a66c83d` | Change Detection → candidate revisions via existing machinery |
+| v0.10.2 | `051d00a` | Policy-Based Auto Approval (versioned policies, snapshot provenance, D17) |
 
 ## How to run
 
@@ -90,10 +106,14 @@ agents, audit. Governance workflows are URL-addressable
   `frontend`, port 3000). Backend venv: `backend/.venv`.
 - DB: SQLite `backend/expert_machina.db` (live demo data, project 1 = Clinical QA
   Automation). Schema migrates additively on startup via `database._ensure_columns`.
+  Note: the demo DB contains a DISABLED test policy (id 1, "Low-risk descriptive
+  docs") from v0.10.2 live verification — harmless; remove via SQL if a clean
+  demo is wanted (there is deliberately no delete endpoint).
 - `npm run build` fails on PRE-EXISTING lint errors (any-types, unescaped quotes);
   dev mode works. `npx tsc --noEmit` is clean — use it as the frontend check.
 - Tests: standalone scripts in `backend/`, run with the venv python
-  (`test_local_connector.py`, `test_claim_verdicts.py`, `test_package_builder.py`,
+  (`test_auto_approval.py`,
+  `test_local_connector.py`, `test_claim_verdicts.py`, `test_package_builder.py`,
   `test_governance_inbox.py`, `test_compile_gates.py`, `test_revision_workflow.py`,
   `test_conflict_engine.py` (loads NLI), `test_trust_score.py`, ...). Tests that touch
   ingestion must set their own `ingestion.QDRANT_DIR` (dev server locks `./qdrant_db`).
@@ -104,17 +124,18 @@ agents, audit. Governance workflows are URL-addressable
 
 ## Next milestones (agreed order)
 
-1. **v0.10.2 — Policy-Based Auto Approval** (auto-approve low-risk document classes,
-   audit-logged "approved by policy: X"; deterministic class rules first)
-2. **v0.11.0 — Source Connector Framework** (multi-source; "Sources & Connectors"
+1. **v0.11.0 — Source Connector Framework** (multi-source; "Sources & Connectors"
    becomes a first-class UI area only then)
-3. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
+2. **LLM Provider Settings** (small utility milestone; model-per-function; needs a
    config store — app currently has env-vars only)
-4. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until
+3. **v1.0 — Identity, roles, credentials, enterprise deployment** (auth deferred until
    here by explicit decision)
 
-Deprioritized/deferred: AI Governance Analyst, trust history, grouped conflict API,
-asset-claim coverage batch engine + heatmap, notifications, cloud connectors (blocked
-on credentials), agent runtime/orchestration (explicitly out of scope).
+Deprioritized/deferred: semantic/condition-based auto-approval (formatting-only
+diffs, NLI contradiction checks) and revision auto-approval (a separate explicit
+decision per D17, phased validation: deterministic → NLI → LLM), AI Governance
+Analyst, trust history, grouped conflict API, asset-claim coverage batch engine +
+heatmap, notifications, cloud connectors (blocked on credentials), agent
+runtime/orchestration (explicitly out of scope).
 
 Read `docs/DECISIONS.md` for the binding architectural rulings before changing anything.

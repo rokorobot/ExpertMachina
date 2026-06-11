@@ -109,3 +109,30 @@ position as "cross-lingual semantic verification".
 ## D16 — Session/state discipline (meta)
 At every milestone release, regenerate PROJECT_STATE.md (+ this file + roadmap)
 and start fresh AI sessions from them. Repo-resident state beats chat memory.
+
+## D17 — Approval policies are versioned governed facts; auto-approval applies only to new CANDIDATE assets, never to revisions (v0.10.2)
+A policy is a governed object, not a setting. The rules:
+- **Versioned**: any definition change (name, asset types, connector scope)
+  bumps `version`; enable/disable is operational, not definitional — audited
+  (`POLICY_ENABLED`/`POLICY_DISABLED`) but no bump. Past approvals must keep
+  pointing at the exact rule text that fired.
+- **No delete endpoint**: disable instead. Audit history references policies;
+  they must not disappear.
+- **Provenance is mandatory**: every auto-approval writes `ASSET_AUTO_APPROVED`
+  with the policy id/name/version, the rule snapshot that fired,
+  `approved_without_human: true`, and the triggering ingestion job — "why was
+  this approved?" must be answerable from the event alone, indefinitely.
+- **Same transition path as a human**: auto-approval goes through
+  `crud.update_knowledge_asset` (AssetReview row, baseline revision, document
+  lifecycle), only the actor (`policy:<name>`) and audit fingerprint differ.
+  Policy-approved assets must never become a second species of approved asset.
+- **New CANDIDATE assets only, scoped to the triggering ingestion event** —
+  never retroactive, and NEVER candidate revisions: a revision changes
+  already-trusted content, and that judgment stays human. CHANGED source files
+  keep flowing through the D7 revision machinery untouched.
+- **D12 applies**: declined assets are counted and declared in
+  `POLICY_AUTOAPPROVAL_COMPLETED`; when no policy is in scope, nothing runs
+  and nothing claims to have run.
+Semantic conditions (formatting-only diffs, NLI contradiction checks) and any
+future revision auto-approval are a separate, explicit decision — not an
+extension of this one.
