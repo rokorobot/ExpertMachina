@@ -69,9 +69,14 @@ maintain it at enterprise scale?":
   ruling (D17). **Explicitly deferred**: semantic/condition-based rules
   (formatting-only diffs, NLI contradiction checks) and revision auto-approval
   — those belong to the phased validation track (deterministic → NLI → LLM).
-- **0.11 Source Connector Framework (next)** — multiple source types (SharePoint,
-  Drive, Confluence, S3, Git); a first-class "Sources & Connectors" area becomes
-  justified; cloud connectors blocked on the v1.x credentials/identity layer.
+- **0.11 Source Connector Framework (next)** — the FRAMEWORK is the deliverable,
+  individual connectors are plugins. A provider interface (discover, enumerate,
+  fetch, hash, sync state, provenance, change detection) implemented FIRST by
+  retrofitting LocalFolderConnector — proving the abstraction against the one
+  real provider before adding more — then reused by SharePoint / Drive /
+  Confluence / Notion / S3 / Git plugins. A first-class "Sources & Connectors"
+  UI area becomes justified by plurality (D8); cloud connectors needing stored
+  credentials stay blocked on the v1.x identity layer.
 
 ---
 
