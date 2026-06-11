@@ -144,6 +144,7 @@ export default function Home() {
   const [selectedModelId, setSelectedModelId] = useState<number | null>(null);
   const [packageName, setPackageName] = useState('');
   const [packageVersion, setPackageVersion] = useState('0.1.0');
+  const [packageClearance, setPackageClearance] = useState<'PUBLIC' | 'INTERNAL' | 'RESTRICTED' | 'EXECUTIVE'>('INTERNAL');
 
   // Console state
   const [selectedExpertId, setSelectedExpertId] = useState<number | null>(null);
@@ -591,7 +592,7 @@ export default function Home() {
   const handleBuildAgentPackage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!activeProjectId || !packageName.trim() || !selectedModelId) return;
-    await createAgentPackage(activeProjectId, packageName, selectedModelId, packageVersion);
+    await createAgentPackage(activeProjectId, packageName, selectedModelId, packageVersion, packageClearance);
     setPackageName('');
     setSelectedModelId(null);
   };
@@ -1762,13 +1763,29 @@ export default function Home() {
                             
                             <div>
                               <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Governance Version</label>
-                              <input 
-                                type="text" 
+                              <input
+                                type="text"
                                 required
-                                value={packageVersion} 
+                                value={packageVersion}
                                 onChange={(e) => setPackageVersion(e.target.value)}
-                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" 
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200"
                               />
+                            </div>
+
+                            <div>
+                              <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Package Clearance</label>
+                              <select
+                                value={packageClearance}
+                                onChange={(e) => setPackageClearance(e.target.value as typeof packageClearance)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-2 text-xs text-slate-200 outline-none focus:border-cyan-500 transition-colors"
+                              >
+                                {(['PUBLIC', 'INTERNAL', 'RESTRICTED', 'EXECUTIVE'] as const).map(c => (
+                                  <option key={c} value={c}>{c}</option>
+                                ))}
+                              </select>
+                              <span className="text-[9px] text-slate-500 block mt-1">
+                                Assets above this tier are excluded from the exported package.
+                              </span>
                             </div>
                           </div>
 
@@ -1818,13 +1835,36 @@ export default function Home() {
                                 <div className="flex justify-between items-start">
                                   <div>
                                     <h4 className="font-bold text-sm text-slate-200">{pkg.name}</h4>
-                                    <span className="text-[10px] text-slate-500 block mt-0.5">Version: {pkg.governance_version}</span>
+                                    <span className="text-[10px] text-slate-500 block mt-0.5">
+                                      Version: {pkg.governance_version}
+                                      {pkg.clearance_level && <> · Clearance: <span className="text-cyan-400">{pkg.clearance_level}</span></>}
+                                      {pkg.manifest?.trust_score != null && <> · Trust at compile: <span className="text-emerald-400">{pkg.manifest.trust_score}</span></>}
+                                    </span>
                                   </div>
                                   <div className="text-right">
                                     <span className="text-[10px] text-emerald-400 font-bold block">Avg Quality</span>
                                     <span className="text-sm font-black font-mono text-slate-200">{pkg.quality_score}%</span>
                                   </div>
                                 </div>
+
+                                {pkg.package_hash && (
+                                  <div className="flex flex-wrap items-center justify-between gap-2 bg-slate-900/60 border border-slate-900 rounded p-2">
+                                    <span className="text-[9px] font-mono text-slate-500" title={pkg.package_hash}>
+                                      Package hash: <span className="text-slate-300">{pkg.package_hash.slice(0, 20)}…</span>
+                                      {pkg.manifest && pkg.manifest.excluded_assets_above_clearance > 0 && (
+                                        <span className="text-yellow-400 block">
+                                          {pkg.manifest.excluded_assets_above_clearance} asset{pkg.manifest.excluded_assets_above_clearance > 1 ? 's' : ''} excluded above clearance
+                                        </span>
+                                      )}
+                                    </span>
+                                    <a
+                                      href={`http://localhost:8000/api/packages/${pkg.id}/download`}
+                                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1.5 bg-cyan-950/20 px-3 py-1.5 rounded border border-cyan-900/30 transition-colors"
+                                    >
+                                      <FileCode2 className="w-3 h-3" /> Download .empkg
+                                    </a>
+                                  </div>
+                                )}
 
                                 <div className="border-t border-slate-900/60 pt-2 space-y-1">
                                   <span className="text-[9px] text-slate-500 block uppercase font-mono tracking-wider">Governed Knowledge Contents ({assetRefs.length} assets)</span>

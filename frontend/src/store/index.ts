@@ -78,6 +78,21 @@ export interface ExpertModel {
   created_at: string;
 }
 
+export interface AgentPackageManifest {
+  package_format: string;
+  package_name: string;
+  expert_model_id: number;
+  expert_model: string;
+  governance_version: string;
+  clearance_level: string;
+  compiled_at: string;
+  trust_score: number | null;
+  asset_count: number;
+  excluded_assets_above_clearance: number;
+  knowledge_hash: string;
+  files: Record<string, string>;
+}
+
 export interface AgentPackage {
   id: number;
   project_id: number;
@@ -87,6 +102,9 @@ export interface AgentPackage {
   quality_score: number;
   asset_references: string;
   created_at: string;
+  clearance_level: string | null;
+  package_hash: string | null;
+  manifest: AgentPackageManifest | null;
 }
 
 export interface AssetRelationship {
@@ -376,7 +394,7 @@ interface AppState {
   updateAssetStatus: (assetId: number, status: string, notes?: string) => Promise<void>;
   bulkUpdateAssetStatus: (assetIds: number[], status: string) => Promise<void>;
   createExpertModel: (projectId: number, name: string, description: string, assetIds: number[]) => Promise<void>;
-  createAgentPackage: (projectId: number, name: string, expertModelId: number, version?: string) => Promise<void>;
+  createAgentPackage: (projectId: number, name: string, expertModelId: number, version?: string, clearanceLevel?: string) => Promise<void>;
   fetchAuditTrail: (filters?: { actor?: string; target_id?: string; since?: string; until?: string; limit?: number }) => Promise<void>;
   deleteAsset: (assetId: number) => Promise<void>;
   deleteDocumentAssets: (documentId: number, status?: string) => Promise<void>;
@@ -590,13 +608,13 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  createAgentPackage: async (projectId: number, name: string, expertModelId: number, version?: string) => {
+  createAgentPackage: async (projectId: number, name: string, expertModelId: number, version?: string, clearanceLevel?: string) => {
     set({ loading: true, error: null });
     try {
       const res = await fetch(`${API_BASE}/projects/${projectId}/packages`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, expert_model_id: expertModelId, project_id: projectId, governance_version: version || '0.1.0' }),
+        body: JSON.stringify({ name, expert_model_id: expertModelId, project_id: projectId, governance_version: version || '0.1.0', clearance_level: clearanceLevel || 'INTERNAL' }),
       });
       if (!res.ok) {
         // Surface governance gate blocks (409) with their reason.

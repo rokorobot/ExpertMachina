@@ -163,6 +163,19 @@ class AgentPackage(Base):
     quality_score = Column(Float, default=0.0)
     asset_references = Column(Text, nullable=True) # JSON array of knowledge asset IDs included
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    # Agent Package Builder (MVP 0.9.4): the exported .empkg artifact.
+    # Export crosses the governance boundary - the package is compiled FOR a
+    # declared clearance level so a file handed to a PUBLIC agent can never
+    # carry higher-tier assets past the gateway's checks.
+    clearance_level = Column(String, default="INTERNAL") # PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+    file_path = Column(String, nullable=True)
+    package_hash = Column(String, nullable=True) # sha256 of manifest.json, which hashes every file
+    manifest_json = Column(Text, nullable=True)
+
+    @property
+    def manifest(self):
+        import json
+        return json.loads(self.manifest_json) if self.manifest_json else None
 
 class AuditEvent(Base):
     __tablename__ = "audit_events"
@@ -305,3 +318,27 @@ class ClaimVerdict(Base):
 
 def init_db():
     Base.metadata.create_all(bind=engine)
+    _ensure_columns()
+
+
+def _ensure_columns():
+    """Additive SQLite migrations: create_all never adds columns to existing
+    tables, so columns introduced after a table shipped are ALTERed in here."""
+    from sqlalchemy import text
+    additions = {
+        "agent_packages": {
+            "clearance_level": "TEXT DEFAULT 'INTERNAL'",
+            "file_path": "TEXT",
+            "package_hash": "TEXT",
+            "manifest_json": "TEXT",
+        }
+    }
+    with engine.connect() as conn:
+        for table, columns in additions.items():
+            existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
+            if not existing:
+                continue  # table not created yet; create_all handles it fully
+            for column, ddl in columns.items():
+                if column not in existing:
+                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
+        conn.commit()

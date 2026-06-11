@@ -153,13 +153,17 @@ class AgentPackageBase(BaseModel):
     governance_version: Optional[str] = "0.1.0"
 
 class AgentPackageCreate(AgentPackageBase):
-    pass
+    # The .empkg is compiled FOR this clearance: assets above it are excluded.
+    clearance_level: Optional[str] = "INTERNAL" # PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
 
 class AgentPackageResponse(AgentPackageBase):
     id: int
     quality_score: float
     asset_references: Optional[str] # JSON string of asset references and metadata
     created_at: datetime
+    clearance_level: Optional[str] = None
+    package_hash: Optional[str] = None
+    manifest: Optional[dict] = None
     class Config:
         from_attributes = True
 

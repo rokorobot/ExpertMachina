@@ -331,16 +331,13 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
             f"workbench before publishing."
         )
 
-    # Query assets included in the model to serialize references and source provenances
-    # In a real system we associate assets to model via a join.
-    # Here, for MVP, we compile the active approved assets of the project into the package.
-    # We will search knowledge assets in the database.
-    # To keep it simple, we serialize a list of reference details.
-    assets = session.query(db.KnowledgeAsset).filter(
-        db.KnowledgeAsset.project_id == package_in.project_id,
-        db.KnowledgeAsset.status == "APPROVED"
-    ).order_by(db.KnowledgeAsset.id.asc()).all()
-    
+    # The package contains the MODEL's member assets at or below the declared
+    # clearance (MVP 0.9.4 - previously this compiled every approved asset in
+    # the project, which leaked non-member knowledge into packages).
+    from app import package_builder
+    clearance = (package_in.clearance_level or "INTERNAL").upper()
+    assets, excluded_count = package_builder.member_assets(session, model, clearance)
+
     refs = []
     for asset in assets:
         doc = session.query(db.Document).filter(db.Document.id == asset.document_id).first()
@@ -365,13 +362,19 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
         governance_version=package_in.governance_version or "0.1.0",
         quality_score=model.quality_score,
         asset_references=json.dumps(refs),
+        clearance_level=clearance,
         created_at=datetime.datetime.utcnow()
     )
     session.add(db_package)
     session.commit()
     session.refresh(db_package)
-    
-    # Publication is a governance event: record the gate verdict that allowed it.
+
+    # Emit the portable .empkg artifact (MVP 0.9.4) - the thing the compile
+    # gate has been guarding. Hashed, clearance-filtered, snapshot-stamped.
+    manifest = package_builder.build_package(session, db_package)
+
+    # Publication is a governance event: record the gate verdict that allowed
+    # it and the tamper-evident package hash.
     log_audit_event(
         session,
         actor="user",
@@ -381,6 +384,11 @@ def create_agent_package(session: Session, package_in: schemas.AgentPackageCreat
             "package_name": db_package.name,
             "expert_model_id": db_package.expert_model_id,
             "governance_version": db_package.governance_version,
+            "clearance_level": clearance,
+            "package_hash": db_package.package_hash,
+            "asset_count": manifest["asset_count"],
+            "excluded_assets_above_clearance": excluded_count,
+            "trust_score": manifest["trust_score"],
             "compile_gate": {
                 "allowed": True,
                 "conflict_scan_performed": gate["conflict_scan_performed"],

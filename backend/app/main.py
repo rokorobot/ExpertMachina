@@ -265,6 +265,18 @@ def create_package(project_id: int, pkg_in: schemas.AgentPackageCreate, db_sessi
         raise HTTPException(status_code=404, detail="Expert model not found")
     return pkg
 
+# Agent Package Builder (MVP 0.9.4): download the compiled .empkg artifact.
+@app.get("/api/packages/{package_id}/download")
+def download_agent_package(package_id: int, db_session: Session = Depends(get_db)):
+    from fastapi.responses import FileResponse
+    pkg = db_session.query(db.AgentPackage).filter(db.AgentPackage.id == package_id).first()
+    if not pkg:
+        raise HTTPException(status_code=404, detail=f"Package {package_id} not found")
+    if not pkg.file_path or not os.path.exists(pkg.file_path):
+        raise HTTPException(status_code=404, detail="Package artifact not found on disk (compiled before MVP 0.9.4 or file removed)")
+    return FileResponse(pkg.file_path, media_type="application/zip",
+                        filename=os.path.basename(pkg.file_path))
+
 @app.get("/api/experts/{expert_model_id}/compile-gate")
 def get_compile_gate(expert_model_id: int, db_session: Session = Depends(get_db)):
     expert_model = db_session.query(db.ExpertModel).filter(db.ExpertModel.id == expert_model_id).first()
