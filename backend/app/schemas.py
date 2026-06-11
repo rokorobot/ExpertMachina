@@ -163,6 +163,32 @@ class SourceConnectorResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ApprovalPolicyCreate(BaseModel):
+    name: str
+    asset_types: List[str]  # subset of the allowed KnowledgeAsset types
+    connector_id: Optional[int] = None  # None = applies to any source, incl. manual upload
+    created_by: Optional[str] = "operator"
+
+class ApprovalPolicyUpdate(BaseModel):
+    name: Optional[str] = None
+    asset_types: Optional[List[str]] = None
+    connector_id: Optional[int] = None
+    enabled: Optional[bool] = None
+
+class ApprovalPolicyResponse(BaseModel):
+    id: int
+    project_id: int
+    name: str
+    asset_types: List[str]
+    connector_id: Optional[int] = None
+    enabled: bool
+    version: int
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
 class IngestionJobResponse(BaseModel):
     id: int
     project_id: int

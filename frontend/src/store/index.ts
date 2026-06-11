@@ -243,6 +243,19 @@ export interface SourceConnector {
   created_at: string;
 }
 
+export interface ApprovalPolicy {
+  id: number;
+  project_id: number;
+  name: string;
+  asset_types: string[];
+  connector_id: number | null; // null = applies to any source, incl. manual upload
+  enabled: boolean;
+  version: number; // bumped on every definition change
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface IngestionJob {
   id: number;
   project_id: number;
@@ -472,6 +485,11 @@ interface AppState {
   scanConnector: (connectorId: number, projectId: number) => Promise<void>;
   fetchIngestionJobs: (projectId: number) => Promise<void>;
   fetchJobFiles: (jobId: number) => Promise<void>;
+
+  approvalPolicies: ApprovalPolicy[];
+  fetchApprovalPolicies: (projectId: number) => Promise<void>;
+  createApprovalPolicy: (projectId: number, name: string, assetTypes: string[], connectorId: number | null) => Promise<void>;
+  toggleApprovalPolicy: (policyId: number, enabled: boolean, projectId: number) => Promise<void>;
 
   agentActivity: AgentActivitySummary | null;
   fetchAgentActivity: () => Promise<void>;
@@ -859,6 +877,51 @@ export const useAppStore = create<AppState>((set, get) => ({
         const data = await res.json();
         set({ jobFiles: { ...get().jobFiles, [jobId]: data } });
       }
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  approvalPolicies: [],
+
+  fetchApprovalPolicies: async (projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/approval-policies`);
+      if (res.ok) set({ approvalPolicies: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  createApprovalPolicy: async (projectId: number, name: string, assetTypes: string[], connectorId: number | null) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/approval-policies`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, asset_types: assetTypes, connector_id: connectorId, created_by: 'GovernanceOfficer' }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to create approval policy');
+      }
+      await get().fetchApprovalPolicies(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  toggleApprovalPolicy: async (policyId: number, enabled: boolean, projectId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/approval-policies/${policyId}?actor=GovernanceOfficer`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to update approval policy');
+      }
+      await get().fetchApprovalPolicies(projectId);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }

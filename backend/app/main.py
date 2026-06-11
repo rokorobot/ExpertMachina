@@ -20,6 +20,7 @@ from app import revisions
 from app import trust
 from app import governance_inbox
 from app import connectors
+from app import policy
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -99,8 +100,11 @@ def upload_document(
     
     if doc.status == "PARSED":
         extraction.extract_knowledge_assets_from_project(db_session, project_id)
+        # Policy-Based Auto Approval (MVP 0.10.2): unscoped policies apply to
+        # uploads too - the same rules regardless of how a document arrived.
+        policy.apply_auto_approval(db_session, project_id, [doc.id])
         db_session.refresh(doc)
-        
+
     return doc
 
 @app.post("/api/projects/{project_id}/documents/batch-demo")
@@ -239,6 +243,101 @@ def list_ingestion_job_files(job_id: int, status: Optional[str] = None, db_sessi
         query = query.filter(db.SourceDocument.status == status.upper())
     return query.order_by(db.SourceDocument.id).all()
 
+# Approval Policy routes (MVP 0.10.2): deterministic, versioned auto-approval
+# rules. Policies are governed facts - create/update/toggle are audit events,
+# and definition changes bump the version that ASSET_AUTO_APPROVED events
+# reference. No delete: disable instead; audit history references the rule.
+def _validated_policy_fields(db_session: Session, project_id: int, asset_types: List[str], connector_id: Optional[int]):
+    types = [t.strip().upper() for t in (asset_types or []) if t.strip()]
+    invalid = [t for t in types if t not in policy.ALLOWED_ASSET_TYPES]
+    if not types or invalid:
+        raise HTTPException(status_code=400,
+                            detail=f"asset_types must be a non-empty subset of {sorted(policy.ALLOWED_ASSET_TYPES)}"
+                                   + (f"; invalid: {invalid}" if invalid else ""))
+    if connector_id is not None:
+        connector = db_session.query(db.SourceConnector).filter(
+            db.SourceConnector.id == connector_id, db.SourceConnector.project_id == project_id).first()
+        if not connector:
+            raise HTTPException(status_code=400, detail=f"Connector {connector_id} not found in project {project_id}")
+    return types
+
+@app.post("/api/projects/{project_id}/approval-policies", response_model=schemas.ApprovalPolicyResponse)
+def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCreate, db_session: Session = Depends(get_db)):
+    if not policy_in.name.strip():
+        raise HTTPException(status_code=400, detail="name is required")
+    types = _validated_policy_fields(db_session, project_id, policy_in.asset_types, policy_in.connector_id)
+    pol = db.ApprovalPolicy(
+        project_id=project_id,
+        name=policy_in.name.strip(),
+        asset_types_json=json.dumps(types),
+        connector_id=policy_in.connector_id,
+        enabled=True,
+        version=1,
+        created_by=policy_in.created_by or "operator",
+    )
+    db_session.add(pol)
+    db_session.commit()
+    db_session.refresh(pol)
+    crud.log_audit_event(db_session, actor=pol.created_by, event_type="POLICY_CREATED",
+                         target_id=str(pol.id),
+                         details=json.dumps({"name": pol.name, "version": pol.version,
+                                             "asset_types": types, "connector_id": pol.connector_id}))
+    return pol
+
+@app.get("/api/projects/{project_id}/approval-policies", response_model=List[schemas.ApprovalPolicyResponse])
+def list_approval_policies(project_id: int, db_session: Session = Depends(get_db)):
+    return db_session.query(db.ApprovalPolicy).filter(
+        db.ApprovalPolicy.project_id == project_id).order_by(db.ApprovalPolicy.id).all()
+
+@app.patch("/api/approval-policies/{policy_id}", response_model=schemas.ApprovalPolicyResponse)
+def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate, actor: str = "operator",
+                           db_session: Session = Depends(get_db)):
+    pol = db_session.query(db.ApprovalPolicy).filter(db.ApprovalPolicy.id == policy_id).first()
+    if not pol:
+        raise HTTPException(status_code=404, detail=f"Approval policy {policy_id} not found")
+    data = update.dict(exclude_unset=True)
+
+    # Definition changes (what the rule approves) bump the version so past
+    # ASSET_AUTO_APPROVED events keep pointing at the rule text that fired.
+    # The enabled flag is operational, not definitional - audited, no bump.
+    definition_changed = False
+    if "asset_types" in data or "connector_id" in data or "name" in data:
+        new_types = _validated_policy_fields(
+            db_session, pol.project_id,
+            data.get("asset_types", pol.asset_types),
+            data.get("connector_id", pol.connector_id))
+        old_snapshot = {"name": pol.name, "asset_types": pol.asset_types,
+                        "connector_id": pol.connector_id, "version": pol.version}
+        if "name" in data and data["name"].strip():
+            pol.name = data["name"].strip()
+        pol.asset_types_json = json.dumps(new_types)
+        if "connector_id" in data:
+            pol.connector_id = data["connector_id"]
+        pol.version += 1
+        definition_changed = True
+
+    toggled = None
+    if "enabled" in data and bool(data["enabled"]) != bool(pol.enabled):
+        pol.enabled = bool(data["enabled"])
+        toggled = pol.enabled
+
+    pol.updated_at = datetime.datetime.utcnow()
+    db_session.commit()
+    db_session.refresh(pol)
+
+    if definition_changed:
+        crud.log_audit_event(db_session, actor=actor, event_type="POLICY_UPDATED",
+                             target_id=str(pol.id),
+                             details=json.dumps({"old": old_snapshot,
+                                                 "new": {"name": pol.name, "asset_types": pol.asset_types,
+                                                         "connector_id": pol.connector_id, "version": pol.version}}))
+    if toggled is not None:
+        crud.log_audit_event(db_session, actor=actor,
+                             event_type="POLICY_ENABLED" if toggled else "POLICY_DISABLED",
+                             target_id=str(pol.id),
+                             details=json.dumps({"name": pol.name, "version": pol.version}))
+    return pol
+
 # Knowledge Assets routes
 @app.get("/api/projects/{project_id}/assets", response_model=List[schemas.KnowledgeAssetResponse])
 def get_assets(project_id: int, db_session: Session = Depends(get_db)):
@@ -246,10 +345,16 @@ def get_assets(project_id: int, db_session: Session = Depends(get_db)):
 
 @app.post("/api/projects/{project_id}/extract")
 def extract_assets(project_id: int, db_session: Session = Depends(get_db)):
+    # Documents without assets BEFORE extraction are the ones this call will
+    # extract for - the auto-approval scope for this ingestion event.
+    fresh_doc_ids = [d.id for d in db_session.query(db.Document).filter(
+        db.Document.project_id == project_id, db.Document.status == "PARSED").all()
+        if not db_session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.document_id == d.id).first()]
     success = extraction.extract_knowledge_assets_from_project(db_session, project_id)
     if not success:
         raise HTTPException(status_code=400, detail="No parsed documents found to extract assets from. Please upload documents first.")
-    return {"message": "Knowledge assets extracted successfully."}
+    auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids)
+    return {"message": "Knowledge assets extracted successfully.", "auto_approval": auto_approval}
 
 @app.patch("/api/assets/{asset_id}", response_model=schemas.KnowledgeAssetResponse)
 def update_asset(asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "User", db_session: Session = Depends(get_db)):

@@ -159,7 +159,12 @@ def create_knowledge_asset(session: Session, asset: schemas.KnowledgeAssetCreate
     log_audit_event(session, actor="system", event_type="ASSET_GENERATED", target_id=str(db_asset.id), details=f"Generated asset: [{db_asset.type}] {db_asset.name} via {db_asset.extraction_method}")
     return db_asset
 
-def update_knowledge_asset(session: Session, asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "user"):
+def update_knowledge_asset(session: Session, asset_id: int, update: schemas.KnowledgeAssetUpdate, actor: str = "user",
+                           audit_event_type: str = None, audit_details: str = None, review_notes: str = None):
+    # audit_event_type/audit_details/review_notes let a policy approval carry
+    # its own audit fingerprint (ASSET_AUTO_APPROVED + provenance JSON) while
+    # going through this single approval transition path - same AssetReview,
+    # same baseline revision, same document lifecycle as a human approval.
     asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
     if not asset:
         return None
@@ -192,12 +197,14 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
     
     if status_change:
         old_st, new_st = status_change
-        event_t = "ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED"
-        log_audit_event(session, actor=actor, event_type=event_t, target_id=str(asset.id), details=f"Asset status updated from {old_st} to {new_st}")
+        event_t = audit_event_type or ("ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED")
+        log_audit_event(session, actor=actor, event_type=event_t, target_id=str(asset.id),
+                        details=audit_details or f"Asset status updated from {old_st} to {new_st}")
         if new_st == "APPROVED":
             # Record the approval as a review row so citations carry real
             # approver provenance instead of fabricated defaults.
-            session.add(db.AssetReview(asset_id=asset.id, approver=actor, notes=f"Approved (status changed from {old_st})"))
+            session.add(db.AssetReview(asset_id=asset.id, approver=actor,
+                                       notes=review_notes or f"Approved (status changed from {old_st})"))
             session.commit()
             # Lazy revision adoption: first approval creates revision 1
             # from the asset's current state.

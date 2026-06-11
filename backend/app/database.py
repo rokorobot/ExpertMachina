@@ -82,6 +82,33 @@ class SourceDocument(Base):
         return json.loads(self.details_json) if self.details_json else None
 
 
+class ApprovalPolicy(Base):
+    """Policy-Based Auto Approval (MVP 0.10.2). A deterministic, versioned
+    rule: newly extracted CANDIDATE assets whose type matches an enabled
+    policy (optionally scoped to one connector) are approved at ingestion
+    time by the actor 'policy:<name>'. Policies are governed facts - every
+    definition change bumps version and writes an audit event, so an
+    ASSET_AUTO_APPROVED event is always traceable to the exact rule text
+    that fired. Applies to NEW candidate assets only; candidate revisions
+    of approved assets always require a human."""
+    __tablename__ = "approval_policies"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    name = Column(String, nullable=False)
+    asset_types_json = Column(Text, nullable=False)  # JSON array of asset types this policy auto-approves
+    connector_id = Column(Integer, ForeignKey("source_connectors.id"), nullable=True)  # NULL = any source, incl. manual upload
+    enabled = Column(Boolean, default=True)
+    version = Column(Integer, default=1)  # bumped on every definition change
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def asset_types(self):
+        import json
+        return json.loads(self.asset_types_json) if self.asset_types_json else []
+
+
 class Document(Base):
     __tablename__ = "documents"
     id = Column(Integer, primary_key=True, index=True)

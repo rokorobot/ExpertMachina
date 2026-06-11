@@ -9,13 +9,16 @@ from app import database as db
 from app import crud
 from app import ingestion
 from app import extraction
+from app import policy
 from app import revisions
 
 # Enterprise Source Connector - LOCAL_FOLDER (MVP 0.10.0).
 #
 # Read-only discovery over a local or mounted directory. "Scan now" only:
 # recursive walk, extension filter, sha256 dedup, per-file status. No
-# watching, no cloud connectors, no credentials, no auto-approval.
+# watching, no cloud connectors, no credentials. Newly ingested CANDIDATE
+# assets may be auto-approved by explicit per-project ApprovalPolicy rules
+# (MVP 0.10.2, see policy.py); changed files always wait for a human.
 #
 # The architectural rule: connector output becomes ORDINARY ExpertMachina
 # objects. SourceDocument -> Document -> CANDIDATE KnowledgeAssets -> the
@@ -102,12 +105,28 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         # Extraction turns parsed documents into ordinary CANDIDATE assets -
         # the same call the manual upload flow makes. A failure here is
         # recorded, never silent, but does not undo the ingested documents.
+        auto_approval = None
         if auto_extract and job.files_ingested > 0:
             try:
                 extraction.extract_knowledge_assets_from_project(session, job.project_id)
             except Exception as e:
                 job.error = f"Asset extraction failed after ingestion: {e}"
                 session.commit()
+            else:
+                # Policy-Based Auto Approval (MVP 0.10.2): only the documents
+                # this job newly ingested. CHANGED files route through the
+                # revision machinery and always wait for a human.
+                try:
+                    new_doc_ids = [r.document_id for r in session.query(db.SourceDocument).filter(
+                        db.SourceDocument.ingestion_job_id == job.id,
+                        db.SourceDocument.status == "INGESTED",
+                        db.SourceDocument.document_id.isnot(None)).all()]
+                    auto_approval = policy.apply_auto_approval(
+                        session, job.project_id, new_doc_ids,
+                        connector_id=connector.id, ingestion_job_id=job.id)
+                except Exception as e:
+                    job.error = f"Policy auto-approval failed after extraction: {e}"
+                    session.commit()
 
         job.status = "COMPLETED"
         job.completed_at = datetime.datetime.utcnow()
@@ -122,6 +141,7 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                 "files_changed": job.files_changed,
                 "files_failed": job.files_failed,
                 "extraction_error": job.error,
+                "auto_approval": auto_approval,
             }))
     except Exception as e:
         job.status = "FAILED"

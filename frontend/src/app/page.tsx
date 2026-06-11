@@ -34,6 +34,9 @@ import {
 } from 'lucide-react';
 import { useAppStore } from '../store';
 
+// The deterministic class dimension auto-approval rules are keyed on (MVP 0.10.2).
+const POLICY_ASSET_TYPES = ['PROCEDURE', 'POLICY', 'ROLE', 'SYSTEM', 'WORKFLOW', 'PRODUCT', 'DEPARTMENT'];
+
 interface ConsoleCitation {
   asset_id: string;
   name: string;
@@ -122,7 +125,11 @@ export default function Home() {
     createConnector,
     scanConnector,
     fetchIngestionJobs,
-    fetchJobFiles
+    fetchJobFiles,
+    approvalPolicies,
+    fetchApprovalPolicies,
+    createApprovalPolicy,
+    toggleApprovalPolicy
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
@@ -235,10 +242,29 @@ export default function Home() {
   const [connectorExts, setConnectorExts] = useState('.txt,.md,.pdf,.docx');
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
 
+  // Approval Policies state (MVP 0.10.2)
+  const [policyName, setPolicyName] = useState('');
+  const [policyTypes, setPolicyTypes] = useState<string[]>([]);
+  const [policyConnectorId, setPolicyConnectorId] = useState<number | null>(null);
+  const [showPolicyApprovedOnly, setShowPolicyApprovedOnly] = useState(false);
+
+  // An asset counts as policy-approved when its most recent approval was
+  // recorded by a "policy:<name>" actor (the ASSET_AUTO_APPROVED path).
+  const policyApprover = (asset: { status: string; reviews?: { approver?: string | null }[] }): string | null => {
+    if (asset.status !== 'APPROVED') return null;
+    const reviews = asset.reviews || [];
+    for (let i = reviews.length - 1; i >= 0; i--) {
+      const approver = reviews[i]?.approver;
+      if (approver) return approver.startsWith('policy:') ? approver.slice(7) : null;
+    }
+    return null;
+  };
+
   useEffect(() => {
     if (activeTab === 'documents' && activeProjectId !== null) {
       fetchConnectors(activeProjectId);
       fetchIngestionJobs(activeProjectId);
+      fetchApprovalPolicies(activeProjectId);
     }
   }, [activeTab, activeProjectId]);
 
@@ -1232,6 +1258,20 @@ export default function Home() {
                       )}
                     </div>
                     <div className="flex items-center gap-3">
+                      {assets.some(a => policyApprover(a)) && (
+                        <button
+                          onClick={() => setShowPolicyApprovedOnly(v => !v)}
+                          title="Spot-check everything a policy approved automatically"
+                          className={`rounded px-2.5 py-1 text-xs font-mono uppercase flex items-center gap-1.5 transition-colors border ${
+                            showPolicyApprovedOnly
+                              ? 'bg-violet-950/40 border-violet-700/60 text-violet-300'
+                              : 'bg-slate-900 hover:bg-slate-850 border-slate-800 text-slate-300'
+                          }`}
+                        >
+                          <ShieldCheck className="w-3.5 h-3.5" />
+                          {showPolicyApprovedOnly ? 'Policy-approved only' : 'Filter: policy-approved'}
+                        </button>
+                      )}
                       {assets.length > 0 && (
                         <button
                           onClick={async () => activeProjectId && await triggerExtraction(activeProjectId)}
@@ -1251,7 +1291,8 @@ export default function Home() {
                     <div className="space-y-8">
                       {(() => {
                         const grouped: { [key: string]: { docId: number | null; docName: string; items: typeof assets } } = {};
-                        assets.forEach(asset => {
+                        const visibleAssets = showPolicyApprovedOnly ? assets.filter(a => policyApprover(a)) : assets;
+                        visibleAssets.forEach(asset => {
                           const doc = documents.find(d => d.id === asset.document_id);
                           const docName = doc ? doc.filename : "Manual / Unknown Source";
                           const key = doc ? `doc_${doc.id}` : "manual";
@@ -1430,6 +1471,7 @@ export default function Home() {
                                 {group.items.map((asset, index) => {
                                   const score = asset.quality_scores?.[0];
                                   const isHighlighted = selectedDocFilterId === asset.document_id;
+                                  const approvedByPolicy = policyApprover(asset);
                                   return (
                                     <div 
                                       key={asset.id} 
@@ -1463,6 +1505,14 @@ export default function Home() {
                                                 className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-yellow-950/40 border border-yellow-900/40 text-yellow-400"
                                               >
                                                 Candidate Pending
+                                              </span>
+                                            )}
+                                            {approvedByPolicy && (
+                                              <span
+                                                title={`Approved automatically by policy "${approvedByPolicy}" — audit-logged as ASSET_AUTO_APPROVED with the rule version that fired`}
+                                                className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-violet-950/40 border border-violet-900/40 text-violet-400"
+                                              >
+                                                Policy: {approvedByPolicy}
                                               </span>
                                             )}
                                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 border border-slate-900 text-slate-400">
@@ -2430,6 +2480,103 @@ export default function Home() {
                                 className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider disabled:opacity-40"
                               >
                                 {busy ? 'Scanning…' : 'Scan Now'}
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* APPROVAL POLICIES (MVP 0.10.2) — deterministic, versioned
+                      auto-approval rules: the pressure valve bulk ingestion
+                      requires. New CANDIDATE assets of a covered type are
+                      approved by "policy:<name>" with full audit provenance;
+                      candidate revisions always wait for a human. */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <ShieldCheck className="w-4 h-4 text-violet-400" />
+                      Approval Policies
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Auto-approve low-risk asset classes at ingestion — audit-logged &quot;approved by policy&quot;, revisions always reviewed by a human
+                      </span>
+                    </h3>
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (activeProjectId === null || !policyName.trim() || policyTypes.length === 0) return;
+                        await createApprovalPolicy(activeProjectId, policyName.trim(), policyTypes, policyConnectorId);
+                        setPolicyName('');
+                        setPolicyTypes([]);
+                        setPolicyConnectorId(null);
+                      }}
+                      className="space-y-3"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Policy Name</label>
+                          <input type="text" required value={policyName} onChange={(e) => setPolicyName(e.target.value)}
+                            placeholder="e.g. Low-risk system docs"
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Source Scope</label>
+                          <select value={policyConnectorId ?? ''} onChange={(e) => setPolicyConnectorId(e.target.value === '' ? null : Number(e.target.value))}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200">
+                            <option value="">Any source (incl. manual upload)</option>
+                            {sourceConnectors.map((c) => (
+                              <option key={c.id} value={c.id}>Connector: {c.name}</option>
+                            ))}
+                          </select>
+                        </div>
+                        <button type="submit" disabled={policyTypes.length === 0}
+                          className="py-2 px-5 bg-gradient-to-r from-violet-500 to-violet-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
+                          Add Policy
+                        </button>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Auto-approved Asset Types</label>
+                        <div className="flex flex-wrap gap-2">
+                          {POLICY_ASSET_TYPES.map((t) => {
+                            const selected = policyTypes.includes(t);
+                            return (
+                              <button key={t} type="button"
+                                onClick={() => setPolicyTypes(prev => prev.includes(t) ? prev.filter(x => x !== t) : [...prev, t])}
+                                className={`text-[10px] font-mono px-2.5 py-1 rounded border uppercase tracking-wider transition-colors ${
+                                  selected
+                                    ? 'bg-violet-950/40 border-violet-700/60 text-violet-300'
+                                    : 'bg-slate-950 border-slate-800 text-slate-500 hover:text-slate-300'
+                                }`}
+                              >
+                                {t}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </form>
+
+                    {/* POLICY LIST */}
+                    {approvalPolicies.length > 0 && (
+                      <div className="space-y-2 pt-2">
+                        {approvalPolicies.map((p) => {
+                          const scope = p.connector_id !== null
+                            ? `connector: ${sourceConnectors.find(c => c.id === p.connector_id)?.name ?? `#${p.connector_id}`}`
+                            : 'any source';
+                          return (
+                            <div key={p.id} className={`flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3 ${p.enabled ? '' : 'opacity-50'}`}>
+                              <span className="text-[10px] font-mono bg-violet-950/40 text-violet-400 border border-violet-900/40 px-2 py-0.5 rounded">v{p.version}</span>
+                              <span className="font-bold text-sm text-slate-200">{p.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500">{p.asset_types.join(', ')}</span>
+                              <span className="text-[10px] font-mono text-slate-600 flex-1 min-w-[120px]">{scope}</span>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${p.enabled ? 'bg-emerald-950/40 text-emerald-400' : 'bg-slate-900 text-slate-500'}`}>
+                                {p.enabled ? 'ENABLED' : 'DISABLED'}
+                              </span>
+                              <button
+                                onClick={() => activeProjectId !== null && toggleApprovalPolicy(p.id, !p.enabled, activeProjectId)}
+                                className="text-[10px] text-violet-400 hover:text-violet-300 font-mono bg-violet-950/20 border border-violet-900/30 rounded px-3 py-1.5 uppercase tracking-wider"
+                              >
+                                {p.enabled ? 'Disable' : 'Enable'}
                               </button>
                             </div>
                           );
