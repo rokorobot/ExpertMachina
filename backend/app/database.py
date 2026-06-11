@@ -250,6 +250,7 @@ class EvaluationQuestionResult(Base):
     citations_json = Column(Text, nullable=True) # JSON array of citations
 
     run = relationship("EvaluationRun", back_populates="results")
+    claim_verdicts = relationship("ClaimVerdict", back_populates="question_result", cascade="all, delete-orphan")
 
     @property
     def unsupported_claims(self):
@@ -260,6 +261,47 @@ class EvaluationQuestionResult(Base):
     def citations(self):
         import json
         return json.loads(self.citations_json) if self.citations_json else []
+
+class ClaimVerdict(Base):
+    """Immutable verification artifact (MVP 0.9.2): one row per claim judged
+    during an evaluation run. Never updated and never reviewed in place -
+    a human judgment about a verdict is a VERIFICATION_REVIEWED audit event,
+    remediation happens on the asset or revision, and the next evaluation run
+    produces fresh verdicts against the corrected knowledge. evaluator_type /
+    evaluator_id are identity-ready for future HUMAN / LLM evaluators."""
+    __tablename__ = "claim_verdicts"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    expert_model_id = Column(Integer, ForeignKey("expert_models.id"))
+    evaluation_run_id = Column(Integer, ForeignKey("evaluation_runs.id"))
+    question_result_id = Column(Integer, ForeignKey("evaluation_question_results.id"))
+    benchmark_question_id = Column(Integer, ForeignKey("benchmark_questions.id"))
+    claim = Column(Text, nullable=False)
+    verdict = Column(String, nullable=False) # ENTAILED | CONTRADICTED | UNSUPPORTED
+    confidence = Column(Float, nullable=True) # winning-verdict probability; None for legacy fallback verifiers
+    supporting_asset_ids_json = Column(Text, nullable=True) # JSON array of asset IDs
+    contradicting_asset_ids_json = Column(Text, nullable=True) # JSON array of asset IDs
+    verifier_json = Column(Text, nullable=True) # verifier identity snapshot incl. weight fingerprint
+    evaluator_type = Column(String, default="AUTOMATED") # AUTOMATED | HUMAN | LLM
+    evaluator_id = Column(String, default="verification_engine")
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    question_result = relationship("EvaluationQuestionResult", back_populates="claim_verdicts")
+
+    @property
+    def supporting_asset_ids(self):
+        import json
+        return json.loads(self.supporting_asset_ids_json) if self.supporting_asset_ids_json else []
+
+    @property
+    def contradicting_asset_ids(self):
+        import json
+        return json.loads(self.contradicting_asset_ids_json) if self.contradicting_asset_ids_json else []
+
+    @property
+    def verifier(self):
+        import json
+        return json.loads(self.verifier_json) if self.verifier_json else None
 
 def init_db():
     Base.metadata.create_all(bind=engine)

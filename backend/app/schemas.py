@@ -341,6 +341,31 @@ class BenchmarkQuestionResponse(BenchmarkQuestionBase):
     class Config:
         from_attributes = True
 
+class ClaimVerdictResponse(BaseModel):
+    """Immutable verification artifact (MVP 0.9.2) - no mutable status by
+    design; human judgments are VERIFICATION_REVIEWED audit events."""
+    id: int
+    project_id: int
+    expert_model_id: int
+    evaluation_run_id: int
+    question_result_id: int
+    benchmark_question_id: int
+    claim: str
+    verdict: str # ENTAILED | CONTRADICTED | UNSUPPORTED
+    confidence: Optional[float] = None
+    supporting_asset_ids: List[int] = []
+    contradicting_asset_ids: List[int] = []
+    verifier: Optional[dict] = None
+    evaluator_type: str
+    evaluator_id: str
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
+class VerificationReviewCreate(BaseModel):
+    reviewer: Optional[str] = "operator"
+    comment: Optional[str] = None
+
 class EvaluationQuestionResultResponse(BaseModel):
     id: int
     evaluation_run_id: int
@@ -353,6 +378,7 @@ class EvaluationQuestionResultResponse(BaseModel):
     passed: bool
     unsupported_claims: List[str]
     citations: List[CitationModel]
+    claim_verdicts: List[ClaimVerdictResponse] = []
     class Config:
         from_attributes = True
 

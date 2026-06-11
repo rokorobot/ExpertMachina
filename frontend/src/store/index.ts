@@ -168,6 +168,24 @@ export interface BenchmarkQuestion {
   created_at: string;
 }
 
+export interface ClaimVerdict {
+  id: number;
+  project_id: number;
+  expert_model_id: number;
+  evaluation_run_id: number;
+  question_result_id: number;
+  benchmark_question_id: number;
+  claim: string;
+  verdict: string; // ENTAILED | CONTRADICTED | UNSUPPORTED
+  confidence: number | null;
+  supporting_asset_ids: number[];
+  contradicting_asset_ids: number[];
+  verifier: Record<string, unknown> | null;
+  evaluator_type: string; // AUTOMATED | HUMAN | LLM
+  evaluator_id: string;
+  created_at: string;
+}
+
 export interface EvaluationQuestionResult {
   id: number;
   evaluation_run_id: number;
@@ -180,6 +198,7 @@ export interface EvaluationQuestionResult {
   passed: boolean;
   unsupported_claims: string[];
   citations: { asset_id: number; name: string; content: string }[];
+  claim_verdicts: ClaimVerdict[];
 }
 
 export interface EvaluationRun {
@@ -364,6 +383,7 @@ interface AppState {
   governanceInbox: GovernanceInbox | null;
   governanceInboxLoading: boolean;
   fetchGovernanceInbox: (projectId: number) => Promise<void>;
+  reviewClaimVerdict: (verdictId: number, reviewer: string, comment: string) => Promise<void>;
 
   agentActivity: AgentActivitySummary | null;
   fetchAgentActivity: () => Promise<void>;
@@ -687,6 +707,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ governanceInbox: data, governanceInboxLoading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), governanceInboxLoading: false });
+    }
+  },
+
+  // Records a VERIFICATION_REVIEWED audit event; the verdict artifact itself
+  // is immutable and never changes.
+  reviewClaimVerdict: async (verdictId: number, reviewer: string, comment: string) => {
+    try {
+      const res = await fetch(`${API_BASE}/claim-verdicts/${verdictId}/review`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ reviewer, comment }),
+      });
+      if (!res.ok) throw new Error('Failed to record verification review');
+      get().fetchAuditTrail();
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
     }
   },
 

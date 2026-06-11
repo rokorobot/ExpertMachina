@@ -111,7 +111,8 @@ export default function Home() {
     fetchAgentActivity,
     governanceInbox,
     governanceInboxLoading,
-    fetchGovernanceInbox
+    fetchGovernanceInbox,
+    reviewClaimVerdict
   } = useAppStore();
 
   const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console'>('dashboard');
@@ -213,6 +214,11 @@ export default function Home() {
   const [inboxModelFilter, setInboxModelFilter] = useState<number | null>(null);
   const [highlightRelationshipId, setHighlightRelationshipId] = useState<number | null>(null);
   const [highlightRevisionId, setHighlightRevisionId] = useState<number | null>(null);
+  // Persisted Verification Verdicts state (MVP 0.9.2)
+  const [highlightResultId, setHighlightResultId] = useState<number | null>(null);
+  const [verdictReview, setVerdictReview] = useState<number | null>(null);
+  const [verdictReviewComment, setVerdictReviewComment] = useState('');
+  const [reviewedVerdictIds, setReviewedVerdictIds] = useState<Set<number>>(new Set());
 
   // Keep the inbox (and its nav badge) fresh: on workspace change and on tab entry.
   useEffect(() => {
@@ -231,6 +237,7 @@ export default function Home() {
   useEffect(() => {
     if (activeTab !== 'conflicts' && highlightRelationshipId !== null) setHighlightRelationshipId(null);
     if (activeTab !== 'revisions' && highlightRevisionId !== null) setHighlightRevisionId(null);
+    if (activeTab !== 'evaluations' && highlightResultId !== null) setHighlightResultId(null);
   }, [activeTab]);
 
   // Inbox deep-link navigation: parse the item's deep_link and set workbench
@@ -251,6 +258,12 @@ export default function Home() {
       setRevisionStatusFilter('ALL');
       setHighlightRevisionId(revision ? Number(revision) : null);
       setActiveTab('revisions');
+    } else if (tab === 'evaluations') {
+      const run = params.get('run');
+      const result = params.get('result');
+      if (run) setExpandedRunId(Number(run));
+      setHighlightResultId(result ? Number(result) : null);
+      setActiveTab('evaluations');
     } else if (tab === 'experts') {
       setActiveTab('experts');
     }
@@ -260,13 +273,14 @@ export default function Home() {
   useEffect(() => {
     const targetId =
       activeTab === 'conflicts' && highlightRelationshipId !== null ? `conflict-${highlightRelationshipId}` :
-      activeTab === 'revisions' && highlightRevisionId !== null ? `revision-${highlightRevisionId}` : null;
+      activeTab === 'revisions' && highlightRevisionId !== null ? `revision-${highlightRevisionId}` :
+      activeTab === 'evaluations' && highlightResultId !== null ? `eval-result-${highlightResultId}` : null;
     if (!targetId) return;
     const timer = setTimeout(() => {
       document.getElementById(targetId)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 250);
     return () => clearTimeout(timer);
-  }, [activeTab, highlightRelationshipId, highlightRevisionId, conflicts, revisionQueue]);
+  }, [activeTab, highlightRelationshipId, highlightRevisionId, highlightResultId, conflicts, revisionQueue, evaluationRuns]);
 
   // Pre-fill model selection when entering console
   useEffect(() => {
@@ -395,6 +409,12 @@ export default function Home() {
         setRevisionStatusFilter('ALL');
       }
       if (tab === 'inbox' && expert) setInboxModelFilter(Number(expert));
+      if (tab === 'evaluations') {
+        const run = params.get('run');
+        const result = params.get('result');
+        if (run) setExpandedRunId(Number(run));
+        if (result) setHighlightResultId(Number(result));
+      }
       setActiveTab(tab as typeof urlTabs[number]);
     }
   }, []);
@@ -445,6 +465,8 @@ export default function Home() {
         if (activeTab === 'conflicts' && highlightRelationshipId !== null) params.set('relationship', String(highlightRelationshipId));
         if (activeTab === 'revisions' && highlightRevisionId !== null) params.set('revision', String(highlightRevisionId));
         if (activeTab === 'inbox' && inboxModelFilter !== null) params.set('expert', String(inboxModelFilter));
+        if (activeTab === 'evaluations' && expandedRunId !== null) params.set('run', String(expandedRunId));
+        if (activeTab === 'evaluations' && highlightResultId !== null) params.set('result', String(highlightResultId));
         newSearch = `?${params.toString()}`;
       }
 
@@ -455,7 +477,7 @@ export default function Home() {
         window.history.pushState(null, '', targetUrl);
       }
     }
-  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter]);
+  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId]);
 
   // Listen to browser back/forward buttons
   useEffect(() => {
@@ -1999,9 +2021,9 @@ export default function Home() {
                                   const bench = benchById(r.benchmark_question_id);
                                   const isRefusal = bench?.expected_answer_type === 'REFUSAL';
                                   return (
-                                    <div key={r.id} className={`bg-slate-950/50 border rounded-lg p-3 space-y-1.5 ${
+                                    <div key={r.id} id={`eval-result-${r.id}`} className={`bg-slate-950/50 border rounded-lg p-3 space-y-1.5 ${
                                       r.passed ? 'border-emerald-900/40' : 'border-rose-900/40'
-                                    }`}>
+                                    } ${highlightResultId === r.id ? 'ring-2 ring-cyan-500/70' : ''}`}>
                                       <div className="flex flex-wrap justify-between items-center gap-2">
                                         <p className="text-xs text-slate-200">{r.question_text}</p>
                                         <div className="flex gap-1.5 font-mono text-[9px] shrink-0">
@@ -2029,13 +2051,79 @@ export default function Home() {
                                             <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-800">{r.verification_status}</span>
                                             <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-800">{r.citations.length} citation{r.citations.length === 1 ? '' : 's'}</span>
                                           </div>
-                                          {!r.passed && r.unsupported_claims.length > 0 && (
+                                          {!r.passed && r.unsupported_claims.length > 0 && (r.claim_verdicts || []).length === 0 && (
                                             <p className="text-[9px] text-rose-400/80 font-mono">
                                               Unsupported: {r.unsupported_claims.join(' | ')}
                                             </p>
                                           )}
                                         </>
                                       )}
+
+                                      {/* PERSISTED CLAIM VERDICTS (MVP 0.9.2) — immutable verifier artifacts.
+                                          Shown for refusal tests too: the verdicts are why the expert refused. */}
+                                      {(r.claim_verdicts || []).length > 0 && (
+                                            <div className="space-y-1 border-t border-slate-900/60 pt-1.5">
+                                              {r.claim_verdicts.map((v) => (
+                                                <div key={v.id} className="space-y-1">
+                                                  <div className="flex flex-wrap items-center gap-1.5 font-mono text-[9px]">
+                                                    <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                                      v.verdict === 'ENTAILED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                                      v.verdict === 'CONTRADICTED' ? 'bg-rose-950/40 text-rose-400' :
+                                                      'bg-yellow-950/40 text-yellow-400'
+                                                    }`}>{v.verdict}</span>
+                                                    {v.confidence !== null && (
+                                                      <span className="text-slate-500">{v.confidence.toFixed(3)}</span>
+                                                    )}
+                                                    <span className="text-slate-300 font-sans text-[10px] italic flex-1 min-w-[160px]">&quot;{v.claim}&quot;</span>
+                                                    {v.verdict !== 'ENTAILED' && (
+                                                      reviewedVerdictIds.has(v.id) ? (
+                                                        <span className="text-emerald-400/80">review recorded</span>
+                                                      ) : verdictReview !== v.id && (
+                                                        <button
+                                                          onClick={() => { setVerdictReview(v.id); setVerdictReviewComment(''); }}
+                                                          className="text-cyan-400 hover:text-cyan-300 px-1.5 py-0.5 rounded border border-cyan-900/30 bg-cyan-950/20"
+                                                        >
+                                                          Record Review
+                                                        </button>
+                                                      )
+                                                    )}
+                                                  </div>
+                                                  {verdictReview === v.id && (
+                                                    <div className="space-y-1.5 pl-2 border-l-2 border-slate-800">
+                                                      <textarea
+                                                        rows={2}
+                                                        autoFocus
+                                                        placeholder="Human judgment — recorded as a VERIFICATION_REVIEWED audit event; the verdict artifact itself is never modified."
+                                                        value={verdictReviewComment}
+                                                        onChange={(e) => setVerdictReviewComment(e.target.value)}
+                                                        className="w-full bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-[10px] focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                                                      />
+                                                      <div className="flex gap-2">
+                                                        <button
+                                                          disabled={!verdictReviewComment.trim()}
+                                                          onClick={async () => {
+                                                            await reviewClaimVerdict(v.id, 'GovernanceOfficer', verdictReviewComment.trim());
+                                                            setReviewedVerdictIds(prev => new Set(prev).add(v.id));
+                                                            setVerdictReview(null);
+                                                            setVerdictReviewComment('');
+                                                          }}
+                                                          className="text-[9px] font-mono font-bold px-2.5 py-1 rounded uppercase tracking-wider bg-cyan-500 text-slate-950 disabled:opacity-40"
+                                                        >
+                                                          Record Verification Review
+                                                        </button>
+                                                        <button
+                                                          onClick={() => { setVerdictReview(null); setVerdictReviewComment(''); }}
+                                                          className="text-[9px] font-mono text-slate-500 hover:text-slate-300 px-2 py-1"
+                                                        >
+                                                          Cancel
+                                                        </button>
+                                                      </div>
+                                                    </div>
+                                                  )}
+                                                </div>
+                                              ))}
+                                            </div>
+                                          )}
                                     </div>
                                   );
                                 })}
@@ -2240,6 +2328,7 @@ export default function Home() {
                       CONFLICT: { label: 'CONFLICT', action: 'Review Conflict' },
                       REVISION: { label: 'REVISION', action: 'Review Revision' },
                       GOVERNANCE_WARNING: { label: 'WARNING', action: 'Open Expert Model' },
+                      EVIDENCE_GAP: { label: 'EVIDENCE GAP', action: 'Review Evaluation' },
                     };
                     const BUCKETS = [
                       { key: 'NEEDS_REVIEW', label: 'Needs Review Now', hint: 'blocking or awaiting a human verdict' },
@@ -2255,10 +2344,96 @@ export default function Home() {
                       );
                     }
 
+                    const renderItem = (item: typeof visible[number], blocking = false) => (
+                      <div
+                        key={item.id}
+                        className={`glass-panel rounded-xl p-4 flex flex-wrap items-center gap-3 ${
+                          item.bucket === 'RESOLVED' ? 'opacity-60' : ''
+                        } ${blocking ? 'border-rose-900/50' : ''}`}
+                      >
+                        <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${SEVERITY_BADGE[item.severity]}`}>
+                          {item.severity}
+                        </span>
+                        <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-slate-950 text-slate-400 border-slate-900 shrink-0">
+                          {TYPE_META[item.type]?.label || item.type}
+                        </span>
+                        <div className="flex-1 min-w-[220px] space-y-0.5">
+                          <span className="text-xs font-bold text-slate-200 block">{item.title}</span>
+                          <span className="text-[10px] text-slate-400 block">{item.reason}</span>
+                          <span className="text-[9px] font-mono text-slate-500 block">
+                            {item.expert_model_name && <>EM-{item.expert_model_id} {item.expert_model_name} · </>}
+                            {item.classification && <>{item.classification.toLowerCase().replace(/_/g, ' ')} · </>}
+                            {item.confidence !== null && item.confidence !== undefined && <>confidence {item.confidence.toFixed(3)} · </>}
+                            {item.status}
+                            {item.created_at && <> · {new Date(item.created_at).toLocaleString()}</>}
+                          </span>
+                        </div>
+                        {item.bucket !== 'RESOLVED' && (
+                          <button
+                            onClick={() => openDeepLink(item.deep_link)}
+                            className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1.5 bg-cyan-950/20 px-3 py-1.5 rounded border border-cyan-900/30 transition-colors shrink-0"
+                          >
+                            {TYPE_META[item.type]?.action || 'Open'} <ArrowRight className="w-3 h-3" />
+                          </button>
+                        )}
+                      </div>
+                    );
+
+                    // HIGH severity = blocks the compile gate (guaranteed by the
+                    // inbox API via relationship_gate_disposition) — surfaced in a
+                    // dedicated section, grouped per Expert Model.
+                    const blockingItems = visible.filter(i => i.severity === 'HIGH');
+                    const blockingGroups = Array.from(
+                      blockingItems.reduce((groups, item) => {
+                        const key = item.expert_model_id ?? -1;
+                        const group = groups.get(key) || { items: [] as typeof blockingItems };
+                        group.items.push(item);
+                        return groups.set(key, group);
+                      }, new Map<number, { items: typeof blockingItems }>()).entries()
+                    );
+                    const describeBlocking = (items: typeof blockingItems) => {
+                      const counts = new Map<string, number>();
+                      items.forEach(i => {
+                        const label = i.classification
+                          ? i.classification.toLowerCase().replace(/_/g, ' ')
+                          : (TYPE_META[i.type]?.label || i.type).toLowerCase();
+                        counts.set(label, (counts.get(label) || 0) + 1);
+                      });
+                      return Array.from(counts.entries())
+                        .map(([label, n]) => `${n} ${label}${n > 1 ? 's' : ''}`)
+                        .join(', ');
+                    };
+
                     return (
                       <div className="space-y-6">
+                        {blockingItems.length > 0 && (
+                          <div className="space-y-3">
+                            <h4 className="text-xs font-bold text-rose-400 tracking-wide flex items-center gap-2">
+                              <ShieldAlert className="w-3.5 h-3.5 text-rose-400" />
+                              Blocking Deployment
+                              <span className="text-slate-500 font-mono text-[10px] font-normal">
+                                {blockingItems.length} item{blockingItems.length > 1 ? 's' : ''} — blocks the compile gate until reviewed
+                              </span>
+                            </h4>
+                            {blockingGroups.map(([modelId, group]) => (
+                              <div key={modelId} className="space-y-2">
+                                <h5 className="text-[10px] font-mono font-bold text-rose-300 flex items-center gap-2">
+                                  {modelId !== -1
+                                    ? <>EM-{modelId} {group.items[0].expert_model_name}</>
+                                    : 'Unassigned'}
+                                  <span className="text-slate-500 font-normal">— {describeBlocking(group.items)}</span>
+                                </h5>
+                                {group.items.map((item) => renderItem(item, true))}
+                              </div>
+                            ))}
+                          </div>
+                        )}
                         {BUCKETS.map((bucket) => {
-                          const bucketItems = visible.filter(i => i.bucket === bucket.key);
+                          const bucketItems = visible.filter(i =>
+                            i.bucket === bucket.key &&
+                            // HIGH items already shown in Blocking Deployment above
+                            !(bucket.key === 'NEEDS_REVIEW' && i.severity === 'HIGH')
+                          );
                           if (bucketItems.length === 0) return null;
                           return (
                             <div key={bucket.key} className="space-y-3">
@@ -2271,40 +2446,7 @@ export default function Home() {
                                   {bucketItems.length} item{bucketItems.length > 1 ? 's' : ''} — {bucket.hint}
                                 </span>
                               </h4>
-                              {bucketItems.map((item) => (
-                                <div
-                                  key={item.id}
-                                  className={`glass-panel rounded-xl p-4 flex flex-wrap items-center gap-3 ${
-                                    item.bucket === 'RESOLVED' ? 'opacity-60' : ''
-                                  }`}
-                                >
-                                  <span className={`text-[10px] font-mono font-bold px-2 py-0.5 rounded border shrink-0 ${SEVERITY_BADGE[item.severity]}`}>
-                                    {item.severity}
-                                  </span>
-                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-slate-950 text-slate-400 border-slate-900 shrink-0">
-                                    {TYPE_META[item.type]?.label || item.type}
-                                  </span>
-                                  <div className="flex-1 min-w-[220px] space-y-0.5">
-                                    <span className="text-xs font-bold text-slate-200 block">{item.title}</span>
-                                    <span className="text-[10px] text-slate-400 block">{item.reason}</span>
-                                    <span className="text-[9px] font-mono text-slate-500 block">
-                                      {item.expert_model_name && <>EM-{item.expert_model_id} {item.expert_model_name} · </>}
-                                      {item.classification && <>{item.classification.toLowerCase().replace(/_/g, ' ')} · </>}
-                                      {item.confidence !== null && item.confidence !== undefined && <>confidence {item.confidence.toFixed(3)} · </>}
-                                      {item.status}
-                                      {item.created_at && <> · {new Date(item.created_at).toLocaleString()}</>}
-                                    </span>
-                                  </div>
-                                  {item.bucket !== 'RESOLVED' && (
-                                    <button
-                                      onClick={() => openDeepLink(item.deep_link)}
-                                      className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono flex items-center gap-1.5 bg-cyan-950/20 px-3 py-1.5 rounded border border-cyan-900/30 transition-colors shrink-0"
-                                    >
-                                      {TYPE_META[item.type]?.action || 'Open'} <ArrowRight className="w-3 h-3" />
-                                    </button>
-                                  )}
-                                </div>
-                              ))}
+                              {bucketItems.map((item) => renderItem(item))}
                             </div>
                           );
                         })}

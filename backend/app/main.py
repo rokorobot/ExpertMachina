@@ -563,3 +563,37 @@ def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db))
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return governance_inbox.build_inbox(db_session, project_id)
 
+# Persisted Verification Verdicts (MVP 0.9.2). A verdict is an immutable
+# measurement: reviewing one records a VERIFICATION_REVIEWED audit event and
+# never mutates the ClaimVerdict row. Remediation happens on the asset or
+# revision; the next evaluation run produces fresh verdicts.
+@app.get("/api/evaluations/{run_id}/verdicts", response_model=List[schemas.ClaimVerdictResponse])
+def get_run_claim_verdicts(run_id: int, verdict: Optional[str] = None, db_session: Session = Depends(get_db)):
+    query = db_session.query(db.ClaimVerdict).filter(db.ClaimVerdict.evaluation_run_id == run_id)
+    if verdict:
+        query = query.filter(db.ClaimVerdict.verdict == verdict)
+    return query.order_by(db.ClaimVerdict.id).all()
+
+@app.post("/api/claim-verdicts/{verdict_id}/review")
+def review_claim_verdict(verdict_id: int, review: schemas.VerificationReviewCreate, db_session: Session = Depends(get_db)):
+    v = db_session.query(db.ClaimVerdict).filter(db.ClaimVerdict.id == verdict_id).first()
+    if not v:
+        raise HTTPException(status_code=404, detail=f"Claim verdict {verdict_id} not found")
+    crud.log_audit_event(
+        db_session,
+        actor=review.reviewer or "operator",
+        event_type="VERIFICATION_REVIEWED",
+        target_id=str(v.id),
+        details=json.dumps({
+            "claim_verdict_id": v.id,
+            "claim": v.claim,
+            "verdict_seen": v.verdict,
+            "confidence_seen": v.confidence,
+            "expert_model_id": v.expert_model_id,
+            "evaluation_run_id": v.evaluation_run_id,
+            "question_result_id": v.question_result_id,
+            "comment": review.comment
+        })
+    )
+    return {"claim_verdict_id": v.id, "reviewed_by": review.reviewer, "event_type": "VERIFICATION_REVIEWED"}
+

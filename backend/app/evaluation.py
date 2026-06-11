@@ -157,6 +157,28 @@ def run_evaluation_batch(session: Session, run_id: int):
                 citations_json=json.dumps(citations)
             )
             session.add(db_res)
+            session.flush()  # assign db_res.id so verdicts can link to it
+
+            # Persist every claim verdict as an immutable evaluation artifact
+            # (MVP 0.9.2). The verifier already computes these; stop
+            # discarding them.
+            verifier_snapshot = json.dumps(verification.get("verifier") or {})
+            for mapping in verification.get("claim_mappings", []):
+                session.add(db.ClaimVerdict(
+                    project_id=db_run.project_id,
+                    expert_model_id=db_run.expert_model_id,
+                    evaluation_run_id=db_run.id,
+                    question_result_id=db_res.id,
+                    benchmark_question_id=b.id,
+                    claim=mapping["claim"],
+                    verdict=mapping["verdict"],
+                    confidence=mapping.get("confidence"),
+                    supporting_asset_ids_json=json.dumps(mapping.get("supporting_assets", [])),
+                    contradicting_asset_ids_json=json.dumps(mapping.get("contradicting_assets", [])),
+                    verifier_json=verifier_snapshot,
+                    evaluator_type="AUTOMATED",
+                    evaluator_id="verification_engine"
+                ))
 
         # Update run stats
         db_run.average_coverage_score = round(total_coverage / total_questions, 2)

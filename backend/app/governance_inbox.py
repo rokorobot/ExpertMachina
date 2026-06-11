@@ -157,6 +157,57 @@ def _revision_items(session: Session, project_id: int, resolved_cutoff,
     return items
 
 
+def _evidence_gap_items(session: Session, model_id: int, model_name: str) -> list:
+    """Evidence gaps from the LATEST completed evaluation run for the model -
+    the same latest-run rule trust.py uses, so superseded gaps disappear on
+    the next run exactly like recomputed conflicts do. No cross-run state.
+
+    Severity preserves the v0.9.1 invariant that HIGH means blocks-the-
+    compile-gate (evidence gaps do not): CONTRADICTED claims are MEDIUM and
+    need review now (they hard-fail answers); UNSUPPORTED claims are LOW
+    coverage risks that can wait."""
+    run = session.query(db.EvaluationRun).filter(
+        db.EvaluationRun.expert_model_id == model_id,
+        db.EvaluationRun.status == "COMPLETED"
+    ).order_by(db.EvaluationRun.id.desc()).first()
+    if not run:
+        return []
+
+    verdicts = session.query(db.ClaimVerdict).filter(
+        db.ClaimVerdict.evaluation_run_id == run.id,
+        db.ClaimVerdict.verdict.in_(["UNSUPPORTED", "CONTRADICTED"])
+    ).all()
+
+    items = []
+    for v in verdicts:
+        if v.verdict == "CONTRADICTED":
+            severity, bucket = "MEDIUM", "NEEDS_REVIEW"
+            reason = ("Answer claim contradicts approved evidence - hard-fails queries. "
+                      "Review the evidence or revise the conflicting asset.")
+        else:
+            severity, bucket = "LOW", "CAN_WAIT"
+            reason = "Claim lacks supporting evidence - coverage risk. Attach a source document or revise the asset."
+        claim_preview = v.claim if len(v.claim) <= 90 else v.claim[:87] + "..."
+        items.append({
+            "id": f"EVIDENCE_GAP-{v.id}",
+            "type": "EVIDENCE_GAP",
+            "source_id": v.id,
+            "expert_model_id": model_id,
+            "expert_model_name": model_name,
+            "status": v.verdict,
+            "classification": None,
+            "confidence": v.confidence,
+            "severity": severity,
+            "bucket": bucket,
+            "title": f"{'Contradicted' if v.verdict == 'CONTRADICTED' else 'Unsupported'} claim: \"{claim_preview}\"",
+            "reason": reason,
+            "deep_link": f"/?tab=evaluations&run={run.id}&result={v.question_result_id}",
+            "created_at": _iso(v.created_at),
+            "resolved_at": None,
+        })
+    return items
+
+
 def _warning_items(trust_score: dict, model_id: int, model_name: str) -> list:
     """LOW-severity live facts derived from the trust components. Unreviewed
     conflicts and pending revisions are NOT duplicated here - they already
@@ -236,6 +287,7 @@ def build_inbox(session: Session, project_id: int) -> dict:
         trust_score = trust.compute_trust_score(session, model.id)
         gate = conflict_engine.evaluate_compile_gate(session, model.id)
         items += _warning_items(trust_score, model.id, model.name)
+        items += _evidence_gap_items(session, model.id, model.name)
 
         health = next((c for c in trust_score["components"] if c["key"] == "governance_health"), None)
         governance_facts = []
