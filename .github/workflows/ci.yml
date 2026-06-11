@@ -1,0 +1,61 @@
+# CI (audit M0.1): the machine-enforced arm of the regression contract.
+# Runs the verified-green suites - the HTTP smoke layer, the product
+# regression suites, and the architectural seam suite (D18 boundary) -
+# plus frontend type-check and lint. Suites not yet listed here are the
+# triage backlog (notably test_conflict_engine.py, which downloads the
+# ~1GB NLI model - candidate for a cached nightly job, not per-push CI).
+
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    env:
+      EM_NLI_VERIFICATION: "off"
+      OPENAI_API_KEY: "mock-key"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: HTTP smoke layer
+        working-directory: backend
+        run: python test_http_api.py
+      - name: Product regression suites
+        working-directory: backend
+        run: |
+          python test_local_connector.py
+          python test_auto_approval.py
+          python test_revision_workflow.py
+          python test_governance_inbox.py
+      - name: Architectural seam suite (D18 boundary)
+        working-directory: backend
+        run: python test_connector_seam.py
+
+  frontend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+      - name: Type check
+        working-directory: frontend
+        run: npx tsc --noEmit
+      - name: Lint (errors fail; warnings reported)
+        working-directory: frontend
+        run: npx eslint src
