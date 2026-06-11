@@ -240,6 +240,15 @@ Agent connection config example:
 }
 ```
 
+### Operator Console — UI Workspaces (parallel track)
+
+Prioritized UI work activating backend capabilities, ordered by leverage:
+
+1. **Evaluations Workspace** ✅ — benchmark question CRUD (FACTUAL / PROCEDURAL / POLICY / REFUSAL with severity, citation, and coverage requirements), one-click evaluation runs with live polling, run history, and scorecard drill-down (pass rate, avg coverage/confidence, per-question results with unsupported claims). **REFUSAL tests are first-class and visible**: a passed refusal renders "Expert correctly returned INSUFFICIENT EVIDENCE — it knows when not to answer." Completed runs feed Evaluation Reliability and Evidence Coverage, making the Trust Score structurally complete (5/5 components measurable from the UI).
+2. **Audit Ledger Explorer** — upgrade the existing raw event feed into a queryable investigation surface: filter by event type / actor / target model, answer-trace view ("who asked, what was retrieved, why blocked, which revision answered").
+3. **Trust Center** — unified view of the governance objects (trust score, conflict score, compile gate, governance health, freshness) per Expert Model.
+4. **Settings** — deferred until an identity model exists (policy knobs are env vars today).
+
 ### Sprint 2 — Tier 2 Governance Surface (Next)
 
 `get_provenance`, `get_conflicts`, `get_revision_history` — the tools that let an advanced agent answer "why is trust only 87?" by walking the governance evidence itself.

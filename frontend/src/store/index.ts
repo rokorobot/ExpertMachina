@@ -155,6 +155,47 @@ export interface RevisionQueueItem {
   baseline_source_hash: string | null;
 }
 
+export interface BenchmarkQuestion {
+  id: number;
+  project_id: number;
+  question: string;
+  expected_claims: string[];
+  expected_answer_type: string; // FACTUAL | PROCEDURAL | POLICY | REFUSAL
+  required_citation_count: number;
+  tags: string | null;
+  severity: string; // LOW | MEDIUM | HIGH | CRITICAL
+  min_required_coverage: number;
+  created_at: string;
+}
+
+export interface EvaluationQuestionResult {
+  id: number;
+  evaluation_run_id: number;
+  benchmark_question_id: number;
+  question_text: string;
+  generated_answer: string | null;
+  coverage_score: number;
+  confidence_score: number;
+  verification_status: string | null;
+  passed: boolean;
+  unsupported_claims: string[];
+  citations: { asset_id: number; name: string; content: string }[];
+}
+
+export interface EvaluationRun {
+  id: number;
+  project_id: number;
+  expert_model_id: number;
+  expert_model_version: string | null;
+  status: string; // PENDING | RUNNING | COMPLETED | FAILED
+  average_coverage_score: number;
+  average_confidence_score: number;
+  pass_rate: number;
+  started_at: string;
+  completed_at: string | null;
+  results: EvaluationQuestionResult[];
+}
+
 export interface TrustComponent {
   key: string;
   label: string;
@@ -238,6 +279,14 @@ interface AppState {
   reviewRevision: (revisionId: number, action: string, notes: string, projectId: number) => Promise<void>;
 
   trustScores: TrustScore[];
+
+  benchmarks: BenchmarkQuestion[];
+  evaluationRuns: EvaluationRun[];
+  evaluationRunning: boolean;
+  fetchEvaluations: (projectId: number) => Promise<void>;
+  createBenchmark: (projectId: number, payload: Record<string, unknown>) => Promise<void>;
+  deleteBenchmark: (projectId: number, benchmarkId: number) => Promise<void>;
+  startEvaluation: (projectId: number, expertModelId: number) => Promise<void>;
 }
 
 const API_BASE = 'http://localhost:8000/api';
@@ -531,6 +580,81 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   trustScores: [],
   revisionQueue: [],
+  benchmarks: [],
+  evaluationRuns: [],
+  evaluationRunning: false,
+
+  fetchEvaluations: async (projectId: number) => {
+    try {
+      const [bRes, rRes] = await Promise.all([
+        fetch(`${API_BASE}/projects/${projectId}/benchmarks`),
+        fetch(`${API_BASE}/projects/${projectId}/evaluations`)
+      ]);
+      const benchmarks = bRes.ok ? await bRes.json() : [];
+      const evaluationRuns = rRes.ok ? await rRes.json() : [];
+      set({ benchmarks, evaluationRuns });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  createBenchmark: async (projectId: number, payload: Record<string, unknown>) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/benchmarks`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, project_id: projectId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to create benchmark question');
+      }
+      await get().fetchEvaluations(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  deleteBenchmark: async (projectId: number, benchmarkId: number) => {
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/benchmarks/${benchmarkId}`, { method: 'DELETE' });
+      if (!res.ok) throw new Error('Failed to delete benchmark question');
+      await get().fetchEvaluations(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  startEvaluation: async (projectId: number, expertModelId: number) => {
+    set({ evaluationRunning: true, error: null });
+    try {
+      const res = await fetch(`${API_BASE}/projects/${projectId}/evaluations`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ project_id: projectId, expert_model_id: expertModelId }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to start evaluation run');
+      }
+      const run = await res.json();
+      // The batch executes server-side in the background: poll until terminal.
+      for (let i = 0; i < 200; i++) {
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        const statusRes = await fetch(`${API_BASE}/projects/${projectId}/evaluations/${run.id}`);
+        if (!statusRes.ok) continue;
+        const current = await statusRes.json();
+        await get().fetchEvaluations(projectId);
+        if (current.status === 'COMPLETED' || current.status === 'FAILED') break;
+      }
+      // Completed runs feed Evaluation Reliability and Evidence Coverage.
+      await get().fetchProjectData(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    } finally {
+      set({ evaluationRunning: false });
+    }
+  },
 
   fetchRevisionQueue: async (projectId: number) => {
     try {

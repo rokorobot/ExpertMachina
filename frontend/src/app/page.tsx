@@ -24,6 +24,7 @@ import {
   FileCheck,
   MessageSquare,
   Send,
+  FileCode2,
   AlertTriangle,
   ShieldAlert,
   Scale,
@@ -96,10 +97,17 @@ export default function Home() {
     revisionQueue,
     fetchRevisionQueue,
     reviewRevision,
-    trustScores
+    trustScores,
+    benchmarks,
+    evaluationRuns,
+    evaluationRunning,
+    fetchEvaluations,
+    createBenchmark,
+    deleteBenchmark,
+    startEvaluation
   } = useAppStore();
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'conflicts' | 'revisions' | 'audit' | 'console'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'audit' | 'console'>('dashboard');
   const [showNewProjectModal, setShowNewProjectModal] = useState(false);
   const [projectName, setProjectName] = useState('');
   const [projectDesc, setProjectDesc] = useState('');
@@ -128,6 +136,28 @@ export default function Home() {
   const [consoleStep, setConsoleStep] = useState('');
   const [consoleResponse, setConsoleResponse] = useState<ConsoleResult | null>(null);
   const [consoleHistory, setConsoleHistory] = useState<ConsoleHistoryEntry[]>([]);
+
+  // Evaluations workspace state
+  const [benchQuestion, setBenchQuestion] = useState('');
+  const [benchClaims, setBenchClaims] = useState('');
+  const [benchType, setBenchType] = useState<'FACTUAL' | 'PROCEDURAL' | 'POLICY' | 'REFUSAL'>('FACTUAL');
+  const [benchSeverity, setBenchSeverity] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'CRITICAL'>('MEDIUM');
+  const [benchCitations, setBenchCitations] = useState(1);
+  const [benchCoverage, setBenchCoverage] = useState(0.95);
+  const [evalModelId, setEvalModelId] = useState<number | null>(null);
+  const [expandedRunId, setExpandedRunId] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (activeTab === 'evaluations' && activeProjectId !== null) {
+      fetchEvaluations(activeProjectId);
+    }
+  }, [activeTab, activeProjectId]);
+
+  useEffect(() => {
+    if (activeTab === 'evaluations' && experts.length > 0 && evalModelId === null) {
+      setEvalModelId(experts[0].id);
+    }
+  }, [activeTab, experts]);
 
   // Revision Review Workbench state
   const [revisionStatusFilter, setRevisionStatusFilter] = useState<'PENDING' | 'APPROVED' | 'REJECTED' | 'ALL'>('PENDING');
@@ -523,6 +553,23 @@ export default function Home() {
             >
               <ShieldCheck className="w-4 h-4" />
               <span>Experts & Packages</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('evaluations')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'evaluations'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <FileCode2 className="w-4 h-4" />
+              <span>Evaluations</span>
+              {evaluationRunning && (
+                <span className="ml-auto bg-cyan-950/40 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-900/40 animate-pulse">
+                  running
+                </span>
+              )}
             </button>
 
             <button
@@ -1572,6 +1619,280 @@ export default function Home() {
                     </div>
                   </div>
 
+                </div>
+              )}
+
+              {/* TAB: EVALUATIONS (Benchmark Datasets, Runs, Scorecards) */}
+              {activeTab === 'evaluations' && (
+                <div className="space-y-6">
+
+                  {/* BENCHMARK DATASETS */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <div className="glass-panel p-6 rounded-xl space-y-4">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                        <FileCode2 className="w-4 h-4 text-cyan-400" />
+                        Create Benchmark Question
+                      </h3>
+                      <form
+                        onSubmit={async (e) => {
+                          e.preventDefault();
+                          if (activeProjectId === null || !benchQuestion.trim()) return;
+                          await createBenchmark(activeProjectId, {
+                            question: benchQuestion.trim(),
+                            expected_claims: benchClaims.split('\n').map(c => c.trim()).filter(Boolean),
+                            expected_answer_type: benchType,
+                            severity: benchSeverity,
+                            required_citation_count: benchType === 'REFUSAL' ? 0 : benchCitations,
+                            min_required_coverage: benchCoverage
+                          });
+                          setBenchQuestion('');
+                          setBenchClaims('');
+                        }}
+                        className="space-y-3"
+                      >
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Question</label>
+                          <textarea
+                            rows={2}
+                            required
+                            placeholder="e.g. Within what timeframe must critical deviations be logged?"
+                            value={benchQuestion}
+                            onChange={(e) => setBenchQuestion(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                          />
+                        </div>
+                        <div className="grid grid-cols-2 gap-3">
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Expected Answer Type</label>
+                            <select
+                              value={benchType}
+                              onChange={(e) => setBenchType(e.target.value as typeof benchType)}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-2 text-xs text-slate-200 outline-none focus:border-cyan-500"
+                            >
+                              <option value="FACTUAL">FACTUAL</option>
+                              <option value="PROCEDURAL">PROCEDURAL</option>
+                              <option value="POLICY">POLICY</option>
+                              <option value="REFUSAL">REFUSAL — must return INSUFFICIENT EVIDENCE</option>
+                            </select>
+                          </div>
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Severity</label>
+                            <select
+                              value={benchSeverity}
+                              onChange={(e) => setBenchSeverity(e.target.value as typeof benchSeverity)}
+                              className="w-full bg-slate-950 border border-slate-800 rounded px-2.5 py-2 text-xs text-slate-200 outline-none focus:border-cyan-500"
+                            >
+                              <option>LOW</option><option>MEDIUM</option><option>HIGH</option><option>CRITICAL</option>
+                            </select>
+                          </div>
+                        </div>
+                        {benchType !== 'REFUSAL' ? (
+                          <>
+                            <div>
+                              <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Expected Claims (one per line)</label>
+                              <textarea
+                                rows={2}
+                                placeholder={"Critical deviations must be logged within 24 hours."}
+                                value={benchClaims}
+                                onChange={(e) => setBenchClaims(e.target.value)}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 resize-none"
+                              />
+                            </div>
+                            <div className="grid grid-cols-2 gap-3">
+                              <div>
+                                <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Required Citations</label>
+                                <input type="number" min={0} max={10} value={benchCitations}
+                                  onChange={(e) => setBenchCitations(Number(e.target.value))}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Min Coverage (0–1)</label>
+                                <input type="number" min={0} max={1} step={0.05} value={benchCoverage}
+                                  onChange={(e) => setBenchCoverage(Number(e.target.value))}
+                                  className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" />
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          <p className="text-[10px] text-slate-500 font-mono italic bg-slate-950/40 border border-slate-900/60 rounded p-2.5">
+                            REFUSAL tests pass only when the expert correctly returns INSUFFICIENT EVIDENCE —
+                            proving the system knows when <span className="text-slate-300">not</span> to answer.
+                          </p>
+                        )}
+                        <button type="submit" className="w-full py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase">
+                          Add Benchmark Question
+                        </button>
+                      </form>
+                    </div>
+
+                    <div className="glass-panel p-6 rounded-xl space-y-4">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+                        Benchmark Dataset ({benchmarks.length})
+                      </h3>
+                      {benchmarks.length === 0 ? (
+                        <div className="text-center py-12 text-xs text-slate-500 italic">
+                          No benchmark questions yet. Until benchmarks run, the Trust Score reports
+                          Evaluation Reliability and Evidence Coverage as NOT_MEASURED.
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5 max-h-96 overflow-y-auto pr-2">
+                          {benchmarks.map((b) => (
+                            <div key={b.id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-3 space-y-1.5">
+                              <div className="flex justify-between items-start gap-2">
+                                <p className="text-xs text-slate-200">{b.question}</p>
+                                <button onClick={() => activeProjectId !== null && deleteBenchmark(activeProjectId, b.id)}
+                                  className="text-slate-600 hover:text-rose-400 shrink-0" title="Delete benchmark question">
+                                  <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                              <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                                <span className={`px-2 py-0.5 rounded-full border ${
+                                  b.expected_answer_type === 'REFUSAL'
+                                    ? 'bg-purple-950/40 text-purple-400 border-purple-900/50'
+                                    : 'bg-cyan-950/30 text-cyan-400 border-cyan-900/40'
+                                }`}>{b.expected_answer_type}</span>
+                                <span className="px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">{b.severity}</span>
+                                {b.expected_answer_type !== 'REFUSAL' && (
+                                  <span className="px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">
+                                    cov ≥ {b.min_required_coverage} · cites ≥ {b.required_citation_count}
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* RUN EVALUATION */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3">
+                      Run Evaluation
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Snapshot-based batch — results feed Evaluation Reliability and Evidence Coverage in the Trust Score
+                      </span>
+                    </h3>
+                    <div className="flex flex-wrap items-end gap-4">
+                      <div className="flex-1 min-w-[220px]">
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Expert Model</label>
+                        <select
+                          value={evalModelId ?? ''}
+                          onChange={(e) => setEvalModelId(Number(e.target.value))}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200"
+                        >
+                          {experts.map((m) => (
+                            <option key={m.id} value={m.id}>EM-{m.id} — {m.name}</option>
+                          ))}
+                        </select>
+                      </div>
+                      <button
+                        onClick={() => activeProjectId !== null && evalModelId !== null && startEvaluation(activeProjectId, evalModelId)}
+                        disabled={evaluationRunning || evalModelId === null || benchmarks.length === 0}
+                        className="py-2 px-5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40"
+                      >
+                        {evaluationRunning ? 'Evaluating…' : `Run ${benchmarks.length} Benchmark${benchmarks.length === 1 ? '' : 's'}`}
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* RUN HISTORY & SCORECARDS */}
+                  <div className="space-y-4">
+                    {evaluationRuns.length === 0 ? (
+                      <div className="glass-panel rounded-xl p-12 text-center text-xs text-slate-500 italic">
+                        No evaluation runs yet.
+                      </div>
+                    ) : (
+                      [...evaluationRuns].sort((a, b) => b.id - a.id).map((run) => {
+                        const model = experts.find(m => m.id === run.expert_model_id);
+                        const expanded = expandedRunId === run.id;
+                        const benchById = (id: number) => benchmarks.find(b => b.id === id);
+                        return (
+                          <div key={run.id} className={`glass-panel rounded-xl p-5 space-y-3 border-l-4 ${
+                            run.status === 'COMPLETED' ? (run.pass_rate >= 0.8 ? 'border-l-emerald-500' : 'border-l-yellow-500') :
+                            run.status === 'FAILED' ? 'border-l-rose-500' : 'border-l-cyan-500'
+                          }`}>
+                            <div className="flex flex-wrap justify-between items-center gap-2 cursor-pointer"
+                              onClick={() => setExpandedRunId(expanded ? null : run.id)}>
+                              <div className="flex items-center gap-3">
+                                <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">RUN-{run.id}</span>
+                                <span className="font-bold text-sm text-slate-200">{model ? model.name : `EM-${run.expert_model_id}`}</span>
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                                  run.status === 'COMPLETED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                  run.status === 'FAILED' ? 'bg-rose-950/30 text-rose-400' : 'bg-cyan-950/40 text-cyan-400 animate-pulse'
+                                }`}>{run.status}</span>
+                              </div>
+                              {run.status === 'COMPLETED' && (
+                                <div className="flex gap-2 font-mono text-[10px]">
+                                  <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase">Pass Rate</span>
+                                    <span className={`font-bold ${run.pass_rate >= 0.8 ? 'text-emerald-400' : 'text-yellow-400'}`}>{Math.round(run.pass_rate * 100)}%</span>
+                                  </div>
+                                  <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase">Avg Coverage</span>
+                                    <span className="text-cyan-400 font-bold">{Math.round(run.average_coverage_score * 100)}%</span>
+                                  </div>
+                                  <div className="bg-slate-950/80 border border-slate-900 rounded px-3 py-1 text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase">Avg Confidence</span>
+                                    <span className="text-slate-200 font-bold">{Math.round(run.average_confidence_score * 100)}%</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {expanded && run.results.length > 0 && (
+                              <div className="space-y-2.5 border-t border-slate-900/60 pt-3">
+                                {run.results.map((r) => {
+                                  const bench = benchById(r.benchmark_question_id);
+                                  const isRefusal = bench?.expected_answer_type === 'REFUSAL';
+                                  return (
+                                    <div key={r.id} className={`bg-slate-950/50 border rounded-lg p-3 space-y-1.5 ${
+                                      r.passed ? 'border-emerald-900/40' : 'border-rose-900/40'
+                                    }`}>
+                                      <div className="flex flex-wrap justify-between items-center gap-2">
+                                        <p className="text-xs text-slate-200">{r.question_text}</p>
+                                        <div className="flex gap-1.5 font-mono text-[9px] shrink-0">
+                                          {isRefusal && (
+                                            <span className="px-2 py-0.5 rounded-full bg-purple-950/40 text-purple-400 border border-purple-900/50">REFUSAL TEST</span>
+                                          )}
+                                          <span className={`px-2 py-0.5 rounded-full font-bold ${
+                                            r.passed ? 'bg-emerald-950/40 text-emerald-400' : 'bg-rose-950/30 text-rose-400'
+                                          }`}>{r.passed ? 'PASSED' : 'FAILED'}</span>
+                                        </div>
+                                      </div>
+                                      {isRefusal ? (
+                                        <p className={`text-[10px] font-mono ${r.passed ? 'text-emerald-400/90' : 'text-rose-400/90'}`}>
+                                          {r.passed
+                                            ? 'Expert correctly returned INSUFFICIENT EVIDENCE — it knows when not to answer.'
+                                            : 'Expert answered when it should have refused — unverified knowledge leaked.'}
+                                        </p>
+                                      ) : (
+                                        <>
+                                          <p className="text-[10px] text-slate-400 font-mono italic truncate">
+                                            Answer: {r.generated_answer || '—'}
+                                          </p>
+                                          <div className="flex flex-wrap gap-1.5 font-mono text-[9px]">
+                                            <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-800">coverage {r.coverage_score}</span>
+                                            <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-800">{r.verification_status}</span>
+                                            <span className="px-2 py-0.5 rounded bg-slate-900/80 text-slate-400 border border-slate-800">{r.citations.length} citation{r.citations.length === 1 ? '' : 's'}</span>
+                                          </div>
+                                          {!r.passed && r.unsupported_claims.length > 0 && (
+                                            <p className="text-[9px] text-rose-400/80 font-mono">
+                                              Unsupported: {r.unsupported_claims.join(' | ')}
+                                            </p>
+                                          )}
+                                        </>
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                              </div>
+                            )}
+                          </div>
+                        );
+                      })
+                    )}
+                  </div>
                 </div>
               )}
 
