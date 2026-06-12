@@ -126,6 +126,8 @@ export default function Home() {
     selectionHistory,
     consumptionLoading,
     selectionError,
+    consumptionInbox,
+    fetchConsumptionInbox,
     fetchPackageConsumption,
     submitModelSelection,
     governanceInbox,
@@ -173,14 +175,24 @@ export default function Home() {
   // ephemeral React state - the workbench owns NO persisted view state.
   const [consumptionPkgId, setConsumptionPkgId] = useState<number | null>(null);
   const [selForm, setSelForm] = useState<{ provider: string; model: string; runIds: number[]; rationale: string } | null>(null);
+  const [consumptionView, setConsumptionView] = useState<'workbench' | 'inbox'>('workbench');
 
   // Consumption workbench: runs come from the existing evaluations read;
   // selection/comparison/history are fetched per package. All projections.
   useEffect(() => {
     if (activeTab === 'consumption' && activeProjectId !== null) {
       fetchEvaluations(activeProjectId);
+      fetchConsumptionInbox(activeProjectId);
     }
-  }, [activeTab, activeProjectId]);
+  }, [activeTab, activeProjectId, consumptionView]);
+
+  // The sidebar HIGH badge must alert without requiring a visit to the tab
+  // (a computed read, the governance-inbox badge pattern).
+  useEffect(() => {
+    if (activeProjectId !== null && currentUser) {
+      fetchConsumptionInbox(activeProjectId);
+    }
+  }, [activeProjectId, currentUser]);
 
   useEffect(() => {
     if (activeTab === 'consumption' && packages.length > 0 && consumptionPkgId === null) {
@@ -582,6 +594,7 @@ export default function Home() {
       if (tab === 'consumption') {
         const pkg = params.get('package');
         if (pkg) setConsumptionPkgId(Number(pkg));
+        if (params.get('view') === 'inbox') setConsumptionView('inbox');
       }
       if (tab === 'conflicts' && expert) setConflictModelId(Number(expert));
       if (tab === 'conflicts' && relationship) {
@@ -652,6 +665,7 @@ export default function Home() {
         if (activeTab === 'evaluations' && expandedRunId !== null) params.set('run', String(expandedRunId));
         if (activeTab === 'evaluations' && highlightResultId !== null) params.set('result', String(highlightResultId));
         if (activeTab === 'consumption' && consumptionPkgId !== null) params.set('package', String(consumptionPkgId));
+        if (activeTab === 'consumption' && consumptionView === 'inbox') params.set('view', 'inbox');
         newSearch = `?${params.toString()}`;
       }
 
@@ -662,7 +676,7 @@ export default function Home() {
         window.history.pushState(null, '', targetUrl);
       }
     }
-  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId, consumptionPkgId]);
+  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId, consumptionPkgId, consumptionView]);
 
   // Listen to browser back/forward buttons
   useEffect(() => {
@@ -1048,6 +1062,11 @@ export default function Home() {
             >
               <PackageCheck className="w-4 h-4" />
               <span>Consumption</span>
+              {consumptionInbox && consumptionInbox.summary.high > 0 && (
+                <span className="ml-auto bg-rose-950/40 text-[10px] text-rose-400 font-mono px-2 py-0.5 rounded-full border border-rose-900/40">
+                  {consumptionInbox.summary.high}
+                </span>
+              )}
             </button>
             )}
 
@@ -3960,8 +3979,14 @@ export default function Home() {
                 const pkg = packages.find(p => p.id === consumptionPkgId) || null;
                 const pkgRuns = pkg ? evaluationRuns.filter(r =>
                   r.run_type === 'PACKAGE' && r.package_hash === pkg.package_hash && r.status === 'COMPLETED') : [];
-                const selectionDrift = !!(packageSelection && pkg && pkg.package_hash
-                  && packageSelection.package_hash !== pkg.package_hash);
+                // Drift is a FAMILY fact (artifact rows are append-only): the
+                // viewed artifact has drifted when a newer compile of the same
+                // package family exists with a different hash. Computed live.
+                const familyCurrent = pkg ? packages.reduce((cur, p) =>
+                  (p.project_id === pkg.project_id && p.expert_model_id === pkg.expert_model_id
+                    && p.name === pkg.name && p.id > cur.id) ? p : cur, pkg) : null;
+                const artifactSuperseded = !!(pkg && familyCurrent && familyCurrent.id !== pkg.id
+                  && familyCurrent.package_hash !== pkg.package_hash);
                 const parseDetails = (details: string | null): Record<string, unknown> | null => {
                   try { return details ? JSON.parse(details) : null; } catch { return null; }
                 };
@@ -3985,20 +4010,118 @@ export default function Home() {
                     <div className="flex justify-between items-center border-b border-slate-900 pb-3">
                       <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
                         <PackageCheck className="w-4 h-4 text-cyan-400" />
-                        Selection Workbench
+                        {consumptionView === 'inbox' ? 'Consumption Inbox' : 'Selection Workbench'}
                       </h3>
                       <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
                         Projections of governed facts · owns no state
                       </span>
                     </div>
+                    <div className="flex items-center gap-2 mt-3">
+                      <button
+                        onClick={() => setConsumptionView('workbench')}
+                        className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition-all ${
+                          consumptionView === 'workbench'
+                            ? 'bg-cyan-950/40 text-cyan-400 border-cyan-900/60'
+                            : 'text-slate-400 border-slate-800 hover:text-slate-200'
+                        }`}
+                      >
+                        Selection Workbench
+                      </button>
+                      <button
+                        onClick={() => setConsumptionView('inbox')}
+                        className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition-all flex items-center gap-2 ${
+                          consumptionView === 'inbox'
+                            ? 'bg-cyan-950/40 text-cyan-400 border-cyan-900/60'
+                            : 'text-slate-400 border-slate-800 hover:text-slate-200'
+                        }`}
+                      >
+                        Consumption Inbox
+                        {consumptionInbox && (consumptionInbox.summary.high + consumptionInbox.summary.medium) > 0 && (
+                          <span className={`px-1.5 py-0.5 rounded-full text-[9px] border ${
+                            consumptionInbox.summary.high > 0
+                              ? 'bg-rose-950/40 text-rose-400 border-rose-900/40'
+                              : 'bg-amber-950/40 text-amber-400 border-amber-900/40'
+                          }`}>
+                            {consumptionInbox.summary.high + consumptionInbox.summary.medium}
+                          </span>
+                        )}
+                      </button>
+                    </div>
                     <p className="text-xs text-slate-500 mt-3 leading-relaxed">
-                      Which model should serve this package? Comparisons are computed from PACKAGE
-                      evaluation runs, the selection is a governed decision recorded with its evidence
-                      and rationale, and history lives in the audit ledger. Binding an agent to the
-                      selection is a separate governed act in this lifecycle.
+                      {consumptionView === 'inbox'
+                        ? 'Does everything still stand? Every item below is computed live from governed facts - selections, runs, bindings, identity. Nothing is stored, and there is nothing to dismiss: an item leaves when the facts that raised it change.'
+                        : 'Which model should serve this package? Comparisons are computed from PACKAGE evaluation runs, the selection is a governed decision recorded with its evidence and rationale, and history lives in the audit ledger. Binding an agent to the selection is a separate governed act in this lifecycle.'}
                     </p>
                   </div>
 
+                  {consumptionView === 'inbox' ? (
+                  <div className="space-y-3">
+                    {consumptionInbox && (
+                      <div className="flex items-center gap-2 flex-wrap text-[10px] font-mono">
+                        <span className="px-2 py-1 rounded bg-rose-950/40 text-rose-400 border border-rose-900/40">
+                          HIGH {consumptionInbox.summary.high}
+                        </span>
+                        <span className="px-2 py-1 rounded bg-amber-950/40 text-amber-400 border border-amber-900/40">
+                          MEDIUM {consumptionInbox.summary.medium}
+                        </span>
+                        <span className="px-2 py-1 rounded bg-slate-900/80 text-slate-400 border border-slate-800">
+                          LOW {consumptionInbox.summary.low}
+                        </span>
+                        <span className="text-slate-600 ml-2">
+                          {consumptionInbox.summary.total_packages} package{consumptionInbox.summary.total_packages === 1 ? '' : 's'} examined
+                          · computed {new Date(consumptionInbox.generated_at + 'Z').toLocaleTimeString()}
+                        </span>
+                      </div>
+                    )}
+                    {(!consumptionInbox || consumptionInbox.items.length === 0) ? (
+                      <div className="glass-panel p-6 rounded-xl text-xs text-slate-400 leading-relaxed">
+                        Inbox clear: every selection stands on current evidence and every binding serves
+                        the current artifact under a valid, sufficiently-cleared identity. Items appear
+                        here only when governed facts drift — and leave the same way.
+                      </div>
+                    ) : consumptionInbox.items.map(item => {
+                      const sev = item.severity === 'HIGH'
+                        ? { border: 'border-l-rose-500', chip: 'bg-rose-950/40 text-rose-400 border-rose-900/40' }
+                        : item.severity === 'MEDIUM'
+                        ? { border: 'border-l-amber-500', chip: 'bg-amber-950/40 text-amber-400 border-amber-900/40' }
+                        : { border: 'border-l-slate-600', chip: 'bg-slate-900/80 text-slate-400 border-slate-800' };
+                      return (
+                        <div key={item.id} className={`glass-panel p-4 rounded-xl border-l-2 ${sev.border} space-y-2`}>
+                          <div className="flex justify-between items-start gap-3 flex-wrap">
+                            <div className="flex items-center gap-2">
+                              <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase ${sev.chip}`}>
+                                {item.severity}
+                              </span>
+                              <span className="text-xs font-bold text-slate-200">{item.title}</span>
+                            </div>
+                            <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-slate-950/60 border border-slate-800 text-slate-500">
+                              {item.condition}
+                            </span>
+                          </div>
+                          <p className="text-[11px] text-slate-400 leading-relaxed">{item.reason}</p>
+                          {item.missing.length > 0 && (
+                            <p className="text-[10px] font-mono text-rose-400 bg-rose-950/20 border border-rose-900/30 rounded-lg p-2">
+                              Declared missing: {item.missing.join('; ')}
+                            </p>
+                          )}
+                          <div className="flex justify-between items-center pt-1">
+                            <span className="text-[9px] font-mono text-slate-500">
+                              {item.package_name} v{item.package_version}
+                              {item.principal_name ? ` · agent ${item.principal_name}` : ''}
+                              {item.binding_id !== null ? ` · binding ${item.binding_id}` : ''}
+                            </span>
+                            <button
+                              onClick={() => { setConsumptionPkgId(item.package_id); setConsumptionView('workbench'); }}
+                              className="text-[10px] font-mono px-3 py-1 rounded-lg bg-cyan-950/40 text-cyan-400 border border-cyan-900/40 hover:bg-cyan-900/40 transition-all flex items-center gap-1"
+                            >
+                              Open in Selection Workbench <ArrowRight className="w-3 h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  ) : (
                   <div className="grid grid-cols-12 gap-6">
                     {/* Package picker */}
                     <div className="col-span-4 glass-panel p-4 rounded-xl space-y-2 self-start">
@@ -4058,11 +4181,13 @@ export default function Home() {
                                 {new Date(packageSelection.selected_at).toLocaleString()}
                               </span>
                             </div>
-                            {selectionDrift && (
+                            {artifactSuperseded && familyCurrent && (
                               <div className="text-[10px] text-amber-400 bg-amber-950/30 border border-amber-900/40 rounded-lg p-3 font-mono">
-                                Hash drift: this selection was recorded for artifact {shortHash(packageSelection.package_hash)},
-                                but the current artifact is {shortHash(pkg.package_hash)}. Re-evaluate on the current
-                                artifact and record a new selection. (Computed live — staleness is never stored.)
+                                Artifact superseded: a newer compile of this package exists
+                                (v{familyCurrent.governance_version}, {shortHash(familyCurrent.package_hash)}).
+                                This selection and its bindings are flagged in the Consumption Inbox —
+                                re-evaluate on the current artifact, re-select, and re-bind.
+                                (Computed live — staleness is never stored.)
                               </div>
                             )}
                             <p className="text-xs text-slate-400 leading-relaxed border-l-2 border-slate-800 pl-3">
@@ -4277,6 +4402,7 @@ export default function Home() {
                       )}
                     </div>
                   </div>
+                  )}
                 </div>
                 );
               })()}

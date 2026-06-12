@@ -149,6 +149,41 @@ export interface ModelComparison {
   note: string;
 }
 
+// v1.1.x WS2: the Computed Consumption Inbox. Every item is derived live
+// by the backend from governed facts - nothing here is ever persisted,
+// and there is deliberately no dismiss/resolve action to call.
+export interface ConsumptionInboxItem {
+  id: string;
+  condition: string;
+  severity: string; // HIGH | MEDIUM | LOW (one shared backend function)
+  title: string;
+  reason: string;
+  project_id: number;
+  package_id: number;
+  package_name: string;
+  package_version: string;
+  binding_id: number | null;
+  selection_id: number | null;
+  principal_id: number | null;
+  principal_name: string | null;
+  missing: string[]; // declared unresolvable hops (D12)
+  deep_link: string;
+}
+
+export interface ConsumptionInbox {
+  inbox_version: string;
+  project_id: number | null;
+  generated_at: string;
+  summary: {
+    high: number;
+    medium: number;
+    low: number;
+    total_packages: number;
+    items_with_declared_missing_hops: number;
+  };
+  items: ConsumptionInboxItem[];
+}
+
 export interface AssetRelationship {
   id: number;
   project_id: number;
@@ -644,6 +679,8 @@ interface AppState {
   selectionHistory: AuditEvent[];
   consumptionLoading: boolean;
   selectionError: string | null;
+  consumptionInbox: ConsumptionInbox | null;
+  fetchConsumptionInbox: (projectId?: number | null) => Promise<void>;
   fetchPackageConsumption: (packageId: number) => Promise<void>;
   submitModelSelection: (packageId: number, payload: {
     provider: string;
@@ -1442,6 +1479,19 @@ export const useAppStore = create<AppState>((set, get) => ({
   selectionHistory: [],
   consumptionLoading: false,
   selectionError: null,
+  consumptionInbox: null,
+
+  fetchConsumptionInbox: async (projectId?: number | null) => {
+    // WS2: one read, fully computed server-side. There is no action to
+    // take ON an item - deep links lead to where the facts change.
+    try {
+      const qs = projectId != null ? `?project_id=${projectId}` : '';
+      const res = await apiFetch(`${API_BASE}/consumption/inbox${qs}`);
+      if (res.ok) set({ consumptionInbox: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
 
   fetchPackageConsumption: async (packageId: number) => {
     set({ consumptionLoading: true, selectionError: null });
