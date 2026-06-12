@@ -161,18 +161,42 @@ provenance pattern applied to model choice.
 > decision; old audit remains. Comparison view remains computed. No
 > ExpertAgent binding yet. No orchestration. No persisted live answers.
 
+**Gate: PASSED (accepted June 2026, commit 8377361).** Ratified at
+acceptance: PUT selection at `assets:approve`, GET selection/comparison at
+`assets:read`; supporting evidence may — and for comparative decisions
+should — include the losing model's runs.
+
+Evidence: `backend/test_package_selection.py` (in CI).
+
 ### WS4 — Expert Agent Binding
 
-A binding of approved package version + selected model + AGENT principal +
-clearance, carrying its issuing evidence (identity fact, selection decision).
-Deployment means issuing/referencing a governed token — everything needed
-already exists from v1.0.
+The object is **ExpertAgentBinding** — not ExpertAgentRuntime. A governed,
+append-only binding of the package's CURRENT model selection to an existing
+active AGENT principal, with every field a snapshot at issue time.
+
+**WS4 rulings (binding):**
+- The binding model must equal the current PackageModelSelection at issue
+  time — otherwise selection is not load-bearing.
+- The binding references an existing AGENT principal and does NOT mint a
+  token: token issuance is already a governed identity operation and is
+  never hidden inside package binding.
+- Changing the package selection later does not rewrite existing bindings —
+  a binding is historical evidence of what was deployed.
+
+The binding snapshots: agent_package_id, package_version, package_hash,
+selected provider/model, AGENT principal id, principal clearance at issue
+time, the supporting PackageModelSelection evidence, and the issuing
+actor's identity fact.
 
 **Pass condition:**
-> A binding can be created only from approved package version + selected
-> model + AGENT principal. The binding issues or references a governed
-> token. The system can answer: why this package, why this model, why this
-> agent, why this clearance?
+> Given an approved AgentPackage with a current PackageModelSelection, an
+> authorized operator can create an ExpertAgent binding to an existing
+> active AGENT principal. Creation refuses: no current model selection;
+> selected model mismatch; inactive/non-AGENT principal; principal
+> clearance below package clearance; revoked/missing package artifact;
+> package hash drift. The binding is audited. The binding does not execute
+> anything, does not mint tokens, does not orchestrate tools. Changing the
+> package selection later does not rewrite existing bindings.
 
 ## Build order
 

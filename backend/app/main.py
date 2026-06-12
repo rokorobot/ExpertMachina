@@ -1123,6 +1123,27 @@ def put_package_model_selection(package_id: int, update: schemas.PackageModelSel
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
 
+@app.get("/api/packages/{package_id}/bindings", response_model=List[schemas.ExpertAgentBindingResponse])
+def list_expert_agent_bindings(package_id: int, db_session: Session = Depends(get_db),
+                               actor: identity.Actor = Depends(require_perm("assets:read"))):
+    return crud.list_expert_agent_bindings(db_session, package_id)
+
+@app.post("/api/packages/{package_id}/bindings", response_model=schemas.ExpertAgentBindingResponse)
+def create_expert_agent_binding(package_id: int, create: schemas.ExpertAgentBindingCreate,
+                                db_session: Session = Depends(get_db),
+                                actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    # v1.1 WS4 (D22): issue a governed binding of the package's CURRENT
+    # selected model to an existing active AGENT principal. The binding is
+    # an append-only snapshot - it executes nothing, mints no tokens
+    # (token issuance stays in Users & Tokens, a governed identity
+    # operation), and orchestrates nothing.
+    try:
+        return crud.create_expert_agent_binding(db_session, package_id, create, actor=actor)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")
 def delete_asset(asset_id: int, db_session: Session = Depends(get_db),

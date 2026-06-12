@@ -1,3 +1,4 @@
+import os
 import datetime
 import json
 import uuid
@@ -639,3 +640,120 @@ def set_package_model_selection(session: Session, agent_package_id: int,
                     "comparison stays computed (D1), binding is a later workstream (D22)"}),
         identity_fact_id=actor.fact(session).id)
     return selection
+
+# Expert Agent Binding (v1.1 WS4, D22): a governed binding of the current
+# selected package model to an existing active AGENT principal. The binding
+# executes nothing, mints no tokens (token issuance stays a governed
+# identity operation - never hidden inside package binding), and
+# orchestrates nothing. Bindings are append-only snapshots: later selection
+# changes never rewrite them.
+
+def list_expert_agent_bindings(session: Session, agent_package_id: int):
+    return session.query(db.ExpertAgentBinding).filter(
+        db.ExpertAgentBinding.agent_package_id == agent_package_id
+    ).order_by(db.ExpertAgentBinding.id.asc()).all()
+
+
+def create_expert_agent_binding(session: Session, agent_package_id: int,
+                                create: schemas.ExpertAgentBindingCreate,
+                                actor: identity.Actor = None) -> db.ExpertAgentBinding:
+    """Issue a binding. Refusals, in order: missing/artifact-less package,
+    package hash drift, no current model selection, stale selection,
+    selected-model mismatch against the caller's confirmation proposal,
+    missing/non-AGENT/inactive principal, principal clearance below the
+    package's compiled clearance. The binding model ALWAYS equals the
+    package's current PackageModelSelection at issue time - otherwise
+    selection is not load-bearing."""
+    from app import package_consumer
+    from app.query_engine import ACCESS_RANK
+
+    actor = identity.require_actor_object(actor)
+    pkg = session.query(db.AgentPackage).filter(db.AgentPackage.id == agent_package_id).first()
+    if not pkg:
+        raise LookupError(f"Agent Package with ID {agent_package_id} not found")
+    if not pkg.package_hash or not pkg.file_path or not os.path.exists(pkg.file_path):
+        raise ValueError(f"Agent Package {agent_package_id} has no .empkg artifact - nothing to bind")
+    try:
+        loaded = package_consumer.load_package(pkg.file_path)
+    except package_consumer.PackageVerificationError as e:
+        raise ValueError(f"Package artifact fails verification: {e}")
+    if loaded["package_hash"] != pkg.package_hash:
+        raise ValueError(
+            f"Package artifact hash {loaded['package_hash'][:16]}... does not match the recorded "
+            f"hash {pkg.package_hash[:16]}... - refusing to bind a drifted artifact")
+
+    selection = get_package_model_selection(session, agent_package_id)
+    if not selection:
+        raise ValueError(f"Agent Package {agent_package_id} has no current model selection - "
+                         f"a binding deploys a SELECTED model (WS3), never an implicit one")
+    if selection.package_hash != pkg.package_hash:
+        raise ValueError("The current selection was made for a different package artifact - re-select first")
+    if create.expected_provider or create.expected_model:
+        expected = ((create.expected_provider or "").strip().upper(),
+                    (create.expected_model or "").strip())
+        current = (selection.selected_provider, selection.selected_model_name)
+        if expected != current:
+            raise ValueError(
+                f"Selected model mismatch: caller expected {expected[0]}/{expected[1]} but the "
+                f"current selection is {current[0]}/{current[1]} - re-read the selection and retry")
+
+    principal = session.query(db.Principal).filter(
+        db.Principal.id == create.agent_principal_id).first()
+    if not principal:
+        raise LookupError(f"Principal with ID {create.agent_principal_id} not found")
+    if principal.kind != "AGENT":
+        raise ValueError(f"Principal '{principal.name}' is {principal.kind}, not AGENT - "
+                         f"bindings deploy to agent principals only")
+    if not principal.active:
+        raise ValueError(f"Principal '{principal.name}' is deactivated - bindings require an active principal")
+    principal_clearance = (principal.clearance or "PUBLIC").upper()
+    package_clearance = (pkg.clearance_level or "INTERNAL").upper()
+    if ACCESS_RANK.get(principal_clearance, 0) < ACCESS_RANK.get(package_clearance, 0):
+        raise ValueError(
+            f"Principal clearance {principal_clearance} is below the package's compiled clearance "
+            f"{package_clearance} - a binding must not hand an agent knowledge above its tier")
+
+    selection_evidence = {
+        "selection_id": selection.id,
+        "provider": selection.selected_provider,
+        "model": selection.selected_model_name,
+        "supporting_evaluation_run_ids": selection.supporting_evaluation_run_ids,
+        "rationale": selection.rationale,
+        "selected_by_principal_id": selection.selected_by_principal_id,
+        "selected_at": selection.selected_at.isoformat() if selection.selected_at else None,
+    }
+    fact_id = actor.fact(session).id
+    binding = db.ExpertAgentBinding(
+        agent_package_id=agent_package_id,
+        package_version=pkg.governance_version,
+        package_hash=pkg.package_hash,
+        selected_provider=selection.selected_provider,
+        selected_model_name=selection.selected_model_name,
+        agent_principal_id=principal.id,
+        principal_clearance_at_issue=principal_clearance,
+        selection_evidence_json=json.dumps(selection_evidence),
+        identity_fact_id=fact_id,
+    )
+    session.add(binding)
+    session.commit()
+    session.refresh(binding)
+
+    log_audit_event(
+        session, actor=actor.display, event_type="EXPERT_AGENT_BINDING_CREATED",
+        target_id=str(binding.id),
+        details=json.dumps({
+            "agent_package_id": agent_package_id,
+            "package_name": pkg.name,
+            "package_version": pkg.governance_version,
+            "package_hash": pkg.package_hash,
+            "selected_provider": selection.selected_provider,
+            "selected_model_name": selection.selected_model_name,
+            "agent_principal_id": principal.id,
+            "agent_principal_name": principal.name,
+            "principal_clearance_at_issue": principal_clearance,
+            "package_clearance": package_clearance,
+            "selection_evidence": selection_evidence,
+            "note": "a binding, never a runtime (D22): executes nothing, mints no tokens, "
+                    "orchestrates nothing; later selection changes do not rewrite it"}),
+        identity_fact_id=fact_id)
+    return binding

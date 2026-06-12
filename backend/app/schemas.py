@@ -198,6 +198,30 @@ class PackageModelSelectionResponse(BaseModel):
     class Config:
         from_attributes = True
 
+class ExpertAgentBindingCreate(BaseModel):
+    # v1.1 WS4: the binding copies the model from the package's CURRENT
+    # selection - callers never choose it. The optional expected_* fields
+    # are a confirmation proposal: if supplied and they differ from the
+    # current selection, creation is refused (selected model mismatch).
+    agent_principal_id: int
+    expected_provider: Optional[str] = None
+    expected_model: Optional[str] = None
+
+class ExpertAgentBindingResponse(BaseModel):
+    id: int
+    agent_package_id: int
+    package_version: str
+    package_hash: str
+    selected_provider: str
+    selected_model_name: str
+    agent_principal_id: int
+    principal_clearance_at_issue: str
+    selection_evidence: Optional[dict] = None
+    identity_fact_id: int
+    created_at: datetime
+    class Config:
+        from_attributes = True
+
 class ApprovalPolicyCreate(BaseModel):
     name: str
     asset_types: List[str]  # subset of the allowed KnowledgeAsset types

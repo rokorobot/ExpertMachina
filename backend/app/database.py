@@ -390,6 +390,40 @@ class PackageModelSelection(Base):
         import json
         return json.loads(self.supporting_evaluation_run_ids_json) if self.supporting_evaluation_run_ids_json else []
 
+class ExpertAgentBinding(Base):
+    """v1.1 WS4 (D22): a governed BINDING of the current selected package
+    model to an existing active AGENT principal - never a runtime,
+    orchestrator, or execution environment. The binding executes nothing,
+    mints no tokens (token issuance is its own governed identity
+    operation), and orchestrates no tools.
+
+    Every field is a SNAPSHOT at issue time: changing the package's model
+    selection later does not rewrite existing bindings - a binding is
+    historical evidence of what was deployed, the IdentityFact pattern
+    applied to deployment. Append-only; no update path. The system can
+    answer from the row alone: why this package (hash + version), why this
+    model (the selection evidence snapshot), why this agent (the principal
+    and its clearance at issue), why this clearance (principal clearance
+    >= package clearance, checked at creation), issued by whom (the
+    identity fact)."""
+    __tablename__ = "expert_agent_bindings"
+    id = Column(Integer, primary_key=True, index=True)
+    agent_package_id = Column(Integer, ForeignKey("agent_packages.id"), nullable=False)
+    package_version = Column(String, nullable=False)
+    package_hash = Column(String, nullable=False)
+    selected_provider = Column(String, nullable=False)
+    selected_model_name = Column(String, nullable=False)
+    agent_principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
+    principal_clearance_at_issue = Column(String, nullable=False)
+    selection_evidence_json = Column(Text, nullable=False)  # the PackageModelSelection snapshot at issue
+    identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=False)  # the issuing actor's fact
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def selection_evidence(self):
+        import json
+        return json.loads(self.selection_evidence_json) if self.selection_evidence_json else None
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
     id = Column(Integer, primary_key=True, index=True)
