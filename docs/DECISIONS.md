@@ -307,3 +307,63 @@ where access actually lives — deactivate the AGENT principal or revoke
 its tokens in Users & Tokens (identity governance), not by editing
 consumption history. Any implementation of binding lifecycle records the
 ruling here first.
+
+## D24 — Workbench Projection Rule (v1.1.x scoping, RATIFIED)
+> Workbench views may project, aggregate, filter, sort, and derive
+> existing governed facts.
+>
+> Workbench views may not become authoritative sources of governed state.
+>
+> No workbench screen may require persistence of information that is
+> derivable from existing governed facts.
+>
+> New computed read endpoints are permitted when they compose or expose
+> projections of governed facts.
+>
+> Workbench implementation must not add tables, writable columns, cached
+> rankings, saved comparisons, dashboard-owned status flags, or persisted
+> inbox items.
+>
+> If a workbench screen disappears entirely, no governed fact may be lost.
+
+D1 ("persist facts, compute operational views") applied to the operator
+surface. The UI door is where leaderboard disease would re-enter: systems
+that start with computed views reintroduce a second source of truth
+through cached rankings, saved comparisons, dashboard state tables, and
+persisted inbox items. D24 closes that door for the workbench milestone
+and every milestone after it.
+
+Companion rulings made at the same scoping session (binding, recorded in
+docs/workbench-v1.1x.md):
+- **A top-level Consumption area** (Selection Workbench, Consumption
+  Inbox, Binding Explorer) — not an Agent Center subpage; consumption is
+  a first-class lifecycle. Agent Center stays identity/MCP/tool-facing;
+  Consumption is package/model/binding-facing. D8 satisfied by genuine
+  plurality.
+- **Consumption Inbox severity follows D2 discipline** — one shared
+  severity function; HIGH = a binding is currently unsafe or
+  unverifiable, MEDIUM = a selection may need review, LOW = consumption
+  hygiene. Every item computed at read time, never stored.
+- **Lineage is one server-composed endpoint** — the chain is a product
+  claim, not a UI convenience. Every expected hop either resolves or is
+  explicitly declared missing; no silent gaps (D12 posture).
+- **The existing model-selection PUT is the only write permitted in the
+  milestone.** No binding withdrawal (D23 stays deferred), no new
+  lifecycle, no new permissions.
+
+**Why:** a persisted view is a second state machine that drifts (D1); the
+workbench is the surface with the strongest temptation to persist —
+rankings, comparisons, staleness flags — and the erosion would be
+invisible screen by screen. A structural rule survives where per-screen
+judgment would not.
+**Tradeoff accepted:** every workbench load recomputes its projections —
+no caching layer, no precomputed dashboard state. Performance is bought
+with query work, never with persisted copies of governed facts.
+**Enforcement:** structural, in CI, permanent — the way D18's seam suite
+and D20's purity assertions guard their boundaries:
+`backend/test_workbench_projection.py` freezes the v1.1.0 schema (every
+table, every column) and fails on ANY divergence, additions and removals
+alike. Stronger than checking a milestone diff: a future milestone that
+legitimately changes the schema updates the frozen snapshot alongside the
+ratified decision that justifies it, in the same commit — never silently.
+**Evidence:** backend/test_workbench_projection.py (in CI).
