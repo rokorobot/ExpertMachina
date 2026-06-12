@@ -127,6 +127,11 @@ protect their boundaries.
 
 Evidence: `backend/test_workbench_projection.py` (in CI).
 
+**Gate: PASSED (accepted June 2026, commits b309b34 + 5914792).** Accepted
+with the adversarial proof noted as the load-bearing part: CI demonstrably
+catches the two most likely regressions — a `consumption_inbox_items`
+table and an `is_stale` column. That is D24 made operational.
+
 ### WS1 — Selection Workbench
 
 A **decision workspace, NOT a leaderboard**. Purpose: help a human make a
@@ -139,17 +144,37 @@ supporting-run drill-down · selection rationale history. Rationale
 history is projected from `PACKAGE_MODEL_SELECTED` audit events — never
 a history table.
 
-**Pass condition:**
-> An operator completes decision #1 end-to-end on the screen: reviews the
-> computed comparison, drills into supporting runs and their verdicts,
-> reads the rationale history, and records a governed selection through
-> the EXISTING `PUT /api/packages/{id}/model-selection` (`assets:approve`).
-> The screen introduces no write but that one and persists nothing.
-> Unrun models display as absent, never zero (D12).
+**Pass condition (gate text ratified at WS0 acceptance):**
+> A top-level Consumption area exists.
+>
+> The Selection Workbench lets an authorized operator:
+> - choose an AgentPackage
+> - view current selection
+> - view computed model comparison
+> - view successful PACKAGE evaluation runs
+> - view rationale/audit history
+> - submit a new selection through the existing PUT only
+>
+> The UI must not:
+> - add new writes
+> - persist comparison state
+> - persist selected view state
+> - create dashboard-owned status
+> - bypass `assets:approve`
+> - show selection controls to users without permission
+>
+> Backend may add read-only projection endpoints only.
+> D24 schema guard remains green.
+> Full frontend checks pass.
+
+**Language ruling:** the screen says **"Select model"**, never "Deploy
+model". Deployment belongs to binding; selection belongs to evaluation
+evidence.
 
 Evidence: the WS0 guard holding across the WS1 diff; selection-history
 projection covered by extending `test_http_api.py` /
-`test_package_selection.py`.
+`test_package_selection.py`. Unrun models display as absent, never zero
+(D12).
 
 ### WS2 — Computed Consumption Inbox
 
