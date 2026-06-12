@@ -176,6 +176,15 @@ projection covered by extending `test_http_api.py` /
 `test_package_selection.py`. Unrun models display as absent, never zero
 (D12).
 
+**Gate: PASSED (accepted June 2026, commits a470dbb + 4e778ed + 5d1c4e6).**
+Accepted with the strongest signal named at acceptance: WS1 added no new
+projection endpoints and no new state, yet delivered the operator
+workflow — exactly D24 working. Verified in-browser end-to-end including
+the boundary-refusal path and READ_ONLY gating. Also accepted: the
+`CitationModel.asset_status` fix (PACKAGE citation → frozen package
+content, LIVE citation → live asset status; None is the honest D12
+value, not a missing implementation).
+
 ### WS2 — Computed Consumption Inbox
 
 A new computed module — the `governance_inbox.py` pattern applied to
@@ -183,12 +192,41 @@ consumption — plus one read endpoint. Note this is the first
 **cross-package** consumption read: the v1.1 API surface is
 package-scoped; the inbox spans packages by nature.
 
-**Pass condition:**
-> Every taxonomy condition above produces a derived inbox item carrying
-> its severity and a deep link into the relevant workbench screen.
-> Severity comes from ONE shared function (D2 discipline). Recomputing
-> from the same facts yields the same items. No inbox row is ever
-> written; if the endpoint disappeared, no governed fact would be lost.
+**Pass condition (gate text ratified at WS1 acceptance):**
+> A Consumption Inbox appears inside the top-level Consumption area.
+>
+> It is fully computed from existing governed facts.
+>
+> It produces items for:
+> - HIGH: package hash drift affecting a binding
+> - HIGH: binding whose AGENT principal is inactive
+> - HIGH: bound agent clearance now below package clearance
+> - MEDIUM: current selection hash differs from current package hash
+> - MEDIUM: newer successful PACKAGE evaluations exist after current selection
+> - MEDIUM: selected model absent from latest successful PACKAGE evaluations
+> - LOW: package has evaluations but no selection
+> - LOW: package has selection but no binding
+> - LOW: bound AGENT principal has no active credential
+>
+> One shared severity function assigns severity.
+>
+> Items deep-link into the Selection Workbench or future Binding Explorer
+> target.
+>
+> No inbox item is persisted. No is_stale field. No new tables. No new
+> writable columns. No dashboard-owned status. No new writes. D24 schema
+> guard remains green. READ_ONLY can view inbox items but cannot take
+> selection actions.
+
+**Endpoint ruling:** backend may add ONE read-only endpoint —
+`GET /api/consumption/inbox` — and it must declare every missing hop
+rather than silently dropping it.
+
+**Lifecycle ruling:** NO "dismiss" and NO "mark resolved". Those would
+create inbox-owned state and violate the milestone spirit. An item
+disappears the way it appeared: the underlying governed facts change
+(re-evaluate, re-select, re-bind, fix identity), and the next compute
+reflects them.
 
 Evidence: `backend/test_consumption_inbox.py` (in CI).
 
