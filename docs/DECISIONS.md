@@ -287,3 +287,23 @@ revocable binding.
 **Evidence:** the WS gates in docs/consumption-arc-v1.md; WS1:
 backend/test_package_consumer.py (engine swap through D19, package-local
 retrieval against an empty database, structural purity).
+
+## D23 — ExpertAgentBinding Lifecycle (DEFERRED, placeholder — v1.1.0)
+Open question, deliberately NOT implemented in v1.1.0:
+
+> Can a binding be withdrawn?
+
+v1.1.0 ships bindings as append-only snapshots with no status column, no
+deactivate path, and no delete — "do not overbuild lifecycle" ruled at WS3
+and held at WS4. The question becomes real when production deployments
+need "this binding is withdrawn" as a governed act. The likely future
+answer (recorded so the discussion starts from it, not as a ruling):
+
+> Deactivate. Never delete. Never mutate history.
+
+— mirroring the Principal model (no delete, deactivate; issued evidence
+stays untouched). Until decided: withdrawing an agent's access is done
+where access actually lives — deactivate the AGENT principal or revoke
+its tokens in Users & Tokens (identity governance), not by editing
+consumption history. Any implementation of binding lifecycle records the
+ruling here first.

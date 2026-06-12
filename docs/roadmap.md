@@ -23,6 +23,7 @@
 | MVP 0.11.1 | Transport Hardening (audit) + CI enforcement | ✅ Completed |
 | MVP 0.12 | LLM Provider Settings (governed model-per-function config) | ✅ Completed |
 | MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | ✅ Completed — Governance Core Complete (D20 ratified, D21) |
+| v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
 
 ---
 
@@ -365,11 +366,13 @@ governed principal whose permissions are explicitly granted, auditable,
 and revocable** — the architecture rejects "AI can access everything
 because it is trusted."
 
-Development now shifts to the strategic differentiator: transforming
+Development then shifted to the strategic differentiator: transforming
 unstructured enterprise knowledge into governed, auditable,
-evidence-backed expert systems safely consumable by AI agents (the
-consumption arc in Future Direction; SSO-family integrations and stored
-provider credentials land in v1.1 without changing the boundary's shape).
+evidence-backed expert systems safely consumable by AI agents — ruled
+arc-first at the v1.1 scoping session and DELIVERED as v1.1.0 (see the
+v1.1.0 section below). SSO-family integrations and stored provider
+credentials moved to a later enterprise-extensions milestone without
+changing the boundary's shape.
 
 ---
 
@@ -495,23 +498,80 @@ governed acquisition, v0.12 governed model selection, v1.0 governs
 identity — each removes a category of "trust me" and replaces it with
 evidence recorded when the action occurred.
 
+---
+
+## v1.1.0 — Expert Package Consumption & Model Binding (Completed)
+
+The consumption arc (build contract: `docs/consumption-arc-v1.md`; ruling
+D22; lifecycle question deferred as D23). The strategic read that shaped
+it: the consumption loop already existed on the LIVE governed channel
+(query_engine + MCP gateway); v1.1 made the PORTABLE package channel
+real, evaluable, and bindable. Four workstreams, each accepted at its
+gate before the next began:
+
+- **WS1 — First-class Package Consumer** (`app/package_consumer.py`):
+  load a .empkg, verify the full hash chain (no unmanifested extras),
+  refuse non-PASSED gate snapshots, retrieve package-locally
+  (deterministic LEXICAL_OVERLAP_V1, counts declared), generate through
+  the D19 resolver. The provider-adapter seam D11 deferred landed in
+  `llm.py` with the second provider (ANTHROPIC) behind it — no provider
+  SDK imports outside the adapters, ever.
+- **WS2 — Package-channel evaluation**: evaluation is ONE concept; the
+  channel is a property (`EvaluationRun.run_type = LIVE | PACKAGE` +
+  package/consumer-model coordinates). The consumer model is resolved
+  through governed D19 config at creation; recorded coordinates are
+  binding — config or artifact drift FAILS the run, never mislabels it.
+  The referee (NLI / deterministic verification) is never one of the
+  player models. `package_model_comparison` is computed, never persisted;
+  unrun models are absent, not zero.
+- **WS3 — Governed model selection**: `PackageModelSelection` attaches to
+  the AgentPackage (ExpertModel = knowledge design, AgentPackage = frozen
+  artifact, binding = deployment). One current selection per package;
+  every change is a PACKAGE_MODEL_SELECTED audit event with old/new,
+  supporting run ids (the losing model's runs included — that IS the
+  comparison), rationale, and identity fact. The selected model must have
+  a successful PACKAGE run for the exact package_hash.
+- **WS4 — ExpertAgentBinding** (never ExpertAgentRuntime): an append-only
+  snapshot binding of the CURRENT selection to an existing active AGENT
+  principal — package coordinates, model, principal clearance at issue,
+  selection evidence, issuing identity fact. Refuses stale selections,
+  drifted artifacts, clearance violations, inactive/non-AGENT principals.
+  Mints no tokens (identity governance stays in the identity subsystem),
+  executes nothing, orchestrates nothing. Later selection changes never
+  rewrite issued bindings.
+
+The governed chain achieved, every transition evidence-backed:
+
+```
+Knowledge → Expert Model → Agent Package → Package Evaluation
+          → Model Comparison → Model Selection → ExpertAgentBinding
+```
+
+v1.0 proved *who may access knowledge*; v1.1 proves *which model should
+consume a portable expert package, based on evidence, and how that
+choice is bound to an agent*. Operator UI for the arc (selection
+workbench, binding explorer, comparison dashboard) is deliberately NOT
+in v1.1.0 — the backend capability is the product, the UI is visibility;
+it follows as a v1.1.x "Consumption Operations Workbench" milestone.
+
 ## Future Direction
 
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
 - **Knowledge freshness policies** — expiry and re-review schedules per asset class.
 - **Multi-operator roles** — reviewer / approver separation of duties.
-- **Expert Agent consumption arc (post-v1.0)** — the agentic layer is
-  CONSUMPTION, not orchestration (autonomous multi-agent systems, swarms, and
-  agent runtimes stay explicitly out of scope). The primitives already exist:
-  read-only Expert Agents = the MCP gateway (v0.9) and versioned Expert
-  Packages = .empkg (v0.9.4), per D10's two channels. After v1.0 identity
-  (the prerequisite for deployable agents), the arc is: versioned Expert
-  Package → **per-package model evaluation** (run the existing benchmark
-  harness across GPT / Claude / Gemini / open models consuming the same
-  package) → best-model selection ("this Expert Package performs best on
-  Model X" — a claim one-model-fits-all RAG cannot make) → deployable Expert
-  Agent (HR / Compliance / Clinical Ops experts). Dovetails with D11's
-  model-per-function configuration via the LLM Provider Settings milestone.
+- **Expert Agent consumption arc — DELIVERED as v1.1.0** (see the v1.1.0
+  milestone section above; purpose and credibility rulings below remain
+  binding). The agentic layer is CONSUMPTION, not orchestration
+  (autonomous multi-agent systems, swarms, and agent runtimes stay
+  explicitly out of scope). As shipped: versioned Expert Package →
+  **per-package model evaluation** (the benchmark harness over the
+  package channel, OPENAI + ANTHROPIC adapters behind the D19 resolver;
+  further providers are adapter additions) → governed model selection
+  ("this Expert Package performs best on Model X" — a claim
+  one-model-fits-all RAG cannot make) → ExpertAgentBinding. Remaining in
+  this direction: more provider adapters (Gemini / open models), the
+  consumption operations UI (v1.1.x), and binding lifecycle (D23,
+  deferred).
   **Purpose ruling (June 2026): model evaluation is a MEANS, never the end.**
   ExpertMachina is a knowledge-to-agent system, not an LLM evaluation
   platform: the governed knowledge and its expert representation are the
