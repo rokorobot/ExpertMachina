@@ -21,3 +21,10 @@ sentencepiece==0.2.1
 
 # MCP Agent Gateway (MVP 0.9 - read-only transport over Governance Contract v1)
 mcp==1.27.2
+
+# Provider adapters behind the D19 resolver (v1.1 WS1, package_consumer arc).
+# openai was previously transitive via llama-index-llms-openai; pinned
+# explicitly now that llm.py imports it directly. Credentials stay
+# environment-based (OPENAI_API_KEY / ANTHROPIC_API_KEY) per D19.
+openai==2.41.0
+anthropic==0.109.1

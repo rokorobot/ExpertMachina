@@ -165,6 +165,7 @@ class SourceConnectorResponse(BaseModel):
 
 class LLMFunctionSettingUpdate(BaseModel):
     model: Optional[str] = None  # None/empty clears the row -> env/default resolution
+    provider: Optional[str] = None  # v1.1: OPENAI | ANTHROPIC (validated against llm.ADAPTERS); None keeps current
     # v1.0: no actor field - the identity boundary decides the actor.
 
 class LLMFunctionSettingResponse(BaseModel):

@@ -23,6 +23,12 @@ Note: this is the PORTABLE channel - governance state is a verifiable
 snapshot, not live-enforced. For live-governed answers (per-question
 verification, access tiers, audit logging) consume the Expert Model via the
 ExpertMachina MCP gateway instead.
+
+This script stays deliberately standalone (no ExpertMachina imports) to show
+that ANY external agent can consume the format. ExpertMachina's own
+first-class consumer - hash-chain verification, package-local retrieval,
+model-pluggable generation through the D19 resolver - lives in
+backend/app/package_consumer.py (v1.1 WS1).
 """
 
 import os

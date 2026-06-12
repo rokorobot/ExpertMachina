@@ -136,12 +136,23 @@ def main_test():
         r = client.get("/api/settings/llm", headers=AUTH)
         assert r.status_code == 200, r.text
         settings = {s["function"]: s for s in r.json()}
-        assert set(settings) == {"EXTRACTION", "CLAIM_DECOMPOSITION", "CLAIM_JUDGE", "ANSWER_GENERATION"}
+        assert set(settings) == {"EXTRACTION", "CLAIM_DECOMPOSITION", "CLAIM_JUDGE",
+                                 "ANSWER_GENERATION", "PACKAGE_CONSUMER"}  # v1.1 WS1
         assert all(s["source"] == "DEFAULT" and s["effective_model"] == "gpt-4o-mini" for s in settings.values())
         r = client.put("/api/settings/llm/extraction", json={"model": "gpt-4o"}, headers=AUTH)
         assert r.status_code == 200 and r.json()["source"] == "CONFIG" and r.json()["effective_model"] == "gpt-4o", r.text
         r = client.put("/api/settings/llm/EXTRACTION", json={"model": None}, headers=AUTH)
         assert r.status_code == 200 and r.json()["source"] == "DEFAULT", r.text
+        # v1.1 WS1: provider selection through governed config (adapter seam).
+        r = client.put("/api/settings/llm/package_consumer",
+                       json={"model": "claude-opus-4-8", "provider": "anthropic"}, headers=AUTH)
+        assert r.status_code == 200 and r.json()["provider"] == "ANTHROPIC" \
+            and r.json()["source"] == "CONFIG", r.text
+        r = client.put("/api/settings/llm/package_consumer", json={"model": None}, headers=AUTH)
+        assert r.status_code == 200 and r.json()["source"] == "DEFAULT", r.text
+        r = client.put("/api/settings/llm/package_consumer",
+                       json={"model": "x", "provider": "GEMINI"}, headers=AUTH)
+        assert r.status_code == 400, f"Unknown provider must 400: {r.status_code}"
         r = client.put("/api/settings/llm/NOT_A_FUNCTION", json={"model": "x"}, headers=AUTH)
         assert r.status_code == 400, f"Unknown function must 400: {r.status_code}"
         r = client.get("/api/audit", params={"limit": 50}, headers=AUTH)

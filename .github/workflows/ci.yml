@@ -38,6 +38,7 @@ jobs:
           python test_revision_workflow.py
           python test_governance_inbox.py
           python test_llm_settings.py
+          python test_package_consumer.py
           python test_identity_boundary.py
           python test_identity_tokens.py
           python test_mcp_gateway.py

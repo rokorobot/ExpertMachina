@@ -196,8 +196,8 @@ class LLMFunctionConfig(Base):
     Changes are LLM_CONFIG_UPDATED audit events."""
     __tablename__ = "llm_function_configs"
     id = Column(Integer, primary_key=True, index=True)
-    function = Column(String, nullable=False, unique=True)  # EXTRACTION | CLAIM_DECOMPOSITION | CLAIM_JUDGE | ANSWER_GENERATION
-    provider = Column(String, default="OPENAI")  # only OPENAI for now (D11); adapter abstraction earned with a second provider
+    function = Column(String, nullable=False, unique=True)  # llm.FUNCTIONS: EXTRACTION | CLAIM_DECOMPOSITION | CLAIM_JUDGE | ANSWER_GENERATION | PACKAGE_CONSUMER
+    provider = Column(String, default="OPENAI")  # llm.ADAPTERS: OPENAI | ANTHROPIC (v1.1 - the second provider earned the adapter seam)
     model = Column(String, nullable=True)  # None = fall through to env/default
     updated_by = Column(String, nullable=True)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)

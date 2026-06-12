@@ -741,13 +741,20 @@ def update_llm_setting(function: str, update: schemas.LLMFunctionSettingUpdate,
         raise HTTPException(status_code=400,
                             detail=f"Unknown LLM function '{function}'. Known: {sorted(llm.FUNCTIONS)}")
     new_model = (update.model or "").strip() or None
+    new_provider = (update.provider or "").strip().upper() or None
+    if new_provider and new_provider not in llm.ADAPTERS:
+        raise HTTPException(status_code=400,
+                            detail=f"Unknown provider '{new_provider}'. Known: {sorted(llm.ADAPTERS)}")
     row = db_session.query(db.LLMFunctionConfig).filter(
         db.LLMFunctionConfig.function == function).first()
     old_model = row.model if row else None
+    old_provider = (row.provider if row else None) or "OPENAI"
     if not row:
         row = db.LLMFunctionConfig(function=function, provider="OPENAI")
         db_session.add(row)
     row.model = new_model
+    if new_provider:
+        row.provider = new_provider
     row.updated_by = actor.display
     row.updated_at = datetime.datetime.utcnow()
     db_session.commit()
@@ -756,6 +763,7 @@ def update_llm_setting(function: str, update: schemas.LLMFunctionSettingUpdate,
         target_id=function,
         details=json.dumps({"function": function, "old_model": old_model,
                             "new_model": new_model,
+                            "old_provider": old_provider, "new_provider": row.provider,
                             "note": "model selection only - credentials never stored (env-based until v1.x)"}),
         identity_fact_id=actor.fact(db_session).id)
     resolved = llm.resolve(function, db_session)
