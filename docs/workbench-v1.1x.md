@@ -230,6 +230,12 @@ reflects them.
 
 Evidence: `backend/test_consumption_inbox.py` (in CI).
 
+**Gate: PASSED (accepted June 2026, commits a846cb3 + d77d8b2 + 2f736bf).**
+Accepted with the family-hash interpretation ratified: packages are
+append-only artifacts, so "drift" means *this binding / selection points
+to an older package artifact while a newer artifact exists in the same
+package family*. That is the semantic model going forward.
+
 ### WS3 — Binding Explorer + lineage projection
 
 The flagship. A binding-centric read (`GET /api/bindings/{id}`) plus ONE
@@ -251,14 +257,41 @@ can prove why a particular model was selected to consume a particular
 governed expert package, and exactly what evidence justified that
 decision.*
 
-**Pass condition:**
-> For any binding, the lineage endpoint returns the full chain in which
-> every expected hop either resolves or is explicitly declared missing —
-> no silent gaps. Drift (package hash, selection change since issue,
-> deactivated principal, revoked credentials) appears as a declared
-> condition on the affected hop, never as an omission. The explorer
-> renders the chain and displays bindings ONLY — no withdrawal
-> affordances ahead of the D23 ruling.
+**Pass condition (gate text ratified at WS2 acceptance):**
+> A Binding Explorer exists inside the top-level Consumption area.
+>
+> It lists ExpertAgentBindings and lets the operator inspect one binding.
+>
+> Backend may add read-only projection endpoints only:
+> - `GET /api/bindings/{id}`
+> - `GET /api/bindings/{id}/lineage`
+>
+> The lineage projection must compose:
+> binding → package snapshot → current package-family status
+> → selected model snapshot → selection evidence
+> → supporting evaluation runs → package assets → source documents,
+> and sideways:
+> binding → AGENT principal → active credentials summary
+> → relevant audit events.
+>
+> Every expected hop must either resolve or be declared missing.
+> No silent gaps.
+>
+> The UI must:
+> - render why-package, why-model, why-agent, why-clearance,
+>   issued-by-whom
+> - show superseded/stale/unverifiable warnings computed from facts
+> - deep-link from Consumption Inbox items into the relevant binding
+> - expose no withdrawal, deactivate, revoke, runtime, or deploy controls
+>
+> Boundaries: no new writes; no new tables; no new writable columns; no
+> binding status field; no persisted lineage snapshot; no
+> orchestration/runtime surface; D24 schema guard remains green;
+> READ_ONLY can view lineage but cannot mutate anything.
+
+**Language ruling:** the screen says **"binding"** and **"serving
+package"**, never "deployed agent" — "deployed agent" invites runtime
+assumptions (D22).
 
 Evidence: `backend/test_binding_lineage.py` (in CI).
 
