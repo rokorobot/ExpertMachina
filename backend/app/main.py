@@ -1100,6 +1100,29 @@ def get_package_model_comparison(package_id: int, db_session: Session = Depends(
     except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
 
+@app.get("/api/packages/{package_id}/model-selection", response_model=schemas.PackageModelSelectionResponse)
+def get_package_model_selection(package_id: int, db_session: Session = Depends(get_db),
+                                actor: identity.Actor = Depends(require_perm("assets:read"))):
+    selection = crud.get_package_model_selection(db_session, package_id)
+    if not selection:
+        raise HTTPException(status_code=404, detail="No model selected for this package yet")
+    return selection
+
+@app.put("/api/packages/{package_id}/model-selection", response_model=schemas.PackageModelSelectionResponse)
+def put_package_model_selection(package_id: int, update: schemas.PackageModelSelectionUpdate,
+                                db_session: Session = Depends(get_db),
+                                actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    # v1.1 WS3: selecting a model for a package is a governed decision at
+    # the approval tier (the tier that compiled the package). The boundary
+    # validates the supporting PACKAGE-run evidence; every change is a
+    # PACKAGE_MODEL_SELECTED audit event carrying the actor's identity fact.
+    try:
+        return crud.set_package_model_selection(db_session, package_id, update, actor=actor)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")
 def delete_asset(asset_id: int, db_session: Session = Depends(get_db),

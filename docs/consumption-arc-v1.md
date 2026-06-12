@@ -94,6 +94,8 @@ Package-local retrieval at v1 is declared lexical scoring
 index inside the .empkg is a future format decision, not an interpretation
 of this one.
 
+**Gate: PASSED (accepted June 2026, commits 3ad2ccb + 3e096aa).**
+
 ### WS2 — Package Evaluation
 
 EvaluationRun gains coordinates `(package_version, consumer_model)`; the
@@ -107,16 +109,57 @@ inherited, not designed. ClaimVerdict immutability (D3) untouched.
 > absent, not zero. ClaimVerdicts remain immutable. Judge/referee is not one
 > of the compared player models.
 
+**Gate: PASSED (accepted June 2026, commit ff2133c).** Shape ruled at
+acceptance: ONE EvaluationRun table — `run_type = LIVE | PACKAGE` plus
+nullable coordinates (`package_version`, `package_hash`,
+`consumer_model_provider`, `consumer_model_name`); evaluation is one
+concept, the channel is a property, never a sibling table. LIVE runs
+carry no package coordinates; PACKAGE runs require them.
+
+**WS2 ratified rulings (binding):**
+- The PACKAGE evaluation model is resolved through governed D19 config at
+  run creation — no caller-supplied per-run model overrides; the
+  config-flip workflow is the comparison workflow.
+- Recorded model coordinates are binding. Config drift or package drift
+  between creation and execution FAILS the run, never mislabels it.
+- Failed PACKAGE runs keep no partial verdicts.
+- `coverage_trend` remains LIVE-only (the trend tracks the governed
+  knowledge base; PACKAGE runs measure a frozen artifact).
+- `package_model_comparison` remains computed, never persisted.
+
+Evidence: `backend/test_package_evaluation.py` (in CI).
+
 ### WS3 — Governed Model Selection
 
-Comparison views are computed, never persisted (D1 — no leaderboard table).
-Selecting a model for an expert is an audited decision referencing the
-evaluation runs that justified it — D17's provenance pattern applied to
-model choice.
+**Attachment ruling:** selection attaches to the **AgentPackage** — not the
+ExpertModel, not the WS4 binding. The layering:
+
+```
+ExpertModel  = knowledge design / domain abstraction
+AgentPackage = frozen portable artifact
+Binding      = deployment of package + model + principal
+```
+
+Model selection answers *"which model is selected for this package version,
+based on these evaluation runs?"* — a property of the artifact layer.
+
+The object: `PackageModelSelection` (agent_package_id, package_version,
+package_hash, selected_provider, selected_model_name,
+supporting_evaluation_run_ids, rationale, selected_by_principal_id,
+selected_at). ONE current selection per package, updated in place;
+history lives in PACKAGE_MODEL_SELECTED audit events — lifecycle
+deliberately not overbuilt. Comparison views remain computed, never
+persisted (D1 — no leaderboard table); the selection decision is D17's
+provenance pattern applied to model choice.
 
 **Pass condition:**
-> Selecting a model creates an audited decision referencing evaluation runs.
-> Comparison remains computed, not persisted as a leaderboard table.
+> Given at least two successful PACKAGE evaluation runs for the same
+> AgentPackage, an admin/operator with permission can select one model for
+> that package. The selection is audited and references the supporting
+> EvaluationRun ids. The selected model must have a successful PACKAGE run
+> for that exact package_hash. Changing the selection creates a new audited
+> decision; old audit remains. Comparison view remains computed. No
+> ExpertAgent binding yet. No orchestration. No persisted live answers.
 
 ### WS4 — Expert Agent Binding
 

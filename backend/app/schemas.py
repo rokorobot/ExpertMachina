@@ -176,6 +176,28 @@ class LLMFunctionSettingResponse(BaseModel):
     effective_model: str                    # what resolution actually yields
     source: str                             # CONFIG | ENV | DEFAULT
 
+class PackageModelSelectionUpdate(BaseModel):
+    # v1.1 WS3: callers propose a selection; the boundary validates it
+    # against COMPLETED PACKAGE evaluation runs for this exact package_hash.
+    provider: str
+    model: str
+    supporting_evaluation_run_ids: List[int]
+    rationale: str
+
+class PackageModelSelectionResponse(BaseModel):
+    id: int
+    agent_package_id: int
+    package_version: str
+    package_hash: str
+    selected_provider: str
+    selected_model_name: str
+    supporting_evaluation_run_ids: List[int]
+    rationale: str
+    selected_by_principal_id: int
+    selected_at: datetime
+    class Config:
+        from_attributes = True
+
 class ApprovalPolicyCreate(BaseModel):
     name: str
     asset_types: List[str]  # subset of the allowed KnowledgeAsset types

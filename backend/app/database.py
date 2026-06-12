@@ -360,6 +360,36 @@ class AgentPackage(Base):
         import json
         return json.loads(self.manifest_json) if self.manifest_json else None
 
+class PackageModelSelection(Base):
+    """v1.1 WS3: the governed model selection for one Agent Package - which
+    consumer model is selected for this package version, based on which
+    PACKAGE evaluation runs. Selection attaches to the PACKAGE layer by
+    ruling: ExpertModel is the knowledge design, AgentPackage is the frozen
+    portable artifact, the future binding is deployment - and "which model
+    serves this artifact best?" is a property of the artifact.
+
+    ONE current selection per package (unique agent_package_id), updated in
+    place; every change is a PACKAGE_MODEL_SELECTED audit event carrying the
+    old and new selection, the supporting run ids, the rationale, and the
+    actor's identity fact - the history lives in the audit ledger, not in
+    row lifecycle (deliberately not overbuilt)."""
+    __tablename__ = "package_model_selections"
+    id = Column(Integer, primary_key=True, index=True)
+    agent_package_id = Column(Integer, ForeignKey("agent_packages.id"), unique=True, nullable=False)
+    package_version = Column(String, nullable=False)
+    package_hash = Column(String, nullable=False)
+    selected_provider = Column(String, nullable=False)
+    selected_model_name = Column(String, nullable=False)
+    supporting_evaluation_run_ids_json = Column(Text, nullable=False)  # JSON array of run IDs
+    rationale = Column(Text, nullable=False)
+    selected_by_principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
+    selected_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def supporting_evaluation_run_ids(self):
+        import json
+        return json.loads(self.supporting_evaluation_run_ids_json) if self.supporting_evaluation_run_ids_json else []
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
     id = Column(Integer, primary_key=True, index=True)

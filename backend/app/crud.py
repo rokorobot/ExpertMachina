@@ -543,3 +543,99 @@ def delete_benchmark_question(session: Session, question_id: int) -> bool:
         session.commit()
         return True
     return False
+
+# Package Model Selection (v1.1 WS3): a governed decision at the package
+# layer - which consumer model is selected for this frozen artifact, based
+# on which PACKAGE evaluation runs. The boundary validates the proposed
+# evidence; one current selection per package; history lives in
+# PACKAGE_MODEL_SELECTED audit events, never in row lifecycle.
+
+def get_package_model_selection(session: Session, agent_package_id: int):
+    return session.query(db.PackageModelSelection).filter(
+        db.PackageModelSelection.agent_package_id == agent_package_id).first()
+
+
+def set_package_model_selection(session: Session, agent_package_id: int,
+                                update: schemas.PackageModelSelectionUpdate,
+                                actor: identity.Actor = None) -> db.PackageModelSelection:
+    """Select (or re-select) the consumer model for a package. Rules:
+    - the rationale is mandatory: "why this model?" must be answerable
+      from the decision itself, indefinitely (the D17 provenance pattern);
+    - every supporting run must be a COMPLETED PACKAGE run for this exact
+      package_hash - evidence about another artifact is not evidence;
+    - the selected coordinates must appear among the supporting runs: a
+      model without a successful run for this package cannot be selected.
+    Changing the selection updates the single current row and writes a new
+    audit event; prior events remain untouched."""
+    actor = identity.require_actor_object(actor)
+    pkg = session.query(db.AgentPackage).filter(db.AgentPackage.id == agent_package_id).first()
+    if not pkg:
+        raise LookupError(f"Agent Package with ID {agent_package_id} not found")
+    if not pkg.package_hash:
+        raise ValueError(f"Agent Package {agent_package_id} has no package hash - nothing to select for")
+
+    provider = (update.provider or "").strip().upper()
+    model_name = (update.model or "").strip()
+    rationale = (update.rationale or "").strip()
+    run_ids = list(dict.fromkeys(update.supporting_evaluation_run_ids or []))
+    if not provider or not model_name:
+        raise ValueError("A selection names a provider and a model")
+    if not rationale:
+        raise ValueError("A selection requires a rationale - 'why this model?' must be answerable from the decision")
+    if not run_ids:
+        raise ValueError("A selection requires supporting evaluation run ids - selection without evidence is preference")
+
+    runs = session.query(db.EvaluationRun).filter(db.EvaluationRun.id.in_(run_ids)).all()
+    runs_by_id = {r.id: r for r in runs}
+    for run_id in run_ids:
+        run = runs_by_id.get(run_id)
+        if not run:
+            raise ValueError(f"Supporting evaluation run {run_id} does not exist")
+        if run.run_type != "PACKAGE":
+            raise ValueError(f"Supporting run {run_id} is a {run.run_type} run - selection evidence is PACKAGE-channel only (D10)")
+        if run.status != "COMPLETED":
+            raise ValueError(f"Supporting run {run_id} is {run.status}, not COMPLETED - it measured nothing (D12)")
+        if run.package_hash != pkg.package_hash:
+            raise ValueError(f"Supporting run {run_id} evaluated a different package artifact "
+                             f"({(run.package_hash or '')[:16]}... vs {pkg.package_hash[:16]}...)")
+    if not any((r.consumer_model_provider, r.consumer_model_name) == (provider, model_name)
+               for r in runs_by_id.values()):
+        raise ValueError(f"{provider}/{model_name} has no successful PACKAGE run among the supporting "
+                         f"evidence for this package - a model without a run cannot be selected")
+
+    selection = get_package_model_selection(session, agent_package_id)
+    old = None
+    if selection:
+        old = {"provider": selection.selected_provider, "model": selection.selected_model_name,
+               "supporting_evaluation_run_ids": selection.supporting_evaluation_run_ids,
+               "rationale": selection.rationale}
+    else:
+        selection = db.PackageModelSelection(agent_package_id=agent_package_id)
+        session.add(selection)
+
+    selection.package_version = pkg.governance_version
+    selection.package_hash = pkg.package_hash
+    selection.selected_provider = provider
+    selection.selected_model_name = model_name
+    selection.supporting_evaluation_run_ids_json = json.dumps(run_ids)
+    selection.rationale = rationale
+    selection.selected_by_principal_id = actor.principal.id
+    selection.selected_at = datetime.datetime.utcnow()
+    session.commit()
+    session.refresh(selection)
+
+    log_audit_event(
+        session, actor=actor.display, event_type="PACKAGE_MODEL_SELECTED",
+        target_id=str(agent_package_id),
+        details=json.dumps({
+            "package_name": pkg.name,
+            "package_version": pkg.governance_version,
+            "package_hash": pkg.package_hash,
+            "old_selection": old,
+            "new_selection": {"provider": provider, "model": model_name,
+                              "supporting_evaluation_run_ids": run_ids,
+                              "rationale": rationale},
+            "note": "selection is a governed decision over PACKAGE evaluation evidence; "
+                    "comparison stays computed (D1), binding is a later workstream (D22)"}),
+        identity_fact_id=actor.fact(session).id)
+    return selection
