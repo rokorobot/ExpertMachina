@@ -550,12 +550,21 @@ class EvaluationRunCreate(BaseModel):
     project_id: int
     expert_model_id: int
     expert_model_version: Optional[str] = None
+    # v1.1 WS2: PACKAGE runs name the artifact under test; the consumer
+    # model is resolved through D19 config, never caller-supplied.
+    run_type: str = "LIVE"  # LIVE | PACKAGE
+    agent_package_id: Optional[int] = None  # required iff run_type=PACKAGE
 
 class EvaluationRunResponse(BaseModel):
     id: int
     project_id: int
     expert_model_id: int
     expert_model_version: Optional[str]
+    run_type: str = "LIVE"
+    package_version: Optional[str] = None
+    package_hash: Optional[str] = None
+    consumer_model_provider: Optional[str] = None
+    consumer_model_name: Optional[str] = None
     asset_ids_snapshot: str
     asset_hashes_snapshot: str
     benchmark_question_ids_snapshot: str

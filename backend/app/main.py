@@ -1065,9 +1065,13 @@ def trigger_evaluation(
     
     try:
         db_run = evaluation.create_evaluation_run(db_session, run_in)
-    except ValueError as e:
+    except LookupError as e:
         raise HTTPException(status_code=404, detail=str(e))
-        
+    except ValueError as e:
+        # v1.1 WS2 channel rules: LIVE refuses package coordinates,
+        # PACKAGE requires them - violations are bad requests, not 404s.
+        raise HTTPException(status_code=400, detail=str(e))
+
     # Trigger execution in the background
     background_tasks.add_task(evaluation.run_evaluation_batch, db_session, db_run.id)
     return db_run
@@ -1084,6 +1088,17 @@ def get_evaluation(project_id: int, run_id: int, db_session: Session = Depends(g
     if not run:
         raise HTTPException(status_code=404, detail="Evaluation run not found")
     return run
+
+@app.get("/api/packages/{package_id}/model-comparison")
+def get_package_model_comparison(package_id: int, db_session: Session = Depends(get_db),
+                                 actor: identity.Actor = Depends(require_perm("assets:read"))):
+    # v1.1 WS2: computed comparison over COMPLETED PACKAGE runs (D1 - no
+    # leaderboard table). Unrun models are absent, not zero (D12). This
+    # endpoint compares; selection is WS3, a governed decision.
+    try:
+        return evaluation.package_model_comparison(db_session, package_id)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")

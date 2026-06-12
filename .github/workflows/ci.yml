@@ -39,6 +39,7 @@ jobs:
           python test_governance_inbox.py
           python test_llm_settings.py
           python test_package_consumer.py
+          python test_package_evaluation.py
           python test_identity_boundary.py
           python test_identity_tokens.py
           python test_mcp_gateway.py

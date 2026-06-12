@@ -422,6 +422,17 @@ class EvaluationRun(Base):
     project_id = Column(Integer, ForeignKey("projects.id"))
     expert_model_id = Column(Integer, ForeignKey("expert_models.id"))
     expert_model_version = Column(String, nullable=True) # or package_id
+    # v1.1 WS2: evaluation is ONE concept; the channel is a property, not a
+    # sibling table. LIVE = governed channel (query_engine over DB assets);
+    # PACKAGE = portable channel (package_consumer over a verified .empkg).
+    # The rule: LIVE runs carry no package coordinates; PACKAGE runs require
+    # package_version + package_hash + consumer model (resolved through D19
+    # at creation, never caller-supplied).
+    run_type = Column(String, default="LIVE") # LIVE | PACKAGE
+    package_version = Column(String, nullable=True)
+    package_hash = Column(String, nullable=True)
+    consumer_model_provider = Column(String, nullable=True)
+    consumer_model_name = Column(String, nullable=True)
     asset_ids_snapshot = Column(Text, nullable=False) # JSON array of IDs
     asset_hashes_snapshot = Column(Text, nullable=False) # JSON dict of ID -> Hash
     benchmark_question_ids_snapshot = Column(Text, nullable=False) # JSON array of IDs
@@ -524,6 +535,16 @@ def _ensure_columns():
         },
         "ingestion_jobs": {
             "files_changed": "INTEGER DEFAULT 0",
+        },
+        # v1.1 WS2: the evaluation channel is a property of the run. Legacy
+        # rows are honestly LIVE (that is what they were); package
+        # coordinates stay NULL on them - never backfilled (D12).
+        "evaluation_runs": {
+            "run_type": "TEXT DEFAULT 'LIVE'",
+            "package_version": "TEXT",
+            "package_hash": "TEXT",
+            "consumer_model_provider": "TEXT",
+            "consumer_model_name": "TEXT",
         },
         "source_documents": {
             "details_json": "TEXT",
