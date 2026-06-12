@@ -295,6 +295,23 @@ assumptions (D22).
 
 Evidence: `backend/test_binding_lineage.py` (in CI).
 
+**Gate: PASSED (accepted June 2026, commits 428b6a3 + f130d93 + 2e05a67).**
+
+## Milestone closed — v1.1.1 (June 2026)
+
+All four gates PASSED. The acceptance verdict, recorded verbatim:
+
+> The workbench made governed facts visible without becoming a new
+> source of truth. That is exactly D24 doing its job.
+
+The release narrative sentence: *v1.1.1 turns governed consumption from
+backend capability into operator-visible evidence: selection decisions,
+computed drift, and binding lineage are now inspectable without adding
+new governed state.* D23 (binding lifecycle) remains DEFERRED — no
+withdrawal mechanics shipped, by ruling. The D24 schema guard remains
+in CI permanently; the v1.1.0 schema snapshot survived the entire
+milestone untouched (26 tables, 271 columns).
+
 ## Build order
 
 WS0 first, alone, before any UI work — the lock goes on the door before

@@ -4,7 +4,7 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-12 · current version **v1.1.0** (Expert Package Consumption & Model Binding) · branch `main`
+**Snapshot:** 2026-06-12 · current version **v1.1.1** (Consumption Operations Workbench) · branch `main`
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -16,6 +16,9 @@ safely consume. Category framing: "Knowledge Governance Infrastructure" /
 revision-controlled — every human, service, and agent is a governed principal (v1.0),
 and as of v1.1 the portable package channel is real, evaluable, and bindable:
 which model consumes an Expert Package is an evidence-backed, audited decision.
+v1.1.1 turns governed consumption from backend capability into operator-visible
+evidence: selection decisions, computed drift, and binding lineage are now
+inspectable without adding new governed state (D24).
 
 ## The value chain (all segments working end-to-end)
 
@@ -54,8 +57,17 @@ portable channel first-class without blurring them.
 
 Operator surface: **Governance Inbox** (v0.9.1) + role-aware UI (v1.0): login gate,
 the interface hides what the backend would refuse; Settings → Users & Tokens is the
-ADMIN identity-administration surface. The v1.1 consumption surfaces (comparison,
-selection, bindings) are API-only — operator UI is the v1.1.x workbench milestone.
+ADMIN identity-administration surface. **v1.1.1 Consumption Operations Workbench**
+(build contract docs/workbench-v1.1x.md, ruling **D24**): a top-level Consumption
+area with three views — Selection Workbench (decision workspace, never a
+leaderboard; the existing selection PUT is its only write), Computed Consumption
+Inbox (nine drift/hygiene conditions, one shared severity function, no dismiss —
+items leave when governed facts change), and Binding Explorer (server-composed
+lineage: every hop resolves or is declared missing). The workbench is a pure
+projection layer: the D24 schema guard in CI froze the v1.1.0 schema and it
+survived the milestone untouched. Drift semantics (ratified): artifacts are
+append-only, so drift = an older artifact is bound/selected while a newer
+artifact exists in the same package family.
 
 ## The Identity Boundary (v1.0 — THE governance core)
 
@@ -129,6 +141,8 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `trust.py` | 5-component trust score, weights renormalized over measured components |
 | `evaluation.py` | benchmark runs (background) on BOTH channels (run_type LIVE/PACKAGE), persists **ClaimVerdict** rows, `coverage_trend` (LIVE-only), `package_model_comparison` (computed) |
 | `governance_inbox.py` | computed inbox + readiness (NO work-item table by design) |
+| `consumption_inbox.py` | **v1.1.1 WS2**: computed consumption inbox — nine ratified drift/hygiene conditions over packages/selections/runs/bindings/identity; ONE shared severity function; pure projection, no dismiss (D24) |
+| `binding_lineage.py` | **v1.1.1 WS3**: server-composed binding lineage — backwards to source documents, sideways into identity; every hop resolves or is declared missing (D12); warnings ARE the inbox items |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
 | `package_consumer.py` | **v1.1 WS1**: first-class portable-channel consumer — verify, refuse, retrieve package-locally, generate via the D19 adapter seam; imports stdlib + llm ONLY (CI-enforced) |
 | `connectors/framework.py` | generic sync/reconciliation engine (D18) |
@@ -155,10 +169,13 @@ Single-page Next.js + Zustand. **Login gate** (session restore, bearer via one
 apiFetch wrapper, 401 re-gates); role-aware: tabs and action surfaces hidden per
 `can(user, permission)` mirror (backend remains the source of truth). Tabs:
 dashboard, inbox, documents, assets, experts, evaluations, conflicts, revisions,
-console (mock), agents¹, audit¹, settings² (¹ audit:read, ² settings:manage;
-settings holds LLM Models + Users & Tokens). The v1.1 consumption surfaces
-(model comparison, selection workbench, bindings explorer) have NO UI yet —
-that is the v1.1.x Consumption Operations Workbench milestone.
+console (mock), **consumption** (v1.1.1: Selection Workbench / Consumption Inbox /
+Binding Explorer — assets:read; selection controls assets:approve; history panel
+audit:read; sidebar HIGH badge), agents¹, audit¹, settings² (¹ audit:read,
+² settings:manage; settings holds LLM Models + Users & Tokens). Consumption is
+URL-addressable: ?tab=consumption&package=N&view=inbox|bindings&binding=M.
+Language rulings: "Select model" never "Deploy model"; "binding"/"serving
+package" never "deployed agent".
 
 ## Release log (this development line)
 
@@ -171,6 +188,11 @@ that is the v1.1.x Consumption Operations Workbench milestone.
 | WS2 | `ff2133c` | package-channel evaluation: run_type + binding coordinates, computed comparison |
 | WS3 | `8377361` | governed model selection on the AgentPackage, audited with evidence |
 | **v1.1.0** | `5d2a82a` | ExpertAgentBinding — a binding, never a runtime (D22; D23 deferred) |
+| — | `b309b34` | v1.1.x workbench scoping ratified — build contract + D24 Workbench Projection Rule |
+| WS0 | `5914792` | D24 schema projection guard (adversarially proven, in CI permanently) |
+| WS1 | `5d1c4e6` | Consumption area + Selection Workbench (zero new endpoints; + `4e778ed` PACKAGE-citation serialization fix) |
+| WS2 | `d77d8b2`+`2f736bf` | Computed Consumption Inbox (nine conditions, one severity function, no dismiss; family-hash drift semantics ratified) |
+| **v1.1.1** | `f130d93`+`2e05a67` | Binding Explorer + server-composed lineage — every hop resolves or is declared missing |
 
 ## How to run
 
@@ -193,8 +215,11 @@ that is the v1.1.x Consumption Operations Workbench milestone.
   `test_authorization.py`, `test_mcp_gateway.py`, `test_migration.py`).
   **v1.1 consumption suites** (all in CI): `test_package_consumer.py` (WS1),
   `test_package_evaluation.py` (WS2), `test_package_selection.py` (WS3),
-  `test_expert_agent_binding.py` (WS4). CI enforces all on every push.
-  `test_support.governed_actor` is the only way suites obtain actors.
+  `test_expert_agent_binding.py` (WS4). **v1.1.1 workbench suites** (in CI):
+  `test_workbench_projection.py` (the D24 schema guard — update its frozen
+  snapshot ONLY alongside a ratified decision, in the same commit),
+  `test_consumption_inbox.py`, `test_binding_lineage.py`. CI enforces all on
+  every push. `test_support.governed_actor` is the only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
   adapter; keys stay env-based per D19), `EM_CORS_ORIGINS`,
@@ -204,17 +229,14 @@ that is the v1.1.x Consumption Operations Workbench milestone.
 
 ## Next milestones
 
-1. **v1.1.x — Consumption Operations Workbench** (UI, not capability):
-   operator workflows over the shipped arc — selection workbench, binding
-   explorer, comparison dashboard, operational ergonomics. The backend
-   capability IS the v1.1.0 product; the UI is visibility.
-2. **Enterprise extensions** (integrations, not boundary shape):
+1. **Enterprise extensions** (integrations, not boundary shape):
    OIDC / SAML / SSO / SCIM / LDAP / Azure AD / Google Workspace; stored
    provider/connector credentials (the D19/D14 cloud-connector unblock);
    enterprise read-audit defaults.
-3. **Open consumption-direction items**: more provider adapters (Gemini /
+2. **Open consumption-direction items**: more provider adapters (Gemini /
    open models — adapter additions behind the D19 seam), binding lifecycle
-   (**D23, deferred**: deactivate / never delete / never mutate history —
+   (**D23, deferred — held again at v1.1.1**: no withdrawal mechanics; the
+   likely shape is deactivate / never delete / never mutate history —
    discuss before building), embedding index inside .empkg (a format
    decision, not an interpretation of WS1).
 
@@ -223,5 +245,6 @@ auto-approval, AI Governance Analyst, trust history, grouped conflict API,
 coverage heatmap, notifications, agent runtime/orchestration — the last is
 out of scope by D22, not by omission).
 
-Read `docs/DECISIONS.md` (now through **D23**) for the binding architectural
-rulings before changing anything.
+Read `docs/DECISIONS.md` (now through **D24**) for the binding architectural
+rulings before changing anything. Any schema change must update the frozen
+snapshot in `test_workbench_projection.py` alongside its ratified decision.

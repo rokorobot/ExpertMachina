@@ -554,6 +554,64 @@ workbench, binding explorer, comparison dashboard) is deliberately NOT
 in v1.1.0 — the backend capability is the product, the UI is visibility;
 it follows as a v1.1.x "Consumption Operations Workbench" milestone.
 
+---
+
+## v1.1.1 — Consumption Operations Workbench (Completed)
+
+**v1.1.1 turns governed consumption from backend capability into
+operator-visible evidence: selection decisions, computed drift, and
+binding lineage are now inspectable without adding new governed state.**
+
+A *product design* milestone, not an architecture milestone (build
+contract: `docs/workbench-v1.1x.md`; ruling **D24 — Workbench Projection
+Rule**). The acceptance verdict: *the workbench made governed facts
+visible without becoming a new source of truth — exactly D24 doing its
+job.* Four gates, each accepted before the next workstream began:
+
+- **WS0 — D24 + the schema projection guard**
+  (`test_workbench_projection.py`, in CI permanently): freezes the
+  v1.1.0 schema — every table, every column — and fails on ANY
+  divergence. Adversarially proven against the two most likely
+  regressions (a persisted inbox table, an `is_stale` column). The
+  snapshot survived the entire milestone untouched: 26 tables, 271
+  columns, zero schema change across four workstreams of UI.
+- **WS1 — Selection Workbench**: a decision workspace, NOT a
+  leaderboard, inside a new top-level **Consumption** area
+  (package/model/binding-facing; Agent Center stays
+  identity/MCP-facing). Computed comparison, run drill-down, rationale
+  history projected from PACKAGE_MODEL_SELECTED audit events, and the
+  one write of the whole milestone: the pre-existing model-selection
+  PUT. Zero backend endpoints added — every panel projects existing
+  reads. Language ruling: "Select model", never "Deploy model".
+- **WS2 — Computed Consumption Inbox** (`consumption_inbox.py` + the
+  milestone's ONE new endpoint, `GET /api/consumption/inbox`): the
+  v0.9.1 inbox pattern applied to consumption. Nine ratified conditions;
+  severity from ONE shared function (D2 discipline); no dismiss and no
+  mark-resolved — items appear when governed facts drift and leave when
+  the facts change. **Family-hash semantics ratified at acceptance**:
+  package artifacts are append-only, so drift means *this
+  binding/selection points to an older artifact while a newer artifact
+  exists in the same package family*.
+- **WS3 — Binding Explorer + lineage projection**
+  (`binding_lineage.py`, `GET /api/bindings/{id}` + `/lineage`): the
+  flagship. From one binding, walk backwards (package snapshot → family
+  status → model snapshot → frozen selection evidence → supporting runs
+  → packaged assets → source documents) and sideways (AGENT principal →
+  credentials summary → provenance events), composed server-side —
+  the chain is a product claim, tested as one artifact. Every expected
+  hop resolves or is **declared missing** (proven under adversarial
+  raw-SQL deletion); issuance evidence is immutable (the Alice test
+  applied to bindings); explorer warnings ARE the inbox items (shared
+  severity function, the surfaces cannot disagree). Language ruling:
+  "binding" and "serving package", never "deployed agent".
+
+Boundaries held for the whole milestone: no new tables, no new writable
+columns, no binding status field, no persisted views, no withdrawal
+mechanics (**D23 stays DEFERRED**), no orchestration surface (D22).
+Found and fixed along the way: the evaluations list 500'd on any
+project with PACKAGE runs (PACKAGE citations carry no live
+`asset_status` — now honestly None, D12).
+
 ## Future Direction
 
 - **Consensus verification** — NLI + LLM evidence judge + provenance + thresholds combined for difficult cases.
