@@ -159,21 +159,25 @@ Governance workflows remain URL-addressable.
 
 ## Next milestones
 
-1. **v1.1 — Enterprise extensions** (integrations, not boundary shape):
-   OIDC / SAML / SSO / SCIM / LDAP / Azure AD / Google Workspace; stored
-   provider/connector credentials (the D19/D14 cloud-connector unblock);
-   enterprise read-audit defaults. None of these change what the boundary
-   records or decides.
-2. **The strategic differentiator** (the consumption arc, post-boundary):
-   transforming unstructured enterprise knowledge into governed, auditable,
-   evidence-backed expert systems safely consumable by AI agents — versioned
-   Expert Package → per-package model evaluation → best-model selection →
-   deployable Expert Agents. Model evaluation is a MEANS, never the end
-   (June 2026 purpose ruling; see roadmap Future Direction).
+1. **v1.1 — Expert Package Consumption & Model Binding** (ratified arc-first
+   over enterprise extensions; build contract in docs/consumption-arc-v1.md,
+   ruling D22): WS1 first-class package consumer (hash-chain verification,
+   package-local retrieval, model-pluggable generation through D19 — the
+   Anthropic adapter lands behind the resolver) → WS2 per-package model
+   evaluation (portable channel, independent referee) → WS3 governed model
+   selection (computed comparison, audited decision) → WS4 Expert Agent
+   Binding (package version × model × AGENT principal × clearance +
+   issuing evidence; a binding, never a runtime). Hard boundary: no
+   orchestration, no persisted live answers, no stored credentials.
+2. **Enterprise extensions** (integrations, not boundary shape, moved after
+   the arc): OIDC / SAML / SSO / SCIM / LDAP / Azure AD / Google Workspace;
+   stored provider/connector credentials (the D19/D14 cloud-connector
+   unblock); enterprise read-audit defaults. None of these change what the
+   boundary records or decides.
 
 Deprioritized/deferred: unchanged from v0.12 snapshot (semantic auto-approval,
 revision auto-approval, AI Governance Analyst, trust history, grouped conflict
 API, coverage heatmap, notifications, agent runtime/orchestration).
 
-Read `docs/DECISIONS.md` (now through **D21**) for the binding architectural
+Read `docs/DECISIONS.md` (now through **D22**) for the binding architectural
 rulings before changing anything.

@@ -243,3 +243,47 @@ Non-lockout resets are ordinary administration (Users & Tokens).
 identity_facts are never edited in any recovery scenario — they are
 historical evidence. Startup self-validation (identity.validate_boundary)
 reports a missing active ADMIN loudly and points at the procedure.
+
+## D22 — Expert Agent Binding (v1.1 scoping, ratified)
+> An Expert Agent is a governed binding of:
+> - Expert Package version
+> - selected model
+> - AGENT principal
+> - clearance / permissions
+> - issuing evidence
+>
+> It is not a new runtime, orchestrator, autonomous worker, or execution
+> environment.
+
+The agentic layer is CONSUMPTION, not orchestration. The v1.1 arc is
+`Package → Question → Retrieval → Model Answer → Evidence → Evaluation →
+Model Selection → Governed Binding` — never `Agent → plans work → uses
+tools → changes system`. Tasks, planners, tool autonomy, multi-agent
+flows, background execution, and autonomous remediation are out of scope
+by ruling, not by omission.
+
+Companion rulings made at the same scoping session (binding, recorded in
+docs/consumption-arc-v1.md):
+- **Arc before enterprise extensions** — env-based provider keys under
+  D19; stored credentials remain a later milestone.
+- **Anthropic is a provider adapter behind the D19 resolver** — the
+  adapter abstraction D11 deferred is earned by the second provider.
+  No direct provider-SDK imports in evaluation, the package consumer,
+  routes, or UI. This resolves D11's "ask first" clause for Anthropic.
+- **Per-package model evaluation consumes the PORTABLE channel** (D10) —
+  "this Expert Package version performs best on this model" is the honest,
+  reproducible claim; the referee (local NLI, deterministic checks) is
+  never one of the players.
+- **Live agent answers stay ephemeral-but-audited** — persisting them as
+  governed facts is a separate future decision (RequestFact territory).
+
+**Why:** "deployment" implies runtime operations ExpertMachina does not
+govern; a *binding* of already-governed artifacts is fully answerable from
+evidence: why this package, why this model, why this agent, why this
+clearance.
+**Tradeoff accepted:** no agent runtime ships with v1.1 — customers bring
+their own execution; ExpertMachina hands them a governed, evaluated,
+revocable binding.
+**Evidence:** the WS gates in docs/consumption-arc-v1.md; WS1:
+backend/test_package_consumer.py (engine swap through D19, package-local
+retrieval against an empty database, structural purity).
