@@ -40,14 +40,25 @@ computed views reintroduce a second source of truth: cached rankings,
 saved comparisons, dashboard state tables, selection summaries,
 deployment snapshots.
 
-**Candidate invariant to formalize at scoping (D24 candidate):**
+**Candidate invariant to formalize at scoping (D24 candidate — proposed
+text, to be ratified with the milestone):**
 
-> No workbench view may become authoritative.
+> **D24 — Workbench Projection Rule**
+> Workbench views may project, aggregate, filter, sort, and derive
+> existing governed facts. Workbench views may not become an
+> authoritative source of state. No workbench screen may require
+> persistence of information that is derivable from governed facts.
 
-Comparisons stay computed; selections and bindings stay governed facts;
-dashboards are projections only. The moment a workbench screen starts
-owning state, D1 starts to erode — the UI door is where leaderboard
-disease would re-enter.
+Enforce it the way D18 and D22 are enforced — structurally, in CI:
+
+> The workbench milestone's diff adds NO new tables and NO new writable
+> columns.
+
+That converts a UX philosophy into a regression test. Comparisons stay
+computed; selections and bindings stay governed facts; dashboards are
+projections only. The moment a workbench screen starts owning state,
+D1 starts to erode — the UI door is where leaderboard disease would
+re-enter.
 
 ## The opening question for the scoping session
 
@@ -56,6 +67,29 @@ Not tables, APIs, or schemas. First:
 > What are the three most common operator decisions in the consumption
 > lifecycle, and how can each be completed using only projections of
 > existing governed facts?
+
+**Candidate answers (endorsed pre-scoping; confirm or replace at the
+session) — each maps onto existing governed objects:**
+
+1. **"Which model should serve this package?"** — the selection
+   decision. Projections: comparison view, trust/coverage metrics, run
+   details, rationale history. Maps to EvaluationRun +
+   PackageModelSelection; the existing PUT selection is the only write.
+   No new state.
+2. **"Something changed — does my selection still stand?"** — the
+   re-evaluation decision. **Staleness is COMPUTED, never persisted** —
+   the moment an `is_stale` column appears, a second truth source
+   exists. Derive it live: current selection package_hash vs current
+   package hash; current selection model vs latest successful
+   evaluations. Likely shape: a **Computed Consumption Inbox** — the
+   workbench's equivalent of the Governance Inbox, every item derived,
+   never stored (the v0.9.1 pattern applied to consumption).
+3. **"What is this agent actually serving, and can I prove it?"** — the
+   lineage decision; likely the flagship workflow. Anyone can build
+   Agent → Model → Answer; very few systems can traverse
+   Agent → Binding → Selection → Evaluation → Package → Asset → Source
+   Document and prove each step. That chain is where the
+   differentiation lives.
 
 ## Screen direction (ruled, shape to be discovered at scoping)
 
