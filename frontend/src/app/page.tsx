@@ -15,6 +15,7 @@ import {
   AlertCircle,
   ArrowRight,
   HelpCircle,
+  PackageCheck,
   Trash2,
   Sparkles,
   Info,
@@ -120,6 +121,13 @@ export default function Home() {
     startEvaluation,
     agentActivity,
     fetchAgentActivity,
+    packageSelection,
+    packageComparison,
+    selectionHistory,
+    consumptionLoading,
+    selectionError,
+    fetchPackageConsumption,
+    submitModelSelection,
     governanceInbox,
     governanceInboxLoading,
     fetchGovernanceInbox,
@@ -158,7 +166,34 @@ export default function Home() {
   // route guards remain the source of truth - this is presentation only.
   const allow = (permission: string) => can(currentUser, permission);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
+
+  // v1.1.x Consumption Operations Workbench (D24): which package the
+  // operator is looking at, and the in-flight selection proposal. Both are
+  // ephemeral React state - the workbench owns NO persisted view state.
+  const [consumptionPkgId, setConsumptionPkgId] = useState<number | null>(null);
+  const [selForm, setSelForm] = useState<{ provider: string; model: string; runIds: number[]; rationale: string } | null>(null);
+
+  // Consumption workbench: runs come from the existing evaluations read;
+  // selection/comparison/history are fetched per package. All projections.
+  useEffect(() => {
+    if (activeTab === 'consumption' && activeProjectId !== null) {
+      fetchEvaluations(activeProjectId);
+    }
+  }, [activeTab, activeProjectId]);
+
+  useEffect(() => {
+    if (activeTab === 'consumption' && packages.length > 0 && consumptionPkgId === null) {
+      setConsumptionPkgId(packages[0].id);
+    }
+  }, [activeTab, packages]);
+
+  useEffect(() => {
+    if (activeTab === 'consumption' && consumptionPkgId !== null) {
+      setSelForm(null);
+      fetchPackageConsumption(consumptionPkgId);
+    }
+  }, [activeTab, consumptionPkgId]);
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -539,11 +574,15 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console', 'settings'] as const;
+    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'agents', 'audit', 'console', 'settings'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
       const revision = params.get('revision');
+      if (tab === 'consumption') {
+        const pkg = params.get('package');
+        if (pkg) setConsumptionPkgId(Number(pkg));
+      }
       if (tab === 'conflicts' && expert) setConflictModelId(Number(expert));
       if (tab === 'conflicts' && relationship) {
         setHighlightRelationshipId(Number(relationship));
@@ -612,6 +651,7 @@ export default function Home() {
         if (activeTab === 'inbox' && inboxModelFilter !== null) params.set('expert', String(inboxModelFilter));
         if (activeTab === 'evaluations' && expandedRunId !== null) params.set('run', String(expandedRunId));
         if (activeTab === 'evaluations' && highlightResultId !== null) params.set('result', String(highlightResultId));
+        if (activeTab === 'consumption' && consumptionPkgId !== null) params.set('package', String(consumptionPkgId));
         newSearch = `?${params.toString()}`;
       }
 
@@ -622,7 +662,7 @@ export default function Home() {
         window.history.pushState(null, '', targetUrl);
       }
     }
-  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId]);
+  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId, consumptionPkgId]);
 
   // Listen to browser back/forward buttons
   useEffect(() => {
@@ -993,6 +1033,23 @@ export default function Home() {
               <MessageSquare className="w-4 h-4" />
               <span>Ask Expert Console</span>
             </button>
+
+            {/* v1.1.x: Consumption is a first-class lifecycle area
+                (package/model/binding-facing), deliberately NOT an Agent
+                Center subpage (Agent Center stays identity/MCP-facing). */}
+            {allow('assets:read') && (
+            <button
+              onClick={() => setActiveTab('consumption')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'consumption'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <PackageCheck className="w-4 h-4" />
+              <span>Consumption</span>
+            </button>
+            )}
 
             {allow('audit:read') && (
             <button
@@ -3893,6 +3950,336 @@ export default function Home() {
                   )}
                 </div>
               )}
+
+              {/* TAB: CONSUMPTION (v1.1.x Selection Workbench, D24).
+                  A decision workspace, NOT a leaderboard: comparisons are
+                  computed, the selection is a governed decision through the
+                  existing PUT, history is the audit ledger. This screen
+                  owns no state - every panel is a projection. */}
+              {activeTab === 'consumption' && (() => {
+                const pkg = packages.find(p => p.id === consumptionPkgId) || null;
+                const pkgRuns = pkg ? evaluationRuns.filter(r =>
+                  r.run_type === 'PACKAGE' && r.package_hash === pkg.package_hash && r.status === 'COMPLETED') : [];
+                const selectionDrift = !!(packageSelection && pkg && pkg.package_hash
+                  && packageSelection.package_hash !== pkg.package_hash);
+                const parseDetails = (details: string | null): Record<string, unknown> | null => {
+                  try { return details ? JSON.parse(details) : null; } catch { return null; }
+                };
+                const shortHash = (h: string | null) => h ? `${h.slice(0, 12)}…` : '—';
+                const isCurrent = (provider: string, model: string) =>
+                  !!packageSelection && packageSelection.selected_provider === provider
+                  && packageSelection.selected_model_name === model;
+                const submitSelection = async () => {
+                  if (!selForm || !pkg) return;
+                  const ok = await submitModelSelection(pkg.id, {
+                    provider: selForm.provider,
+                    model: selForm.model,
+                    supporting_evaluation_run_ids: selForm.runIds,
+                    rationale: selForm.rationale.trim(),
+                  });
+                  if (ok) setSelForm(null);
+                };
+                return (
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl">
+                    <div className="flex justify-between items-center border-b border-slate-900 pb-3">
+                      <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
+                        <PackageCheck className="w-4 h-4 text-cyan-400" />
+                        Selection Workbench
+                      </h3>
+                      <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                        Projections of governed facts · owns no state
+                      </span>
+                    </div>
+                    <p className="text-xs text-slate-500 mt-3 leading-relaxed">
+                      Which model should serve this package? Comparisons are computed from PACKAGE
+                      evaluation runs, the selection is a governed decision recorded with its evidence
+                      and rationale, and history lives in the audit ledger. Binding an agent to the
+                      selection is a separate governed act in this lifecycle.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-12 gap-6">
+                    {/* Package picker */}
+                    <div className="col-span-4 glass-panel p-4 rounded-xl space-y-2 self-start">
+                      <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest pb-2 border-b border-slate-900">
+                        Agent Packages
+                      </h4>
+                      {packages.length === 0 && (
+                        <p className="text-xs text-slate-500 pt-2">
+                          No packages compiled in this workspace yet. Compile one under Experts &amp; Packages.
+                        </p>
+                      )}
+                      {packages.map(p => (
+                        <button
+                          key={p.id}
+                          onClick={() => setConsumptionPkgId(p.id)}
+                          className={`w-full text-left p-3 rounded-lg border transition-all ${
+                            consumptionPkgId === p.id
+                              ? 'bg-cyan-950/30 border-cyan-900/60'
+                              : 'bg-slate-950/40 border-slate-900 hover:border-slate-700'
+                          }`}
+                        >
+                          <div className="flex justify-between items-center">
+                            <span className="text-xs font-medium text-slate-200">{p.name}</span>
+                            <span className="text-[9px] font-mono text-cyan-400">{p.governance_version}</span>
+                          </div>
+                          <div className="text-[9px] font-mono text-slate-500 mt-1 flex flex-wrap gap-x-3">
+                            <span>{p.clearance_level || 'INTERNAL'}</span>
+                            <span>{shortHash(p.package_hash)}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+
+                    <div className="col-span-8 space-y-6">
+                      {!pkg ? (
+                        <div className="glass-panel p-6 rounded-xl text-xs text-slate-500">
+                          Select an Agent Package to open its selection workspace.
+                        </div>
+                      ) : (
+                      <>
+                      {/* Current selection - a governed fact, projected */}
+                      <div className="glass-panel p-5 rounded-xl space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Current Selection</h4>
+                          {consumptionLoading && <span className="text-[9px] font-mono text-slate-600 animate-pulse">loading…</span>}
+                        </div>
+                        {packageSelection ? (
+                          <div className="space-y-3">
+                            <div className="flex items-center gap-3 flex-wrap">
+                              <span className="text-sm font-bold text-slate-100 font-mono">
+                                {packageSelection.selected_provider} / {packageSelection.selected_model_name}
+                              </span>
+                              <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 uppercase">
+                                selected
+                              </span>
+                              <span className="text-[9px] font-mono text-slate-500">
+                                {new Date(packageSelection.selected_at).toLocaleString()}
+                              </span>
+                            </div>
+                            {selectionDrift && (
+                              <div className="text-[10px] text-amber-400 bg-amber-950/30 border border-amber-900/40 rounded-lg p-3 font-mono">
+                                Hash drift: this selection was recorded for artifact {shortHash(packageSelection.package_hash)},
+                                but the current artifact is {shortHash(pkg.package_hash)}. Re-evaluate on the current
+                                artifact and record a new selection. (Computed live — staleness is never stored.)
+                              </div>
+                            )}
+                            <p className="text-xs text-slate-400 leading-relaxed border-l-2 border-slate-800 pl-3">
+                              {packageSelection.rationale}
+                            </p>
+                            <div className="flex flex-wrap gap-1.5">
+                              {packageSelection.supporting_evaluation_run_ids.map(id => (
+                                <span key={id} className="text-[9px] font-mono px-2 py-0.5 rounded bg-slate-900/80 border border-slate-800 text-slate-300">
+                                  RUN-{id}
+                                </span>
+                              ))}
+                            </div>
+                          </div>
+                        ) : (
+                          <p className="text-xs text-slate-500">
+                            No model selected for this package yet. The comparison below is the evidence
+                            workspace for that decision.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* Computed comparison - evidence, never a verdict */}
+                      <div className="glass-panel p-5 rounded-xl space-y-3">
+                        <div className="flex justify-between items-center">
+                          <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Model Comparison</h4>
+                          <span className="text-[9px] font-mono text-slate-600 uppercase">computed · never persisted</span>
+                        </div>
+                        {(!packageComparison || packageComparison.models.length === 0) ? (
+                          <p className="text-xs text-slate-500">
+                            No completed PACKAGE evaluation runs for this artifact yet. Models never
+                            evaluated are absent, not zero — run package evaluations to build evidence.
+                          </p>
+                        ) : (
+                          <div className="space-y-2">
+                            {packageComparison.models.map(m => (
+                              <div key={`${m.provider}/${m.model}`}
+                                   className={`p-3 rounded-lg border flex items-center justify-between gap-4 flex-wrap ${
+                                     isCurrent(m.provider, m.model)
+                                       ? 'bg-emerald-950/20 border-emerald-900/40'
+                                       : 'bg-slate-950/40 border-slate-900'
+                                   }`}>
+                                <div className="space-y-1">
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs font-mono font-bold text-slate-200">{m.provider} / {m.model}</span>
+                                    {isCurrent(m.provider, m.model) && (
+                                      <span className="text-[8px] font-mono px-1.5 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/40 uppercase">current</span>
+                                    )}
+                                  </div>
+                                  <div className="text-[9px] font-mono text-slate-500">
+                                    {m.runs.length} run{m.runs.length === 1 ? '' : 's'} · latest {new Date(m.latest.completed_at || '').toLocaleString()}
+                                  </div>
+                                </div>
+                                <div className="flex items-center gap-5">
+                                  <div className="text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase font-mono">Pass rate</span>
+                                    <span className="text-slate-100 font-bold text-xs font-mono">{(m.latest.pass_rate * 100).toFixed(0)}%</span>
+                                  </div>
+                                  <div className="text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase font-mono">Coverage</span>
+                                    <span className="text-slate-100 font-bold text-xs font-mono">{(m.latest.average_coverage_score * 100).toFixed(0)}%</span>
+                                  </div>
+                                  <div className="text-center">
+                                    <span className="text-slate-500 block text-[8px] uppercase font-mono">Claims E·C·U</span>
+                                    <span className="text-slate-300 text-xs font-mono">
+                                      {m.latest.verdict_counts
+                                        ? `${m.latest.verdict_counts.ENTAILED ?? 0}·${m.latest.verdict_counts.CONTRADICTED ?? 0}·${m.latest.verdict_counts.UNSUPPORTED ?? 0}`
+                                        : '—'}
+                                    </span>
+                                  </div>
+                                  {allow('assets:approve') && (
+                                    <button
+                                      onClick={() => setSelForm({
+                                        provider: m.provider, model: m.model,
+                                        runIds: pkgRuns.map(r => r.id), rationale: '',
+                                      })}
+                                      className="text-[10px] font-mono px-3 py-1.5 rounded-lg bg-cyan-950/40 text-cyan-400 border border-cyan-900/40 hover:bg-cyan-900/40 transition-all"
+                                    >
+                                      Select model
+                                    </button>
+                                  )}
+                                </div>
+                              </div>
+                            ))}
+                            <p className="text-[9px] font-mono text-slate-600 pt-1">{packageComparison.note}</p>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Selection proposal - the milestone's ONLY write, via the existing PUT */}
+                      {selForm && (
+                        <div className="glass-panel p-5 rounded-xl space-y-4 border border-cyan-900/40">
+                          <h4 className="text-xs font-bold text-slate-200 font-mono">
+                            Select model: <span className="text-cyan-400">{selForm.provider} / {selForm.model}</span>
+                          </h4>
+                          <div className="space-y-2">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block">
+                              Supporting evidence (COMPLETED PACKAGE runs for this exact artifact)
+                            </span>
+                            <p className="text-[9px] text-slate-600 font-mono">
+                              Losing-model runs are legitimate comparative evidence — a comparative decision
+                              should cite what it compared against.
+                            </p>
+                            {pkgRuns.map(r => (
+                              <label key={r.id} className="flex items-center gap-2 text-[10px] font-mono text-slate-300 cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  checked={selForm.runIds.includes(r.id)}
+                                  onChange={() => setSelForm({
+                                    ...selForm,
+                                    runIds: selForm.runIds.includes(r.id)
+                                      ? selForm.runIds.filter(id => id !== r.id)
+                                      : [...selForm.runIds, r.id],
+                                  })}
+                                  className="accent-cyan-500"
+                                />
+                                RUN-{r.id} · {r.consumer_model_provider}/{r.consumer_model_name} ·
+                                pass {(r.pass_rate * 100).toFixed(0)}%
+                              </label>
+                            ))}
+                          </div>
+                          <div className="space-y-1">
+                            <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest block">
+                              Rationale (required — &quot;why this model?&quot; must be answerable from the decision, indefinitely)
+                            </span>
+                            <textarea
+                              value={selForm.rationale}
+                              onChange={e => setSelForm({ ...selForm, rationale: e.target.value })}
+                              rows={3}
+                              className="w-full bg-slate-950/60 border border-slate-800 rounded-lg p-3 text-xs text-slate-200 focus:border-cyan-700 focus:outline-none"
+                              placeholder="Why this model, based on this evidence?"
+                            />
+                          </div>
+                          {selectionError && (
+                            <p className="text-[10px] text-rose-400 bg-rose-950/30 border border-rose-900/40 rounded-lg p-3 font-mono">
+                              Refused by the governance boundary: {selectionError}
+                            </p>
+                          )}
+                          <div className="flex gap-3">
+                            <button
+                              onClick={submitSelection}
+                              disabled={!selForm.rationale.trim() || selForm.runIds.length === 0}
+                              className="text-[10px] font-mono px-4 py-2 rounded-lg bg-cyan-950/60 text-cyan-300 border border-cyan-800/60 hover:bg-cyan-900/50 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                            >
+                              Record governed selection
+                            </button>
+                            <button
+                              onClick={() => setSelForm(null)}
+                              className="text-[10px] font-mono px-4 py-2 rounded-lg text-slate-400 border border-slate-800 hover:text-slate-200 transition-all"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Successful PACKAGE runs for this artifact */}
+                      <div className="glass-panel p-5 rounded-xl space-y-2">
+                        <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
+                          Successful PACKAGE Runs · {shortHash(pkg.package_hash)}
+                        </h4>
+                        {pkgRuns.length === 0 ? (
+                          <p className="text-xs text-slate-500">
+                            No completed PACKAGE runs for this artifact. Evaluations on other artifacts or
+                            the LIVE channel do not appear here — evidence about another artifact is not
+                            evidence about this one.
+                          </p>
+                        ) : pkgRuns.map(r => (
+                          <div key={r.id} className="flex items-center justify-between text-[10px] font-mono p-2.5 rounded-lg bg-slate-950/40 border border-slate-900">
+                            <span className="text-slate-300">RUN-{r.id} · {r.consumer_model_provider}/{r.consumer_model_name}</span>
+                            <span className="text-slate-500 flex gap-4">
+                              <span>pass {(r.pass_rate * 100).toFixed(0)}%</span>
+                              <span>coverage {(r.average_coverage_score * 100).toFixed(0)}%</span>
+                              <span>{r.completed_at ? new Date(r.completed_at).toLocaleString() : '—'}</span>
+                            </span>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Selection history - the audit ledger IS the history */}
+                      {allow('audit:read') && (
+                        <div className="glass-panel p-5 rounded-xl space-y-2">
+                          <div className="flex justify-between items-center">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Selection History</h4>
+                            <span className="text-[9px] font-mono text-slate-600 uppercase">projected from the audit ledger</span>
+                          </div>
+                          {selectionHistory.length === 0 ? (
+                            <p className="text-xs text-slate-500">No selection decisions recorded for this package.</p>
+                          ) : selectionHistory.map(ev => {
+                            const d = parseDetails(ev.details);
+                            const oldSel = d?.old_selection as { provider?: string; model?: string } | null;
+                            const newSel = d?.new_selection as { provider?: string; model?: string; rationale?: string } | null;
+                            return (
+                              <div key={ev.id} className="p-3 rounded-lg bg-slate-950/40 border border-slate-900 space-y-1.5">
+                                <div className="flex justify-between items-center text-[9px] font-mono text-slate-500">
+                                  <span>{new Date(ev.timestamp).toLocaleString()} · {ev.actor}</span>
+                                  <span className="px-1.5 py-0.5 rounded bg-slate-900/80 border border-slate-800">PACKAGE_MODEL_SELECTED</span>
+                                </div>
+                                <div className="text-[10px] font-mono text-slate-300">
+                                  {oldSel ? `${oldSel.provider}/${oldSel.model}` : '(none)'}
+                                  <ArrowRight className="w-3 h-3 inline mx-1.5 text-slate-600" />
+                                  <span className="text-cyan-400">{newSel ? `${newSel.provider}/${newSel.model}` : '—'}</span>
+                                </div>
+                                {newSel?.rationale && (
+                                  <p className="text-[10px] text-slate-400 border-l-2 border-slate-800 pl-2">{newSel.rationale}</p>
+                                )}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      )}
+                      </>
+                      )}
+                    </div>
+                  </div>
+                </div>
+                );
+              })()}
 
               {/* TAB 5: AUDIT LEDGER EXPLORER */}
               {/* TAB: SETTINGS (MVP 0.12) — governed runtime configuration.

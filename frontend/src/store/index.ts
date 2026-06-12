@@ -107,6 +107,48 @@ export interface AgentPackage {
   manifest: AgentPackageManifest | null;
 }
 
+// v1.1.x Consumption Operations Workbench (D24): everything below is a
+// PROJECTION of governed facts - the workbench reads selections,
+// comparisons, runs, and audit events; its only write is the existing
+// model-selection PUT.
+export interface PackageModelSelection {
+  id: number;
+  agent_package_id: number;
+  package_version: string;
+  package_hash: string;
+  selected_provider: string;
+  selected_model_name: string;
+  supporting_evaluation_run_ids: number[];
+  rationale: string;
+  selected_by_principal_id: number;
+  selected_at: string;
+}
+
+export interface ModelComparisonRun {
+  run_id: number;
+  completed_at: string | null;
+  pass_rate: number;
+  average_coverage_score: number;
+  claims_total: number | null;
+  verdict_counts: Record<string, number> | null;
+}
+
+export interface ModelComparisonEntry {
+  provider: string;
+  model: string;
+  runs: ModelComparisonRun[];
+  latest: ModelComparisonRun;
+}
+
+export interface ModelComparison {
+  agent_package_id: number;
+  package_name: string;
+  package_version: string;
+  package_hash: string;
+  models: ModelComparisonEntry[];
+  note: string;
+}
+
 export interface AssetRelationship {
   id: number;
   project_id: number;
@@ -224,6 +266,13 @@ export interface EvaluationRun {
   project_id: number;
   expert_model_id: number;
   expert_model_version: string | null;
+  // v1.1 WS2: the channel is a property of the run, never a sibling
+  // concept. PACKAGE runs carry binding coordinates; LIVE runs carry none.
+  run_type: string; // LIVE | PACKAGE
+  package_version: string | null;
+  package_hash: string | null;
+  consumer_model_provider: string | null;
+  consumer_model_name: string | null;
   status: string; // PENDING | RUNNING | COMPLETED | FAILED
   average_coverage_score: number;
   average_confidence_score: number;
@@ -588,6 +637,20 @@ interface AppState {
   createBenchmark: (projectId: number, payload: Record<string, unknown>) => Promise<void>;
   deleteBenchmark: (projectId: number, benchmarkId: number) => Promise<void>;
   startEvaluation: (projectId: number, expertModelId: number) => Promise<void>;
+
+  // v1.1.x Consumption Operations Workbench (D24: projections only).
+  packageSelection: PackageModelSelection | null;
+  packageComparison: ModelComparison | null;
+  selectionHistory: AuditEvent[];
+  consumptionLoading: boolean;
+  selectionError: string | null;
+  fetchPackageConsumption: (packageId: number) => Promise<void>;
+  submitModelSelection: (packageId: number, payload: {
+    provider: string;
+    model: string;
+    supporting_evaluation_run_ids: number[];
+    rationale: string;
+  }) => Promise<boolean>;
 }
 
 const API_BASE = 'http://localhost:8000/api';
@@ -1366,6 +1429,57 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ error: err instanceof Error ? err.message : String(err) });
     } finally {
       set({ evaluationRunning: false });
+    }
+  },
+
+  // v1.1.x Selection Workbench reads (D24): the current selection, the
+  // computed comparison, and the PACKAGE_MODEL_SELECTED audit history are
+  // all projections of governed facts. Nothing here is cached or persisted;
+  // a 404 selection means "no model selected yet" (honest absence, D12) and
+  // a 403 history means the role lacks audit:read - the panel hides.
+  packageSelection: null,
+  packageComparison: null,
+  selectionHistory: [],
+  consumptionLoading: false,
+  selectionError: null,
+
+  fetchPackageConsumption: async (packageId: number) => {
+    set({ consumptionLoading: true, selectionError: null });
+    try {
+      const [selRes, cmpRes, histRes] = await Promise.all([
+        apiFetch(`${API_BASE}/packages/${packageId}/model-selection`),
+        apiFetch(`${API_BASE}/packages/${packageId}/model-comparison`),
+        apiFetch(`${API_BASE}/audit?event_prefix=PACKAGE_MODEL_SELECTED&target_id=${packageId}&limit=100`),
+      ]);
+      const packageSelection = selRes.ok ? await selRes.json() : null;
+      const packageComparison = cmpRes.ok ? await cmpRes.json() : null;
+      const selectionHistory = histRes.ok ? await histRes.json() : [];
+      set({ packageSelection, packageComparison, selectionHistory, consumptionLoading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), consumptionLoading: false });
+    }
+  },
+
+  submitModelSelection: async (packageId, payload) => {
+    // The ONLY write in the workbench milestone: the existing governed PUT
+    // (assets:approve). The boundary validates the evidence; refusals are
+    // surfaced verbatim, never retried or softened.
+    set({ selectionError: null });
+    try {
+      const res = await apiFetch(`${API_BASE}/packages/${packageId}/model-selection`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Selection was refused');
+      }
+      await get().fetchPackageConsumption(packageId);
+      return true;
+    } catch (err) {
+      set({ selectionError: err instanceof Error ? err.message : String(err) });
+      return false;
     }
   },
 
