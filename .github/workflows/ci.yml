@@ -50,6 +50,9 @@ jobs:
       - name: Architectural seam suite (D18 boundary)
         working-directory: backend
         run: python test_connector_seam.py
+      - name: Workbench projection guard (D24 schema snapshot)
+        working-directory: backend
+        run: python test_workbench_projection.py
 
   frontend:
     runs-on: ubuntu-latest
