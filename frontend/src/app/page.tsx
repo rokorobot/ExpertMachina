@@ -130,6 +130,10 @@ export default function Home() {
     fetchConsumptionInbox,
     fetchPackageConsumption,
     submitModelSelection,
+    projectBindings,
+    fetchProjectBindings,
+    bindingLineage,
+    fetchBindingLineage,
     governanceInbox,
     governanceInboxLoading,
     fetchGovernanceInbox,
@@ -175,7 +179,8 @@ export default function Home() {
   // ephemeral React state - the workbench owns NO persisted view state.
   const [consumptionPkgId, setConsumptionPkgId] = useState<number | null>(null);
   const [selForm, setSelForm] = useState<{ provider: string; model: string; runIds: number[]; rationale: string } | null>(null);
-  const [consumptionView, setConsumptionView] = useState<'workbench' | 'inbox'>('workbench');
+  const [consumptionView, setConsumptionView] = useState<'workbench' | 'inbox' | 'bindings'>('workbench');
+  const [consumptionBindingId, setConsumptionBindingId] = useState<number | null>(null);
 
   // Consumption workbench: runs come from the existing evaluations read;
   // selection/comparison/history are fetched per package. All projections.
@@ -206,6 +211,27 @@ export default function Home() {
       fetchPackageConsumption(consumptionPkgId);
     }
   }, [activeTab, consumptionPkgId]);
+
+  // Binding Explorer (WS3): list bindings across the project's packages,
+  // then compose one binding's lineage server-side.
+  useEffect(() => {
+    if (activeTab === 'consumption' && consumptionView === 'bindings' && packages.length > 0) {
+      fetchProjectBindings();
+    }
+  }, [activeTab, consumptionView, packages]);
+
+  useEffect(() => {
+    if (activeTab === 'consumption' && consumptionView === 'bindings'
+        && projectBindings.length > 0 && consumptionBindingId === null) {
+      setConsumptionBindingId(projectBindings[0].id);
+    }
+  }, [activeTab, consumptionView, projectBindings]);
+
+  useEffect(() => {
+    if (activeTab === 'consumption' && consumptionBindingId !== null) {
+      fetchBindingLineage(consumptionBindingId);
+    }
+  }, [activeTab, consumptionBindingId]);
 
   useEffect(() => {
     if (activeTab === 'agents') {
@@ -594,7 +620,13 @@ export default function Home() {
       if (tab === 'consumption') {
         const pkg = params.get('package');
         if (pkg) setConsumptionPkgId(Number(pkg));
-        if (params.get('view') === 'inbox') setConsumptionView('inbox');
+        const view = params.get('view');
+        if (view === 'inbox' || view === 'bindings') setConsumptionView(view);
+        const bindingParam = params.get('binding');
+        if (bindingParam) {
+          setConsumptionBindingId(Number(bindingParam));
+          setConsumptionView('bindings');
+        }
       }
       if (tab === 'conflicts' && expert) setConflictModelId(Number(expert));
       if (tab === 'conflicts' && relationship) {
@@ -665,7 +697,10 @@ export default function Home() {
         if (activeTab === 'evaluations' && expandedRunId !== null) params.set('run', String(expandedRunId));
         if (activeTab === 'evaluations' && highlightResultId !== null) params.set('result', String(highlightResultId));
         if (activeTab === 'consumption' && consumptionPkgId !== null) params.set('package', String(consumptionPkgId));
-        if (activeTab === 'consumption' && consumptionView === 'inbox') params.set('view', 'inbox');
+        if (activeTab === 'consumption' && consumptionView !== 'workbench') params.set('view', consumptionView);
+        if (activeTab === 'consumption' && consumptionView === 'bindings' && consumptionBindingId !== null) {
+          params.set('binding', String(consumptionBindingId));
+        }
         newSearch = `?${params.toString()}`;
       }
 
@@ -676,7 +711,7 @@ export default function Home() {
         window.history.pushState(null, '', targetUrl);
       }
     }
-  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId, consumptionPkgId, consumptionView]);
+  }, [activeTab, selectedDocFilterId, conflictModelId, highlightRelationshipId, highlightRevisionId, inboxModelFilter, expandedRunId, highlightResultId, consumptionPkgId, consumptionView, consumptionBindingId]);
 
   // Listen to browser back/forward buttons
   useEffect(() => {
@@ -4010,7 +4045,9 @@ export default function Home() {
                     <div className="flex justify-between items-center border-b border-slate-900 pb-3">
                       <h3 className="font-bold text-sm text-slate-200 tracking-wide flex items-center gap-2">
                         <PackageCheck className="w-4 h-4 text-cyan-400" />
-                        {consumptionView === 'inbox' ? 'Consumption Inbox' : 'Selection Workbench'}
+                        {consumptionView === 'inbox' ? 'Consumption Inbox'
+                          : consumptionView === 'bindings' ? 'Binding Explorer'
+                          : 'Selection Workbench'}
                       </h3>
                       <span className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">
                         Projections of governed facts · owns no state
@@ -4046,10 +4083,22 @@ export default function Home() {
                           </span>
                         )}
                       </button>
+                      <button
+                        onClick={() => setConsumptionView('bindings')}
+                        className={`text-[10px] font-mono px-3 py-1.5 rounded-lg border transition-all ${
+                          consumptionView === 'bindings'
+                            ? 'bg-cyan-950/40 text-cyan-400 border-cyan-900/60'
+                            : 'text-slate-400 border-slate-800 hover:text-slate-200'
+                        }`}
+                      >
+                        Binding Explorer
+                      </button>
                     </div>
                     <p className="text-xs text-slate-500 mt-3 leading-relaxed">
                       {consumptionView === 'inbox'
                         ? 'Does everything still stand? Every item below is computed live from governed facts - selections, runs, bindings, identity. Nothing is stored, and there is nothing to dismiss: an item leaves when the facts that raised it change.'
+                        : consumptionView === 'bindings'
+                        ? 'What is this agent actually serving, and can you prove it? Start at a binding and walk the whole chain - serving package, selected model, selection evidence, evaluation runs, packaged assets, source documents - and sideways into identity. Every hop resolves or is declared missing. A binding is a governed snapshot, never a runtime.'
                         : 'Which model should serve this package? Comparisons are computed from PACKAGE evaluation runs, the selection is a governed decision recorded with its evidence and rationale, and history lives in the audit ledger. Binding an agent to the selection is a separate governed act in this lifecycle.'}
                     </p>
                   </div>
@@ -4111,15 +4160,264 @@ export default function Home() {
                               {item.binding_id !== null ? ` · binding ${item.binding_id}` : ''}
                             </span>
                             <button
-                              onClick={() => { setConsumptionPkgId(item.package_id); setConsumptionView('workbench'); }}
+                              onClick={() => {
+                                if (item.binding_id !== null) {
+                                  setConsumptionBindingId(item.binding_id);
+                                  setConsumptionView('bindings');
+                                } else {
+                                  setConsumptionPkgId(item.package_id);
+                                  setConsumptionView('workbench');
+                                }
+                              }}
                               className="text-[10px] font-mono px-3 py-1 rounded-lg bg-cyan-950/40 text-cyan-400 border border-cyan-900/40 hover:bg-cyan-900/40 transition-all flex items-center gap-1"
                             >
-                              Open in Selection Workbench <ArrowRight className="w-3 h-3" />
+                              {item.binding_id !== null ? 'Open binding' : 'Open in Selection Workbench'} <ArrowRight className="w-3 h-3" />
                             </button>
                           </div>
                         </div>
                       );
                     })}
+                  </div>
+                  ) : consumptionView === 'bindings' ? (
+                  <div className="grid grid-cols-12 gap-6">
+                    {/* Bindings list - append-only snapshots; no withdrawal
+                        controls exist here by ruling (D23 deferred). */}
+                    <div className="col-span-4 glass-panel p-4 rounded-xl space-y-2 self-start">
+                      <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest pb-2 border-b border-slate-900">
+                        Bindings
+                      </h4>
+                      {projectBindings.length === 0 && (
+                        <p className="text-xs text-slate-500 pt-2">
+                          No bindings issued in this workspace yet. A binding is issued from a
+                          package&apos;s current model selection in the Selection Workbench lifecycle.
+                        </p>
+                      )}
+                      {projectBindings.map(b => {
+                        const bpkg = packages.find(p => p.id === b.agent_package_id);
+                        return (
+                          <button
+                            key={b.id}
+                            onClick={() => setConsumptionBindingId(b.id)}
+                            className={`w-full text-left p-3 rounded-lg border transition-all ${
+                              consumptionBindingId === b.id
+                                ? 'bg-cyan-950/30 border-cyan-900/60'
+                                : 'bg-slate-950/40 border-slate-900 hover:border-slate-700'
+                            }`}
+                          >
+                            <div className="flex justify-between items-center">
+                              <span className="text-xs font-medium text-slate-200">Binding {b.id}</span>
+                              <span className="text-[9px] font-mono text-cyan-400">
+                                {b.selected_provider}/{b.selected_model_name}
+                              </span>
+                            </div>
+                            <div className="text-[9px] font-mono text-slate-500 mt-1">
+                              serving {bpkg ? bpkg.name : `package ${b.agent_package_id}`} v{b.package_version}
+                              {' · issued '}{new Date(b.created_at).toLocaleDateString()}
+                            </div>
+                          </button>
+                        );
+                      })}
+                    </div>
+
+                    <div className="col-span-8 space-y-4">
+                      {!bindingLineage ? (
+                        <div className="glass-panel p-6 rounded-xl text-xs text-slate-500">
+                          Select a binding to walk its lineage.
+                        </div>
+                      ) : (() => {
+                        const L = bindingLineage;
+                        const missingNote = (items: string[]) => items.length === 0 ? null : (
+                          <p className="text-[10px] font-mono text-rose-400 bg-rose-950/20 border border-rose-900/30 rounded-lg p-2">
+                            Declared missing: {items.join('; ')}
+                          </p>
+                        );
+                        const fact = (label: string, value: React.ReactNode) => (
+                          <div>
+                            <span className="text-slate-500 block text-[8px] uppercase font-mono">{label}</span>
+                            <span className="text-slate-200 text-[11px] font-mono">{value ?? '—'}</span>
+                          </div>
+                        );
+                        return (
+                        <>
+                          {L.declared_missing_total > 0 && (
+                            <div className="glass-panel p-4 rounded-xl border-l-2 border-l-rose-500 text-[11px] text-rose-300 font-mono">
+                              {L.declared_missing_total} lineage hop{L.declared_missing_total === 1 ? '' : 's'} could
+                              not be resolved — each is declared on its section below, never dropped.
+                            </div>
+                          )}
+                          {L.warnings.map(w => (
+                            <div key={w.id} className={`glass-panel p-3 rounded-xl border-l-2 ${
+                              w.severity === 'HIGH' ? 'border-l-rose-500' : w.severity === 'MEDIUM' ? 'border-l-amber-500' : 'border-l-slate-600'
+                            } flex items-center gap-2 flex-wrap`}>
+                              <span className={`text-[9px] font-mono px-2 py-0.5 rounded border uppercase ${
+                                w.severity === 'HIGH' ? 'bg-rose-950/40 text-rose-400 border-rose-900/40'
+                                : w.severity === 'MEDIUM' ? 'bg-amber-950/40 text-amber-400 border-amber-900/40'
+                                : 'bg-slate-900/80 text-slate-400 border-slate-800'}`}>
+                                {w.severity}
+                              </span>
+                              <span className="text-[11px] text-slate-300">{w.title}</span>
+                              <span className="text-[8px] font-mono text-slate-600 ml-auto">{w.condition}</span>
+                            </div>
+                          ))}
+
+                          {/* The binding: the governed snapshot itself */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <div className="flex justify-between items-center">
+                              <h4 className="text-xs font-bold text-slate-200 font-mono">
+                                Binding {L.binding.id}
+                                <span className="text-slate-500 font-normal"> · a governed snapshot, never a runtime</span>
+                              </h4>
+                              <span className="text-[9px] font-mono text-slate-500">
+                                issued {new Date(L.binding.created_at).toLocaleString()}
+                              </span>
+                            </div>
+                            <div className="grid grid-cols-3 gap-3">
+                              {fact('Serving package', `${L.package.name ?? '—'} v${L.binding.package_version}`)}
+                              {fact('Bound model', `${L.binding.selected_provider}/${L.binding.selected_model_name}`)}
+                              {fact('Artifact hash', shortHash(L.binding.package_hash))}
+                            </div>
+                          </div>
+
+                          {/* Why this package */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Why this package</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {fact('Compiled', L.package.compiled_at ? new Date(L.package.compiled_at).toLocaleString() : null)}
+                              {fact('Clearance', L.package.clearance_level)}
+                              {fact('Trust at compile', L.package.trust_score_at_compile != null ? String(L.package.trust_score_at_compile) : null)}
+                              {fact('Assets compiled', L.package.asset_count_at_compile != null ? String(L.package.asset_count_at_compile) : null)}
+                              {fact('Expert model', L.package.expert_model)}
+                              {fact('Family artifacts', L.family_status.artifact_count != null ? String(L.family_status.artifact_count) : null)}
+                            </div>
+                            {L.family_status.superseded ? (
+                              <p className="text-[10px] font-mono text-amber-400 bg-amber-950/30 border border-amber-900/40 rounded-lg p-2">
+                                Superseded: the family&apos;s current artifact is v{L.family_status.current_version} ({shortHash(L.family_status.current_hash || null)}).
+                                This binding serves an older artifact.
+                              </p>
+                            ) : L.family_status.current_package_id != null && (
+                              <p className="text-[10px] font-mono text-emerald-400">
+                                This is the current artifact of its package family.
+                              </p>
+                            )}
+                            {missingNote([...L.package.missing, ...L.family_status.missing])}
+                          </div>
+
+                          {/* Why this model */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Why this model</h4>
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-bold font-mono text-slate-100">
+                                {L.model.provider} / {L.model.model}
+                              </span>
+                              {L.model.matches_current_selection === true && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-emerald-950/40 text-emerald-400 border border-emerald-900/40">
+                                  matches current selection
+                                </span>
+                              )}
+                              {L.model.matches_current_selection === false && (
+                                <span className="text-[9px] font-mono px-2 py-0.5 rounded bg-amber-950/40 text-amber-400 border border-amber-900/40">
+                                  selection has since changed to {L.model.current_selection?.provider}/{L.model.current_selection?.model} — this binding is unchanged history
+                                </span>
+                              )}
+                            </div>
+                            {L.selection_evidence.rationale && (
+                              <p className="text-xs text-slate-400 leading-relaxed border-l-2 border-slate-800 pl-3">
+                                {L.selection_evidence.rationale}
+                              </p>
+                            )}
+                            <p className="text-[9px] font-mono text-slate-500">
+                              selected by {L.selection_evidence.selected_by ?? '—'}
+                              {L.selection_evidence.selected_at ? ` · ${new Date(L.selection_evidence.selected_at).toLocaleString()}` : ''}
+                            </p>
+                            <div className="space-y-1.5">
+                              {L.evaluation_runs.runs.map(r => (
+                                <div key={r.run_id} className="flex items-center justify-between text-[10px] font-mono p-2.5 rounded-lg bg-slate-950/40 border border-slate-900">
+                                  <span className="text-slate-300">
+                                    RUN-{r.run_id} · {r.consumer_model_provider}/{r.consumer_model_name}
+                                    {r.evaluates_bound_artifact && (
+                                      <span className="text-emerald-400 ml-2">· evaluates the bound artifact</span>
+                                    )}
+                                  </span>
+                                  <span className="text-slate-500 flex gap-4">
+                                    <span>pass {(r.pass_rate * 100).toFixed(0)}%</span>
+                                    <span>coverage {(r.average_coverage_score * 100).toFixed(0)}%</span>
+                                  </span>
+                                </div>
+                              ))}
+                            </div>
+                            {missingNote([...L.model.missing, ...L.selection_evidence.missing, ...L.evaluation_runs.missing])}
+                          </div>
+
+                          {/* Why this agent, why this clearance */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Why this agent · why this clearance</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {fact('AGENT principal', L.principal.name)}
+                              {fact('Active now', L.principal.active === undefined ? null : (L.principal.active ? 'yes' : 'NO — deactivated'))}
+                              {fact('Clearance at issue', L.binding.principal_clearance_at_issue)}
+                              {fact('Clearance now', L.principal.clearance_now)}
+                              {fact('Package clearance', L.package.clearance_level)}
+                              {fact('Active credentials', `${L.credentials.active_count} (${L.credentials.kinds.join(', ') || 'none'})`)}
+                            </div>
+                            <p className="text-[9px] font-mono text-slate-600">
+                              The binding was issued because the principal&apos;s clearance at issue met the
+                              package&apos;s compiled clearance. Withdrawing access happens in identity
+                              governance (Users &amp; Tokens), never by editing this history.
+                            </p>
+                            {missingNote([...L.principal.missing, ...L.credentials.missing])}
+                          </div>
+
+                          {/* Issued by whom: the immutable identity fact */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Issued by</h4>
+                            <div className="grid grid-cols-3 gap-3">
+                              {fact('Principal', L.issued_by.principal_name)}
+                              {fact('Role at issue', L.issued_by.role_at_issue)}
+                              {fact('Authenticated via', L.issued_by.authentication_method)}
+                            </div>
+                            <p className="text-[9px] font-mono text-slate-600">
+                              Identity fact {L.issued_by.identity_fact_id ?? '—'} — immutable evidence: later
+                              renames, demotions, or deactivations never change who issued this binding.
+                            </p>
+                            {missingNote(L.issued_by.missing)}
+                          </div>
+
+                          {/* Packaged knowledge -> source documents */}
+                          <div className="glass-panel p-5 rounded-xl space-y-3">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Packaged knowledge → sources</h4>
+                            <div className="flex flex-wrap gap-1.5">
+                              {L.assets.assets.map(a => (
+                                <span key={a.asset_id} className={`text-[9px] font-mono px-2 py-0.5 rounded border ${
+                                  a.live_status ? 'bg-slate-900/80 border-slate-800 text-slate-300' : 'bg-rose-950/30 border-rose-900/40 text-rose-400'
+                                }`}>
+                                  {a.name} {a.live_status ? `· ${a.live_status}` : '· no longer in the knowledge base'}
+                                </span>
+                              ))}
+                            </div>
+                            {L.source_documents.documents.map(d => (
+                              <div key={d.document_id} className="flex items-center justify-between text-[10px] font-mono p-2.5 rounded-lg bg-slate-950/40 border border-slate-900">
+                                <span className="text-slate-300">{d.filename}</span>
+                                <span className="text-slate-500">{d.status} · {d.content_hash ? shortHash(d.content_hash) : 'hash not recorded'}</span>
+                              </div>
+                            ))}
+                            {missingNote([...L.assets.missing, ...L.source_documents.missing])}
+                          </div>
+
+                          {/* Provenance events */}
+                          <div className="glass-panel p-5 rounded-xl space-y-2">
+                            <h4 className="text-[10px] font-mono text-slate-500 uppercase tracking-widest">Provenance events</h4>
+                            {L.audit.events.map(ev => (
+                              <div key={ev.id} className="flex items-center justify-between text-[10px] font-mono p-2 rounded-lg bg-slate-950/40 border border-slate-900">
+                                <span className="text-slate-300">{ev.event_type}</span>
+                                <span className="text-slate-500">{ev.actor} · {new Date(ev.timestamp).toLocaleString()}</span>
+                              </div>
+                            ))}
+                            {missingNote(L.audit.missing)}
+                          </div>
+                        </>
+                        );
+                      })()}
+                    </div>
                   </div>
                   ) : (
                   <div className="grid grid-cols-12 gap-6">

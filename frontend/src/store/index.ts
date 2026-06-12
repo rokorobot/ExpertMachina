@@ -184,6 +184,98 @@ export interface ConsumptionInbox {
   items: ConsumptionInboxItem[];
 }
 
+// v1.1.x WS3: the Binding Explorer. A binding is an append-only snapshot
+// (D22 - a binding, never a runtime); its lineage is composed server-side
+// because the chain is a product claim. Every section carries a `missing`
+// list: hops that could not be resolved, declared - never dropped (D12).
+export interface ExpertAgentBinding {
+  id: number;
+  agent_package_id: number;
+  package_version: string;
+  package_hash: string;
+  selected_provider: string;
+  selected_model_name: string;
+  agent_principal_id: number;
+  principal_clearance_at_issue: string;
+  selection_evidence: Record<string, unknown> | null;
+  identity_fact_id: number;
+  created_at: string;
+}
+
+export interface LineageRun {
+  run_id: number;
+  run_type: string;
+  status: string;
+  consumer_model_provider: string | null;
+  consumer_model_name: string | null;
+  package_hash: string | null;
+  pass_rate: number;
+  average_coverage_score: number;
+  completed_at: string | null;
+  evaluates_bound_artifact: boolean;
+}
+
+export interface BindingLineage {
+  lineage_version: string;
+  generated_at: string;
+  binding: {
+    id: number; agent_package_id: number; package_version: string;
+    package_hash: string; selected_provider: string; selected_model_name: string;
+    agent_principal_id: number; principal_clearance_at_issue: string; created_at: string;
+  };
+  issued_by: {
+    identity_fact_id?: number; principal_name?: string; display_name?: string;
+    principal_kind?: string; role_at_issue?: string; authentication_method?: string;
+    issued_at?: string; missing: string[];
+  };
+  package: {
+    package_id?: number; project_id?: number; name?: string; version?: string;
+    hash?: string; clearance_level?: string; compiled_at?: string;
+    trust_score_at_compile?: number | null; asset_count_at_compile?: number;
+    expert_model?: string; missing: string[];
+  };
+  family_status: {
+    current_package_id?: number; current_version?: string; current_hash?: string;
+    artifact_count?: number; superseded?: boolean; missing: string[];
+  };
+  model: {
+    provider: string; model: string;
+    current_selection: { provider: string; model: string; selected_at: string | null; rationale: string } | null;
+    matches_current_selection: boolean | null; missing: string[];
+  };
+  selection_evidence: {
+    selection_id?: number; rationale?: string; selected_at?: string | null;
+    supporting_evaluation_run_ids?: number[]; selected_by?: string; missing: string[];
+  };
+  evaluation_runs: { runs: LineageRun[]; missing: string[] };
+  assets: {
+    assets: { asset_id: number; name: string; type: string; source_document: string | null;
+              source_page: number | null; source_hash: string | null; live_status: string | null }[];
+    missing: string[];
+  };
+  source_documents: {
+    documents: { document_id: number; filename: string; status: string;
+                 content_hash: string | null; created_at: string | null }[];
+    missing: string[];
+  };
+  principal: {
+    principal_id?: number; name?: string; display_name?: string; kind?: string;
+    role?: string | null; clearance_now?: string; active?: boolean;
+    created_at?: string; missing: string[];
+  };
+  credentials: {
+    active_count: number; revoked_count: number; kinds: string[];
+    last_used_at: string | null; missing: string[];
+  };
+  audit: {
+    events: { id: number; timestamp: string; actor: string; event_type: string;
+              identity_fact_id: number | null }[];
+    missing: string[];
+  };
+  warnings: ConsumptionInboxItem[];
+  declared_missing_total: number;
+}
+
 export interface AssetRelationship {
   id: number;
   project_id: number;
@@ -682,6 +774,10 @@ interface AppState {
   consumptionInbox: ConsumptionInbox | null;
   fetchConsumptionInbox: (projectId?: number | null) => Promise<void>;
   fetchPackageConsumption: (packageId: number) => Promise<void>;
+  projectBindings: ExpertAgentBinding[];
+  fetchProjectBindings: () => Promise<void>;
+  bindingLineage: BindingLineage | null;
+  fetchBindingLineage: (bindingId: number) => Promise<void>;
   submitModelSelection: (packageId: number, payload: {
     provider: string;
     model: string;
@@ -1480,6 +1576,34 @@ export const useAppStore = create<AppState>((set, get) => ({
   consumptionLoading: false,
   selectionError: null,
   consumptionInbox: null,
+  projectBindings: [],
+  bindingLineage: null,
+
+  fetchProjectBindings: async () => {
+    // WS3: bindings are listed per package (the existing reads); the
+    // explorer composes the project-wide list client-side - a projection,
+    // not a new endpoint.
+    try {
+      const pkgs = get().packages;
+      const results = await Promise.all(pkgs.map(p =>
+        apiFetch(`${API_BASE}/packages/${p.id}/bindings`)
+          .then(r => (r.ok ? r.json() : []))
+          .catch(() => [])));
+      set({ projectBindings: results.flat() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  fetchBindingLineage: async (bindingId: number) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/bindings/${bindingId}/lineage`);
+      if (res.ok) set({ bindingLineage: await res.json() });
+      else set({ bindingLineage: null });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
 
   fetchConsumptionInbox: async (projectId?: number | null) => {
     // WS2: one read, fully computed server-side. There is no action to
