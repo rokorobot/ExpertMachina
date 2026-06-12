@@ -328,7 +328,12 @@ class CitationModel(BaseModel):
     source_page: Optional[int] = None
     source_section: Optional[str] = None
     source_hash: Optional[str] = None
-    asset_status: str
+    # LIVE-channel citations record the asset's status at answer time.
+    # PACKAGE-channel citations cite frozen package contents (approved by
+    # construction at compile, D9) and carry no live status - reported as
+    # None, never fabricated (D12). Required-ness here made the evaluations
+    # list 500 on any project with PACKAGE runs (found at v1.1.x WS1).
+    asset_status: Optional[str] = None
     # Provenance is reported honestly: None when not recorded, never fabricated.
     approved_by: Optional[str] = None
     approved_at: Optional[str] = None
