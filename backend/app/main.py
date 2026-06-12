@@ -21,6 +21,7 @@ from app import revisions
 from app import trust
 from app import governance_inbox
 from app import consumption_inbox
+from app import binding_lineage
 from app import connectors
 from app import policy
 from app import llm
@@ -1144,6 +1145,30 @@ def create_expert_agent_binding(package_id: int, create: schemas.ExpertAgentBind
         raise HTTPException(status_code=404, detail=str(e))
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# v1.1.x WS3: binding-centric reads - the two ratified projection
+# endpoints. A binding becomes addressable on its own (not only as a list
+# under its package), and its full lineage is composed SERVER-SIDE: the
+# chain is a product claim, testable as one artifact. Every expected hop
+# resolves or is declared missing (D12) - no silent gaps. The scoped
+# provenance events ride with the lineage at assets:read per the WS3 gate
+# (READ_ONLY can view lineage); the full ledger stays at audit:read.
+@app.get("/api/bindings/{binding_id}", response_model=schemas.ExpertAgentBindingResponse)
+def get_expert_agent_binding(binding_id: int, db_session: Session = Depends(get_db),
+                             actor: identity.Actor = Depends(require_perm("assets:read"))):
+    binding = db_session.query(db.ExpertAgentBinding).filter(
+        db.ExpertAgentBinding.id == binding_id).first()
+    if not binding:
+        raise HTTPException(status_code=404, detail=f"Binding {binding_id} not found")
+    return binding
+
+@app.get("/api/bindings/{binding_id}/lineage")
+def get_binding_lineage(binding_id: int, db_session: Session = Depends(get_db),
+                        actor: identity.Actor = Depends(require_perm("assets:read"))):
+    try:
+        return binding_lineage.build_lineage(db_session, binding_id)
+    except LookupError as e:
+        raise HTTPException(status_code=404, detail=str(e))
 
 # Deletion routes
 @app.delete("/api/knowledge-assets/{asset_id}")

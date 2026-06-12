@@ -43,6 +43,7 @@ jobs:
           python test_package_selection.py
           python test_expert_agent_binding.py
           python test_consumption_inbox.py
+          python test_binding_lineage.py
           python test_identity_boundary.py
           python test_identity_tokens.py
           python test_mcp_gateway.py
