@@ -20,6 +20,7 @@ from app import conflict_engine
 from app import revisions
 from app import trust
 from app import governance_inbox
+from app import consumption_inbox
 from app import connectors
 from app import policy
 from app import llm
@@ -1293,6 +1294,18 @@ def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db),
     if not project:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return governance_inbox.build_inbox(db_session, project_id)
+
+# Computed Consumption Inbox (v1.1.x WS2, D24): the v0.9.1 inbox pattern
+# applied to consumption. Read-only and the ONE endpoint this milestone
+# adds. Severity comes from consumption_inbox.severity_of - the single
+# shared function (D2); missing hops are declared, never dropped (D12);
+# nothing is persisted and there is deliberately NO dismiss/mark-resolved:
+# items disappear when the underlying governed facts change.
+@app.get("/api/consumption/inbox")
+def get_consumption_inbox(project_id: Optional[int] = None,
+                          db_session: Session = Depends(get_db),
+                          actor: identity.Actor = Depends(require_perm("assets:read"))):
+    return consumption_inbox.build_inbox(db_session, project_id)
 
 # Persisted Verification Verdicts (MVP 0.9.2). A verdict is an immutable
 # measurement: reviewing one records a VERIFICATION_REVIEWED audit event and
