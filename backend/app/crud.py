@@ -200,6 +200,23 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
             change_reason="Edited via asset update"
         )
 
+    # v1.2.1 WS1 (D27): a domain change through this surface is a human
+    # correction - a governed act with its own audit vocabulary, never a
+    # silent metadata edit. Domain is taxonomy, not content: it never
+    # creates a revision and never touches provenance or history.
+    # Correcting to None (unclassify) is legitimate and honest (D12).
+    domain_change = None
+    if "domain" in update_data:
+        new_domain = update_data["domain"]
+        if new_domain is not None:
+            from app import classification
+            new_domain = classification.validate_domain_path(new_domain)
+            update_data["domain"] = new_domain
+        if new_domain != asset.domain:
+            domain_change = (asset.domain, new_domain)
+        else:
+            update_data.pop("domain")
+
     status_change = None
 
     for key, value in update_data.items():
@@ -209,7 +226,14 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
     
     session.commit()
     session.refresh(asset)
-    
+
+    if domain_change:
+        old_domain, new_domain = domain_change
+        log_audit_event(session, actor=actor.display, event_type="ASSET_DOMAIN_CORRECTED",
+                        target_id=str(asset.id),
+                        details=json.dumps({"old_domain": old_domain, "new_domain": new_domain}),
+                        identity_fact_id=actor.fact(session).id)
+
     if status_change:
         old_st, new_st = status_change
         event_t = audit_event_type or ("ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED")
@@ -229,7 +253,9 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
             revisions.ensure_baseline_revision(session, asset, actor=actor)
         if asset.document_id:
             update_document_lifecycle(session, asset.document_id)
-    else:
+    elif not (domain_change and len(update_data) == 1):
+        # Unchanged behavior for every non-domain update; a domain-only
+        # correction already carries its own event above.
         log_audit_event(session, actor=actor.display, event_type="ASSET_UPDATED", target_id=str(asset.id),
                         details="Asset metadata updated manually", identity_fact_id=actor.fact(session).id)
 

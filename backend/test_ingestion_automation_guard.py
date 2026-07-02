@@ -51,7 +51,9 @@ APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
 # future automated transition). WS3's Tier-2 module MUST be added here
 # when it lands - the event-family sweep below fails loudly if a module
 # outside this list writes ASSET_AUTO_APPROVED, so forgetting is caught.
-AUTOMATION_MODULES = ["policy.py"]
+# classification.py (WS1, D27) writes only the domain column; it is
+# listed so the structural checks prove it never grows status writes.
+AUTOMATION_MODULES = ["policy.py", "classification.py"]
 
 # Isolated vector store: the dev server holds a lock on ./qdrant_db.
 ingestion.QDRANT_DIR = tempfile.mkdtemp(prefix="em_guard_qdrant_")

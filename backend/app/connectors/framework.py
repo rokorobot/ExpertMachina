@@ -12,6 +12,7 @@ from app import identity
 from app import ingestion
 from app import extraction
 from app import policy
+from app import classification
 from app import revisions
 from app.connectors.models import ConnectorItem
 from app.connectors.providers.local_folder import LocalFolderProvider
@@ -166,6 +167,13 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                         db.SourceDocument.ingestion_job_id == job.id,
                         db.SourceDocument.status == "INGESTED",
                         db.SourceDocument.document_id.isnot(None)).all()]
+                    # Domain classification before approval (v1.2.1 WS1,
+                    # D27): the same order everywhere, so approval
+                    # policies can consume domains.
+                    classification.classify_assets(
+                        session, job.project_id, new_doc_ids,
+                        connector_id=connector.id, ingestion_job_id=job.id,
+                        on_behalf_of_fact=connector_fact)
                     auto_approval = policy.apply_auto_approval(
                         session, job.project_id, new_doc_ids,
                         connector_id=connector.id, ingestion_job_id=job.id,

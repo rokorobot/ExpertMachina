@@ -24,6 +24,7 @@ from app import consumption_inbox
 from app import binding_lineage
 from app import connectors
 from app import policy
+from app import classification
 from app import llm
 from app import custody
 
@@ -454,6 +455,10 @@ def upload_document(
 
     if doc.status == "PARSED":
         extraction.extract_knowledge_assets_from_project(db_session, project_id)
+        # Domain classification before approval (v1.2.1 WS1, D27): the
+        # same order everywhere, so approval policies can consume domains.
+        classification.classify_assets(db_session, project_id, [doc.id],
+                                       on_behalf_of_fact=actor.fact(db_session))
         # Policy-Based Auto Approval (MVP 0.10.2): unscoped policies apply to
         # uploads too - the same rules regardless of how a document arrived.
         # The firing policy's identity chains to the uploader's fact.
@@ -832,6 +837,123 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
                              identity_fact_id=actor.fact(db_session).id)
     return pol
 
+# Classification Policy routes (v1.2.1 WS1, D27): the ApprovalPolicy
+# governed shape mirrored for the other outcome species - deterministic,
+# versioned rules assigning the governed domain path at ingestion. Same
+# D17 discipline: definition changes bump the version ASSET_CLASSIFIED
+# events reference; enable/disable is audited without a bump; no delete.
+# Administration rides under assets:approve (the scoping ruling: no new
+# permission - the same permission that governs approval policies).
+def _validated_classification_fields(db_session: Session, project_id: int, rules, connector_id: Optional[int]):
+    try:
+        validated = classification.validate_rules(rules)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    if connector_id is not None:
+        connector = db_session.query(db.SourceConnector).filter(
+            db.SourceConnector.id == connector_id, db.SourceConnector.project_id == project_id).first()
+        if not connector:
+            raise HTTPException(status_code=400, detail=f"Connector {connector_id} not found in project {project_id}")
+    return validated
+
+@app.post("/api/projects/{project_id}/classification-policies", response_model=schemas.ClassificationPolicyResponse)
+def create_classification_policy(project_id: int, policy_in: schemas.ClassificationPolicyCreate,
+                                 db_session: Session = Depends(get_db),
+                                 actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    if not policy_in.name.strip():
+        raise HTTPException(status_code=400, detail="name is required")
+    rules = _validated_classification_fields(db_session, project_id, policy_in.rules, policy_in.connector_id)
+    pol = db.ClassificationPolicy(
+        project_id=project_id,
+        name=policy_in.name.strip(),
+        rules_json=json.dumps(rules),
+        connector_id=policy_in.connector_id,
+        enabled=True,
+        version=1,
+        created_by=actor.display,
+    )
+    db_session.add(pol)
+    db_session.commit()
+    db_session.refresh(pol)
+    identity.ensure_delegated_principal(db_session, f"classification:{pol.name}", created_by=actor.name)
+    crud.log_audit_event(db_session, actor=actor.display, event_type="CLASSIFICATION_POLICY_CREATED",
+                         target_id=str(pol.id),
+                         details=json.dumps({"name": pol.name, "version": pol.version,
+                                             "rules": rules, "connector_id": pol.connector_id}),
+                         identity_fact_id=actor.fact(db_session).id)
+    return pol
+
+@app.get("/api/projects/{project_id}/classification-policies", response_model=List[schemas.ClassificationPolicyResponse])
+def list_classification_policies(project_id: int, db_session: Session = Depends(get_db),
+                                 actor: identity.Actor = Depends(require_perm("assets:read"))):
+    return db_session.query(db.ClassificationPolicy).filter(
+        db.ClassificationPolicy.project_id == project_id).order_by(db.ClassificationPolicy.id).all()
+
+@app.patch("/api/classification-policies/{policy_id}", response_model=schemas.ClassificationPolicyResponse)
+def update_classification_policy(policy_id: int, update: schemas.ClassificationPolicyUpdate,
+                                 db_session: Session = Depends(get_db),
+                                 actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    pol = db_session.query(db.ClassificationPolicy).filter(db.ClassificationPolicy.id == policy_id).first()
+    if not pol:
+        raise HTTPException(status_code=404, detail=f"Classification policy {policy_id} not found")
+    data = update.dict(exclude_unset=True)
+
+    definition_changed = False
+    if "rules" in data or "connector_id" in data or "name" in data:
+        new_rules = _validated_classification_fields(
+            db_session, pol.project_id,
+            data.get("rules", pol.rules),
+            data.get("connector_id", pol.connector_id))
+        old_snapshot = {"name": pol.name, "rules": pol.rules,
+                        "connector_id": pol.connector_id, "version": pol.version}
+        if "name" in data and data["name"].strip():
+            pol.name = data["name"].strip()
+        pol.rules_json = json.dumps(new_rules)
+        if "connector_id" in data:
+            pol.connector_id = data["connector_id"]
+        pol.version += 1
+        definition_changed = True
+
+    toggled = None
+    if "enabled" in data and bool(data["enabled"]) != bool(pol.enabled):
+        pol.enabled = bool(data["enabled"])
+        toggled = pol.enabled
+
+    pol.updated_at = datetime.datetime.utcnow()
+    db_session.commit()
+    db_session.refresh(pol)
+
+    if definition_changed:
+        identity.ensure_delegated_principal(db_session, f"classification:{pol.name}", created_by=actor.name)
+        crud.log_audit_event(db_session, actor=actor.display, event_type="CLASSIFICATION_POLICY_UPDATED",
+                             target_id=str(pol.id),
+                             details=json.dumps({"old": old_snapshot,
+                                                 "new": {"name": pol.name, "rules": pol.rules,
+                                                         "connector_id": pol.connector_id, "version": pol.version}}),
+                             identity_fact_id=actor.fact(db_session).id)
+    if toggled is not None:
+        crud.log_audit_event(db_session, actor=actor.display,
+                             event_type="CLASSIFICATION_POLICY_ENABLED" if toggled else "CLASSIFICATION_POLICY_DISABLED",
+                             target_id=str(pol.id),
+                             details=json.dumps({"name": pol.name, "version": pol.version}),
+                             identity_fact_id=actor.fact(db_session).id)
+    return pol
+
+@app.post("/api/projects/{project_id}/taxonomy/reorganize")
+def reorganize_taxonomy(project_id: int, request: schemas.TaxonomyReorganizeRequest,
+                        db_session: Session = Depends(get_db),
+                        actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    """The explicit audited taxonomy operation (D27): rename (prefix
+    rewrite - nesting survives by construction) or reclassify (re-run
+    current policies over a domain subtree - the policy-driven split).
+    Writes ONLY the domain column; ONE TAXONOMY_REORGANIZED event carries
+    the reason and the complete old->new mapping."""
+    try:
+        return classification.reorganize_taxonomy(
+            db_session, project_id, request.operations, request.reason, actor)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
 # LLM Provider Settings routes (MVP 0.12): governed model-per-function
 # configuration. Stores model selection, never credentials (D14/D19
 # candidate). Empty config preserves prior behavior:
@@ -908,6 +1030,8 @@ def extract_assets(project_id: int, db_session: Session = Depends(get_db),
     success = extraction.extract_knowledge_assets_from_project(db_session, project_id)
     if not success:
         raise HTTPException(status_code=400, detail="No parsed documents found to extract assets from. Please upload documents first.")
+    classification.classify_assets(db_session, project_id, fresh_doc_ids,
+                                   on_behalf_of_fact=actor.fact(db_session))
     auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids,
                                                on_behalf_of_fact=actor.fact(db_session))
     return {"message": "Knowledge assets extracted successfully.", "auto_approval": auto_approval}

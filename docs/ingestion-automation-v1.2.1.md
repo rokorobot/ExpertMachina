@@ -299,3 +299,57 @@ the ratified gate wording:
   amendment citing D26/D27 — one commit. D24 guard reports 28 tables /
   303 columns.
 - **All 19 pre-existing CI suites green with zero assertion edits.**
+
+### WS1 — PASSED (2026-07-02, user-accepted)
+
+**Gate wording (user-ratified at acceptance):** WS1 PASSED. Domain
+classification is now a governed taxonomy layer, not an asset rewriting
+feature. Classification policies deterministically assign domains before
+approval automation, human corrections remain explicit governed
+asset-domain corrections, and taxonomy reorganization changes
+classification paths without mutating asset content, provenance, status,
+or revision history. The split from `finances` into `finances/accounting`
+and `finances/treasury` was proven by policy change plus taxonomy
+reorganization alone, with prefix queries still resolving the parent
+domain.
+
+Evidence (`backend/test_domain_classification.py`, in CI):
+
+- **Governed CRUD**: `assets:approve`; POST/GET/PATCH only (no
+  DELETE/PUT, asserted against the live route table); version bumps only
+  on definition changes; enable/disable audited without a bump;
+  malformed rules rejected at definition time — a bad rule is a rejected
+  definition, never a rule that silently never fires.
+- **Assignment semantics**: enabled policies in stable id order, rules in
+  list order, first match wins (proven adversarially against a competing
+  later policy); only fills NULL domains — never overwrites an earlier
+  assignment or a human correction; unmatched stays honestly NULL (D12).
+- **Audit quality**: ASSET_CLASSIFIED carries the policy snapshot, rule
+  index, and exact matched values quoted verbatim;
+  DOMAIN_CLASSIFICATION_COMPLETED declares unmatched;
+  ASSET_DOMAIN_CORRECTED is distinct from generic asset update (and a
+  domain-only correction emits no ASSET_UPDATED); TAXONOMY_REORGANIZED
+  carries reason, operations, the complete old→new mapping, and the
+  policy version that decided each reclassify move.
+- **The split proof**: content SHA, status, provenance columns, and the
+  full revision tuple list byte-identical before/after (the guardrail is
+  a structural assertion, not a promise); prefix query for `finances`
+  resolves both children; `rename` proven to nest a subtree by prefix
+  rewrite with deeper paths preserved.
+- **Metadata rules proven ahead of WS2**: a seeded scan-row
+  `source_metadata_json` drives an `in`-list match with values quoted in
+  provenance; a rule requiring absent metadata placed first does NOT
+  fire — absence is never satisfaction (D12). WS2 only wires
+  persistence; the consumer is already tested.
+- **Ordering**: classification runs BEFORE `apply_auto_approval` at all
+  three ingestion sites (connector scan, upload, manual extract) — the
+  preparation WS2/WS3 approval conditions consume.
+- **Accepted implementation rulings**: the DELEGATED actor is
+  `classification:<name>` (species separation in the ledger, D27's
+  "never blur" applied to actors); `classification.py` is declared in the
+  D26 guard's AUTOMATION_MODULES (classification is automation and is
+  structurally prevented from writing status); `classification_engine`
+  joined SYSTEM_PRINCIPAL_NAMES (the missing principal surfaced a
+  swallowed audit-path failure — found and fixed at the gate).
+- All 21 suites green (both guards, the new 6-part gate suite, every
+  pre-existing suite with zero assertion edits).

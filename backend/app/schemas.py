@@ -109,11 +109,15 @@ class KnowledgeAssetUpdate(BaseModel):
     content: Optional[str] = None
     status: Optional[str] = None # CANDIDATE, REVIEWED, APPROVED, ARCHIVED
     access_level: Optional[str] = None
+    # v1.2.1 WS1 (D27): human domain correction through the normal update
+    # surface - a governed act (ASSET_DOMAIN_CORRECTED), never an edit.
+    domain: Optional[str] = None
 
 class KnowledgeAssetResponse(KnowledgeAssetBase):
     id: int
     project_id: int
     status: str
+    domain: Optional[str] = None  # v1.2.1 WS1 (D27): governed domain path
     document_id: Optional[int]
     chunk_id: Optional[int]
     source_page: Optional[int]
@@ -297,6 +301,40 @@ class ApprovalPolicyResponse(BaseModel):
     updated_at: datetime
     class Config:
         from_attributes = True
+
+# Classification policies (v1.2.1 WS1, D27): the ApprovalPolicy governed
+# shape mirrored for the other outcome species - assigning a domain,
+# never granting APPROVED. Rules validated in app.classification.
+class ClassificationPolicyCreate(BaseModel):
+    name: str
+    rules: List[dict]  # [{"domain": path, "match": {uri_prefix?, metadata?}}]
+    connector_id: Optional[int] = None  # None = applies to any source
+
+class ClassificationPolicyUpdate(BaseModel):
+    name: Optional[str] = None
+    rules: Optional[List[dict]] = None
+    connector_id: Optional[int] = None
+    enabled: Optional[bool] = None
+
+class ClassificationPolicyResponse(BaseModel):
+    id: int
+    project_id: int
+    name: str
+    rules: List[dict]
+    connector_id: Optional[int] = None
+    enabled: bool
+    version: int
+    created_by: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+    class Config:
+        from_attributes = True
+
+class TaxonomyReorganizeRequest(BaseModel):
+    # [{"kind": "rename", "from_domain": X, "to_domain": Y} |
+    #  {"kind": "reclassify", "domain": X}]
+    operations: List[dict]
+    reason: str
 
 class IngestionJobResponse(BaseModel):
     id: int

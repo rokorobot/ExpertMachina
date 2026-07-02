@@ -219,8 +219,10 @@ def migrate_legacy_roles(session: Session):
                                    "note": "mutable registry only; historical "
                                            "role_snapshots intentionally untouched"}))
 
-# The platform acting as itself (observed vocabulary, v0.12.0 audit).
-SYSTEM_PRINCIPAL_NAMES = ["system", "conflict_engine", "verification_engine", "policy_engine"]
+# The platform acting as itself (observed vocabulary, v0.12.0 audit;
+# classification_engine added v1.2.1 WS1, D27).
+SYSTEM_PRINCIPAL_NAMES = ["system", "conflict_engine", "verification_engine",
+                          "policy_engine", "classification_engine"]
 
 PBKDF2_ITERATIONS = 600_000  # OWASP-recommended scale for PBKDF2-HMAC-SHA256
 SESSION_TTL = datetime.timedelta(hours=12)
