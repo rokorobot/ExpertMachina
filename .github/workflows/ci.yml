@@ -41,6 +41,7 @@ jobs:
           python test_tier2_engine_verification.py
           python test_automation_corpus.py
           python test_projection_engine.py
+          python test_graph_renderer.py
           python test_revision_workflow.py
           python test_governance_inbox.py
           python test_llm_settings.py

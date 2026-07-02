@@ -29,6 +29,7 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import crud
 from app.projections import contract
+from app.projections.renderers import graph as graph_renderer
 
 ENGINE_VERSION = "projection-engine-v1"
 EXCERPT_LIMIT = 240  # bounded excerpt, never full content (scoping ruling 3)
@@ -38,11 +39,10 @@ ACCESS_RANK = {"PUBLIC": 0, "INTERNAL": 1, "RESTRICTED": 2, "EXECUTIVE": 3}
 
 # Renderer registry: name -> callable(Projection) -> {filename: bytes}.
 # The canonical projection.json + manifest.json are always written by
-# the engine itself; a renderer only ADDS presentation files. "projection"
-# is the built-in canonical shape (WS1); the graph renderer registers at
-# WS2. Renderers receive a completed projection - they never see the
-# session.
-RENDERERS = {"projection": None}
+# the engine itself; a renderer only ADDS presentation files. Renderers
+# receive a completed projection - they never see the session.
+RENDERERS = {"projection": None,
+             "graph": graph_renderer.render_files}
 
 
 def _rank(level):

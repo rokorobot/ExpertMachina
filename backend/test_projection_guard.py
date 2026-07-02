@@ -226,7 +226,14 @@ def part_1_structural():
 
 def renderer_import_violations(module_name, source):
     """A renderer that can reach persistence or a network client could
-    decide content, and deciding content is the engine's monopoly."""
+    decide content, and deciding content is the engine's monopoly.
+    Allowed: the stdlib, the projection contract, and SIBLING modules
+    inside projections/renderers (WS2 gate amendment: vendored assets
+    live as sibling constant modules, and every sibling is swept by
+    these same rules - nothing beyond stdlib + contract is transitively
+    reachable). Reaching UP (`from .. import engine`, app.projections.*)
+    stays forbidden: the engine can see the database; a renderer that
+    can see the engine is a renderer with hands."""
     violations = []
     for node in ast.walk(ast.parse(source)):
         if isinstance(node, ast.Import):
@@ -237,27 +244,28 @@ def renderer_import_violations(module_name, source):
                         f"{module_name}:{node.lineno} imports {alias.name}")
         elif isinstance(node, ast.ImportFrom):
             module = node.module or ""
-            if node.level > 0:
-                # Relative: only the contract, one package up or absolute-in-package.
-                names = {a.name for a in node.names}
-                if module not in {"contract"} and not (
-                        module == "" and names <= {"contract"}):
-                    violations.append(
-                        f"{module_name}:{node.lineno} relative import "
-                        f"from {'.' * node.level}{module} - only the "
-                        f"projection contract is permitted")
+            if node.level == 1:
+                # Same-package sibling (swept by these same rules) - fine.
+                continue
+            if node.level > 1:
+                violations.append(
+                    f"{module_name}:{node.lineno} relative import reaches "
+                    f"above the renderers package "
+                    f"({'.' * node.level}{module}) - renderers never see "
+                    f"the engine")
                 continue
             top = module.split(".")[0]
             if top in sys.stdlib_module_names:
                 continue
             names = {a.name for a in node.names}
             if module == "app.projections.contract" or (
-                    module == "app.projections" and names <= {"contract"}):
+                    module == "app.projections" and names <= {"contract"}) or \
+                    module.startswith("app.projections.renderers"):
                 continue
             violations.append(
                 f"{module_name}:{node.lineno} imports {', '.join(sorted(names))} "
-                f"from {module} - renderers may import stdlib + "
-                f"projections.contract only")
+                f"from {module} - renderers may import stdlib, "
+                f"projections.contract, and renderer siblings only")
     return violations
 
 
@@ -375,6 +383,11 @@ from app.projections.contract import Projection
 from app import crud
 """
 
+PLANT_RENDERER_REACH_UP = """
+from . import vis_network_js
+from .. import engine
+"""
+
 PLANT_CLEAN_RENDERER = """
 import json
 from app.projections.contract import Projection, RenderManifest
@@ -403,6 +416,9 @@ def part_4_self_proof():
         "planted.py", PLANT_RENDERER_IMPORT)
     assert import_violations and all("crud" in v for v in import_violations), \
         "Self-proof FAILED: the import checker missed a persistence import"
+    reach_up = renderer_import_violations("planted.py", PLANT_RENDERER_REACH_UP)
+    assert len(reach_up) == 1 and "above the renderers package" in reach_up[0], \
+        "Self-proof FAILED: sibling import must pass, reaching up must not"
     # Emission outside the package is flagged by the sweep.
     offenders = projection_event_offenders({
         "main.py": 'log_audit_event(s, "x", "PROJECTION_RENDERED")',
@@ -419,7 +435,7 @@ def part_4_self_proof():
     # The canonical renderer shape stays clean under BOTH checkers.
     assert not governed_write_violations("clean.py", PLANT_CLEAN_RENDERER)
     assert not renderer_import_violations("clean.py", PLANT_CLEAN_RENDERER)
-    print(f"Part 4 passed: {len(plants) + 3} planted violations caught; "
+    print(f"Part 4 passed: {len(plants) + 4} planted violations caught; "
           f"the canonical renderer shape stays clean.")
 
 
