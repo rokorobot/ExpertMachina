@@ -551,3 +551,74 @@ the audited reorg operation is the repair path.
 docs/ingestion-automation-v1.2.1.md (split `finances` by policy change +
 reorg operation alone; provenance intact, content and history untouched,
 prefix queries still resolve the parent).
+
+## D28 — The Projection Rule (v1.3.0 scoping, RATIFIED)
+> A projection is a governed lens over the knowledge system, never
+> another knowledge system.
+>
+> No projection is ever authoritative. Every rendered artifact
+> regenerates entirely from governed facts, and every rendered artifact
+> may be deleted without losing any governed fact. Every render is
+> stamped with `rendered_at` and the audit cursor it projected, is
+> clearance-filtered before rendering with exclusions declared, and has
+> its manifest hash recorded in the ledger — a render is verifiable
+> evidence of what was projected, never a source of what is true.
+> Staleness is computed, detectable, never silent.
+>
+> Nothing flows back. Editing, moving, or deleting a rendered artifact
+> changes no governed fact; rendered files re-enter the system only as
+> ordinary documents through connectors, never through any projection
+> path. Renderers present; the projection engine decides: a renderer
+> receives a completed, clearance-filtered projection and chooses only
+> its shape on disk — it never queries governed state, never filters,
+> never decides content.
+
+The family principle's sixth instance (D17/D18/D19/D20/D25): *renderers
+propose presentation; the projection engine decides content.* D24
+extended past the process boundary — D24 governed computed views that
+live in memory; D28 governs projections that become files and therefore
+outlive the request, travel, and tempt someone to treat them as truth.
+D27 stated the special case ("folders, graphs, and vaults only ever
+render the taxonomy"); D28 is the general law.
+
+Companion rulings made at the same scoping session (binding, recorded in
+docs/projection-engine-v1.3.md):
+- **Zero schema change** — renders are recorded as `PROJECTION_RENDERED`
+  audit events (renderer, scope, status set, clearance, cursor, counts,
+  manifest hash); no ProjectionRun table, no render registry. The D24
+  snapshot survives the milestone byte-identical, asserted at the gate.
+- **File renders ride `assets:approve`** (the .empkg act-class); live
+  graph queries ride `assets:read` / `mcp:consume`. The 12-permission
+  matrix is unchanged.
+- **Nodes carry metadata + a bounded excerpt, never full content** —
+  the .empkg is the content artifact, the graph is the structure
+  artifact (D9 posture; the species never blur).
+- **Status scope is a declared render parameter, default APPROVED-only**
+  — the inclusion set recorded in manifest + event, never silent (D12).
+- **The D10 split extends to projections**: MCP graph tools = GOVERNED
+  channel (live, per-node clearance, audited refusals); rendered files =
+  PORTABLE channel (verifiable snapshot, no live enforcement).
+- **Domains are the grouping dimension** (D27 consumed): no community
+  detection, no LLM labeling; graphify's LLM extraction is explicitly
+  not adopted.
+- **Renders are self-contained**: vendored vis-network, no CDN, no
+  network access from a rendered artifact (deviation from graphify
+  as-is, which loads from unpkg).
+- **UI inside existing areas**; a top-level Projections surface is
+  earned at v1.5 by the second renderer (D8).
+
+**Why:** the Operations Realm (v1.4+) needs relational, renderable
+access to governed knowledge — but every rendered file is an invitation
+to treat the copy as the truth. A rule + structural guard at the first
+renderer closes that door before workbenches and vaults multiply the
+temptation, exactly as D24 closed it for the operator UI.
+**Tradeoff accepted:** every render recomputes from governed facts — no
+incremental render cache, no persisted graph; performance is bought with
+query work. A lost render is regenerated, never restored.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_projection_guard.py`: projection modules cannot write
+governed state (AST sweep), renderers import stdlib + the projection
+contract only, rendered artifacts cannot flow back (read-back sentinel),
+stamps are mandatory; adversarially self-proven at the WS0 gate.
+**Evidence:** recorded at the WS gates in docs/projection-engine-v1.3.md
+as each is accepted.
