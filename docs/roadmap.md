@@ -24,6 +24,12 @@
 | MVP 0.12 | LLM Provider Settings (governed model-per-function config) | ✅ Completed |
 | MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | ✅ Completed — Governance Core Complete (D20 ratified, D21) |
 | v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
+| v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
+| v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | 📋 Planned — pre-scoping brief written |
+| v1.2.x (likely v1.2.1) | Ingestion Automation (policy tiers) + Domain Classification | 📋 Planned |
+| v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 🧭 Directional |
+| v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
+| v1.5 | EM Vault (human-readable rendered workspace) | 🧭 Directional |
 
 ---
 
@@ -611,6 +617,74 @@ mechanics (**D23 stays DEFERRED**), no orchestration surface (D22).
 Found and fixed along the way: the evaluations list 500'd on any
 project with PACKAGE runs (PACKAGE citations carry no live
 `asset_status` — now honestly None, D12).
+
+## The road to the Operations Realm (v1.2 → v1.5) — Planned
+
+**The two-realm framing (July 2026 strategy sessions).** ExpertMachina's
+mission was always larger than the knowledge base: the knowledge base is
+the *substrate* for a system of agents and workbenches that diagnose and
+improve the company. Formally:
+
+- **Knowledge Realm** (built): preserves original knowledge as immutable
+  evidence, governs meaning, compiles agent-ready packages. D15 absolute:
+  extract and verify, never synthesize.
+- **Operations Realm** (the goal): diagnostic and improvement workbenches —
+  bound agents over expert packages — where synthesis IS the product.
+  Standard workbench catalog (HR, compliance, onboarding, process
+  optimization) instantiated per company.
+
+The border is the v1.1 consumption arc, and the authorship rule that keeps
+it honest: **humans author facts; agents propose them.** Human decisions
+enter as ordinary documents → PRIMARY facts; agent findings re-enter only
+through the proposal lane → human gate → DERIVED facts. The knowledge
+lifecycle is a closed loop, and drift (recompile → re-evaluate → re-bind)
+becomes the platform's normal operating rhythm.
+
+**The planned arc** (v1.2 detailed, v1.3+ directional — anticipation
+discipline; full rationale and dependency chain in
+[scoping-1.2-credentials-cloud-connector.md](scoping-1.2-credentials-cloud-connector.md)):
+
+- **v1.2.0 — Governed Credential Store + SharePoint connector.** The
+  D19/D14 unblock: outbound credentials (encrypted-at-rest, custody
+  lineage, never revealed by any surface) as a new governed species
+  distinct from v1.0's hash-only inbound credentials; SharePoint as the
+  first credentialed provider on the unchanged D18 framework; "Sources &
+  Connectors" UI area earned (D8). Decision candidate: credential custody
+  (the D9 no-keys rule generalized platform-wide).
+- **v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
+  Classification.** Humans review by exception, never by document (D5
+  applied): Tier-0 source-authority inheritance ("approved in the source
+  system → approved here, by audited policy"), Tier-2 engine-verified
+  auto-approval (the v0.10.2 deferred item), exceptions severity-ranked in
+  the inbox. The ≥90%-untouched-by-humans figure is a **mature-corpus
+  target**, not a universal acceptance threshold — messy first deployments
+  will start lower and climb as policies are tuned. Assets gain a governed
+  hierarchical domain
+  path (policy-assigned, human-correctable; reorgs nest by default).
+  Revision auto-approval stays forbidden (D17) — the known living-KB
+  tension, documented and deliberately unresolved.
+- **v1.3.0 — Projection Engine + Graph Renderer.** Renderer-agnostic
+  export of governed facts (facts → renderer → files); first renderer:
+  graph.json + self-contained graph.html (ported from graphify's export
+  layer, vendored JS, clearance-filtered before rendering) + MCP graph
+  query tools — lineage as a path query. Ratifies the projection rule:
+  no projection is ever authoritative; every render regenerates and is
+  stamped with `rendered_at` + audit cursor; staleness is computed,
+  detectable, never silent.
+- **v1.4.0 — First Diagnostic Workbench Pilot.** The Operations Realm
+  opens: one workbench (onboarding diagnostic the candidate) on a real
+  corpus, its agents bound consumers using existing doors (package +
+  MCP). Ratifies derived-source-class (PRIMARY vs DERIVED, synthesis
+  provenance, primary-over-derived conflict discipline) and the one-way
+  valve. Vault skeleton arrives (/00_system contract, /07 workspaces,
+  /08_proposals). Gate: the full loop once, end to end — corpus in,
+  evidence-backed diagnosis out, one accepted finding re-entering as a
+  DERIVED fact with complete provenance.
+- **v1.5 — EM Vault.** The full human-readable rendered workspace
+  (Obsidian-compatible, Git-trackable) as the projection engine's second
+  renderer; domain-first/type-second asset folders rendering the v1.2.x
+  taxonomy; all orientation files generated; D24 disappearance test as
+  the gate.
 
 ## Future Direction
 
