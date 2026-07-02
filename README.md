@@ -26,6 +26,9 @@ Compile gate → Expert Packages (.empkg)
 Evaluation → model selection → agent binding
         ↓
 Governed consumption: MCP gateway · portable packages · workbenches
+        ↓
+Projection engine → graph lens (rendered views: disposable,
+tamper-evident, agent-queryable — never a second source of truth)
 ```
 
 ---
@@ -129,7 +132,7 @@ Every actor is a governed principal — **HUMAN, SERVICE, AGENT, DELEGATED** (au
 8. **Agents are governed consumers, not magical users.** Identities, permissions, lineage, audit — the architecture rejects "AI can access everything because it is trusted."
 9. **Model-agnostic by design.** The governance spine (NLI verdicts, deterministic gates, hashes) is LLM-independent; providers sit behind an adapter seam and the platform survives the loss or replacement of any single model.
 
-These principles are not aspirations — they are **binding architectural decisions** (D1–D27) recorded in the [decision register](docs/DECISIONS.md), several of them enforced by permanent structural tests in CI (a frozen schema snapshot guard, a credential custody sweep, a single-approval-path guard).
+These principles are not aspirations — they are **binding architectural decisions** (D1–D28) recorded in the [decision register](docs/DECISIONS.md), several of them enforced by permanent structural tests in CI (a frozen schema snapshot guard, a credential custody sweep, a single-approval-path guard, and a projection guard proving rendered views can never write governed state or become a second knowledge system).
 
 ---
 
@@ -166,6 +169,12 @@ These principles are not aspirations — they are **binding architectural decisi
 │             Consumption Layer               │
 │  MCP Gateway · Package Evaluation · Model   │
 │  Selection · Agent Bindings · Workbenches   │
+└──────────────────────┬──────────────────────┘
+                       ▼
+┌─────────────────────────────────────────────┐
+│             Projection Layer                │
+│  Graph Lens · Rendered Views · MCP Graph    │
+│  Queries — governed lenses, never a source  │
 └─────────────────────────────────────────────┘
 ```
 
@@ -173,7 +182,7 @@ These principles are not aspirations — they are **binding architectural decisi
 
 A role-aware single-page console (the interface hides what the backend would refuse; the backend remains authoritative):
 
-- **Dashboard** and **Governance Inbox** (prioritized, computed work view)
+- **Dashboard** (with the Projections panel: render controls, ledger-projected history, computed staleness badges) and **Governance Inbox** (prioritized, computed work view)
 - **Document Inventory** and **Sources & Connectors** (connector administration, credential custody, scan history)
 - **Knowledge Assets**, **Experts & Packages**, **Knowledge Conflicts**, **Revision Reviews**
 - **Ask Expert Console** (evidence-backed Q&A with citations)
@@ -227,7 +236,8 @@ backend/
     governance_inbox.py      # computed operational views (never persisted)
     consumption_inbox.py     # computed consumption drift view
     binding_lineage.py       # server-composed binding lineage
-    mcp_gateway.py           # governed MCP tool surface
+    mcp_gateway.py           # governed MCP tool surface (incl. graph queries)
+    projections/             # projection engine + graph renderer (D28: lenses, never sources)
   mcp_server.py              # stdio MCP server
   test_*.py                  # product, architectural, transport, and identity suites (CI)
 frontend/                    # Next.js + Zustand operator console
@@ -238,14 +248,14 @@ docs/                        # decision register, build contracts, admin & gover
 
 | Document | Contents |
 | :--- | :--- |
-| [Decision Register](docs/DECISIONS.md) | Binding architectural rulings D1–D27 |
-| [Roadmap](docs/roadmap.md) | Every milestone, v0.2 → v1.2.x, and the road to the Operations Realm |
+| [Decision Register](docs/DECISIONS.md) | Binding architectural rulings D1–D28 |
+| [Roadmap](docs/roadmap.md) | Every milestone, v0.2 → v1.3.0, and the road to the Operations Realm |
 | [Architecture](docs/architecture.md) | The layered pipeline |
 | [Governance Contract v1](docs/governance-contract-v1.md) | Normative spec of the frozen governance semantics |
 | [Identity Boundary v1.0](docs/identity-boundary-v1.md) | Principals, credentials, identity facts, roles, recovery |
 | [User & Identity Administration](docs/user-management.md) | Admin guide: users, services, agents, tokens |
 | [Governance](docs/governance.md) · [Provenance](docs/provenance.md) · [Assurance](docs/assurance.md) | Core principles, chain of custody, verification scoring |
-| Build contracts | [Consumption Arc](docs/consumption-arc-v1.md) · [Workbench](docs/workbench-v1.1x.md) · [Credentials & Cloud Connector](docs/credentials-cloud-connector-v1.2.md) · [Ingestion Automation](docs/ingestion-automation-v1.2.1.md) |
+| Build contracts | [Consumption Arc](docs/consumption-arc-v1.md) · [Workbench](docs/workbench-v1.1x.md) · [Credentials & Cloud Connector](docs/credentials-cloud-connector-v1.2.md) · [Ingestion Automation](docs/ingestion-automation-v1.2.1.md) · [Projection Engine](docs/projection-engine-v1.3.md) |
 | [Walkthrough](docs/walkthrough.md) | End-to-end scenario: upload → evidence-backed answers |
 
 ## Technology Stack
@@ -285,9 +295,10 @@ ExpertMachina is under active development. Shipped and stable:
 - the identity boundary (principals, credentials, identity facts, 12×5 authorization, governed agent tokens) — **v1.0**;
 - the consumption arc (package consumer, per-package model evaluation, governed model selection, agent bindings) and its operations workbench — **v1.1.x**;
 - the governed credential store and the first credentialed cloud connector (SharePoint) — **v1.2.0**;
-- ingestion automation and domain classification — **v1.2.1, in progress** (taxonomy governance shipped; source-authority and engine-verified approval tiers landing next).
+- ingestion automation and domain classification (review by exception: source-authority and engine-verified approval tiers, governed taxonomy, the ranked exception inbox) — **v1.2.1**;
+- the projection engine and graph lens (clearance-filtered, cursor-stamped, deterministic rendered views; a self-contained air-gapped interactive graph; agent graph queries with lineage as a path query — delivered with **zero schema change**: a projection is a governed lens over the knowledge system, never another knowledge system) — **v1.3.0**.
 
-**The road ahead** (directional): a renderer-agnostic projection engine with a graph renderer for agent-facing knowledge export (v1.3), the first diagnostic workbench pilot — the Operations Realm opens, with derived-fact provenance and the one-way proposal valve (v1.4), and the EM Vault, a full human-readable rendered workspace (v1.5).
+**The road ahead** (directional): the first diagnostic workbench pilot — the Operations Realm opens, with derived-fact provenance and the one-way proposal valve (v1.4) — and the EM Vault, a full human-readable rendered workspace as the projection engine's second renderer (v1.5).
 
 ## Guiding Rule
 
