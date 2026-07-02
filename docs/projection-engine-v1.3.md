@@ -474,3 +474,69 @@ ledger + files alone with staleness unaffected; the aggregation
 fallback (graph.html aggregates above the node limit, graph.json never
 loses detail); the D25 sweep over the graph surface. 29 suites in CI,
 all green; zero assertion edits to pre-existing suites.
+
+### WS3 — MCP Graph Query Tools: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `0d29f6a`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** The MCP gateway graph
+query tools are accepted as the agent-facing query channel over
+governed projections. The MCP surface expands from six to nine
+read-only tools with get_graph_neighbors, get_lineage_path, and
+get_domain_subgraph. The tools are registered through the existing MCP
+server pattern; the server remains transport, while gateway functions
+perform policy-aware governed composition.
+
+The lineage path proof passed. An agent can resolve a
+document-to-binding chain as one governed query, with every hop either
+resolved as a governed projection node or explicitly declared missing.
+This makes provenance and consumption lineage agent-readable without
+introducing a second graph model.
+
+The D10/D28 "one composition, two channels" rule holds. MCP graph
+tools return the engine's own ProjectionNode structure and compose
+live at the agent's registry clearance over APPROVED knowledge only.
+They do not read graph.json, graph.html, manifest artifacts, or any
+rendered file as input.
+
+Rendered artifacts remain non-authoritative. A hostile graph.json
+planted in EM_PROJECTION_DIR with fake approved nodes and fake edges
+is invisible to the MCP graph tools. Query results are identical with
+or without the hostile artifact. MCP graph reads emit no
+PROJECTION_RENDERED events; only file renders write projection ledger
+events.
+
+Clearance enforcement passed. A lower-clearance agent cannot access a
+protected node as an endpoint or silent intermediate. Denials are
+audited as MCP_ACCESS_DENIED with agent identity, protected asset id,
+required clearance, and held clearance. Caller-supplied clearance
+environment variables remain inert.
+
+D12 absence discipline holds. Not-approved assets, unknown nodes, and
+unreachable paths produce declared responses rather than silent gaps
+or ambiguous errors.
+
+The domain lens is accepted. get_domain_subgraph composes D27
+domain-prefix scope with clearance filtering and declared exclusions,
+matching the file-render projection behavior.
+
+Record items accepted: the frozen MCP tool-surface assertion is
+updated from six to nine tools as the ratified WS3 API change; the WS1
+seed principal fix adds the structural AGENT_CONSUMER role required by
+the real identity creation path.
+
+The D24 schema freeze remains intact at 28 tables / 303 columns.
+Projection guard, custody sweep, and all 30 CI suites pass.
+
+WS4 may proceed: operator surface inside existing areas, including
+render controls, ledger-projected history, and staleness badge,
+without creating a new source of truth.
+
+Evidence (`backend/test_mcp_graph_tools.py`, 7 parts, in CI): the path
+proof (document → asset → expert → package → binding, 4 hops, every
+hop resolved); engine-structure identity (asdict of the engine's own
+nodes); audited clearance denial with endpoint AND intermediate
+exposure closed; declared misses (candidate / unknown / unreachable);
+the domain lens with counted exclusions; hostile-rendered-file
+invisibility; MCP_TOOL_CALLED discipline with zero PROJECTION_RENDERED
+events from queries.
