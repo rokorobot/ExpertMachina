@@ -467,3 +467,57 @@ records alone; four forged/bare postures held as declared MEDIUM
 exceptions with named reasons and the human gate proven open and
 honest; the valve live on the lane's own corpus under a global
 permissive policy with holds declared by both tiers.
+
+### WS2 — Primary-over-Derived Conflict Discipline + Class Travels: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `99728fe`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS2 is accepted as the
+source-class conflict discipline and consumer propagation layer for
+v1.4.0.
+
+Primary-over-derived discipline is implemented through one shared
+read-time annotator: conflict_engine.class_annotations. For PRIMARY ×
+DERIVED CONFLICTS_WITH pairs, the annotator declares
+PRIMARY_OVER_DERIVED and identifies the DERIVED asset as
+presumptive_review_target_asset_id. Symmetric pairs, such as PRIMARY ×
+PRIMARY, declare no class asymmetry. The annotation is computed from
+current asset source_class and is not stored on the relationship.
+
+The same asymmetry is declared across every conflict surface: REST
+conflict list, review PATCH response, Governance Inbox conflict item,
+MCP get_conflicts, and MCP get_provenance. The Governance Inbox
+language states the rule accurately: primary prevails and the derived
+side is the presumptive review target unless a human rules otherwise.
+
+No automatic resolution is introduced. Mixed PRIMARY × DERIVED
+conflicts remain DETECTED until governed human action. The compile
+gate is class-blind: mixed contradictions and symmetric contradictions
+produce identical blocking verdicts. Primary-over-derived is a
+presentation and review-priority rule, not an automatic dismissal
+mechanism.
+
+Source class travels through every consumer channel. Package bytes
+carry source_class in knowledge.json; the package consumer passes it
+through in retrieval evidence; pre-v1.4 packages report None honestly;
+projections carry source_class on asset nodes; rendered graph.json
+includes derivation; MCP graph/provenance/conflict responses expose
+it; and citations include it through the shared citation builder.
+KnowledgeAssetResponse exposes source_class read-only for the asset
+API and WS4 operator badge.
+
+Guard 5 remains intact: no write-shaped schema accepts source_class,
+and source class remains channel-decided. All 34 CI suites pass.
+Existing suites required zero assertion edits.
+
+WS3 may proceed: the reference diagnostic workbench pilot and vault
+skeleton, with the workbench as a top-level consumer using package +
+MCP access and writing proposals only to /08_proposals.
+
+Evidence (`backend/test_derived_conflict_discipline.py`, 4 parts, in
+CI): the shared annotator with a PRIMARY×PRIMARY control; identical
+asymmetry on REST + inbox + MCP surfaces; nothing auto-resolved with
+gate verdicts identical across classes and only a human dismissal
+reopening the gate; the class present in package bytes, consumer
+retrieval, composed projection, rendered graph.json, MCP graph node,
+and citations.
