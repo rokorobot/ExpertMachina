@@ -349,3 +349,58 @@ fourth guard):
   inlined as a module constant at build time — WS2 must not read render
   assets back from disk at runtime.
 - **All 26 pre-existing suites green with zero assertion edits.**
+
+### WS1 — Projection Engine: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `18725e0`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** The projection engine
+is accepted as the governed composition layer for v1.3 projections. It
+composes projection content from governed facts in scope, applies
+clearance and domain filters, declares exclusions, bounds excerpts,
+drops out-of-scope relationship edges, and emits deterministic
+projection content.
+
+The engine preserves the D28 rule: projections are rendered lenses over
+the governed knowledge system, never another knowledge system.
+Projection content identity is based only on the governed facts
+projected. Render identity fields such as `rendered_at` and
+`audit_cursor` live in the manifest and PROJECTION_RENDERED audit
+event, not in projection.json, preventing false drift across identical
+renders.
+
+Staleness is computed by deterministic recomposition and hash
+comparison. A projection can become stale after approved governed facts
+change, but it is treated as a LOW-severity stale render, never as a
+wrong canonical fact. Regeneration clears staleness without introducing
+dismissal state.
+
+The PROJECTION_RENDERED event is self-sufficient: it records renderer,
+clearance, status inclusion, domain scope, audit cursor, counts,
+exclusions, projection hash, manifest hash, file hashes, and actor
+identity. Render files are tamper-evident but non-authoritative.
+
+Implementation ruling accepted: **revisions render as asset metadata,
+not as graph nodes.** Graph nodes represent current governed living
+identities. Revision and supersession history remain in the existing
+revision and Binding Explorer surfaces.
+
+**COMPILED_FROM** is added to the projection edge vocabulary for
+package-to-expert lineage.
+
+WS2 may proceed under the WS0/WS1 guard boundary using the RENDERERS
+registry and the Projection contract.
+
+Evidence (`backend/test_projection_engine.py`, 8 parts, in CI):
+exact-inventory proof (10 nodes / 11 edges / exact relation counts /
+3 domain groups / bounded excerpts / conflict evidence on edges); D9
+clearance proof on the composed projection AND the written files, with
+both exclusions declared; domain-prefix scope resolving `finances/*`
+children (D27 consumed); byte-identical determinism across renders with
+the cursor advancing in the manifest only; the staleness lifecycle
+(fresh → drift → LOW item → regeneration clears, no dismiss); the
+self-sufficient ledger event with every disk byte hash-accounted;
+route refusals (assets:approve render / assets:read history,
+metadata-only responses); the D25 sentinel sweep over the new export
+surface. All 26 pre-existing suites green with zero assertion edits;
+tsc clean; eslint 0 errors.
