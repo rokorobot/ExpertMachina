@@ -296,14 +296,19 @@ silently completed). Also deferred by ruling: LLM provider-key migration
 into the custody store (touches D19's resolution invariant — its own
 explicit later step; D19 holds unchanged, keys env-based).
 
-**NEXT: v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
-Classification.** Pre-scoped in
-docs/scoping-1.2-credentials-cloud-connector.md; open a fresh scoping
-session from it (plus this file, DECISIONS.md, roadmap.md) per D16. The
-key input v1.2.0 prepared: SharePoint source metadata (library, content
-type, modified-by, tenant approval status where exposed) rides VERBATIM
-in ConnectorItem.metadata — Tier-0 source-authority policies consume it
-from there (the provider carries no policy, by ruling).
+**NEXT: v1.2.1 — Ingestion Automation + Domain Classification —
+SCOPING RATIFIED (July 2026): D26 Review by Exception + D27 Domain
+Taxonomy; build contract docs/ingestion-automation-v1.2.1.md.** Five
+workstreams, guard-before-the-door: WS0 automation guard (one approval
+path + the revision sentinel, permanent in CI; all schema changes + D24
+snapshot in one commit) → WS1 domain classification (path column +
+ClassificationPolicy + audited reorg, no registry table) → WS2 Tier-0
+source-authority policies (verbatim discovery metadata persisted per
+scan on SourceDocument — the scoping-discovered gap; provenance quotes
+the authority) → WS3 Tier-2 candidate-contradiction check (NLI vs
+approved corpus, async per D4, verdicts in provenance only) → WS4
+exception inbox conditions + the ≥90% corpus gate test. No new
+permission (assets:approve governs classification + taxonomy).
 
 The arc onward (v1.3+ directional — see roadmap.md
 "The road to the Operations Realm"): v1.2.x ingestion automation (Tier-0

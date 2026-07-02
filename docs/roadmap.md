@@ -26,7 +26,7 @@
 | v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
 | v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
 | v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
-| v1.2.x (likely v1.2.1) | Ingestion Automation (policy tiers) + Domain Classification | 📋 Planned |
+| v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | 🛠 Scoping ratified (July 2026, D26 + D27) — build contract: [ingestion-automation-v1.2.1.md](ingestion-automation-v1.2.1.md) |
 | v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 🧭 Directional |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
 | v1.5 | EM Vault (human-readable rendered workspace) | 🧭 Directional |
@@ -664,8 +664,11 @@ discipline; full rationale and dependency chain in
   custody history projected from the ledger, role-aware controls —
   "governance cockpit, never a database viewer"). The acquisition
   ladder: **v1.2 proves credentialed enterprise acquisition.**
-- **v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
-  Classification.** Humans review by exception, never by document (D5
+- **v1.2.1 — Ingestion Automation + Domain Classification (scoping
+  ratified July 2026 — D26 Review by Exception + D27 Domain Taxonomy;
+  build contract:
+  [ingestion-automation-v1.2.1.md](ingestion-automation-v1.2.1.md)).**
+  Humans review by exception, never by document (D5
   applied): Tier-0 source-authority inheritance ("approved in the source
   system → approved here, by audited policy"), Tier-2 engine-verified
   auto-approval (the v0.10.2 deferred item), exceptions severity-ranked in

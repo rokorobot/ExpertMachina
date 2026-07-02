@@ -439,3 +439,115 @@ unchanged-framework proof over a fake Graph tenant; the live-tenant run
 is an honest pending append), and the WS3 in-browser verification
 (surface-level sentinel discipline; secret entered once, never
 displayed). v1.2.0 released with all guards in CI permanently.
+
+## D26 — Review by Exception (v1.2.1 scoping, RATIFIED)
+> Ingestion automation approves only by declared policy conditions over
+> recorded evidence: source-authority metadata the company already
+> validated (Tier-0), or engine verdicts (Tier-2). Coverage is
+> deny-by-default — a policy names the asset types, sources, and domains
+> it covers, never "everything else". Every document that does not reach
+> APPROVED automatically is a declared, severity-ranked exception; no
+> document is silently held.
+>
+> Automation applies to new CANDIDATE assets only, through the one
+> approval transition path. Candidate revisions are never auto-approved.
+
+D5 ("gate deployment, never ingestion") supplied the principle; this
+milestone supplies the machinery. The honest hierarchy of the tiers,
+ruled at scoping: **Tier-0 inherits an authority the company already
+paid for; Tier-2 can only report absence of alarm** — engines refuse to
+approve, only humans refuse content. A contradicted candidate is a
+declared exception holding for review, never an engine rejection. The
+≥90%-untouched target is a mature-corpus target carried by Tier-0;
+Tier-2 widens its reach, never replaces it.
+
+Companion rulings (binding, recorded in
+docs/ingestion-automation-v1.2.1.md):
+- **Tier-0 evidence must survive**: verbatim provider discovery metadata
+  is persisted per scan on SourceDocument (a genuine D1 fact — it
+  survives nowhere else; legacy rows honestly NULL, never backfilled).
+  Tier-0 provenance quotes the matched authority metadata VERBATIM;
+  conditions referencing absent metadata never fire — absence is not
+  satisfaction (D12).
+- **Tier-2 consults the candidate-contradiction check only** this
+  milestone: NLI of the candidate against the approved corpus, async per
+  D4, conflict-engine calibration discipline, dropped pairs declared.
+  Claim decomposition/verification of candidates is deferred — it has no
+  honest evidence target. Engine verdicts live in event provenance, never
+  as AssetRelationship rows — candidate checks must not pollute the
+  approved-conflict surfaces or the conflict score.
+- **NULL-condition invariant** (the D19 shape): approval policies without
+  Tier-0/Tier-2 conditions behave exactly as v0.10.2 — new condition
+  machinery changes nothing by existing.
+- **Exceptions are computed inbox items** (D1/D24, no dismiss), MEDIUM at
+  most — ingestion exceptions never block the compile gate, so they are
+  never HIGH (D2).
+
+**Why:** per-document human validation is a non-workable barrier at
+enterprise corpus scale, but automation that infers authority (rather
+than inheriting or evidencing it) would reintroduce the "trust me" the
+platform exists to remove. The company paid the validation cost once in
+its source system; EM must not charge it twice — and must be able to
+prove, indefinitely, exactly which recorded evidence carried each
+automatic approval.
+**Tradeoff accepted:** the framework persists discovery metadata for
+every scanned item whether or not any policy consumes it; Tier-2 buys
+safety with NLI compute at ingestion time; messy corpora without source
+authority metadata start well below the target and climb by policy
+tuning, never by loosened discipline.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_ingestion_automation_guard.py`: exactly one approval
+transition path (every auto-approval resolves to
+`crud.update_knowledge_asset`), and the adversarial sentinel: a candidate
+REVISION under the most permissive policy set constructible is still
+pending after all background tasks complete. Adversarially self-proven at
+the WS0 gate (planted second path + planted revision auto-approval must
+both be caught).
+**Evidence:** recorded at the WS gates in
+docs/ingestion-automation-v1.2.1.md as each is accepted.
+
+## D27 — Domain Taxonomy (v1.2.1 scoping, RATIFIED)
+> Assets carry a governed hierarchical domain path, assigned at ingestion
+> by versioned classification policies and correctable by humans through
+> the normal review surface. Domains are business dimensions, orthogonal
+> to asset types — never siblings in any hierarchy. Reorganizations nest
+> by default; replacement is an explicit audited taxonomy operation
+> recording the old→new mapping. The taxonomy lives in the database as
+> governed metadata; folders, graphs, and vaults only ever render it —
+> moving a rendered file never reclassifies anything.
+
+Companion rulings (binding, recorded in
+docs/ingestion-automation-v1.2.1.md):
+- **Path column + audited operations, no registry table** (D1): domain
+  assignments live on assets; reorg mappings live in
+  TAXONOMY_REORGANIZED audit events; a registry is earned later by real
+  validation pressure, if ever. Unclassified is honestly NULL (D12),
+  never fabricated as "general".
+- **ClassificationPolicy is its own governed object** (the D17 shape:
+  versioned, no delete, audited enable/disable), separate from
+  ApprovalPolicy — assigning a domain and granting APPROVED are different
+  outcome species; their provenance and version counters never blur.
+- **Deterministic assignment**: enabled policies in id order, first
+  matching rule assigns; every assignment writes ASSET_CLASSIFIED with
+  the policy snapshot that fired; human corrections are governed acts
+  (ASSET_DOMAIN_CORRECTED), not edits.
+- **No new permission**: classification-policy administration and
+  taxonomy operations ride under `assets:approve`, which already governs
+  approval policies. The 12-permission matrix is unchanged.
+- **Transactional records are not knowledge assets** — EM governs what
+  the company knows, not every record it has; the scope trap is refused
+  deliberately, not accidentally.
+
+**Why:** every later consumer of the taxonomy — Tier-2 sensitivity
+coverage (this milestone), graph groupings (v1.3), workbench scopes
+(v1.4), vault folders (v1.5) — needs a single authoritative business
+dimension that renderings can never mutate. Prefix-path semantics make
+nesting reorganizations free, so future scopes and clearances survive
+splits by construction (D24 posture applied to taxonomy).
+**Tradeoff accepted:** no referential validation of domain values in this
+milestone — a typo'd correction creates a new leaf rather than an error;
+the audited reorg operation is the repair path.
+**Evidence:** the WS1 taxonomy-proof gate in
+docs/ingestion-automation-v1.2.1.md (split `finances` by policy change +
+reorg operation alone; provenance intact, content and history untouched,
+prefix queries still resolve the parent).
