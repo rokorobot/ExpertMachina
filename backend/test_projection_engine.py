@@ -128,7 +128,8 @@ def seed(session, officer):
     session.add(package)
     session.commit()
     agent = db.Principal(name="graph-agent", display_name="Graph Agent",
-                         kind="AGENT", clearance="INTERNAL", active=True)
+                         kind="AGENT", role="AGENT_CONSUMER",
+                         clearance="INTERNAL", active=True)
     session.add(agent)
     session.commit()
     session.add_all([

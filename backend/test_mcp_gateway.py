@@ -69,15 +69,22 @@ def main():
     agent_token, agent_cred = identity.issue_token(session, agent, label="gateway suite")
     os.environ["EM_AGENT_TOKEN"] = agent_token
 
-    # Part 1: tool surface is exactly the six read-only tools (Tier 1 + Tier 2).
+    # Part 1: tool surface is exactly the nine read-only tools - the six
+    # of v0.9 (Tier 1 + Tier 2) plus the three v1.3 WS3 graph query
+    # tools (D28: the governed projection channel; ratified in
+    # docs/projection-engine-v1.3.md). This frozen list is updated ONLY
+    # alongside a ratified decision, in the same commit - never silently.
     print("\n--- Part 1: Read-only tool surface ---")
     import mcp_server
     tools = asyncio.run(mcp_server.mcp.list_tools())
     names = sorted(t.name for t in tools)
     assert names == ["ask_expert", "check_gate_status", "get_conflicts",
-                     "get_provenance", "get_revision_history", "get_trust_score"], f"Unexpected tool surface: {names}"
+                     "get_domain_subgraph", "get_graph_neighbors",
+                     "get_lineage_path", "get_provenance",
+                     "get_revision_history", "get_trust_score"], \
+        f"Unexpected tool surface: {names}"
     forbidden = {"approve_revision", "dismiss_conflict", "publish_package"}
-    assert not forbidden.intersection(names), "Write tools must not be exposed in v0.9"
+    assert not forbidden.intersection(names), "Write tools must not be exposed"
     print(f"Part 1 passed: surface = {names}, no write tools.")
 
     # Part 2: clearance enforcement through the shared pipeline.

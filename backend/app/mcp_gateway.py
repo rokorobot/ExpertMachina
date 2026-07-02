@@ -1,6 +1,7 @@
 import os
 import json
 import datetime
+from dataclasses import asdict
 
 from app import database as db
 from app import crud
@@ -9,6 +10,7 @@ from app import query_engine
 from app import conflict_engine
 from app import trust
 from app import revisions as revisions_module
+from app.projections import engine as projection_engine
 
 # MCP Agent Gateway (MVP 0.9 Sprint 1) - READ-ONLY.
 #
@@ -248,6 +250,172 @@ def get_conflicts(expert_model_id: int, session=None) -> dict:
                 "review_notes": r.notes,
                 "verifier": r.verifier
             } for r in rels]
+        }
+    finally:
+        if own_session:
+            session.close()
+
+
+# ---- Graph query tools (v1.3 WS3, D28/D10) -------------------------------
+#
+# The GOVERNED channel of the projection split: these tools consult the
+# SAME projection engine the file renders use - composed live per call,
+# at the agent's registry clearance, approved knowledge only - and they
+# NEVER read a rendered file (renders are the PORTABLE channel:
+# verifiable snapshots, no live enforcement). One composition, two
+# channels, never conflated (D10 applied to projections). Lineage is a
+# path query over governed relations, not a new fact.
+
+def _compose_for_agent(session, actor, project_id: int, domain_prefix=None):
+    return projection_engine.compose(
+        session, project_id, clearance=agent_clearance(actor),
+        status_inclusion=("APPROVED",), domain_prefix=domain_prefix)
+
+
+def _resolve_node(session, actor, projection, node_id: str, tool_name: str):
+    """Resolve a node id within the agent's projection. Absence is never
+    silent (D12): an approved asset above the agent's clearance is an
+    audited MCP_ACCESS_DENIED; every other miss is declared with its
+    reason."""
+    for node in projection.nodes:
+        if node.id == node_id:
+            return node
+    kind, _sep, raw = node_id.partition(":")
+    if kind == "asset" and raw.isdigit():
+        asset = session.query(db.KnowledgeAsset).filter(
+            db.KnowledgeAsset.id == int(raw)).first()
+        if asset and asset.status == "APPROVED":
+            # Raises + audits MCP_ACCESS_DENIED when above clearance.
+            _check_asset_clearance(session, actor, asset, tool_name)
+            raise LookupError(
+                f"{node_id} exists but is outside the projected scope")
+        if asset:
+            raise LookupError(
+                f"{node_id} is not approved knowledge - the governed graph "
+                f"projects APPROVED assets only")
+    raise LookupError(f"{node_id} not found in the projected graph")
+
+
+def get_graph_neighbors(project_id: int, node_id: str, session=None) -> dict:
+    """One governed node and every governed relation touching it, under
+    the calling agent's clearance."""
+    own_session = session is None
+    session = session or db.SessionLocal()
+    try:
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_graph_neighbors", None,
+                         {"project_id": project_id, "node_id": node_id})
+        projection = _compose_for_agent(session, actor, project_id)
+        node = _resolve_node(session, actor, projection, node_id,
+                             "get_graph_neighbors")
+        edges = [e for e in projection.edges
+                 if node_id in (e.source_id, e.target_id)]
+        index = {n.id: n for n in projection.nodes}
+        neighbor_ids = sorted({e.source_id if e.target_id == node_id
+                               else e.target_id for e in edges})
+        return {
+            "project_id": project_id,
+            "clearance": projection.clearance,
+            "node": asdict(node),
+            "edges": [asdict(e) for e in edges],
+            "neighbors": [asdict(index[i]) for i in neighbor_ids
+                          if i in index],
+        }
+    finally:
+        if own_session:
+            session.close()
+
+
+def get_lineage_path(project_id: int, from_node_id: str, to_node_id: str,
+                     session=None) -> dict:
+    """Lineage as a path query: the shortest chain of governed relations
+    connecting two nodes, under the calling agent's clearance. Every hop
+    resolves from the live projection; an unreachable pair is a declared
+    answer, never a silent gap (D12)."""
+    own_session = session is None
+    session = session or db.SessionLocal()
+    try:
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_lineage_path", None,
+                         {"project_id": project_id, "from": from_node_id,
+                          "to": to_node_id})
+        projection = _compose_for_agent(session, actor, project_id)
+        _resolve_node(session, actor, projection, from_node_id,
+                      "get_lineage_path")
+        _resolve_node(session, actor, projection, to_node_id,
+                      "get_lineage_path")
+        adjacency = {}
+        for edge in projection.edges:
+            adjacency.setdefault(edge.source_id, []).append(edge)
+            adjacency.setdefault(edge.target_id, []).append(edge)
+        parents = {from_node_id: None}
+        frontier = [from_node_id]
+        while frontier and to_node_id not in parents:
+            next_frontier = []
+            for current in frontier:
+                for edge in adjacency.get(current, []):
+                    other = edge.target_id if edge.source_id == current \
+                        else edge.source_id
+                    if other not in parents:
+                        parents[other] = (current, edge)
+                        next_frontier.append(other)
+            frontier = next_frontier
+        if to_node_id not in parents:
+            return {"project_id": project_id,
+                    "clearance": projection.clearance,
+                    "from": from_node_id, "to": to_node_id,
+                    "path_found": False,
+                    "reason": "No chain of governed relations connects "
+                              "these nodes within your clearance and the "
+                              "approved scope."}
+        hop_edges = []
+        cursor = to_node_id
+        while parents[cursor] is not None:
+            previous, edge = parents[cursor]
+            hop_edges.append(edge)
+            cursor = previous
+        hop_edges.reverse()
+        index = {n.id: n for n in projection.nodes}
+        path_nodes = [from_node_id]
+        for edge in hop_edges:
+            path_nodes.append(edge.target_id
+                              if path_nodes[-1] == edge.source_id
+                              else edge.source_id)
+        return {
+            "project_id": project_id,
+            "clearance": projection.clearance,
+            "from": from_node_id, "to": to_node_id,
+            "path_found": True,
+            "hops": len(hop_edges),
+            "nodes": [asdict(index[i]) for i in path_nodes],
+            "edges": [asdict(e) for e in hop_edges],
+        }
+    finally:
+        if own_session:
+            session.close()
+
+
+def get_domain_subgraph(project_id: int, domain_prefix: str,
+                        session=None) -> dict:
+    """The governed subgraph under one D27 domain prefix, under the
+    calling agent's clearance. Exclusions are declared counts (D12)."""
+    own_session = session is None
+    session = session or db.SessionLocal()
+    try:
+        actor = resolve_agent(session)
+        _audit_tool_call(session, actor, "get_domain_subgraph", None,
+                         {"project_id": project_id,
+                          "domain_prefix": domain_prefix})
+        projection = _compose_for_agent(session, actor, project_id,
+                                        domain_prefix=domain_prefix)
+        return {
+            "project_id": project_id,
+            "clearance": projection.clearance,
+            "scope": projection.scope,
+            "groups": projection.groups,
+            "excluded": projection.excluded,
+            "nodes": [asdict(n) for n in projection.nodes],
+            "edges": [asdict(e) for e in projection.edges],
         }
     finally:
         if own_session:

@@ -141,5 +141,44 @@ def get_revision_history(asset_id: int) -> dict:
     return mcp_gateway.get_revision_history(asset_id)
 
 
+@mcp.tool()
+def get_graph_neighbors(project_id: int, node_id: str) -> dict:
+    """Get one governed graph node and every relation touching it.
+
+    Node ids are kind-prefixed: "asset:42", "document:7", "expert:2",
+    "package:3", "selection:1", "binding:1", "principal:9". Returns the
+    node, its edges (provenance, membership, conflicts, supports, the
+    consumption chain), and neighbor nodes - computed live from governed
+    facts at this agent's clearance, approved knowledge only. A rendered
+    graph file is never consulted (v1.3 D28: this is the governed
+    channel; files are the portable one).
+    """
+    return mcp_gateway.get_graph_neighbors(project_id, node_id)
+
+
+@mcp.tool()
+def get_lineage_path(project_id: int, from_node_id: str,
+                     to_node_id: str) -> dict:
+    """Lineage as a path query: the shortest chain of governed relations
+    connecting two graph nodes (e.g. a source document to the agent
+    binding that ultimately serves it). Every hop resolves from the live
+    projection under this agent's clearance; an unreachable pair returns
+    a declared path_found=false answer, never a silent gap.
+    """
+    return mcp_gateway.get_lineage_path(project_id, from_node_id, to_node_id)
+
+
+@mcp.tool()
+def get_domain_subgraph(project_id: int, domain_prefix: str) -> dict:
+    """Get the governed subgraph under one hierarchical domain prefix
+    (e.g. "finances" resolves finances/accounting and finances/treasury).
+
+    Returns nodes, edges, and domain groups scoped to the prefix at this
+    agent's clearance, with every exclusion declared as counts - what
+    was filtered is stated, never silent.
+    """
+    return mcp_gateway.get_domain_subgraph(project_id, domain_prefix)
+
+
 if __name__ == "__main__":
     mcp.run()
