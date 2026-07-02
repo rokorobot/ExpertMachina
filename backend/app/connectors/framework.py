@@ -14,6 +14,7 @@ from app import extraction
 from app import policy
 from app import classification
 from app import tier2
+from app import proposals
 from app import revisions
 from app.connectors.models import ConnectorItem
 from app.connectors.providers.local_folder import LocalFolderProvider
@@ -194,6 +195,23 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                 except Exception as e:
                     job.error = f"Policy auto-approval failed after extraction: {e}"
                     session.commit()
+
+        # Derived source class (v1.4.0 WS1, D30): assets from
+        # PROPOSAL-lane documents become DERIVED - channel-derived, the
+        # one allowlisted writer (app/proposals.py). Runs for INGESTED
+        # and CHANGED documents alike (a changed proposal's re-extracted
+        # candidates converge on the same class; the pass is idempotent),
+        # which is why it sits outside the auto_extract block.
+        try:
+            touched_doc_ids = [r.document_id for r in session.query(db.SourceDocument).filter(
+                db.SourceDocument.ingestion_job_id == job.id,
+                db.SourceDocument.status.in_(("INGESTED", "CHANGED")),
+                db.SourceDocument.document_id.isnot(None)).all()]
+            if touched_doc_ids:
+                proposals.assign_source_classes(session, job.project_id, touched_doc_ids)
+        except Exception as e:
+            job.error = f"Source-class assignment failed: {e}"
+            session.commit()
 
         job.status = "COMPLETED"
         job.completed_at = datetime.datetime.utcnow()

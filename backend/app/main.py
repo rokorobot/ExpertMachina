@@ -555,6 +555,13 @@ def create_source_connector(project_id: int, connector_in: schemas.SourceConnect
         raise HTTPException(status_code=400, detail="Supported connector types: LOCAL_FOLDER, SHAREPOINT")
     if not connector_in.root_path.strip():
         raise HTTPException(status_code=400, detail="root_path is required")
+    # v1.4.0 WS1 (D29/D30): the lane is a governed channel declaration.
+    # PROPOSAL marks the agent-finding return path - its candidates are
+    # constitutionally outside every policy tier (held for the human
+    # gate) and become DERIVED facts on acceptance.
+    lane = (connector_in.lane or "PRIMARY").upper()
+    if lane not in ("PRIMARY", "PROPOSAL"):
+        raise HTTPException(status_code=400, detail="lane must be PRIMARY or PROPOSAL")
     # v1.2.0 WS2: a SHAREPOINT connector authenticates outward, so it MUST
     # reference a stored credential (D25: by id, never by value). root_path
     # is the site URL, optionally '::LibraryName'.
@@ -583,6 +590,7 @@ def create_source_connector(project_id: int, connector_in: schemas.SourceConnect
         root_path=connector_in.root_path.strip(),
         include_extensions=connector_in.include_extensions or ".txt,.md,.pdf,.docx",
         external_credential_id=connector_in.external_credential_id,
+        lane=lane,
     )
     db_session.add(connector)
     db_session.commit()
@@ -598,7 +606,8 @@ def create_source_connector(project_id: int, connector_in: schemas.SourceConnect
                          details=json.dumps({"name": connector.name, "type": connector.type,
                                              "root_path": connector.root_path,
                                              "external_credential_id": connector.external_credential_id,
-                                             "external_credential_fingerprint": bound_fingerprint}),
+                                             "external_credential_fingerprint": bound_fingerprint,
+                                             "lane": connector.lane}),
                          identity_fact_id=actor.fact(db_session).id)
     return connector
 

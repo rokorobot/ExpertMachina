@@ -36,6 +36,7 @@ jobs:
           python test_local_connector.py
           python test_sharepoint_provider.py
           python test_auto_approval.py
+          python test_proposal_lane.py
           python test_domain_classification.py
           python test_tier0_source_authority.py
           python test_tier2_engine_verification.py

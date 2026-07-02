@@ -8,6 +8,7 @@ from app import conflict_engine
 from app import trust
 from app import policy as policy_module
 from app import tier2 as tier2_module
+from app import proposals as proposals_module
 from app.projections import engine as projection_engine
 
 # Governance Inbox & Readiness Console (MVP 0.9.1).
@@ -269,6 +270,11 @@ def _warning_items(trust_score: dict, model_id: int, model_name: str) -> list:
 # ONE severity function; an unknown kind fails loudly (the consumption-
 # inbox discipline).
 _EXCEPTION_SEVERITY = {
+    # v1.4.0 WS1 (D29/D30): agent proposals. Unverifiable synthesis
+    # provenance is the loud case; a verified proposal awaiting the
+    # human gate is the proposal lane working exactly as ruled.
+    "PROPOSAL_PROVENANCE_UNVERIFIED": "MEDIUM",
+    "PROPOSAL_AWAITING_GATE": "LOW",
     "TIER2_CONTRADICTION_HELD": "MEDIUM",  # the engine refused; a human must judge the content
     "TIER2_UNVERIFIED": "MEDIUM",          # automation was configured but could not complete
     "SOURCE_AUTHORITY_HELD": "MEDIUM",     # covered by Tier-0, but the source did not vouch
@@ -371,6 +377,13 @@ def _ingestion_exception_items(session: Session, project_id: int,
         ).order_by(db.SourceDocument.id).all():
             doc_connector[sd.document_id] = sd.connector_id
 
+    # v1.4.0 WS1 (D29/D30): proposal-lane candidates are the most
+    # specific state a candidate can be in - constitutionally held for
+    # the human gate, with synthesis provenance verified live against
+    # governed records (computed here, never stored).
+    proposal_verdicts = proposals_module.proposal_verdicts(
+        session, sorted(doc_ids)) if doc_ids else {}
+
     items = []
     for asset in candidates:
         connector_id = doc_connector.get(asset.document_id)
@@ -381,7 +394,35 @@ def _ingestion_exception_items(session: Session, project_id: int,
         tier2_covering = [p for p in covering if tier2_module.is_tier2(p)]
 
         # Most specific explanation wins; exactly one item per candidate.
-        if asset.id in tier2_holds:
+        if asset.document_id in proposal_verdicts:
+            verdict = proposal_verdicts[asset.document_id]
+            if not verdict["provenance_verified"]:
+                kind = "PROPOSAL_PROVENANCE_UNVERIFIED"
+                title = (f"Proposal held: '{asset.name}' has unverified "
+                         f"synthesis provenance")
+                reason = ("An agent proposal claims provenance that could not "
+                          "be verified against governed records ("
+                          + "; ".join(verdict["reasons"])
+                          + "). Held for review - the human gate decides; "
+                          "nothing is rejected by the engine.")
+            else:
+                kind = "PROPOSAL_AWAITING_GATE"
+                verified = verdict["verified"]
+                title = f"Proposal: '{asset.name}' awaits the human gate"
+                reason = (f"Agent-synthesized proposal from "
+                          f"'{verified['agent_principal']}' under binding "
+                          f"{verified['binding_id']} (package "
+                          f"{verified['package_hash'][:12]}…) - provenance "
+                          f"verified. Proposal-lane candidates are never "
+                          f"auto-approved (D29); accepting it creates a "
+                          f"DERIVED fact.")
+            extra = {"provenance_claimed": verdict["provenance_claimed"],
+                     "provenance_verified": verdict["provenance_verified"],
+                     "provenance_reasons": verdict["reasons"],
+                     "binding_id": (verdict["verified"] or {}).get("binding_id"),
+                     "cited_assets": verdict["cited_assets"]}
+            created_at = asset.created_at
+        elif asset.id in tier2_holds:
             hold = tier2_holds[asset.id]
             top = (hold.get("contradictions") or [{}])[0]
             contra_name = asset_names.get(top.get("asset_id"),

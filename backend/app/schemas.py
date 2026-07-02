@@ -158,6 +158,10 @@ class SourceConnectorCreate(BaseModel):
     # v1.2.0 (D25): BINDING a credential to a connector is a custody act
     # (credentials:manage, checked in-route) - by reference, never by value.
     external_credential_id: Optional[int] = None
+    # v1.4.0 WS1 (D29/D30): the channel declaration. PROPOSAL marks the
+    # agent-finding return path; its candidates are constitutionally
+    # outside every policy tier and become DERIVED on human acceptance.
+    lane: Optional[str] = "PRIMARY"
 
 class SourceConnectorResponse(BaseModel):
     id: int
@@ -167,6 +171,7 @@ class SourceConnectorResponse(BaseModel):
     root_path: str
     include_extensions: Optional[str] = None
     external_credential_id: Optional[int] = None  # v1.2.0 (D25)
+    lane: str  # v1.4.0 (D29/D30): PRIMARY | PROPOSAL
     created_at: datetime
     class Config:
         from_attributes = True

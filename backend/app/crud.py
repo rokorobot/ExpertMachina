@@ -237,8 +237,22 @@ def update_knowledge_asset(session: Session, asset_id: int, update: schemas.Know
     if status_change:
         old_st, new_st = status_change
         event_t = audit_event_type or ("ASSET_REVIEWED" if new_st == "REVIEWED" else "ASSET_APPROVED" if new_st == "APPROVED" else "ASSET_UPDATED")
+        event_details = audit_details or f"Asset status updated from {old_st} to {new_st}"
+        # v1.4.0 WS1 (D30): accepting a DERIVED fact quotes its synthesis
+        # provenance - the verification verdict recomputed against
+        # governed records AT approval time, verbatim claims included.
+        # Only humans reach this branch (proposal-lane candidates are
+        # outside every policy tier per D29), so event_details here is
+        # the plain human-approval string - wrapped, never overwritten.
+        if new_st == "APPROVED" and asset.source_class == "DERIVED":
+            from app import proposals
+            event_details = json.dumps({
+                "note": event_details,
+                "source_class": "DERIVED",
+                "synthesis_provenance": proposals.approval_provenance(session, asset),
+            })
         log_audit_event(session, actor=actor.display, event_type=event_t, target_id=str(asset.id),
-                        details=audit_details or f"Asset status updated from {old_st} to {new_st}",
+                        details=event_details,
                         identity_fact_id=actor.fact(session).id)
         if new_st == "APPROVED":
             # Record the approval as a review row so citations carry real

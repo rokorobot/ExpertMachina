@@ -441,18 +441,31 @@ def part_5_workbench_isolation():
 # functional proof is the WS1 gate).
 
 def provenance_trust_violations(rel_name, source):
-    """A module that marks proposal provenance verified must have
-    consulted the governed record (ExpertAgentBinding). Marking it from
-    content alone is 'the agent said so' - the exact shallowness the
-    opening question forbids."""
+    """A module that MARKS proposal provenance verified (assigns or
+    declares provenance_verified True) must have consulted the governed
+    record (ExpertAgentBinding). Marking it from content alone is 'the
+    agent said so' - the exact shallowness the opening question forbids.
+    Modules that merely COPY a verdict computed elsewhere (subscript
+    reads, non-constant values) are legitimate projections of it."""
     tree = ast.parse(source)
     marks_verified = False
     for node in ast.walk(tree):
         if (isinstance(node, ast.keyword) and node.arg == "provenance_verified"
                 and isinstance(node.value, ast.Constant) and node.value.value is True):
             marks_verified = True
-        if (isinstance(node, ast.Constant) and node.value == "provenance_verified"):
-            marks_verified = True
+        if isinstance(node, ast.Dict):
+            for key, value in zip(node.keys, node.values):
+                if (isinstance(key, ast.Constant) and key.value == "provenance_verified"
+                        and isinstance(value, ast.Constant) and value.value is True):
+                    marks_verified = True
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if (isinstance(target, ast.Subscript)
+                        and isinstance(target.slice, ast.Constant)
+                        and target.slice.value == "provenance_verified"
+                        and isinstance(node.value, ast.Constant)
+                        and node.value.value is True):
+                    marks_verified = True
     if marks_verified and "ExpertAgentBinding" not in source:
         return [f"{rel_name}: marks provenance verified without consulting "
                 f"ExpertAgentBinding - provenance trusted from content"]
@@ -775,6 +788,13 @@ def verify(frontmatter):
     return {"provenance_verified": True, "binding_id": frontmatter["binding_id"]}
 """
 
+PLANT_PROVENANCE_SUBSCRIPT = """
+def verify(frontmatter):
+    verdict = {}
+    verdict["provenance_verified"] = True
+    return verdict
+"""
+
 PLANT_PROVENANCE_CLEAN = """
 def verify(session, frontmatter):
     binding = session.query(db.ExpertAgentBinding).filter_by(
@@ -820,10 +840,12 @@ def part_8_self_proof():
     assert not workbench_import_violations("workbench/planted.py", PLANT_WORKBENCH_CLEAN), \
         "Self-proof sanity: the ruled doors must pass the sweep"
 
-    # Plant 6: provenance trusted from content; the governed-verification
-    # shape passes.
+    # Plant 6: provenance trusted from content (dict-literal and
+    # subscript-assignment shapes); the governed-verification shape passes.
     assert provenance_trust_violations("planted.py", PLANT_PROVENANCE_TRUSTED), \
         "Self-proof FAILED: content-trusted provenance was missed"
+    assert provenance_trust_violations("planted.py", PLANT_PROVENANCE_SUBSCRIPT), \
+        "Self-proof FAILED: subscript-assigned provenance was missed"
     assert not provenance_trust_violations("planted.py", PLANT_PROVENANCE_CLEAN), \
         "Self-proof sanity: governed verification must pass the sweep"
 
