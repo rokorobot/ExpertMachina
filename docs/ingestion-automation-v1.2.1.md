@@ -109,8 +109,19 @@ a third time:
 - Schema changes above + D24 frozen-snapshot update land in this commit,
   citing D26/D27.
 
-**Gate:** guard red on both planted regressions, green on main; snapshot
-updated; all pre-existing suites pass unchanged.
+**Gate (user-ratified wording, post-scoping):** The automation guard is
+permanent in CI. It proves auto-approval has exactly one governed
+transition path, proves revisions are never auto-approved, and
+adversarially self-proves that the guard fails when either rule is
+violated. All schema changes land in the same commit as the D24 snapshot
+update, citing D26/D27. All pre-existing suites pass unchanged.
+
+WS0 is not "add columns" — it is the structural safety gate before
+automation can start approving at scale. The `source_metadata_json`
+addition is what makes Tier-0 honest rather than fake: source metadata is
+not just observed during scan; it is preserved as evidence for later
+approval provenance. Without it, the system would claim source-authority
+inheritance without preserving the source-authority evidence.
 
 ### WS1 — Domain classification (D27)
 
