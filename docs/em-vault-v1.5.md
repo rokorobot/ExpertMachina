@@ -374,3 +374,48 @@ database.py and proposals.py — reworded, the blunt sweep kept per the
 D26 precedent; self-proven against plants). All six
 projection-touching suites passed with zero assertion edits — the
 contract growth was fully additive. All 38 CI suites green.
+
+### WS1 — The Vault Knowledge-Tree Renderer: ACCEPTED (2026-07-03, user-ratified)
+
+Commit: `4f87a36`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS1 gate is accepted.
+The vault renderer now stands as the first full governed knowledge
+tree lens for v1.5: complete enough for agents to navigate, but still
+non-canonical, disposable, clearance-filtered, and unable to flow back
+as authority.
+
+Accepted rulings:
+- **Volatile stamps stay out of note bytes.** rendered_at, audit
+  cursor, and manifest hash belong in manifest.json and the ledger
+  event. Notes link to [[render_manifest]]. This preserves determinism
+  and avoids circular/self-drifting note identity.
+- **No generated summaries or glossary.** A summary or glossary would
+  become synthesis unless backed by governed fact species. D15 holds
+  inside projections too.
+- **No expert/package notes.** Packages remain portable .empkg
+  artifacts surfaced through indexes, not blurred into knowledge
+  notes. D9 remains clean.
+
+WS1 is accepted on the full proof set: exact 20-file managed
+inventory; domain-first 02_knowledge/; full governed content after
+clearance; DERIVED marking everywhere; YAML frontmatter contract;
+resolving wikilinks; deterministic rerenders; real-renderer
+regeneration safety; D24 zero-schema at 28/305; no flow-back using an
+actual vault note; D27 governed-domain correction proof both
+directions; D25 custody-sentinel sweep; D28 renderer purity sweep
+(auto-activated: 4 renderer modules); D31 path-discipline sweep.
+
+**WS2 collapsed into WS1 as delivered (user-ratified):** the scoped
+WS2 value landed through the vault renderer's indexes, domain pages,
+conflict notes, overview, manifest pointer, and deterministic audit
+inventory. The remaining disappearance-test item moves to WS4, where
+the full seam proof lives. The milestone proceeds WS3 (the top-level
+Projections area — renderer plurality now earned: graph + vault) →
+WS4 (THE DISAPPEARANCE TEST + THE SEAM PROOF: delete and regenerate
+projections, prove no knowledge loss, no authority laundering, no
+schema drift, no hidden dependency on rendered artifacts).
+
+Evidence (`backend/test_vault_renderer.py`, 8 parts, in CI — 39
+suites): the proof set above, closing green in the full regression
+with zero assertion edits to pre-existing suites.
