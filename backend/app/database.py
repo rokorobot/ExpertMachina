@@ -170,6 +170,13 @@ class SourceConnector(Base):
     root_path = Column(String, nullable=False)
     include_extensions = Column(String, default=".txt,.md,.pdf,.docx") # comma-separated
     external_credential_id = Column(Integer, ForeignKey("external_credentials.id"), nullable=True)  # v1.2.0 (D25): by reference, never by value
+    # v1.4.0 WS0 (D29/D30): the channel declaration source classes derive
+    # from. PRIMARY = ordinary knowledge acquisition; PROPOSAL = the
+    # agent-finding return path (/08_proposals). Candidates from a
+    # PROPOSAL-lane connector are constitutionally outside every policy
+    # tier (D29: the human gate on agent-proposed knowledge) and become
+    # DERIVED facts on acceptance (D30: channel decides class).
+    lane = Column(String, nullable=False, default="PRIMARY", server_default="PRIMARY") # PRIMARY | PROPOSAL
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
@@ -383,7 +390,16 @@ class KnowledgeAsset(Base):
     # never fabricated as "general". Reorganizations rewrite this field
     # only via the audited taxonomy operation (old->new mapping recorded).
     domain = Column(String, nullable=True)
-    
+    # v1.4.0 WS0 (D30): the source class - PRIMARY (human-authored or
+    # human-adopted knowledge) or DERIVED (agent-synthesized knowledge
+    # accepted by a human through the proposal lane). Decided by the
+    # ingestion channel (SourceConnector.lane), never claimed by document
+    # content. Legacy assets are PRIMARY by construction, not
+    # reconstruction: before v1.4 no agent-writable ingress existed.
+    # Written ONLY by the allowlisted channel-derivation path - the
+    # authorship guard sweeps every other writer.
+    source_class = Column(String, nullable=False, default="PRIMARY", server_default="PRIMARY") # PRIMARY | DERIVED
+
     # Advanced Provenance fields
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
     chunk_id = Column(Integer, ForeignKey("document_chunks.id"), nullable=True)
@@ -757,8 +773,12 @@ def _ensure_columns():
         },
         # v1.2.1 WS0 (D27): governed domain path; NULL = honestly
         # unclassified, never backfilled.
+        # v1.4.0 WS0 (D30): source class - existing rows are PRIMARY by
+        # construction (no agent-writable ingress existed before v1.4),
+        # a derivable truth, never a backfilled guess.
         "knowledge_assets": {
             "domain": "TEXT",
+            "source_class": "TEXT NOT NULL DEFAULT 'PRIMARY'",
         },
         # v1.2.1 WS0 (D26): policy-tier condition columns; NULL preserves
         # v0.10.2 behavior exactly (the D19 empty-config invariant).
@@ -770,8 +790,12 @@ def _ensure_columns():
         # v1.2.0 WS0 (D25): connectors reference outbound credentials by
         # id, never by value. NULL = the provider needs none (LOCAL_FOLDER)
         # - an honest NULL, not a dummy credential.
+        # v1.4.0 WS0 (D29/D30): lane - existing connectors are ordinary
+        # knowledge acquisition (PRIMARY); the proposal lane is a
+        # deliberate declaration, never a default.
         "source_connectors": {
             "external_credential_id": "INTEGER",
+            "lane": "TEXT NOT NULL DEFAULT 'PRIMARY'",
         },
         # Identity Boundary v1.0: nullable fact references on the landing
         # pads. NULL on pre-boundary rows means "we did not know" - facts

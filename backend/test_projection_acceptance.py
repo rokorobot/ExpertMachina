@@ -256,18 +256,23 @@ def main():
         assert SENTINEL not in f"{row_event.details} {row_event.target_id}"
     print(f"Stage 7 passed: {swept} rendered files + the ledger, sentinel-free.")
 
-    # --- THE CLOSING LINE: zero schema change.
+    # --- THE CLOSING LINE: zero schema change from projection work.
+    # The count tracks the CURRENT ratified D24 snapshot: 28/303 when
+    # this gate first closed (v1.3.0 - byte-identical to v1.2.1's);
+    # 28/305 since v1.4.0 WS0 (D29/D30 source_class + lane - a ratified
+    # amendment, not projection state). The claim this line keeps
+    # asserting: projections need no tables.
     print("\n--- The closing line: the constitutional claim ---")
     live = {t.name: sorted(c.name for c in t.columns)
             for t in db.Base.metadata.sorted_tables}
     assert live == test_workbench_projection.FROZEN_SCHEMA
     tables = len(live)
     columns = sum(len(cols) for cols in live.values())
-    assert (tables, columns) == (28, 303)
-    print(f"CLOSING LINE passed: the D24 snapshot is byte-identical to "
-          f"v1.2.1's - {tables} tables, {columns} columns. The projection "
-          f"engine shipped as a lens, structurally incapable of being a "
-          f"second knowledge system.")
+    assert (tables, columns) == (28, 305)
+    print(f"CLOSING LINE passed: the schema is identical to the ratified "
+          f"D24 snapshot - {tables} tables, {columns} columns. The "
+          f"projection engine shipped as a lens, structurally incapable "
+          f"of being a second knowledge system.")
     print("\n=== v1.3.0 MILESTONE ACCEPTANCE passed ===")
 
 

@@ -201,6 +201,7 @@ def run_pass(session: Session, project_id: int, document_ids: list,
         "auto_approved": 0,
         "held_contradicted": 0,
         "skipped_not_covered": 0,
+        "held_proposal_lane": 0,  # D29: agent proposals hold for a human, always
         "engine_available": False,
         "pairs_dropped_total": 0,
     }
@@ -220,12 +221,22 @@ def run_pass(session: Session, project_id: int, document_ids: list,
     on_behalf_of_fact = identity.get_fact(session, on_behalf_of_fact_id)
     source_context = classification._source_context(session, document_ids, ingestion_job_id)
 
+    lane_document_ids = policy.proposal_lane_document_ids(session, document_ids)
+
     approved_ids, held = [], []
+    proposal_held_ids = []  # D29: proposal-lane candidates, held for the human gate
     verifier_identity = getattr(verifier, "identity", None)
     if verifier is not None:
         summary["engine_available"] = True
         policy_actors = {}
         for asset in assets:
+            # D29 (The One-Way Valve): agent-proposed knowledge is outside
+            # every policy tier - even a clean engine verdict cannot carry
+            # it past the human gate. Held, declared, never rejected.
+            if asset.document_id in lane_document_ids:
+                summary["held_proposal_lane"] += 1
+                proposal_held_ids.append(asset.id)
+                continue
             source_uri, source_metadata = source_context.get(asset.document_id, (None, {}))
             matched, matched_evidence = None, None
             for p in policies:
@@ -318,6 +329,7 @@ def run_pass(session: Session, project_id: int, document_ids: list,
             "connector_id": connector_id,
             "approved_asset_ids": approved_ids,
             "held": held,
+            "proposal_lane_held_ids": proposal_held_ids,  # D29: the hold is declared
             "verifier": verifier_identity,
             "policies": [{"id": p.id, "name": p.name, "version": p.version}
                          for p in policies],

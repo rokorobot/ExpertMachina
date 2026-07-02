@@ -106,6 +106,25 @@ def source_conditions_met(policy_row, source_metadata):
     return True, evidence
 
 
+def proposal_lane_document_ids(session: Session, document_ids: list) -> set:
+    """D29 (The One-Way Valve): documents that arrived through a
+    PROPOSAL-lane connector. Candidates extracted from them are
+    constitutionally outside every policy tier - Tier-0, Tier-2, or any
+    future tier - because the human gate on agent-proposed knowledge is
+    constitutional, not configurable. Both automation passes consult
+    this per-document (never per-scan), so a mixed-lane document list
+    can never smuggle a proposal past the gate."""
+    if not document_ids:
+        return set()
+    rows = (session.query(db.SourceDocument.document_id)
+            .join(db.SourceConnector,
+                  db.SourceDocument.connector_id == db.SourceConnector.id)
+            .filter(db.SourceDocument.document_id.in_(document_ids),
+                    db.SourceConnector.lane == "PROPOSAL")
+            .all())
+    return {r[0] for r in rows}
+
+
 def policies_for_scope(session: Session, project_id: int, connector_id: int = None) -> list:
     """Enabled policies applicable to an ingestion event. A connector-scoped
     policy fires only for that connector; an unscoped policy fires for any
@@ -137,6 +156,7 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
         "skipped_type_not_covered": 0,
         "skipped_source_conditions_unmet": 0,
         "deferred_to_tier2": 0,
+        "held_proposal_lane": 0,  # D29: agent proposals hold for a human, always
     }
     if not document_ids:
         return summary
@@ -145,6 +165,8 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
     summary["policies_evaluated"] = len(policies)
     if not policies:
         return summary
+
+    lane_document_ids = proposal_lane_document_ids(session, document_ids)
 
     assets = session.query(db.KnowledgeAsset).filter(
         db.KnowledgeAsset.project_id == project_id,
@@ -160,8 +182,17 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
 
     approved_ids = []
     held_ids = []  # declared exceptions: type covered, source conditions unmet
+    proposal_held_ids = []  # D29: proposal-lane candidates, held for the human gate
     policy_actors = {}  # one DELEGATED actor (one fact) per firing policy per run
     for asset in assets:
+        # D29 (The One-Way Valve): a candidate from a PROPOSAL-lane
+        # connector is agent-proposed knowledge. It holds for a human -
+        # before any policy is even consulted; no tier applies. Declared,
+        # never silent (D12); held for review, never rejected.
+        if asset.document_id in lane_document_ids:
+            summary["held_proposal_lane"] += 1
+            proposal_held_ids.append(asset.id)
+            continue
         source_uri, source_metadata = source_context.get(asset.document_id, (None, {}))
         matched, matched_evidence = None, None
         conditions_blocked, tier2_relevant = False, False
@@ -240,6 +271,7 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
             "connector_id": connector_id,
             "approved_asset_ids": approved_ids,
             "source_condition_held_ids": held_ids,
+            "proposal_lane_held_ids": proposal_held_ids,  # D29: the hold is declared
             "policies": [{"id": p.id, "name": p.name, "version": p.version} for p in policies],
         }))
     return summary

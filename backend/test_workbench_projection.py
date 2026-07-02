@@ -38,6 +38,17 @@ from app import database as db
 #     approval_policies condition columns (source_conditions_json /
 #     engine_conditions_json / domains_json - NULL preserves v0.10.2
 #     behavior exactly).
+#   v1.3.0 (D28, docs/projection-engine-v1.3.md): NO amendment - the
+#     milestone's constitutional claim; the snapshot survived
+#     byte-identical at 28 tables / 303 columns.
+#   v1.4.0 WS0 (D29 + D30, docs/diagnostic-workbench-v1.4.md): adds
+#     knowledge_assets.source_class (PRIMARY | DERIVED - what accepted
+#     agent-synthesized knowledge becomes; channel-decided, never
+#     content-claimed; legacy rows PRIMARY by construction) and
+#     source_connectors.lane (PRIMARY | PROPOSAL - the channel
+#     declaration the class derives from; proposal-lane candidates are
+#     constitutionally outside every policy tier). 28 tables /
+#     305 columns.
 
 FROZEN_SCHEMA = {
     "agent_packages": [
@@ -162,7 +173,9 @@ FROZEN_SCHEMA = {
         "document_id",
         "domain",  # v1.2.1 WS0 (D27): governed hierarchical domain path
         "extraction_method", "id", "name", "owner",
-        "project_id", "source_citation", "source_hash", "source_page",
+        "project_id", "source_citation",
+        "source_class",  # v1.4.0 WS0 (D30): PRIMARY | DERIVED, channel-decided
+        "source_hash", "source_page",
         "source_section", "status", "type",
     ],
     "llm_function_configs": [
@@ -187,7 +200,9 @@ FROZEN_SCHEMA = {
     ],
     "source_connectors": [
         "created_at", "external_credential_id",  # v1.2.0 WS0 (D25): by reference, never by value
-        "id", "include_extensions", "name", "project_id",
+        "id", "include_extensions",
+        "lane",  # v1.4.0 WS0 (D29/D30): PRIMARY | PROPOSAL channel declaration
+        "name", "project_id",
         "root_path", "type",
     ],
     "source_documents": [
@@ -239,9 +254,10 @@ def main():
     column_count = sum(len(cols) for cols in FROZEN_SCHEMA.values())
     print(f"D24 projection guard passed: live schema is identical to the "
           f"frozen snapshot ({table_count} tables, "
-          f"{column_count} columns; v1.1.0 baseline + the D25 custody and "
-          f"D26/D27 automation amendments). No new tables, no new writable "
-          f"columns beyond ratified decisions.")
+          f"{column_count} columns; v1.1.0 baseline + the D25 custody, "
+          f"D26/D27 automation, and D29/D30 derived-source-class "
+          f"amendments). No new tables, no new writable columns beyond "
+          f"ratified decisions.")
 
 
 if __name__ == "__main__":

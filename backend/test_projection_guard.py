@@ -595,8 +595,15 @@ def part_5_read_back_sentinel():
 
 
 # ---------------------------------------------------------------- Part 6
-# Zero schema change: the D24 snapshot is untouched - the milestone's
-# constitutional claim, asserted, not promised.
+# Zero schema change FROM PROJECTION WORK: the live schema is identical
+# to the ratified D24 snapshot - projections never earn tables. The
+# count tracks the CURRENT ratified snapshot (it moves ONLY when a
+# ratified decision amends FROZEN_SCHEMA in the same commit):
+#   28/303 at v1.3.0 (D28 - the milestone's constitutional claim: the
+#     v1.2.1 snapshot survived byte-identical),
+#   28/305 at v1.4.0 WS0 (D29/D30, docs/diagnostic-workbench-v1.4.md:
+#     knowledge_assets.source_class + source_connectors.lane - neither
+#     is projection state; renders still live in the ledger).
 
 def part_6_zero_schema():
     print("\n--- Part 6: zero schema change (the constitutional claim) ---")
@@ -604,13 +611,14 @@ def part_6_zero_schema():
             for t in db.Base.metadata.sorted_tables}
     frozen = test_workbench_projection.FROZEN_SCHEMA
     assert live == frozen, (
-        "D28 violation: the projection milestone changed the schema. "
-        "A projection engine that needs schema is another knowledge "
-        "system. The D24 snapshot must remain the v1.2.1 snapshot.")
+        "D28 violation: the schema diverged from the ratified D24 "
+        "snapshot. A projection engine that needs schema is another "
+        "knowledge system - projection work may never be the reason "
+        "FROZEN_SCHEMA changes.")
     tables = len(frozen)
     columns = sum(len(cols) for cols in frozen.values())
-    assert (tables, columns) == (28, 303), (tables, columns)
-    print(f"Part 6 passed: schema identical to the v1.2.1 D24 snapshot "
+    assert (tables, columns) == (28, 305), (tables, columns)
+    print(f"Part 6 passed: schema identical to the ratified D24 snapshot "
           f"({tables} tables, {columns} columns) - renders live in the "
           f"ledger, not in tables.")
 
