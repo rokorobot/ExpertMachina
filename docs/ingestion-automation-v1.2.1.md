@@ -353,3 +353,54 @@ Evidence (`backend/test_domain_classification.py`, in CI):
   swallowed audit-path failure — found and fixed at the gate).
 - All 21 suites green (both guards, the new 6-part gate suite, every
   pre-existing suite with zero assertion edits).
+
+### WS2 — PASSED (2026-07-02, user-accepted)
+
+**Gate wording (user-ratified at acceptance):** WS2 PASSED. Tier-0
+source authority is now usable as governed approval evidence, not as
+approval itself. Connector metadata is persisted as immutable scan
+evidence, approval policies may evaluate source_conditions through
+explicit versioned rules, and auto-approval provenance quotes the
+matched source authority metadata verbatim. Documents approved in the
+source can reach APPROVED only through a governed policy firing;
+documents from the same scan that are draft, unapproved, or missing
+authority metadata remain held and explicitly declared. Condition-less
+policies preserve prior behavior, and historical approval events
+continue pointing to the exact rule snapshot that fired even after
+later policy edits.
+
+Evidence (`backend/test_tier0_source_authority.py`, in CI — the
+fake-Graph Tier-0 proof over the real SharePointProvider):
+
+- **Metadata persistence**: `ConnectorItem.metadata` persisted verbatim
+  into `source_documents.source_metadata_json` at scan-row creation;
+  providers that describe nothing stay honestly NULL; the D18 meaning
+  preserved (described context, never a change verdict). **No editable
+  API surface**: structurally proven — no route path and no Pydantic
+  input schema accepts source metadata; it exists only as recorded scan
+  evidence.
+- **Condition evaluator**: `equals`/`in`, dotted keys through the shared
+  metadata-traversal vocabulary (one evaluator language across both
+  policy species), conditions AND-ed, absence never satisfies (D12);
+  NULL and `[]` preserve condition-less behavior exactly (the D19
+  invariant, tested both at the API and against a raw `[]` row).
+- **Tier-0 provenance**: ASSET_AUTO_APPROVED carries the policy snapshot
+  including the exact source_conditions rule text, the matched authority
+  values quoted verbatim, and the source URI; condition-less policies
+  carry NO source_authority claim — they never claim authority they did
+  not use.
+- **Exception behavior**: one scan, three authority postures —
+  approved-in-source → APPROVED; draft-in-source → held;
+  tenant-exposes-nothing → held (absence never satisfies). Held assets
+  declared via `skipped_source_conditions_unmet` and
+  `source_condition_held_ids` in POLICY_AUTOAPPROVAL_COMPLETED — the
+  projection WS4's exception inbox consumes.
+- **Versioning**: a condition edit bumps the version; POLICY_UPDATED
+  carries old/new condition snapshots; the historical v1 approval event
+  still quotes the v1 rule after the edit.
+- **WS0 sentinel did its job**: the `source_conditions_json="[]"`
+  sentinel policy now exercises the live evaluator automatically; empty
+  conditions preserve prior behavior; the revision sentinel still holds.
+- **Custody discipline carried over**: the D25 sweep runs at the end of
+  the gate suite — no secret material readable anywhere after the run.
+- All 22 suites green; zero assertion edits to pre-existing suites.

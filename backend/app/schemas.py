@@ -280,6 +280,10 @@ class ApprovalPolicyCreate(BaseModel):
     name: str
     asset_types: List[str]  # subset of the allowed KnowledgeAsset types
     connector_id: Optional[int] = None  # None = applies to any source, incl. manual upload
+    # v1.2.1 WS2 (D26 Tier-0): deterministic source-authority conditions -
+    # [{"key": "list_item_fields.ApprovalStatus", "equals": "Approved"}].
+    # None/empty = the pre-Tier-0 policy, unchanged.
+    source_conditions: Optional[List[dict]] = None
     # v1.0: no created_by field - the identity boundary decides the actor.
 
 class ApprovalPolicyUpdate(BaseModel):
@@ -287,6 +291,7 @@ class ApprovalPolicyUpdate(BaseModel):
     asset_types: Optional[List[str]] = None
     connector_id: Optional[int] = None
     enabled: Optional[bool] = None
+    source_conditions: Optional[List[dict]] = None  # a definition change (D17)
 
 class ApprovalPolicyResponse(BaseModel):
     id: int
@@ -296,6 +301,7 @@ class ApprovalPolicyResponse(BaseModel):
     connector_id: Optional[int] = None
     enabled: bool
     version: int
+    source_conditions: Optional[List[dict]] = None  # v1.2.1 WS2 (D26 Tier-0)
     created_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime

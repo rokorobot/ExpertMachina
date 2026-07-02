@@ -226,6 +226,11 @@ def _ingest_one(session: Session, connector: db.SourceConnector, job: db.Ingesti
         connector_id=connector.id,
         ingestion_job_id=job.id,
         source_uri=item.uri,
+        # v1.2.1 WS2 (D26): the provider's verbatim discovery metadata is
+        # Tier-0 source-authority EVIDENCE - preserved per scan row, not
+        # merely observed. Still context per D18 (never a change verdict);
+        # a provider that describes nothing stays an honest NULL (D12).
+        source_metadata_json=json.dumps(item.metadata) if item.metadata else None,
     )
     try:
         fetched = provider.fetch(item)

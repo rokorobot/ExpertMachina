@@ -758,6 +758,10 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
     if not policy_in.name.strip():
         raise HTTPException(status_code=400, detail="name is required")
     types = _validated_policy_fields(db_session, project_id, policy_in.asset_types, policy_in.connector_id)
+    try:
+        conditions = policy.validate_source_conditions(policy_in.source_conditions)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
     pol = db.ApprovalPolicy(
         project_id=project_id,
         name=policy_in.name.strip(),
@@ -765,6 +769,7 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
         connector_id=policy_in.connector_id,
         enabled=True,
         version=1,
+        source_conditions_json=json.dumps(conditions) if conditions else None,
         created_by=actor.display,
     )
     db_session.add(pol)
@@ -774,7 +779,8 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
     crud.log_audit_event(db_session, actor=actor.display, event_type="POLICY_CREATED",
                          target_id=str(pol.id),
                          details=json.dumps({"name": pol.name, "version": pol.version,
-                                             "asset_types": types, "connector_id": pol.connector_id}),
+                                             "asset_types": types, "connector_id": pol.connector_id,
+                                             "source_conditions": conditions}),
                          identity_fact_id=actor.fact(db_session).id)
     return pol
 
@@ -797,18 +803,29 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
     # ASSET_AUTO_APPROVED events keep pointing at the rule text that fired.
     # The enabled flag is operational, not definitional - audited, no bump.
     definition_changed = False
-    if "asset_types" in data or "connector_id" in data or "name" in data:
+    if ("asset_types" in data or "connector_id" in data or "name" in data
+            or "source_conditions" in data):
         new_types = _validated_policy_fields(
             db_session, pol.project_id,
             data.get("asset_types", pol.asset_types),
             data.get("connector_id", pol.connector_id))
         old_snapshot = {"name": pol.name, "asset_types": pol.asset_types,
-                        "connector_id": pol.connector_id, "version": pol.version}
+                        "connector_id": pol.connector_id,
+                        "source_conditions": pol.source_conditions,
+                        "version": pol.version}
         if "name" in data and data["name"].strip():
             pol.name = data["name"].strip()
         pol.asset_types_json = json.dumps(new_types)
         if "connector_id" in data:
             pol.connector_id = data["connector_id"]
+        if "source_conditions" in data:
+            # Tier-0 conditions are definition, not operation (D17/D26):
+            # editing what authority the rule requires bumps the version.
+            try:
+                conditions = policy.validate_source_conditions(data["source_conditions"])
+            except ValueError as e:
+                raise HTTPException(status_code=400, detail=str(e))
+            pol.source_conditions_json = json.dumps(conditions) if conditions else None
         pol.version += 1
         definition_changed = True
 
@@ -827,7 +844,9 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
                              target_id=str(pol.id),
                              details=json.dumps({"old": old_snapshot,
                                                  "new": {"name": pol.name, "asset_types": pol.asset_types,
-                                                         "connector_id": pol.connector_id, "version": pol.version}}),
+                                                         "connector_id": pol.connector_id,
+                                                         "source_conditions": pol.source_conditions,
+                                                         "version": pol.version}}),
                              identity_fact_id=actor.fact(db_session).id)
     if toggled is not None:
         crud.log_audit_event(db_session, actor=actor.display,
