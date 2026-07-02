@@ -15,6 +15,7 @@ from app import policy
 from app import revisions
 from app.connectors.models import ConnectorItem
 from app.connectors.providers.local_folder import LocalFolderProvider
+from app.connectors.providers.sharepoint import SharePointProvider
 
 # Enterprise Source Connector - LOCAL_FOLDER (MVP 0.10.0).
 #
@@ -37,14 +38,19 @@ SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
 UPLOAD_DIR = "./uploads"
 
 
-def _provider_for(connector: db.SourceConnector, secret: str = None) -> LocalFolderProvider:
-    """Provider construction. Only LOCAL_FOLDER exists; a registry is earned
-    when a second provider type does (D8). SUPPORTED_EXTENSIONS is the
-    framework's parser capability, handed to the provider so enumeration
-    filters on the capability/config intersection (seam 1).
-    `secret` is the custody-released credential for credentialed providers
-    (v1.2.0 WS2, D25) - in memory only, on its way to the provider adapter;
-    LOCAL_FOLDER needs none and ignores it."""
+def _provider_for(connector: db.SourceConnector, secret: str = None,
+                  coordinates: dict = None):
+    """Provider construction - the registry the second provider type earned
+    (v1.2.0 WS2, D8; this dispatch is the ONLY framework change the
+    SharePoint milestone makes). SUPPORTED_EXTENSIONS is the framework's
+    parser capability, handed to the provider so enumeration filters on
+    the capability/config intersection (seam 1).
+    `secret` is the custody-released credential (D25) - in memory only, on
+    its way to the provider; `coordinates` are the credential's NON-secret
+    identifiers (tenant/client ids). LOCAL_FOLDER needs neither."""
+    if (connector.type or "LOCAL_FOLDER").upper() == "SHAREPOINT":
+        return SharePointProvider(connector, SUPPORTED_EXTENSIONS,
+                                  secret=secret, coordinates=coordinates)
     return LocalFolderProvider(connector, SUPPORTED_EXTENSIONS)
 
 
@@ -99,10 +105,15 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
             released_secret = custody.release_for_scan(
                 session, connector, job, actor=connector_actor)
 
-        # The secret argument exists only when a credential was released -
-        # credential-free providers (and the seam suite's fakes) see the
-        # pre-v1.2 construction signature unchanged.
-        provider = (_provider_for(connector, secret=released_secret)
+        # The secret/coordinates arguments exist only when a credential was
+        # released - credential-free providers (and the seam suite's fakes)
+        # see the pre-v1.2 construction signature unchanged. Coordinates
+        # are the credential's NON-secret custody metadata (tenant/client
+        # ids); only the secret needed custody release.
+        provider = (_provider_for(
+                        connector, secret=released_secret,
+                        coordinates=custody.get_external_credential(
+                            session, connector.external_credential_id).coordinates)
                     if released_secret is not None else _provider_for(connector))
         # describe(): provider-specific source context, logged without
         # interpretation. Key order keeps the payload identical to pre-0.11.

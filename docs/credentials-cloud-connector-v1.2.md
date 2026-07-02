@@ -307,6 +307,42 @@ carries no policy.
 Evidence: `backend/test_sharepoint_provider.py` (fake transport, in CI);
 live-run record appended at acceptance.
 
+**Gate: PASSED — CI gate complete; live-tenant verification pending
+availability (accepted July 2026).** The ratified gate evidence mode
+(fake Graph in CI + one live run) explicitly permits this split; no live
+SharePoint secret may enter CI or fixtures, and the slot is recorded
+honestly as pending, never silently completed. Evidence:
+- SharePointProvider implements the four-method contract over Graph;
+  metadata reported VERBATIM (webUrl, eTag/cTag, modified time,
+  modified-by, mime type, tenant-exposed listItem fields when present) —
+  absent means absent (D12); the provider is policy-free and
+  structurally pure (stdlib + connector contract only, asserted in CI).
+- URI = Graph drive-item identity; the framework's content hash stayed
+  the only change verdict: every-timestamp-bumped/zero-content-changed
+  scanned as ALL DUPLICATE with the new timestamps recorded as context
+  (the D18 Test C trap, re-proven on the credentialed path).
+- The client secret enters only through custody release-for-scan;
+  exactly one EXTERNAL_CREDENTIAL_USED per scan; a bad credential fails
+  the JOB loudly with the Graph error, echoing no secret; the
+  full-database sweep stays clean.
+- Fake Graph CI covers auth failure, permission denial (errors name
+  Sites.Selected / Sites.Read.All), pagination + nested folders,
+  throttling (Retry-After honored, persistent throttle declared),
+  fetch failure, duplicates, and changed content.
+- Framework decision logic unchanged — the accepted diff is the
+  `_provider_for` registry dispatch (the second-provider change D8/D18
+  anticipated) + non-secret coordinate pass-through;
+  `test_connector_seam.py` untouched and green; all 21 suites green.
+
+**Live SharePoint scan evidence to append when tenant access exists:**
+- tenant/library identifier (redacted or non-sensitive)
+- credential fingerprint
+- granted scopes
+- connector id/type
+- scan/job id
+- discovered/fetched/ingested/duplicate/changed/failed counts
+- confirmation no secret material appears in gate evidence
+
 ### WS3 — Sources & Connectors UI area
 
 Earned by D8 — the second provider type creates genuine plurality. A

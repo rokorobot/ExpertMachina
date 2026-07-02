@@ -34,6 +34,7 @@ jobs:
         working-directory: backend
         run: |
           python test_local_connector.py
+          python test_sharepoint_provider.py
           python test_auto_approval.py
           python test_revision_workflow.py
           python test_governance_inbox.py

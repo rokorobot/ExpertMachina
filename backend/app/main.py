@@ -539,10 +539,19 @@ def upload_batch_demo(project_id: int, db_session: Session = Depends(get_db),
 @app.post("/api/projects/{project_id}/connectors", response_model=schemas.SourceConnectorResponse)
 def create_source_connector(project_id: int, connector_in: schemas.SourceConnectorCreate, db_session: Session = Depends(get_db),
                             actor: identity.Actor = Depends(require_perm("connectors:manage"))):
-    if (connector_in.type or "LOCAL_FOLDER").upper() != "LOCAL_FOLDER":
-        raise HTTPException(status_code=400, detail="Only LOCAL_FOLDER connectors are supported in this release")
+    ctype = (connector_in.type or "LOCAL_FOLDER").upper()
+    if ctype not in ("LOCAL_FOLDER", "SHAREPOINT"):
+        raise HTTPException(status_code=400, detail="Supported connector types: LOCAL_FOLDER, SHAREPOINT")
     if not connector_in.root_path.strip():
         raise HTTPException(status_code=400, detail="root_path is required")
+    # v1.2.0 WS2: a SHAREPOINT connector authenticates outward, so it MUST
+    # reference a stored credential (D25: by id, never by value). root_path
+    # is the site URL, optionally '::LibraryName'.
+    if ctype == "SHAREPOINT" and connector_in.external_credential_id is None:
+        raise HTTPException(status_code=400,
+                            detail="SHAREPOINT connectors require external_credential_id - "
+                                   "bind an ACTIVE CONNECTOR credential (Settings requires "
+                                   "credentials:manage to create one)")
     # v1.2.0 (D25): BINDING a credential to a connector is a custody act -
     # payload-dependent authorization, the transition-permission pattern.
     # connectors:manage creates connectors; directing EM to authenticate
@@ -559,7 +568,7 @@ def create_source_connector(project_id: int, connector_in: schemas.SourceConnect
     connector = db.SourceConnector(
         project_id=project_id,
         name=connector_in.name,
-        type="LOCAL_FOLDER",
+        type=ctype,
         root_path=connector_in.root_path.strip(),
         include_extensions=connector_in.include_extensions or ".txt,.md,.pdf,.docx",
         external_credential_id=connector_in.external_credential_id,
