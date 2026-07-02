@@ -795,3 +795,95 @@ violation); the D24 snapshot asserts the two-column shape; class-travel
 asserted at the WS2 gate on every consumer channel.
 **Evidence:** recorded at the WS gates in
 docs/diagnostic-workbench-v1.4.md as each is accepted.
+
+## D31 — Render Authority Dies at Ingress (v1.5 scoping, RATIFIED)
+> Render authority dies at ingress. Rendered knowledge may be copied,
+> moved, or submitted, but no property of a render — its stamps, its
+> manifest, its provenance annotations, its placement in the vault —
+> survives as authority when its content re-enters the governed system.
+> A rendered file re-enters only as an ordinary document through an
+> ingestion channel; through the proposal lane it becomes at most a
+> held DERIVED candidate whose provenance is verified or honestly
+> declared unverifiable — never a PRIMARY fact, never auto-approved,
+> never canonical by accident.
+>
+> The vault is one tree with two natures, and they never blur. Folders
+> the renderer manages are disposable projection output: deleted and
+> regenerated wholesale, never read back, never inputs. Folders agents
+> and humans write are inputs: never touched by any renderer. No path
+> exists by which regeneration destroys an input or ingestion trusts
+> an output.
+
+D28 protects the output direction (rendered files never flow back);
+D29 protects the input direction (agent findings enter only through
+the proposal lane and human gate). D31 governs the ground where the
+two directions become adjacent: the EM Vault, one tree holding
+projection output (managed folders 01–06) beside governed ingress
+(08_proposals) and ungoverned scratch (07_agent_workspaces). The law
+forecloses the laundering path — a projection re-entering the system
+dressed as knowledge — and the destruction path — a wholesale render
+regeneration deleting an agent's pending proposal.
+
+Companion rulings made at the same scoping session (binding, recorded
+in docs/em-vault-v1.5.md):
+- **The vault is a content artifact** — an explicit amendment to v1.3
+  scoping ruling 3: the vault joins the .empkg as a content species
+  (a workspace of excerpts is not human-readable knowledge); the graph
+  remains the structure artifact. The projection contract grows ONE
+  declared field for content mode; a renderer must declare that it
+  needs full content, the declaration appears in the manifest and the
+  PROJECTION_RENDERED event, and clearance filtering applies before
+  content reaches notes.
+- **The vault renderer writes directly into its managed folders** —
+  `EM_VAULT_DIR/01_start · 02_knowledge · 03_experts · 04_packages ·
+  05_conflicts · 06_governance` — never render-elsewhere-and-copy (a
+  copy step is an ungoverned transfer path, weaker on exactly the
+  laundering axis this milestone closes). Each managed folder is
+  deleted and regenerated wholesale per render.
+- **The untouchable floor is constitutional**: `00_system`,
+  `07_agent_workspaces`, `08_proposals` — no render path may delete,
+  overwrite, scan-as-render-state, or manage those folders.
+- **The sixth permanent guard family**:
+  `backend/test_render_ingress_guard.py`, deliberately NOT folded into
+  the D28 or D29 guards — new seam territory earns its own boundary.
+  Its cornerstone plant: render a file → drop it into /08_proposals →
+  scan under permissive policies → it becomes only a held DERIVED
+  candidate with unverifiable or declared provenance — never PRIMARY,
+  never auto-approved, never replaying manifest authority, never
+  generating projection authority from its stamps.
+- **Obsidian compatibility means plain Markdown, YAML frontmatter,
+  wikilinks, deterministic bytes** — no `.obsidian`, no plugins, no
+  Git machinery (Git-trackability is a property of determinism, not a
+  feature).
+- **Language rulings**: "rendered note", "vault render", "managed
+  folders", "untouchable folders", "render authority dies at ingress",
+  "ordinary proposal evidence", "held DERIVED candidate",
+  "unverifiable provenance" — never "sync back", "vault source",
+  "rendered truth", "trusted note", "promoted from vault", or
+  "Obsidian database".
+
+**Why:** every rendered file is an invitation to treat the copy as
+the truth (D28's warning), and the vault multiplies the temptation by
+putting thousands of readable, movable knowledge notes one folder away
+from the governed ingress. Without D31, the valve could be defeated by
+a file move — no agent privilege required, no guard tripped, just a
+projection re-entering as if it were knowledge. The law makes the file
+move safe instead of forbidden: whatever enters 08 is ordinary
+proposal evidence behind the valve, full stop.
+**Tradeoff accepted:** rendered knowledge is deliberately easy to
+re-submit — a human quoting a vault note into a proposal is a
+legitimate workflow, and it costs the full document pipeline plus the
+human gate every time; no fast path exists or will. The vault renderer
+pays the managed-folder discipline (wholesale regeneration confined to
+01–06), and one vault renders FOR one declared clearance per render.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_render_ingress_guard.py` (the sixth guard family, built
+at WS0 before the vault renderer exists): THE LAUNDERING PLANT
+end-to-end; regeneration isolation (planted files in the untouchable
+folders survive wholesale regeneration); path discipline (within
+backend/app, EM_VAULT_DIR and the untouchable folder names are
+confined to the projection package's floor machinery); authority death
+(ingested stamps and cursor claims are inert, verification treats them
+as unrecognized claims); adversarially self-proven.
+**Evidence:** recorded at the WS gates in docs/em-vault-v1.5.md as
+each is accepted.

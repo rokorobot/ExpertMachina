@@ -30,7 +30,7 @@
 | v1.3.0 | Projection Engine + Graph Lens (D28 — governed rendered lenses, agent graph queries) | ✅ Completed (July 2026, D28 ratified) — all five gates PASSED; ZERO schema change; 31 CI suites |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class; Guard 5) | ✅ Completed (July 2026, D29 + D30 ratified) — all five gates PASSED; the full loop once end-to-end; real-model run honestly pending |
 | v1.4.1 | Operations UI Completion (the D8 amendment: a top-level Operations area — Workbenches, Proposal Pipeline, Lanes & Vault; operate = the human gate only) | ✅ Completed (July 2026) — pure projection, one read endpoint, zero schema; lane selector + provenance trace close the v1.4.0 UI gaps; 37 CI suites |
-| v1.5 | EM Vault (human-readable rendered workspace — the second renderer) | 🧭 Directional |
+| v1.5 | EM Vault (D31 Render Authority Dies at Ingress — the second renderer fills the vault beside the proposal lane, no laundering path) | 🔄 In Progress — scoping ratified July 2026; build contract [em-vault-v1.5.md](em-vault-v1.5.md) |
 
 ---
 
@@ -762,11 +762,28 @@ discipline; full rationale and dependency chain in
   wrote canonical facts directly, and D24 at 28/305.** Open honest
   slot: the ONE real-model diagnostic run (no provider key at release;
   the stdio MCP door + D19 synthesis path are code-complete).
-- **v1.5 — EM Vault.** The full human-readable rendered workspace
-  (Obsidian-compatible, Git-trackable) as the projection engine's second
-  renderer; domain-first/type-second asset folders rendering the v1.2.x
-  taxonomy; all orientation files generated; D24 disappearance test as
-  the gate.
+- **v1.5 — EM Vault (🔄 IN PROGRESS — scoping ratified July 2026; D31
+  Render Authority Dies at Ingress; build contract:
+  [em-vault-v1.5.md](em-vault-v1.5.md)).** The projection engine's
+  second renderer fills the vault: a full human-readable,
+  Obsidian-compatible (plain Markdown + YAML frontmatter + wikilinks,
+  deterministic bytes — no plugins, no git machinery), domain-first,
+  clearance-filtered workspace in managed folders 01–06 of the SAME
+  tree that holds the proposal lane. D31 governs the seam: render
+  authority dies at ingress — a rendered note dropped into
+  08_proposals becomes only a held DERIVED candidate behind the valve,
+  never PRIMARY, never auto-approved, never canonical by accident; and
+  the untouchable floor (00_system / 07_agent_workspaces /
+  08_proposals) is constitutionally outside every render path. The
+  sixth permanent guard (`test_render_ingress_guard.py`) lands at WS0
+  with the laundering plant proven against graph-render files before
+  the vault renderer exists. The vault is a content artifact (the
+  ratified amendment to the v1.3 excerpt ruling — declared content
+  mode in manifest + event; the graph stays the structure artifact).
+  The top-level Projections area is earned here by renderer plurality.
+  Zero schema. Gate: THE DISAPPEARANCE TEST (delete the entire vault →
+  lose nothing → re-render byte-identical) + THE SEAM PROOF, closing
+  on D24 at 28/305.
 
 ## Future Direction
 
