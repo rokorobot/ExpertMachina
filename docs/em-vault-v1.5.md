@@ -274,4 +274,103 @@ not workbench/). Language rulings per scoping ruling 9.
 
 ## Gate records
 
-*Appended as each workstream is accepted.*
+### WS0 — D31 + Render-Ingress Guard + Contract Growth: ACCEPTED (2026-07-03, user-ratified)
+
+Commit: `c50f99f` (scoping: `4a93058`). **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS0 accepted: render
+authority dies at ingress. Rendered artifacts, hostile manifests,
+forged proposal frontmatter, and replay attempts entering through
+`08_proposals` are held as DERIVED and never regain projection
+authority. Wholesale regeneration is structurally confined to declared
+managed folders inside the reserved vault render window. The
+untouchable floor holds before deletion and before write. Content mode
+is now a mandatory declared stamp, and clearance filtering occurs
+before content bytes are composed. The guard is adversarially
+self-proven and permanent in CI.
+
+Guard 6 now stands as the hard seam — the boundary was proven before
+the vault renderer exists: not the beautiful knowledge tree first and
+the boundary hoped for after, but the boundary first.
+
+**Gate notes (explicit, user-listed):**
+1. Scoping commit: `4a93058`.
+2. WS0 commit: `c50f99f`.
+3. Regression: 38 suites green.
+4. Schema: D24 snapshot still held at 28/305.
+5. ENGINE_VERSION: v1 → v2 intentionally — content_mode is
+   content-identity-bearing.
+6. Expected consequence: prior projection renders show stale and
+   require regeneration (correct, not a regression).
+7. No ratified assertion edits: six projection-touching suites passed
+   additively.
+8. Permanent guard: `test_render_ingress_guard.py`.
+
+**WS1 boundary conditions (user-ratified — WS1 must stay inside the
+WS0 boundary):** render only into declared managed folders; never
+touch 00_system, 07_agent_workspaces, or 08_proposals; every generated
+note is a derived render carrying manifest/stamp/provenance and
+visibly non-canonical; no rendered note can become canonical knowledge
+by location; full content only after clearance filtering; deterministic
+inventory provable; stale managed files destroyed only inside the
+declared managed set.
+
+**WS1 shape amendment (user-ratified):** the managed folder semantics
+are amended from the scoping proposal to:
+`01_overview · 02_knowledge · 03_domains · 04_indexes · 05_conflicts ·
+06_audit` (experts/packages surface through 04_indexes rather than
+dedicated folders). The WS1 claim: *WS1 builds the first governed
+knowledge-tree renderer. It renders approved governed knowledge into a
+deterministic Markdown vault tree with domain-first organization, full
+governed content where clearance permits, YAML frontmatter, wikilinks,
+DERIVED marking, and manifest-backed regeneration. The vault is
+readable by humans and agents, but remains a projection only —
+readable and useful, yes; authoritative, no.* Commercial note recorded:
+domain taxonomies at deployments should bias toward operational
+workbench domains (finance, procurement, customer_operations, sales,
+hr_people, operations, compliance, it_systems, management) — a
+configuration posture, never hardcoded into the governance layer.
+
+WS0 proved the laundering boundary before the vault renderer exists.
+Real rendered artifacts, hostile manifests, forged proposal
+frontmatter, and hostile audit cursor claims cannot re-enter the
+system as authoritative knowledge. Anything entering through
+08_proposals is treated as proposal/derived ingress, held for
+governance, and cannot replay projection authority.
+
+The floor is accepted: 00_system, 07_agent_workspaces, and
+08_proposals are inviolable input/control areas. Wholesale
+regeneration may destroy only declared managed output folders inside
+the reserved render window, never the floor. The regeneration
+machinery is therefore disposable-output-safe before WS1 begins.
+
+The content-mode contract is accepted: content_mode is mandatory,
+identity-bearing, stamped into projection output and manifest.
+ENGINE_VERSION v2 is justified because content mode changes projection
+identity. Existing renders becoming stale is correct, not a
+regression.
+
+The zero-schema record is accepted: D24 remains intact at 28 / 305,
+and WS0 adds behavior without altering the governed knowledge schema.
+
+Evidence (`backend/test_render_ingress_guard.py`, in CI permanently —
+the sixth guard family): THE LAUNDERING PLANT (graph-render files + a
+manifest claiming audit cursor 999999 + a forged-frontmatter variant
+into 08_proposals under a global Tier-1 policy and a live
+approve-everything Tier-2 engine → 4 candidates all held and DERIVED,
+zero PROJECTION events changed by ingestion, the hostile cursor inert
+in the render history, the forged variant a declared
+PROPOSAL_PROVENANCE_UNVERIFIED exception; the laundering catastrophe
+simulated and caught on two counts); regeneration isolation (an
+in-test VAULT renderer spec — three untouchable plants byte-identical
+through wholesale regeneration, stale junk inside a managed folder
+correctly destroyed, FULL_CONTENT declared in manifest + event,
+clearance-before-content proven with an EXECUTIVE sentinel absent from
+every rendered byte); six floor refusals, all loud and pre-deletion,
+including a write-time output-path escape; the path-discipline sweep
+(EM_VAULT_DIR + the untouchable names confined to
+projections/engine.py; the sweep caught two real comment strays in
+database.py and proposals.py — reworded, the blunt sweep kept per the
+D26 precedent; self-proven against plants). All six
+projection-touching suites passed with zero assertion edits — the
+contract growth was fully additive. All 38 CI suites green.
