@@ -26,7 +26,7 @@
 | v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
 | v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
 | v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
-| v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | 🛠 Scoping ratified (July 2026, D26 + D27) — build contract: [ingestion-automation-v1.2.1.md](ingestion-automation-v1.2.1.md) |
+| v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | ✅ Completed (July 2026, D26 + D27 ratified) — all five gates PASSED; corpus proof 91.2% auto-approved, 100% exceptions surfaced |
 | v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 🧭 Directional |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
 | v1.5 | EM Vault (human-readable rendered workspace) | 🧭 Directional |
@@ -664,21 +664,34 @@ discipline; full rationale and dependency chain in
   custody history projected from the ledger, role-aware controls —
   "governance cockpit, never a database viewer"). The acquisition
   ladder: **v1.2 proves credentialed enterprise acquisition.**
-- **v1.2.1 — Ingestion Automation + Domain Classification (scoping
-  ratified July 2026 — D26 Review by Exception + D27 Domain Taxonomy;
-  build contract:
+- **v1.2.1 — Ingestion Automation + Domain Classification
+  (✅ COMPLETED July 2026; D26 Review by Exception + D27 Domain Taxonomy
+  ratified; build contract + all five gate records:
   [ingestion-automation-v1.2.1.md](ingestion-automation-v1.2.1.md)).**
-  Humans review by exception, never by document (D5
-  applied): Tier-0 source-authority inheritance ("approved in the source
-  system → approved here, by audited policy"), Tier-2 engine-verified
-  auto-approval (the v0.10.2 deferred item), exceptions severity-ranked in
-  the inbox. The ≥90%-untouched-by-humans figure is a **mature-corpus
-  target**, not a universal acceptance threshold — messy first deployments
-  will start lower and climb as policies are tuned. Assets gain a governed
-  hierarchical domain
-  path (policy-assigned, human-correctable; reorgs nest by default).
-  Revision auto-approval stays forbidden (D17) — the known living-KB
-  tension, documented and deliberately unresolved.
+  Humans review by exception, never by document (D5 applied), delivered
+  guard-before-the-door in five gated workstreams: WS0 the automation
+  guard (`test_ingestion_automation_guard.py`, in CI permanently — one
+  governed approval path, revisions never auto-approved even under the
+  most permissive policy set and an approve-everything engine,
+  adversarially self-proven); WS1 domain classification (deterministic
+  first-match assignment with quoted provenance, governed human
+  correction, audited taxonomy reorganization — the finances split by
+  policy change + reorg alone, content/history byte-identical); WS2
+  Tier-0 source authority (verbatim scan metadata persisted as evidence,
+  conditions equals/in with absence-never-satisfies, the inherited
+  authority quoted verbatim in every approval — *evidence for approval,
+  not approval itself*); WS3 Tier-2 async engine verification (*the
+  engine refuses to approve; only humans refuse content* — verdicts in
+  event provenance only, never AssetRelationship rows; deterministic
+  async proof); WS4 the exception surface (five computed exception
+  kinds, ranked, no dismiss, no new workflow state) + the corpus gate:
+  **91.2% auto-approved with machine-verifiable provenance, 100% of
+  exceptions surfaced, zero revisions auto-approved, zero silent holds,
+  the north-star metric derivable from audit events alone.** The ≥90%
+  figure remains a mature-corpus target — messy first deployments start
+  lower and climb as policies are tuned. Revision auto-approval stays
+  forbidden (D17) — the known living-KB tension, documented and
+  deliberately unresolved.
 - **v1.3.0 — Projection Engine + Graph Renderer.** Renderer-agnostic
   export of governed facts (facts → renderer → files); first renderer:
   graph.json + self-contained graph.html (ported from graphify's export

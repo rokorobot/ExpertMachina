@@ -4,9 +4,10 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-02 · current version **v1.2.0** (Governed Credential Store & First Cloud
-Connector — all four gates PASSED; live SharePoint tenant verification pending availability) ·
-branch `main` · D25 ratified
+**Snapshot:** 2026-07-02 · current version **v1.2.1** (Ingestion Automation &
+Domain Classification — all five gates PASSED; the automation ladder is live
+and operator-visible) · branch `main` · D26 + D27 ratified (register through
+D27)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -24,7 +25,14 @@ inspectable without adding new governed state (D24). v1.2.0 gives the platform
 custody of OUTBOUND credentials and its first credentialed enterprise source
 (SharePoint): secrets are usable but never visible, every use is evidence
 (D25), and cloud scans flow through the same governed pipeline as every other
-source — v1.2 proves credentialed enterprise acquisition.
+source — v1.2 proves credentialed enterprise acquisition. v1.2.1 makes bulk
+acquisition workable: humans review by exception, never by document (D26) —
+Tier-0 inherits source authority the company already paid for, Tier-2
+engine-verifies asynchronously (refusal-to-approve, never rejection), assets
+carry a governed hierarchical domain path (D27), and every held candidate is
+a ranked, provenance-explained exception in the inbox. The corpus gate: a
+mature corpus reaches ≥90% auto-approved with machine-verifiable provenance,
+100% of exceptions surfaced, zero revisions auto-approved, zero silent holds.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -53,8 +61,15 @@ Source (Connector Framework)      v0.11.0  provider plugins; LocalFolderProvider
   ↓ scan-now ingestion            v0.10.0  bulk ingestion, dedup, per-file status
   ↓ change detection              v0.10.1  changed source → candidate revision
 Documents → CANDIDATE assets               existing extraction pipeline (LLM or rules)
+  ↓ domain classification         v1.2.1   ClassificationPolicy (D27): deterministic first-match,
+  |                                        governed hierarchical domain path, ASSET_CLASSIFIED
   ↓ policy auto-approval          v0.10.2  versioned per-project rules, new candidates only (D17)
-  ↓ human approval                         review queue (bulk + hotkeys); revisions ALWAYS human-gated
+  |                               v1.2.1   Tier-0 source-authority conditions (verbatim scan
+  |                                        metadata, authority quoted in provenance) + Tier-2
+  |                                        async engine verification (D26; refusal-to-approve,
+  |                                        never rejection) + deny-by-default domain coverage
+  ↓ human approval                         review queue (bulk + hotkeys); revisions ALWAYS human-gated;
+  |                                        exceptions ranked + provenance-explained in the inbox
 APPROVED assets                            revision-controlled (never edited in place)
   ↓ governance engines                     conflicts (NLI), claims, verification, trust
 Expert Model                               trust score (5 explainable components)
@@ -172,7 +187,7 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `revisions.py` | strictly-linear revision workflow; `run_post_approval_rescan` background task |
 | `trust.py` | 5-component trust score, weights renormalized over measured components |
 | `evaluation.py` | benchmark runs (background) on BOTH channels (run_type LIVE/PACKAGE), persists **ClaimVerdict** rows, `coverage_trend` (LIVE-only), `package_model_comparison` (computed) |
-| `governance_inbox.py` | computed inbox + readiness (NO work-item table by design) |
+| `governance_inbox.py` | computed inbox + readiness (NO work-item table by design); **v1.2.1 WS4 (D26)**: ingestion exceptions projected from ledger + current facts — five kinds (TIER2_CONTRADICTION_HELD / SOURCE_AUTHORITY_HELD / TIER2_UNVERIFIED / NOT_COVERED / UNCLASSIFIED), most-specific-wins, one severity function loud on unknown kinds, never HIGH (D2), no dismiss |
 | `consumption_inbox.py` | **v1.1.1 WS2**: computed consumption inbox — nine ratified drift/hygiene conditions over packages/selections/runs/bindings/identity; ONE shared severity function; pure projection, no dismiss (D24) |
 | `binding_lineage.py` | **v1.1.1 WS3**: server-composed binding lineage — backwards to source documents, sideways into identity; every hop resolves or is declared missing (D12); warnings ARE the inbox items |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
@@ -182,7 +197,9 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `connectors/models.py` | provider contract (D18) |
 | `connectors/providers/local_folder.py` | LocalFolderProvider (~85 lines) |
 | `connectors/providers/sharepoint.py` | **v1.2.0 WS2**: SharePointProvider — four-method contract over Microsoft Graph (client-credentials), injectable transport (fake Graph in CI), verbatim metadata, policy-free; structural purity asserted (stdlib + contract only) |
-| `policy.py` | Policy-Based Auto Approval (D17) |
+| `policy.py` | Policy-Based Auto Approval (D17); **v1.2.1 (D26)**: Tier-0 source_conditions evaluation (equals/in, dotted keys, absence never satisfies), domain_covered deny-by-default, deferred_to_tier2 honesty, held exceptions declared with ids |
+| `classification.py` | **v1.2.1 WS1 (D27)**: governed domain classification — deterministic first-match assignment (ASSET_CLASSIFIED with policy snapshot + matched values), taxonomy reorganize (rename prefix-rewrite + policy-driven reclassify, TAXONOMY_REORGANIZED with old→new mapping); writes ONLY the domain column |
+| `tier2.py` | **v1.2.1 WS3 (D26)**: async candidate-contradiction check — refusal-to-approve, never rejection; background pass owns its session (D4), verdicts in event provenance ONLY (never AssetRelationship rows), injectable verifier seam (identity always in provenance), drain() hook for suites |
 | `llm.py` | D19 resolver (DB config → OPENAI_MODEL env → gpt-4o-mini) + **v1.1 provider adapters** (OPENAI/ANTHROPIC) + `generate()` boundary; PACKAGE_CONSUMER function added |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools; EM_AGENT_TOKEN per-call resolution, registry clearance |
 | `query_engine.py` | LIVE-channel retrieval + validation + generation + claim verification; `ACCESS_RANK` |
@@ -197,7 +214,13 @@ LLMFunctionConfig (selection only, D19; provider OPENAI|ANTHROPIC since v1.1),
 Principal, Credential, IdentityFact (v1.0),
 **PackageModelSelection, ExpertAgentBinding** (v1.1),
 **ExternalCredential** (v1.2.0, D25; SourceConnector
-+external_credential_id — by reference, never by value).
++external_credential_id — by reference, never by value),
+**ClassificationPolicy** (v1.2.1, D27; the D17 governed shape),
+KnowledgeAsset **+domain** (D27, NULL = honestly unclassified),
+SourceDocument **+source_metadata_json** (D26, verbatim Tier-0 evidence),
+ApprovalPolicy **+source_conditions_json/engine_conditions_json/domains_json**
+(D26; NULL preserves v0.10.2 behavior — the D19 invariant). D24 snapshot:
+28 tables / 303 columns.
 
 ## Frontend (`frontend/src/app/page.tsx` + `src/store/index.ts`)
 
@@ -219,7 +242,14 @@ Language rulings: "Select model" never "Deploy model"; "binding"/"serving
 package" never "deployed agent"; "credential"/"rotate"/"revoke" never
 "password"/"delete" — nothing implies a secret can be viewed. UI principle
 (v1.2.0 WS3): governance cockpit, never a database viewer — backend stores
-the full evidence; the UI shows the actionable projection of it.
+the full evidence; the UI shows the actionable projection of it. v1.2.1 WS4:
+the approval-policy form (documents tab) grew the Tier-0 source-condition
+editor, the Tier-2 engine-verification toggle, and domain coverage — all on
+the existing governed route (no separate policy semantics path); asset cards
+show the domain path with inline governed correction (ASSET_DOMAIN_CORRECTED,
+never a revision); the Governance Inbox ranks ingestion exceptions with
+provenance-derived "why held" (language: "held for review"/"exception",
+never "rejected by the engine"; "classified"/"corrected", never "moved").
 
 ## Release log (this development line)
 
@@ -242,6 +272,12 @@ the full evidence; the UI shows the actionable projection of it.
 | WS1 | `fe29cd4` | custody lifecycle: credentials:manage (12th permission), release seam, rotation re-points connectors, master-key re-wrap without secret re-entry |
 | WS2 | `d368fb4` | SharePointProvider on the unchanged D18 seam (fake Graph in CI; live-tenant evidence slot honestly pending) |
 | **v1.2.0** | `b9a20ad` | WS3 Sources & Connectors custody surface — governance cockpit, never a database viewer |
+| — | `bcf997e`+`a0db211` | v1.2.1 scoping ratified — build contract + D26 Review by Exception + D27 Domain Taxonomy |
+| WS0 | `d73607c` | automation guard (one approval path + revision sentinel, adversarially self-proven, in CI permanently); all D26/D27 schema + D24 snapshot in one commit |
+| WS1 | `aaebff2` | domain classification: deterministic assignment, governed correction, audited taxonomy reorganize — the finances-split proof |
+| WS2 | `7700cd9` | Tier-0 source authority: verbatim scan metadata persisted, conditions evaluated, authority quoted in provenance — evidence for approval, not approval itself |
+| WS3 | `e26e609` | Tier-2 async engine verification: refusal-to-approve never rejection, verdicts in provenance only, deterministic async proof |
+| **v1.2.1** | `323cd1d` | WS4 exception surface + the 91.2% corpus acceptance gate — the automation ladder operator-visible |
 
 ## How to run
 
@@ -271,7 +307,18 @@ the full evidence; the UI shows the actionable projection of it.
   suites** (in CI): `test_credential_custody.py` (the D25 guard — sentinel
   sweep across every surface incl. HTTP + adversarial self-proof; permanent),
   `test_sharepoint_provider.py` (fake Graph: auth/throttle/pagination/
-  hash-verdict/end-to-end; provider structural purity). CI enforces all on
+  hash-verdict/end-to-end; provider structural purity). **v1.2.1 automation
+  suites** (in CI): `test_ingestion_automation_guard.py` (the D26 guard —
+  one approval path + revision sentinel under the most permissive policy
+  set incl. a live approve-everything Tier-2 fake engine, adversarially
+  self-proven; permanent; NOTE: file-based DB + db.SessionLocal override —
+  the async Tier-2 pass owns its session, in-memory sqlite breaks threads),
+  `test_domain_classification.py` (D27: the finances-split taxonomy proof),
+  `test_tier0_source_authority.py` (fake-Graph authority proof, one scan /
+  three postures), `test_tier2_engine_verification.py` (deterministic async
+  proof via gated fake verifier; verdicts provenance-only),
+  `test_automation_corpus.py` (THE milestone gate: 91.2% / 100% exceptions /
+  zero revisions / north-star from events alone). CI enforces all on
   every push. `test_support.governed_actor` is the only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
@@ -296,25 +343,33 @@ silently completed). Also deferred by ruling: LLM provider-key migration
 into the custody store (touches D19's resolution invariant — its own
 explicit later step; D19 holds unchanged, keys env-based).
 
-**NEXT: v1.2.1 — Ingestion Automation + Domain Classification —
-SCOPING RATIFIED (July 2026): D26 Review by Exception + D27 Domain
-Taxonomy; build contract docs/ingestion-automation-v1.2.1.md.** Five
-workstreams, guard-before-the-door: WS0 automation guard (one approval
-path + the revision sentinel, permanent in CI; all schema changes + D24
-snapshot in one commit) → WS1 domain classification (path column +
-ClassificationPolicy + audited reorg, no registry table) → WS2 Tier-0
-source-authority policies (verbatim discovery metadata persisted per
-scan on SourceDocument — the scoping-discovered gap; provenance quotes
-the authority) → WS3 Tier-2 candidate-contradiction check (NLI vs
-approved corpus, async per D4, verdicts in provenance only) → WS4
-exception inbox conditions + the ≥90% corpus gate test. No new
-permission (assets:approve governs classification + taxonomy).
+**v1.2.1 DELIVERED (July 2026) — all five gates PASSED** (build contract
++ gate records: docs/ingestion-automation-v1.2.1.md; D26 Review by
+Exception + D27 Domain Taxonomy ratified). The automation ladder is
+live: Tier-1 types (v0.10.2), Tier-0 inherited source authority
+(quoted verbatim in provenance — evidence for approval, not approval
+itself), Tier-2 async engine verification (refusal-to-approve, never
+rejection), domain classification with audited taxonomy operations,
+and the exception surface (five kinds, ranked, provenance-explained,
+computed — no new workflow state). Corpus gate: 91.2% auto-approved,
+100% exceptions surfaced, zero revisions auto-approved, zero silent
+holds, north-star metric from the ledger alone. Still open from
+v1.2.0: the ONE manual live-SharePoint-tenant scan (honest pending
+slot in the WS2 gate record of credentials-cloud-connector-v1.2.md).
+
+**NEXT: v1.3.0 — Projection Engine + Graph Renderer.** Open a fresh
+scoping session per D16 from this file + DECISIONS.md + roadmap.md
+(+ the "road to the Operations Realm" arc). It ratifies the projection
+rule (the decision number is assigned THERE — deliberately not D25/D26/
+D27): no projection is ever authoritative; every render regenerates
+from governed facts and is stamped rendered_at + audit cursor.
+graphify's export layer is the reference implementation (graph.json +
+self-contained graph.html, vendored JS, clearance-filtered before
+rendering) + MCP graph query tools — lineage as a path query. The
+v1.2.x taxonomy (domain paths) is a ready-made grouping dimension.
 
 The arc onward (v1.3+ directional — see roadmap.md
-"The road to the Operations Realm"): v1.2.x ingestion automation (Tier-0
-source-authority inheritance + Tier-2 engine-verified auto-approval; humans
-review by exception; ≥90% is a mature-corpus target) + hierarchical domain
-classification (DB-resident, policy-assigned; folders only render it) →
+"The road to the Operations Realm"):
 v1.3 renderer-agnostic projection engine + graph renderer (ratifies the
 projection rule; graphify's export layer is the reference implementation) →
 v1.4 first diagnostic workbench pilot (ratifies derived-source-class
@@ -322,7 +377,9 @@ PRIMARY/DERIVED + the one-way valve; vault skeleton: /00_system,
 /07_agent_workspaces, /08_proposals) → v1.5 EM Vault (full human-readable
 rendered workspace). The acquisition-ladder narrative: v0.10 proved local
 acquisition, v0.11 provider abstraction, v1.0 identity, v1.1
-consumption+binding — **v1.2 proves credentialed enterprise acquisition.**
+consumption+binding, **v1.2 credentialed enterprise acquisition — and
+v1.2.1 makes that acquisition workable at scale: humans review by
+exception, never by document.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
@@ -338,6 +395,8 @@ auto-approval, AI Governance Analyst, trust history, grouped conflict API,
 coverage heatmap, notifications, agent runtime/orchestration — the last is
 out of scope by D22, not by omission).
 
-Read `docs/DECISIONS.md` (now through **D25**) for the binding architectural
+Read `docs/DECISIONS.md` (now through **D27**) for the binding architectural
 rulings before changing anything. Any schema change must update the frozen
 snapshot in `test_workbench_projection.py` alongside its ratified decision.
+Any new automation module must be declared in the D26 guard's
+AUTOMATION_MODULES (the event-family sweep fails loudly otherwise).
