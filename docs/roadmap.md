@@ -25,7 +25,7 @@
 | MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | ✅ Completed — Governance Core Complete (D20 ratified, D21) |
 | v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
 | v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
-| v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | 🔨 Scoped — build contract ratified July 2026 (D25) |
+| v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
 | v1.2.x (likely v1.2.1) | Ingestion Automation (policy tiers) + Domain Classification | 📋 Planned |
 | v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 🧭 Directional |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
@@ -644,19 +644,26 @@ becomes the platform's normal operating rhythm.
 discipline; full rationale and dependency chain in
 [scoping-1.2-credentials-cloud-connector.md](scoping-1.2-credentials-cloud-connector.md)):
 
-- **v1.2.0 — Governed Credential Store + SharePoint connector.** The
-  D19/D14 unblock: outbound credentials (encrypted-at-rest, custody
-  lineage, never revealed by any surface) as a new governed species
-  distinct from v1.0's hash-only inbound credentials; SharePoint as the
-  first credentialed provider on the unchanged D18 framework; "Sources &
-  Connectors" UI area earned (D8). **Scoping ratified July 2026 — D25
-  (Credential Custody: the D9 no-keys rule generalized platform-wide)
-  plus companion rulings (envelope encryption under `EM_SECRET_KEY`,
-  ADMIN-only `credentials:manage` as the 12th permission, per-scan use
-  events, provider-key migration deferred, fake-Graph-in-CI + one live
-  run as WS2 gate evidence). Build contract:
-  [credentials-cloud-connector-v1.2.md](credentials-cloud-connector-v1.2.md)
-  — four workstreams, custody guard first (WS0), each gated.**
+- **v1.2.0 — Governed Credential Store + SharePoint connector
+  (✅ COMPLETED July 2026; D25 ratified; live-tenant verification pending
+  availability).** The D19/D14 unblock, delivered in four gated
+  workstreams (build contract:
+  [credentials-cloud-connector-v1.2.md](credentials-cloud-connector-v1.2.md)):
+  WS0 the custody guard before the door (`test_credential_custody.py` in
+  CI permanently — sentinel sweep + adversarial self-proof; D24 snapshot
+  amended in the same commit); WS1 the custody lifecycle (envelope
+  encryption under `EM_SECRET_KEY`, ADMIN-only `credentials:manage` as
+  the 12th permission, per-scan `EXTERNAL_CREDENTIAL_USED`, the Alice
+  test for secrets — the ledger alone proves which generation
+  authenticated which scan; rotation re-points bound connectors without
+  rewriting history); WS2 SharePointProvider on the unchanged D18 seam
+  (fake Graph in CI: auth failure, throttling, pagination, hash-only
+  change verdicts; framework decision logic untouched; the one manual
+  live-tenant run recorded honestly as pending); WS3 the Sources &
+  Connectors area (secret entered once and never displayed again,
+  custody history projected from the ledger, role-aware controls —
+  "governance cockpit, never a database viewer"). The acquisition
+  ladder: **v1.2 proves credentialed enterprise acquisition.**
 - **v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
   Classification.** Humans review by exception, never by document (D5
   applied): Tier-0 source-authority inheritance ("approved in the source

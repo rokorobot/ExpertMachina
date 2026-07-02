@@ -4,8 +4,9 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-02 · current version **v1.1.1** (Consumption Operations Workbench) · branch `main`
-· post-release strategy + v1.2 pre-scoping recorded (`b9d123c`) · **v1.2.0 scoping RATIFIED (D25)**
+**Snapshot:** 2026-07-02 · current version **v1.2.0** (Governed Credential Store & First Cloud
+Connector — all four gates PASSED; live SharePoint tenant verification pending availability) ·
+branch `main` · D25 ratified
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -19,7 +20,11 @@ and as of v1.1 the portable package channel is real, evaluable, and bindable:
 which model consumes an Expert Package is an evidence-backed, audited decision.
 v1.1.1 turns governed consumption from backend capability into operator-visible
 evidence: selection decisions, computed drift, and binding lineage are now
-inspectable without adding new governed state (D24).
+inspectable without adding new governed state (D24). v1.2.0 gives the platform
+custody of OUTBOUND credentials and its first credentialed enterprise source
+(SharePoint): secrets are usable but never visible, every use is evidence
+(D25), and cloud scans flow through the same governed pipeline as every other
+source — v1.2 proves credentialed enterprise acquisition.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -40,7 +45,11 @@ Realm" + docs/scoping-1.2-credentials-cloud-connector.md.
 Identity Boundary (v1.0)                   every caller authenticates; the boundary
   callers propose, the boundary decides    decides actors (D20); roles authorize;
   ↓                                        every decision is identity-fact evidence
-Source (Connector Framework)      v0.11.0  provider plugins; LocalFolderProvider first (D18)
+Credential Custody (D25)          v1.2.0   outbound secrets encrypted (envelope, EM_SECRET_KEY);
+  scans propose use, custody decides       per-scan EXTERNAL_CREDENTIAL_USED evidence; rotation
+  ↓                                        re-points connectors, never rewrites history
+Source (Connector Framework)      v0.11.0  provider plugins; LocalFolderProvider first (D18);
+  |                               v1.2.0   SharePointProvider (Graph) — first credentialed provider
   ↓ scan-now ingestion            v0.10.0  bulk ingestion, dedup, per-file status
   ↓ change detection              v0.10.1  changed source → candidate revision
 Documents → CANDIDATE assets               existing extraction pipeline (LLM or rules)
@@ -97,9 +106,18 @@ artifact exists in the same package family.
   chain. Purity rule enforced in CI. Landing pads: identity_fact_id on
   AuditEvent / AssetReview / AssetRevision (nullable, legacy-honest) and on
   ExpertAgentBinding (NOT nullable — no pre-boundary bindings exist).
-- **Authorization** (WS3): 11 permissions × 5 roles, code-resident matrix in
-  `identity.ROLE_PERMISSIONS`, enforced by `require_perm` on EVERY route.
-  AUTHZ_DENIED always audited; read grants follow EM_READ_AUDIT_MODE.
+- **Authorization** (WS3): 12 permissions × 5 roles (v1.2.0 added ADMIN-only
+  `credentials:manage` — outbound credential custody, deliberately NOT under
+  connectors:manage because SERVICE may hold KNOWLEDGE_OPERATOR), code-resident
+  matrix in `identity.ROLE_PERMISSIONS`, enforced by `require_perm` on EVERY
+  route. AUTHZ_DENIED always audited; read grants follow EM_READ_AUDIT_MODE.
+- **ExternalCredential** (v1.2.0, D25 — the OUTBOUND species, separate table):
+  encrypted at rest (envelope under EM_SECRET_KEY), never returned by any
+  surface ("never", not "once" — the operator supplied it), revoke-never-delete
+  lineage, random fingerprints (never plaintext-derived), granted scopes as
+  custody evidence. Custody events: EXTERNAL_CREDENTIAL_CREATED/_ROTATED/
+  _REVOKED/_USED/_RELEASE_REFUSED + CUSTODY_MASTER_KEY_ROTATED. The seam:
+  routes/connectors propose use; custody.release decides, per scan, audited.
 - **Recovery** (D21): documented manual procedure, no bypass mechanism.
 - Binding text and evidence: **D20 (ratified), D21** in docs/DECISIONS.md;
   design contract in docs/identity-boundary-v1.md.
@@ -159,9 +177,11 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `binding_lineage.py` | **v1.1.1 WS3**: server-composed binding lineage — backwards to source documents, sideways into identity; every hop resolves or is declared missing (D12); warnings ARE the inbox items |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
 | `package_consumer.py` | **v1.1 WS1**: first-class portable-channel consumer — verify, refuse, retrieve package-locally, generate via the D19 adapter seam; imports stdlib + llm ONLY (CI-enforced) |
-| `connectors/framework.py` | generic sync/reconciliation engine (D18) |
+| `custody.py` | **v1.2.0 (D25)**: outbound credential custody — envelope encryption (EM_SECRET_KEY wraps per-credential data keys), create/rotate/revoke lineage, `release()` (the propose/decide seam, per-scan EXTERNAL_CREDENTIAL_USED), master-key re-wrap (env-only key material, no secret re-entry) |
+| `connectors/framework.py` | generic sync/reconciliation engine (D18); v1.2.0: provider registry dispatch + custody release on scan when a credential is bound |
 | `connectors/models.py` | provider contract (D18) |
 | `connectors/providers/local_folder.py` | LocalFolderProvider (~85 lines) |
+| `connectors/providers/sharepoint.py` | **v1.2.0 WS2**: SharePointProvider — four-method contract over Microsoft Graph (client-credentials), injectable transport (fake Graph in CI), verbatim metadata, policy-free; structural purity asserted (stdlib + contract only) |
 | `policy.py` | Policy-Based Auto Approval (D17) |
 | `llm.py` | D19 resolver (DB config → OPENAI_MODEL env → gpt-4o-mini) + **v1.1 provider adapters** (OPENAI/ANTHROPIC) + `generate()` boundary; PACKAGE_CONSUMER function added |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools; EM_AGENT_TOKEN per-call resolution, registry clearance |
@@ -175,21 +195,31 @@ EvaluationQuestionResult, ClaimVerdict (immutable), SourceConnector,
 IngestionJob, SourceDocument, ApprovalPolicy (versioned, no delete),
 LLMFunctionConfig (selection only, D19; provider OPENAI|ANTHROPIC since v1.1),
 Principal, Credential, IdentityFact (v1.0),
-**PackageModelSelection, ExpertAgentBinding** (v1.1).
+**PackageModelSelection, ExpertAgentBinding** (v1.1),
+**ExternalCredential** (v1.2.0, D25; SourceConnector
++external_credential_id — by reference, never by value).
 
 ## Frontend (`frontend/src/app/page.tsx` + `src/store/index.ts`)
 
 Single-page Next.js + Zustand. **Login gate** (session restore, bearer via one
 apiFetch wrapper, 401 re-gates); role-aware: tabs and action surfaces hidden per
 `can(user, permission)` mirror (backend remains the source of truth). Tabs:
-dashboard, inbox, documents, assets, experts, evaluations, conflicts, revisions,
+dashboard, inbox, documents, **sources** (v1.2.0 WS3: Sources & Connectors —
+connector CRUD for LOCAL_FOLDER + SHAREPOINT, credential binding, scan history,
+and the credential custody surface: create/rotate/revoke at
+credentials:manage, secret entered once and never displayed again, custody
+history projected from audit events; LocalFolder administration moved here
+from Document Inventory), assets, experts, evaluations, conflicts, revisions,
 console (mock), **consumption** (v1.1.1: Selection Workbench / Consumption Inbox /
 Binding Explorer — assets:read; selection controls assets:approve; history panel
 audit:read; sidebar HIGH badge), agents¹, audit¹, settings² (¹ audit:read,
 ² settings:manage; settings holds LLM Models + Users & Tokens). Consumption is
 URL-addressable: ?tab=consumption&package=N&view=inbox|bindings&binding=M.
 Language rulings: "Select model" never "Deploy model"; "binding"/"serving
-package" never "deployed agent".
+package" never "deployed agent"; "credential"/"rotate"/"revoke" never
+"password"/"delete" — nothing implies a secret can be viewed. UI principle
+(v1.2.0 WS3): governance cockpit, never a database viewer — backend stores
+the full evidence; the UI shows the actionable projection of it.
 
 ## Release log (this development line)
 
@@ -207,6 +237,11 @@ package" never "deployed agent".
 | WS1 | `5d1c4e6` | Consumption area + Selection Workbench (zero new endpoints; + `4e778ed` PACKAGE-citation serialization fix) |
 | WS2 | `d77d8b2`+`2f736bf` | Computed Consumption Inbox (nine conditions, one severity function, no dismiss; family-hash drift semantics ratified) |
 | **v1.1.1** | `f130d93`+`2e05a67` | Binding Explorer + server-composed lineage — every hop resolves or is declared missing |
+| — | `470d08e` | v1.2.0 scoping ratified — build contract + D25 Credential Custody |
+| WS0 | `8cfec60` | D25 custody guard (sentinel sweep + adversarial self-proof, in CI permanently); external_credentials schema + D24 snapshot in one commit |
+| WS1 | `fe29cd4` | custody lifecycle: credentials:manage (12th permission), release seam, rotation re-points connectors, master-key re-wrap without secret re-entry |
+| WS2 | `d368fb4` | SharePointProvider on the unchanged D18 seam (fake Graph in CI; live-tenant evidence slot honestly pending) |
+| **v1.2.0** | `b9a20ad` | WS3 Sources & Connectors custody surface — governance cockpit, never a database viewer |
 
 ## How to run
 
@@ -232,42 +267,46 @@ package" never "deployed agent".
   `test_expert_agent_binding.py` (WS4). **v1.1.1 workbench suites** (in CI):
   `test_workbench_projection.py` (the D24 schema guard — update its frozen
   snapshot ONLY alongside a ratified decision, in the same commit),
-  `test_consumption_inbox.py`, `test_binding_lineage.py`. CI enforces all on
+  `test_consumption_inbox.py`, `test_binding_lineage.py`. **v1.2.0 custody
+  suites** (in CI): `test_credential_custody.py` (the D25 guard — sentinel
+  sweep across every surface incl. HTTP + adversarial self-proof; permanent),
+  `test_sharepoint_provider.py` (fake Graph: auth/throttle/pagination/
+  hash-verdict/end-to-end; provider structural purity). CI enforces all on
   every push. `test_support.governed_actor` is the only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
   adapter; keys stay env-based per D19), `EM_CORS_ORIGINS`,
-  `EM_AGENT_TOKEN` (MCP), `EM_READ_AUDIT_MODE` (OFF/SAMPLED/FULL).
+  `EM_AGENT_TOKEN` (MCP), `EM_READ_AUDIT_MODE` (OFF/SAMPLED/FULL),
+  **`EM_SECRET_KEY`** (v1.2.0: the custody master key — REQUIRED for any
+  outbound-credential operation; missing key = loud refusal, no fallback;
+  rotation: set `EM_SECRET_KEY_PREVIOUS`=old + `EM_SECRET_KEY`=new, then
+  POST /api/credentials/rotate-master-key — key material never transits
+  request bodies).
 - Verification tooling note: `preview_screenshot` times out on this machine —
   verify via accessibility snapshot / DOM eval instead.
 
 ## Next milestones — the planned arc (ruled July 2026)
 
-**NEXT: v1.2.0 — Governed Credential Store + First Cloud Connector
-(SharePoint). SCOPED AND RATIFIED (2026-07-02): D25 Credential Custody in
-docs/DECISIONS.md; build contract docs/credentials-cloud-connector-v1.2.md.**
-The rulings: outbound credentials are a NEW governed species in their own
-`external_credentials` table (encrypted-at-rest, custody lineage,
-non-nullable creation identity fact) — the v1.0 hash-only `credentials`
-table is never weakened; *outbound credential plaintext is not a governed
-fact; custody events are governed facts*; NO surface ever returns a stored
-secret ("never", not "once" — the operator supplied it). Companion rulings:
-envelope encryption under env `EM_SECRET_KEY` (master-key rotation re-wraps,
-never re-enters); a 12th permission `credentials:manage`, ADMIN-only
-(custody must not ride on `connectors:manage` — SERVICE can hold
-KNOWLEDGE_OPERATOR); scans propose credential use, the custody layer decides
-release and writes per-scan `CREDENTIAL_USED`; granted Graph scopes are
-custody evidence (Sites.Selected recommended minimum); LLM-provider-key
-migration deferred (store is purpose-generic, D19 unchanged); WS2 gate =
-fake Graph transport in CI + ONE recorded live-tenant run. Four gated
-workstreams: WS0 D25 + adversarial custody sweep guard
-(`test_credential_custody.py`, in CI permanently; schema + D24 snapshot in
-the same commit) → WS1 custody layer (the Alice test for secrets) → WS2
-SharePointProvider (framework diff zero, seam suite untouched) → WS3
-Sources & Connectors UI area (D8 earned).
+**v1.2.0 DELIVERED (July 2026) — all four gates PASSED**; build contract
++ gate records: docs/credentials-cloud-connector-v1.2.md. The one open
+item: the ONE manual live-SharePoint-tenant scan — append its evidence to
+the WS2 gate record when tenant access exists (custody metadata only,
+never secret material; the slot is recorded honestly as pending, never
+silently completed). Also deferred by ruling: LLM provider-key migration
+into the custody store (touches D19's resolution invariant — its own
+explicit later step; D19 holds unchanged, keys env-based).
 
-Then (v1.2.x/likely v1.2.1 planned; v1.3+ directional — see roadmap.md
-"The road to the Operations Realm"): ingestion automation (Tier-0
+**NEXT: v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
+Classification.** Pre-scoped in
+docs/scoping-1.2-credentials-cloud-connector.md; open a fresh scoping
+session from it (plus this file, DECISIONS.md, roadmap.md) per D16. The
+key input v1.2.0 prepared: SharePoint source metadata (library, content
+type, modified-by, tenant approval status where exposed) rides VERBATIM
+in ConnectorItem.metadata — Tier-0 source-authority policies consume it
+from there (the provider carries no policy, by ruling).
+
+The arc onward (v1.3+ directional — see roadmap.md
+"The road to the Operations Realm"): v1.2.x ingestion automation (Tier-0
 source-authority inheritance + Tier-2 engine-verified auto-approval; humans
 review by exception; ≥90% is a mature-corpus target) + hierarchical domain
 classification (DB-resident, policy-assigned; folders only render it) →
@@ -281,11 +320,13 @@ acquisition, v0.11 provider abstraction, v1.0 identity, v1.1
 consumption+binding — **v1.2 proves credentialed enterprise acquisition.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
-(gate sales, not the product loop — after v1.2.0); more provider adapters
-(Gemini / open models behind the D19 seam); binding lifecycle (**D23,
-deferred — held again at v1.1.1**: no withdrawal mechanics; likely shape
-deactivate / never delete / never mutate history — discuss before
-building); embedding index inside .empkg.
+(gate sales, not the product loop); OS keystore/KMS for the custody
+master key (the ruled successor to the env tier); Confluence/Drive
+providers (adapter additions now that SharePoint proved the credentialed
+path); more provider adapters (Gemini / open models behind the D19
+seam); binding lifecycle (**D23, deferred — held through v1.2.0**: no
+withdrawal mechanics; likely shape deactivate / never delete / never
+mutate history — discuss before building); embedding index inside .empkg.
 
 Deprioritized/deferred: unchanged (semantic auto-approval, revision
 auto-approval, AI Governance Analyst, trust history, grouped conflict API,

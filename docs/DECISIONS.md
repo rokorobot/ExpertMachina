@@ -429,7 +429,13 @@ adversarially sweeps every surface (API responses, audit payloads, logs,
 exports, projections, error paths); any hit fails CI. Schema changes land
 with the D24 frozen-snapshot update in the same commit, citing this
 decision.
-**Evidence:** to be recorded at the WS gates
-(docs/credentials-cloud-connector-v1.2.md): the custody sweep (WS0), the
-Alice test for secrets + the 12-permission authorization grid (WS1), the
-unchanged-framework SharePoint proof (WS2).
+**Evidence:** recorded at the four WS gates, all PASSED
+(docs/credentials-cloud-connector-v1.2.md):
+backend/test_credential_custody.py (WS0 sentinel sweep + adversarial
+self-proof; WS1 Alice test for secrets, route-level sweep, master-key
+re-wrap with byte-identical ciphertexts), test_authorization.py (the
+12-permission grid), test_sharepoint_provider.py (WS2
+unchanged-framework proof over a fake Graph tenant; the live-tenant run
+is an honest pending append), and the WS3 in-browser verification
+(surface-level sentinel discipline; secret entered once, never
+displayed). v1.2.0 released with all guards in CI permanently.
