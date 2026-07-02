@@ -540,3 +540,60 @@ exposure closed; declared misses (candidate / unknown / unreachable);
 the domain lens with counted exclusions; hostile-rendered-file
 invisibility; MCP_TOOL_CALLED discipline with zero PROJECTION_RENDERED
 events from queries.
+
+### WS4 — Operator Surface: ACCEPTED (2026-07-02, user-ratified) — THE MILESTONE GATE
+
+Commit: `1f6c7c3`. **Gate verdict: PASSED. Milestone verdict:
+ExpertMachina v1.3.0 is accepted.**
+
+**Gate wording (user-ratified at acceptance):** The projection operator
+surface is accepted. The Projections panel lives inside the existing
+dashboard, preserving the v1.3 scoping ruling that projection UI
+remains within existing areas until renderer plurality justifies a
+dedicated surface. The panel exposes declared render parameters —
+renderer, compiled-for clearance, and optional domain prefix — and
+gates render execution on assets:approve.
+
+The render history is projected from PROJECTION_RENDERED audit events
+only. No projection tables, mutable projection state, or alternate
+source of truth are introduced. The UI presents render status as
+Current, Stale — regenerate, or Superseded, with counts, cursor,
+output path, and ledger-derived metadata.
+
+The staleness lifecycle passed in browser verification and CI. A fresh
+render appears Current. A later approved governed fact makes the
+render Stale and surfaces a LOW-severity Governance Inbox item.
+Regeneration restores Current, marks the older render Superseded, and
+clears the inbox item without dismissal state. The language remains
+"regenerated," never "synced."
+
+Milestone acceptance passed. The end-to-end projection acceptance test
+proves the full v1.3 arc: corpus ingestion through the governed
+pipeline, policy approval, consumption chain creation, stamped
+clearance-filtered graph rendering, MCP document-to-binding path query
+over the same composition, stale detection after fact change,
+regeneration repair, render tamper detection from ledger hashes, total
+artifact deletion followed by identical re-render, D25 sentinel
+exclusion from rendered bytes, and D24 schema preservation.
+
+Final release proof: 31 CI suites pass. TypeScript is clean. ESLint
+has zero errors. The D24 frozen schema remains byte-identical at 28
+tables / 303 columns. The only pre-existing-suite assertion edit is
+the ratified MCP tool surface expansion from six to nine tools.
+
+**v1.3.0 is accepted as Projection Engine and Graph Lens. Projections
+are governed, clearance-filtered, disposable rendered lenses over the
+knowledge system. They are never canonical state, never a second
+knowledge system, and never a source for governed facts.**
+
+Evidence: `backend/test_projection_acceptance.py` (THE MILESTONE GATE,
+in CI — seven stages + the closing line: the D24 snapshot
+byte-identical to v1.2.1's, 28 tables / 303 columns); the in-browser
+verification against a seeded throwaway DB (live demo DB untouched by
+mtime proof): render click → Current; late approved fact → "Stale —
+regenerate" badge + STALE RENDER inbox item in "Can Wait" with its
+provenance-derived reason; regenerate → Current + Superseded history,
+inbox item gone; zero console errors. One harness artifact found and
+fixed during verification (a raw-SQL drift insert skipped created_at;
+the response schema rightly refused the NULL — a test-side fix, not an
+app bug).

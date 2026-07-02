@@ -27,7 +27,7 @@
 | v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
 | v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
 | v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | ✅ Completed (July 2026, D26 + D27 ratified) — all five gates PASSED; corpus proof 91.2% auto-approved, 100% exceptions surfaced |
-| v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 📐 Scoped — D28 ratified, build contract in [projection-engine-v1.3.md](projection-engine-v1.3.md) |
+| v1.3.0 | Projection Engine + Graph Lens (D28 — governed rendered lenses, agent graph queries) | ✅ Completed (July 2026, D28 ratified) — all five gates PASSED; ZERO schema change; 31 CI suites |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
 | v1.5 | EM Vault (human-readable rendered workspace) | 🧭 Directional |
 
@@ -692,25 +692,39 @@ discipline; full rationale and dependency chain in
   lower and climb as policies are tuned. Revision auto-approval stays
   forbidden (D17) — the known living-KB tension, documented and
   deliberately unresolved.
-- **v1.3.0 — Projection Engine + Graph Renderer (SCOPED July 2026;
-  D28 The Projection Rule ratified; build contract:
-  [projection-engine-v1.3.md](projection-engine-v1.3.md)).**
-  Renderer-agnostic projection of governed facts (facts → engine →
-  renderer → files); first renderer: graph.json + self-contained
-  graph.html (ported from graphify's export layer under MIT, vendored
-  vis-network — no CDN, clearance-filtered before rendering) + MCP
-  graph query tools — lineage as a path query. D28 ratified: a
-  projection is a governed lens over the knowledge system, never
-  another knowledge system — no projection authoritative, every render
-  regenerated and stamped `rendered_at` + audit cursor, manifest hash
-  in the ledger, staleness computed never silent, nothing flows back.
-  The constitutional claim: **zero schema change** — renders live in
-  the ledger as PROJECTION_RENDERED events; the D24 snapshot survives
-  the milestone byte-identical. Domains (D27) are the graph's grouping
-  dimension; graphify's LLM extraction is explicitly not adopted.
-  Guard-before-the-door: `test_projection_guard.py` (WS0, permanent in
-  CI) proves projection code cannot write governed state, renderers can
-  only present, and rendered artifacts cannot flow back.
+- **v1.3.0 — Projection Engine + Graph Lens (✅ COMPLETED July 2026;
+  D28 The Projection Rule ratified; build contract + all five gate
+  records: [projection-engine-v1.3.md](projection-engine-v1.3.md)).**
+  *A projection is a governed lens over the knowledge system, never
+  another knowledge system* — delivered guard-before-the-door in five
+  gated workstreams with the constitutional claim held end-to-end:
+  **ZERO schema change** (renders live in the ledger as
+  PROJECTION_RENDERED events; the D24 snapshot byte-identical to
+  v1.2.1's, asserted in CI permanently). WS0 the projection guard (the
+  fourth permanent guard: projection code cannot write governed state,
+  renderers import only the contract + swept siblings and never reach
+  up, PROJECTION_* is the only durable trace, rendered artifacts are
+  never inputs — ten planted self-proofs); WS1 the engine
+  (deterministic compose — same facts + scope + clearance =
+  byte-identical content; stamps live in manifest + event, never in
+  content; staleness = exact recompose-and-compare, surfacing as a LOW
+  no-dismiss inbox item cleared by regeneration alone); WS2 the graph
+  renderer (graphify's export layer ported under MIT: graph.json
+  node-link + ONE self-contained air-gapped graph.html with vis-network
+  9.1.6 vendored and hash-pinned; D27 domains fill the community slot —
+  no detection, no LLM; THE LENS PROOF: delete every artifact, lose
+  nothing, re-render reproduces every ledger-recorded hash); WS3 MCP
+  graph query tools (the gateway grows 6→9: lineage as a path query,
+  neighbors, domain subgraph — the GOVERNED channel composing live at
+  registry clearance, never reading rendered files; hostile rendered
+  artifacts proven invisible); WS4 the Projections panel inside the
+  dashboard (D8 — the top-level area is earned at v1.5 by renderer
+  plurality) + THE MILESTONE GATE (`test_projection_acceptance.py`:
+  corpus in through the real pipeline → render → agent path query →
+  drift → regeneration → tamper detection → total deletion repaired →
+  D25 sweep → closing on D24 snapshot byte-identity). D10 extended:
+  MCP graph tools = GOVERNED channel, rendered files = PORTABLE channel
+  — stamped, tamper-evident, disposable, never authoritative.
 - **v1.4.0 — First Diagnostic Workbench Pilot.** The Operations Realm
   opens: one workbench (onboarding diagnostic the candidate) on a real
   corpus, its agents bound consumers using existing doors (package +
