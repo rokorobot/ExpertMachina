@@ -615,6 +615,30 @@ export interface GovernanceReadiness {
   governance_facts: string[];
 }
 
+// v1.3 (D28): one PROJECTION_RENDERED ledger event, projected. `stale`
+// is computed (recompose-and-compare) for the latest render per
+// renderer; a stale render is regenerated, never edited.
+export interface ProjectionRenderRecord {
+  event_id: number;
+  timestamp: string | null;
+  actor: string;
+  current: boolean;
+  stale: boolean | null;
+  renderer?: string;
+  engine_version?: string;
+  clearance?: string;
+  status_inclusion?: string[];
+  domain_prefix?: string | null;
+  audit_cursor?: number;
+  rendered_at?: string;
+  counts?: { nodes: number; edges: number; groups: number };
+  excluded?: Record<string, number>;
+  projection_hash?: string;
+  manifest_hash?: string;
+  files?: Record<string, string>;
+  output?: string;
+}
+
 export interface GovernanceInbox {
   project_id: number;
   inbox_version: string;
@@ -762,6 +786,15 @@ interface AppState {
   governanceInboxLoading: boolean;
   fetchGovernanceInbox: (projectId: number) => Promise<void>;
   reviewClaimVerdict: (verdictId: number, comment: string) => Promise<void>;
+
+  // v1.3 (D28): render history is a ledger projection (PROJECTION_RENDERED
+  // events + a computed staleness verdict); rendering is a governed act.
+  projections: ProjectionRenderRecord[];
+  projectionsLoading: boolean;
+  fetchProjections: (projectId: number) => Promise<void>;
+  renderProjection: (projectId: number, body: {
+    renderer: string; clearance: string; domain_prefix?: string | null;
+  }) => Promise<boolean>;
 
   sourceConnectors: SourceConnector[];
   ingestionJobs: IngestionJob[];
@@ -1253,6 +1286,37 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ governanceInbox: data, governanceInboxLoading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), governanceInboxLoading: false });
+    }
+  },
+
+  projections: [],
+  projectionsLoading: false,
+  fetchProjections: async (projectId: number) => {
+    set({ projectionsLoading: true });
+    try {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/projections`);
+      if (!res.ok) throw new Error('Failed to fetch render history');
+      set({ projections: await res.json(), projectionsLoading: false });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err), projectionsLoading: false });
+    }
+  },
+  renderProjection: async (projectId: number, body) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/projections/render`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      });
+      if (!res.ok) {
+        const detail = await res.json().catch(() => ({}));
+        throw new Error(detail.detail || 'Render failed');
+      }
+      await get().fetchProjections(projectId);
+      return true;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return false;
     }
   },
 

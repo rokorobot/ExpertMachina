@@ -103,6 +103,10 @@ export default function Home() {
     fetchAuditTrail,
     deleteAsset,
     deleteDocumentAssets,
+    projections,
+    projectionsLoading,
+    fetchProjections,
+    renderProjection,
     conflicts,
     conflictScanSummary,
     conflictScanLoading,
@@ -481,6 +485,18 @@ export default function Home() {
       fetchGovernanceInbox(activeProjectId);
     }
   }, [activeTab, activeProjectId]);
+
+  // v1.3 (D28): render history is projected from the ledger on demand;
+  // the panel's parameters are declared render inputs, never saved state.
+  const [projectionRenderer, setProjectionRenderer] = useState('graph');
+  const [projectionClearance, setProjectionClearance] = useState('INTERNAL');
+  const [projectionDomainPrefix, setProjectionDomainPrefix] = useState('');
+  const [projectionRendering, setProjectionRendering] = useState(false);
+  useEffect(() => {
+    if (activeTab === 'dashboard' && activeProjectId !== null && currentUser) {
+      fetchProjections(activeProjectId);
+    }
+  }, [activeTab, activeProjectId, currentUser]);
 
   // A deep-link highlight only makes sense on the tab it belongs to.
   useEffect(() => {
@@ -1438,6 +1454,118 @@ export default function Home() {
                         )}
                       </div>
                     </div>
+                  </div>
+
+                  {/* PROJECTIONS PANEL (v1.3, D28): a governed lens, never
+                      a source. History is projected from PROJECTION_RENDERED
+                      ledger events; staleness is computed; a stale render is
+                      regenerated, never edited. Render = assets:approve
+                      (the .empkg act-class); history = assets:read. */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div>
+                        <h4 className="text-sm font-semibold text-slate-300">Projections</h4>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          Computed views over governed facts — regenerated, never edited; stamps live in manifest.json
+                        </p>
+                      </div>
+                      {can(currentUser, 'assets:approve') && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <select
+                            value={projectionRenderer}
+                            onChange={(e) => setProjectionRenderer(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
+                            aria-label="Renderer"
+                          >
+                            <option value="graph">graph (json + html)</option>
+                            <option value="projection">projection (canonical json)</option>
+                          </select>
+                          <select
+                            value={projectionClearance}
+                            onChange={(e) => setProjectionClearance(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
+                            aria-label="Compiled for clearance"
+                          >
+                            {['PUBLIC', 'INTERNAL', 'RESTRICTED', 'EXECUTIVE'].map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                          <input
+                            value={projectionDomainPrefix}
+                            onChange={(e) => setProjectionDomainPrefix(e.target.value)}
+                            placeholder="domain prefix (optional)"
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 w-44"
+                            aria-label="Domain prefix"
+                          />
+                          <button
+                            disabled={projectionRendering || activeProjectId === null}
+                            onClick={async () => {
+                              if (activeProjectId === null) return;
+                              setProjectionRendering(true);
+                              await renderProjection(activeProjectId, {
+                                renderer: projectionRenderer,
+                                clearance: projectionClearance,
+                                domain_prefix: projectionDomainPrefix.trim() || null,
+                              });
+                              setProjectionRendering(false);
+                            }}
+                            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs tracking-wider uppercase"
+                          >
+                            {projectionRendering ? 'Rendering…' : 'Render'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {projectionsLoading && projections.length === 0 ? (
+                      <p className="text-xs text-slate-500">Projecting render history from the ledger…</p>
+                    ) : projections.length === 0 ? (
+                      <p className="text-xs text-slate-500">
+                        No renders recorded for this project. A render exports a clearance-filtered,
+                        cursor-stamped view of approved knowledge — the ledger records every one.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {projections.slice(0, 8).map((p) => (
+                          <div key={p.event_id}
+                               className="flex items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-mono text-cyan-300">{p.renderer}</span>
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {p.rendered_at ? p.rendered_at.slice(0, 19).replace('T', ' ') : '—'}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {p.clearance} · {(p.status_inclusion || []).join('/')}
+                                {p.domain_prefix ? ` · ${p.domain_prefix}` : ''}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {p.counts ? `${p.counts.nodes}n/${p.counts.edges}e` : ''}
+                                {' '}· cursor {p.audit_cursor}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {p.current && p.stale === true && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/50 text-amber-300 border border-amber-700/50 uppercase tracking-wider">
+                                  Stale — regenerate
+                                </span>
+                              )}
+                              {p.current && p.stale === false && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-800/50 uppercase tracking-wider">
+                                  Current
+                                </span>
+                              )}
+                              {!p.current && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-wider">
+                                  Superseded
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono text-slate-600" title={`manifest ${p.manifest_hash || ''}`}>
+                                {p.output || ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* DEMO TRANSFORMATION ACTION CARD */}
