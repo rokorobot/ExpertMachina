@@ -20,6 +20,7 @@ from app import crud
 from app import connectors
 from app import ingestion
 from app import policy
+from app import tier2
 import test_support
 
 # D26 structural guard (v1.2.1 WS0, docs/ingestion-automation-v1.2.1.md).
@@ -48,12 +49,14 @@ import test_support
 APP_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app")
 
 # Every module that performs ingestion automation (auto-approval or any
-# future automated transition). WS3's Tier-2 module MUST be added here
-# when it lands - the event-family sweep below fails loudly if a module
-# outside this list writes ASSET_AUTO_APPROVED, so forgetting is caught.
+# future automated transition). The event-family sweep below fails loudly
+# if a module outside this list writes ASSET_AUTO_APPROVED, so forgetting
+# to declare one is caught.
 # classification.py (WS1, D27) writes only the domain column; it is
 # listed so the structural checks prove it never grows status writes.
-AUTOMATION_MODULES = ["policy.py", "classification.py"]
+# tier2.py (WS3, D26) is the async engine-verified tier - the module with
+# the strongest temptation to grow a second path, watched accordingly.
+AUTOMATION_MODULES = ["policy.py", "classification.py", "tier2.py"]
 
 # Isolated vector store: the dev server holds a lock on ./qdrant_db.
 ingestion.QDRANT_DIR = tempfile.mkdtemp(prefix="em_guard_qdrant_")
@@ -221,9 +224,10 @@ def run_scan(session, connector):
     session.commit()
     session.refresh(job)
     connectors.execute_ingestion_job(session, job.id)
-    # WS3 NOTE (binding): when the async Tier-2 pass lands, this helper
-    # MUST also drain the Tier-2 background task before returning - the
-    # sentinel's guarantee is "after ALL background tasks complete".
+    # WS3 (the binding note honored): the sentinel's guarantee is "after
+    # ALL background tasks complete" - drain the async Tier-2 pass
+    # before judging anything.
+    tier2.drain()
     session.refresh(job)
     assert job.status == "COMPLETED", f"{job.status} / {job.error}"
     return job
@@ -250,13 +254,32 @@ def revision_violations(session, asset, approved_content):
     return violations
 
 
+class ApproveEverythingVerifier:
+    """The most permissive engine constructible: it finds NO contradiction
+    in anything. Even under it, a candidate REVISION must stay pending -
+    Tier-2 considers CANDIDATE assets only; revisions of trusted content
+    are structurally out of its reach."""
+    identity = {"method": "GUARD_APPROVE_EVERYTHING", "note": "adversarial sentinel seam"}
+
+    def check(self, candidate, corpus):
+        return {"pairs_checked": len(corpus), "pairs_dropped": 0,
+                "contradictions": []}
+
+
 def part_3_revision_sentinel():
     print("\n--- Part 3: revision sentinel under the most permissive policy set ---")
-    engine = create_engine("sqlite:///:memory:",
+    # File-based DB with db.SessionLocal pointed at it: the async Tier-2
+    # pass owns its own session (D4) and must see this data - never the
+    # dev database.
+    tmp = tempfile.mkdtemp(prefix="em_guard_db_")
+    engine = create_engine(f"sqlite:///{os.path.join(tmp, 'guard.db')}",
                            connect_args={"check_same_thread": False})
+    db.engine = engine
     db.Base.metadata.create_all(bind=engine)
     Session = sessionmaker(autocommit=False, autoflush=False, bind=engine)
+    db.SessionLocal = Session
     session = Session()
+    tier2.verifier_factory = ApproveEverythingVerifier
 
     customer = crud.get_or_create_default_customer(session)
     officer = test_support.governed_actor(session, "GovernanceOfficer")
@@ -273,12 +296,12 @@ def part_3_revision_sentinel():
 
     # The most permissive policy set constructible - built as raw rows,
     # deliberately bypassing API validation (the adversary would too):
-    # every allowed asset type, unscoped, and a second policy with every
-    # v1.2.1 condition column populated maximally permissively. Today the
-    # condition columns are inert (WS2/WS3 land their evaluation); this
-    # sentinel is permanent, so the moment they gain semantics THIS test
-    # exercises them at their most permissive - the guarantee must hold
-    # under any policy an operator (or attacker) can write.
+    # every allowed asset type, unscoped; a policy with empty condition
+    # arrays (must behave exactly like the plain one - the D19 empty
+    # invariant); and a REAL Tier-2 policy under an engine that approves
+    # everything (the maximally permissive verifier, injected above).
+    # The guarantee must hold under any policy an operator (or attacker)
+    # can write and any verdict an engine can return.
     all_types = json.dumps(sorted(policy.ALLOWED_ASSET_TYPES))
     session.add_all([
         db.ApprovalPolicy(project_id=project.id, name="everything-tier1",
@@ -286,8 +309,11 @@ def part_3_revision_sentinel():
         db.ApprovalPolicy(project_id=project.id, name="everything-conditions",
                           asset_types_json=all_types, enabled=True,
                           source_conditions_json="[]",
-                          engine_conditions_json="{}",
-                          domains_json=json.dumps([""])),
+                          engine_conditions_json="{}"),
+        db.ApprovalPolicy(project_id=project.id, name="everything-tier2",
+                          asset_types_json=all_types, enabled=True,
+                          engine_conditions_json=json.dumps(
+                              {"contradiction_check": "CLEAN_REQUIRED"})),
     ])
     session.commit()
 
@@ -311,9 +337,18 @@ def part_3_revision_sentinel():
         "D26/D17 violation - a revision reached APPROVED without a human:\n  "
         + "\n  ".join(violations))
     pending = [r for r in approved.revisions if r.status == "CANDIDATE"]
+
+    # The async Tier-2 pass genuinely RAN under the approve-everything
+    # engine (scheduled by the scan, drained by run_scan) - the sentinel
+    # judged after it, not instead of it.
+    tier2_events = session.query(db.AuditEvent).filter(
+        db.AuditEvent.event_type == "POLICY_TIER2_COMPLETED").all()
+    assert tier2_events, "The Tier-2 pass must have run and reported itself"
+    assert all(json.loads(e.details)["engine_available"] for e in tier2_events)
     print(f"Part 3 passed: revision {pending[0].revision_number} pending, "
           f"approved content untouched, under {len(policy.ALLOWED_ASSET_TYPES)} "
-          f"covered types + populated condition columns.")
+          f"covered types + a live approve-everything Tier-2 engine "
+          f"({len(tier2_events)} async passes drained).")
 
     # Self-proof: simulate the catastrophe the sentinel exists to catch -
     # a buggy automation pass approves the pending revision and promotes

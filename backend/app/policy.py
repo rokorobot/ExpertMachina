@@ -62,6 +62,29 @@ def validate_source_conditions(conditions):
     return conditions or None
 
 
+def validate_domains(domains):
+    """Optional domain-prefix coverage narrowing (D26/D27). Empty lists
+    are stored as NULL (all domains - existing behavior preserved)."""
+    if domains is None:
+        return None
+    if not isinstance(domains, list):
+        raise ValueError("domains must be a list of domain path prefixes")
+    return [classification.validate_domain_path(d) for d in domains] or None
+
+
+def domain_covered(policy_row, asset) -> bool:
+    """Deny-by-default coverage: a policy with declared domains covers
+    only assets under those prefixes; an UNCLASSIFIED asset is not under
+    any prefix. NULL domains = all domains (v0.10.2 behavior)."""
+    domains = policy_row.domains
+    if not domains:
+        return True
+    if not asset.domain:
+        return False
+    return any(asset.domain == d or asset.domain.startswith(d + "/")
+               for d in domains)
+
+
 def source_conditions_met(policy_row, source_metadata):
     """(met, matched_evidence). ALL conditions must hold (AND); evidence
     quotes the values that carried the authority, for provenance. A key
@@ -113,6 +136,7 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
         "auto_approved": 0,
         "skipped_type_not_covered": 0,
         "skipped_source_conditions_unmet": 0,
+        "deferred_to_tier2": 0,
     }
     if not document_ids:
         return summary
@@ -139,9 +163,18 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
     policy_actors = {}  # one DELEGATED actor (one fact) per firing policy per run
     for asset in assets:
         source_uri, source_metadata = source_context.get(asset.document_id, (None, {}))
-        matched, matched_evidence, conditions_blocked = None, None, False
+        matched, matched_evidence = None, None
+        conditions_blocked, tier2_relevant = False, False
         for p in policies:
             if asset.type not in p.asset_types:
+                continue
+            if not domain_covered(p, asset):
+                continue
+            if p.engine_conditions:
+                # Tier-2 policies cannot decide synchronously - the
+                # engine verdict belongs to the async pass (D4). The
+                # asset is DEFERRED, honestly, not skipped.
+                tier2_relevant = True
                 continue
             met, evidence = source_conditions_met(p, source_metadata)
             if not met:
@@ -156,6 +189,8 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
                 # declared exception, never an engine rejection.
                 summary["skipped_source_conditions_unmet"] += 1
                 held_ids.append(asset.id)
+            elif tier2_relevant:
+                summary["deferred_to_tier2"] += 1
             else:
                 summary["skipped_type_not_covered"] += 1
             continue
@@ -170,7 +205,8 @@ def apply_auto_approval(session: Session, project_id: int, document_ids: list,
             "policy_version": matched.version,
             "policy_snapshot": {"asset_types": matched.asset_types,
                                 "connector_id": matched.connector_id,
-                                "source_conditions": matched.source_conditions},
+                                "source_conditions": matched.source_conditions,
+                                "domains": matched.domains},
             "asset_type": asset.type,
             "document_id": asset.document_id,
             "ingestion_job_id": ingestion_job_id,

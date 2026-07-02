@@ -13,6 +13,7 @@ from app import ingestion
 from app import extraction
 from app import policy
 from app import classification
+from app import tier2
 from app import revisions
 from app.connectors.models import ConnectorItem
 from app.connectors.providers.local_folder import LocalFolderProvider
@@ -152,6 +153,7 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
         # the same call the manual upload flow makes. A failure here is
         # recorded, never silent, but does not undo the ingested documents.
         auto_approval = None
+        tier2_scheduled = False
         if auto_extract and job.files_ingested > 0:
             try:
                 extraction.extract_knowledge_assets_from_project(session, job.project_id)
@@ -178,6 +180,17 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                         session, job.project_id, new_doc_ids,
                         connector_id=connector.id, ingestion_job_id=job.id,
                         on_behalf_of_fact=connector_fact)
+                    # Tier-2 runs async (D4): the job records only that
+                    # the pass was SCHEDULED - never results it does not
+                    # yet have. The background task owns its own session
+                    # and writes POLICY_TIER2_COMPLETED itself.
+                    if new_doc_ids and tier2.tier2_policies_in_scope(
+                            session, job.project_id, connector.id):
+                        tier2.schedule_pass(
+                            job.project_id, new_doc_ids, connector_id=connector.id,
+                            ingestion_job_id=job.id,
+                            on_behalf_of_fact_id=connector_fact.id)
+                        tier2_scheduled = True
                 except Exception as e:
                     job.error = f"Policy auto-approval failed after extraction: {e}"
                     session.commit()
@@ -197,6 +210,10 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                 "files_failed": job.files_failed,
                 "extraction_error": job.error,
                 "auto_approval": auto_approval,
+                # Scheduled only - the async pass reports its own results
+                # in POLICY_TIER2_COMPLETED (D4: never claim results the
+                # job does not yet have).
+                "tier2_scheduled": tier2_scheduled,
             }))
     except Exception as e:
         job.status = "FAILED"

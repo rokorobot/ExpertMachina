@@ -25,6 +25,7 @@ from app import binding_lineage
 from app import connectors
 from app import policy
 from app import classification
+from app import tier2
 from app import llm
 from app import custody
 
@@ -464,6 +465,10 @@ def upload_document(
         # The firing policy's identity chains to the uploader's fact.
         policy.apply_auto_approval(db_session, project_id, [doc.id],
                                    on_behalf_of_fact=actor.fact(db_session))
+        # Tier-2 async (D4): scheduled only; the pass reports itself.
+        if tier2.tier2_policies_in_scope(db_session, project_id):
+            tier2.schedule_pass(project_id, [doc.id],
+                                on_behalf_of_fact_id=actor.fact(db_session).id)
         db_session.refresh(doc)
 
     return doc
@@ -760,6 +765,8 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
     types = _validated_policy_fields(db_session, project_id, policy_in.asset_types, policy_in.connector_id)
     try:
         conditions = policy.validate_source_conditions(policy_in.source_conditions)
+        engine_conditions = tier2.validate_engine_conditions(policy_in.engine_conditions)
+        domains = policy.validate_domains(policy_in.domains)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     pol = db.ApprovalPolicy(
@@ -770,6 +777,8 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
         enabled=True,
         version=1,
         source_conditions_json=json.dumps(conditions) if conditions else None,
+        engine_conditions_json=json.dumps(engine_conditions) if engine_conditions else None,
+        domains_json=json.dumps(domains) if domains else None,
         created_by=actor.display,
     )
     db_session.add(pol)
@@ -780,7 +789,9 @@ def create_approval_policy(project_id: int, policy_in: schemas.ApprovalPolicyCre
                          target_id=str(pol.id),
                          details=json.dumps({"name": pol.name, "version": pol.version,
                                              "asset_types": types, "connector_id": pol.connector_id,
-                                             "source_conditions": conditions}),
+                                             "source_conditions": conditions,
+                                             "engine_conditions": engine_conditions,
+                                             "domains": domains}),
                          identity_fact_id=actor.fact(db_session).id)
     return pol
 
@@ -804,7 +815,8 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
     # The enabled flag is operational, not definitional - audited, no bump.
     definition_changed = False
     if ("asset_types" in data or "connector_id" in data or "name" in data
-            or "source_conditions" in data):
+            or "source_conditions" in data or "engine_conditions" in data
+            or "domains" in data):
         new_types = _validated_policy_fields(
             db_session, pol.project_id,
             data.get("asset_types", pol.asset_types),
@@ -812,20 +824,29 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
         old_snapshot = {"name": pol.name, "asset_types": pol.asset_types,
                         "connector_id": pol.connector_id,
                         "source_conditions": pol.source_conditions,
+                        "engine_conditions": pol.engine_conditions,
+                        "domains": pol.domains,
                         "version": pol.version}
         if "name" in data and data["name"].strip():
             pol.name = data["name"].strip()
         pol.asset_types_json = json.dumps(new_types)
         if "connector_id" in data:
             pol.connector_id = data["connector_id"]
-        if "source_conditions" in data:
-            # Tier-0 conditions are definition, not operation (D17/D26):
-            # editing what authority the rule requires bumps the version.
-            try:
+        # Tier conditions and domain coverage are definition, not
+        # operation (D17/D26): editing what the rule requires bumps the
+        # version so past events keep pointing at the rule that fired.
+        try:
+            if "source_conditions" in data:
                 conditions = policy.validate_source_conditions(data["source_conditions"])
-            except ValueError as e:
-                raise HTTPException(status_code=400, detail=str(e))
-            pol.source_conditions_json = json.dumps(conditions) if conditions else None
+                pol.source_conditions_json = json.dumps(conditions) if conditions else None
+            if "engine_conditions" in data:
+                engine_conditions = tier2.validate_engine_conditions(data["engine_conditions"])
+                pol.engine_conditions_json = json.dumps(engine_conditions) if engine_conditions else None
+            if "domains" in data:
+                domains = policy.validate_domains(data["domains"])
+                pol.domains_json = json.dumps(domains) if domains else None
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
         pol.version += 1
         definition_changed = True
 
@@ -846,6 +867,8 @@ def update_approval_policy(policy_id: int, update: schemas.ApprovalPolicyUpdate,
                                                  "new": {"name": pol.name, "asset_types": pol.asset_types,
                                                          "connector_id": pol.connector_id,
                                                          "source_conditions": pol.source_conditions,
+                                                         "engine_conditions": pol.engine_conditions,
+                                                         "domains": pol.domains,
                                                          "version": pol.version}}),
                              identity_fact_id=actor.fact(db_session).id)
     if toggled is not None:
@@ -1053,7 +1076,15 @@ def extract_assets(project_id: int, db_session: Session = Depends(get_db),
                                    on_behalf_of_fact=actor.fact(db_session))
     auto_approval = policy.apply_auto_approval(db_session, project_id, fresh_doc_ids,
                                                on_behalf_of_fact=actor.fact(db_session))
-    return {"message": "Knowledge assets extracted successfully.", "auto_approval": auto_approval}
+    # Tier-2 async (D4): the response records scheduling only; the pass
+    # owns its session and writes POLICY_TIER2_COMPLETED itself.
+    tier2_scheduled = False
+    if fresh_doc_ids and tier2.tier2_policies_in_scope(db_session, project_id):
+        tier2.schedule_pass(project_id, fresh_doc_ids,
+                            on_behalf_of_fact_id=actor.fact(db_session).id)
+        tier2_scheduled = True
+    return {"message": "Knowledge assets extracted successfully.",
+            "auto_approval": auto_approval, "tier2_scheduled": tier2_scheduled}
 
 def _asset_transition_permission(new_status: Optional[str]) -> str:
     """WS3: the permission an asset update needs depends on the transition -

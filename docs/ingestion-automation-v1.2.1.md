@@ -404,3 +404,64 @@ fake-Graph Tier-0 proof over the real SharePointProvider):
 - **Custody discipline carried over**: the D25 sweep runs at the end of
   the gate suite — no secret material readable anywhere after the run.
 - All 22 suites green; zero assertion edits to pre-existing suites.
+
+### WS3 — PASSED (2026-07-02, user-accepted)
+
+**Gate wording (user-ratified at acceptance):** WS3 PASSED. Tier-2
+engine verification is now a governed refusal-to-approve mechanism, not
+a rejection mechanism. Candidate assets may be checked asynchronously
+against the approved corpus under explicit versioned policy conditions,
+with domain-scoped comparison when configured, strict calibrated
+verifier thresholds, pair caps, dropped-pair declarations, and
+event-only verifier provenance. A non-contradicted candidate may be
+auto-approved through the governed policy path; a contradicted candidate
+remains CANDIDATE and is held as a declared exception naming the
+contradicting approved asset. Tier-2 verdicts do not create
+AssetRelationship rows, do not alter conflict scores, and do not pollute
+approved-conflict surfaces. Ingestion records scheduling only, the
+background pass owns its session, and the WS0 sentinel drains all
+background verification before judging.
+
+Evidence (`backend/test_tier2_engine_verification.py`, in CI; the
+deterministic verifier seam is the fake-Graph pattern applied to NLI —
+real NLI stays behind the EM_NLI_* knobs):
+
+- **The check** (`app/tier2.py`): the real NLIContradictionVerifier
+  inherits the conflict engine's calibration verbatim (0.90 strict
+  threshold, pair cap, embedding pre-filter, both directions judged,
+  drops declared). Domain coverage narrows BOTH candidate eligibility
+  and the comparison corpus (proven: the recorded corpus contained only
+  the finances-approved asset); no coverage = the whole approved corpus.
+- **Async per D4, proven deterministically**: the fake verifier is gated
+  on a threading.Event — the job is COMPLETED and the asset still
+  CANDIDATE while the verifier is blocked; INGESTION_JOB_COMPLETED
+  carries `tier2_scheduled: true` and no verdicts; the sync pass
+  declares `deferred_to_tier2`; ledger ordering asserted (job completion
+  event before the pass's own POLICY_TIER2_COMPLETED). The background
+  pass owns its own session (the v0.9.2a pattern).
+- **Provenance-only verdicts**: AssetRelationship count unchanged after
+  a contradicted candidate; approvals carry `engine_verdict` (verifier
+  identity incl. the declared FAKE_DETERMINISTIC_V1 seam, pairs checked,
+  drops, domain scope, `tier: TIER2`) on ASSET_AUTO_APPROVED; holds live
+  in the `held` list on POLICY_TIER2_COMPLETED, naming the contradicting
+  approved asset and score. Tier-2 composes with Tier-0 source
+  conditions (the authority quote rides along).
+- **Guard obligations fulfilled**: tier2.py joined AUTOMATION_MODULES
+  (structurally scanned; the event-family sweep recognizes the
+  legitimate second writer); the WS0 sentinel drains the async pass
+  before judging (the WS0 binding note retired), runs under a live
+  Tier-2 policy with an approve-everything fake verifier — the
+  maximally permissive engine constructible — and the candidate
+  revision still stays pending, with proof the pass actually ran.
+- **Engine honesty**: unavailable engine → nothing approved,
+  `engine_available: false` declared; a crashed background pass writes
+  POLICY_TIER2_COMPLETED with the error and `auto_approved: 0` — silent
+  async failure is impossible.
+- **Accepted additions**: the `deferred_to_tier2` counter (without it
+  the sync pass would misrepresent Tier-2-covered assets as ordinary
+  non-covered assets) and the failed-pass audit emission. Also landed
+  here per contract: `domains` coverage narrowing live for ALL tiers,
+  deny-by-default (a domains-scoped policy never covers an unclassified
+  asset; NULL = all domains), exposed as a definition change.
+- All 23 suites green; the only pre-existing file touched by the suites
+  is the WS0 guard, changed exactly as its binding note mandated.

@@ -284,6 +284,11 @@ class ApprovalPolicyCreate(BaseModel):
     # [{"key": "list_item_fields.ApprovalStatus", "equals": "Approved"}].
     # None/empty = the pre-Tier-0 policy, unchanged.
     source_conditions: Optional[List[dict]] = None
+    # v1.2.1 WS3 (D26 Tier-2): engine-verified conditions -
+    # {"contradiction_check": "CLEAN_REQUIRED"}. None/empty = not Tier-2.
+    engine_conditions: Optional[dict] = None
+    # v1.2.1 WS3 (D26/D27): optional domain-prefix coverage narrowing.
+    domains: Optional[List[str]] = None
     # v1.0: no created_by field - the identity boundary decides the actor.
 
 class ApprovalPolicyUpdate(BaseModel):
@@ -292,6 +297,8 @@ class ApprovalPolicyUpdate(BaseModel):
     connector_id: Optional[int] = None
     enabled: Optional[bool] = None
     source_conditions: Optional[List[dict]] = None  # a definition change (D17)
+    engine_conditions: Optional[dict] = None        # a definition change (D17)
+    domains: Optional[List[str]] = None             # a definition change (D17)
 
 class ApprovalPolicyResponse(BaseModel):
     id: int
@@ -302,6 +309,8 @@ class ApprovalPolicyResponse(BaseModel):
     enabled: bool
     version: int
     source_conditions: Optional[List[dict]] = None  # v1.2.1 WS2 (D26 Tier-0)
+    engine_conditions: Optional[dict] = None        # v1.2.1 WS3 (D26 Tier-2)
+    domains: Optional[List[str]] = None             # v1.2.1 WS3 (D26/D27)
     created_by: Optional[str] = None
     created_at: datetime
     updated_at: datetime
