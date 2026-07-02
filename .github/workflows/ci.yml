@@ -66,6 +66,9 @@ jobs:
       - name: Ingestion automation guard (D26 single approval path + revision sentinel)
         working-directory: backend
         run: python test_ingestion_automation_guard.py
+      - name: Projection guard (D28 lens rule - no governed writes, renders never inputs)
+        working-directory: backend
+        run: python test_projection_guard.py
 
   frontend:
     runs-on: ubuntu-latest
