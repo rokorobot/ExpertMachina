@@ -622,3 +622,176 @@ contract only, rendered artifacts cannot flow back (read-back sentinel),
 stamps are mandatory; adversarially self-proven at the WS0 gate.
 **Evidence:** recorded at the WS gates in docs/projection-engine-v1.3.md
 as each is accepted.
+
+## D29 — The One-Way Valve (v1.4.0 scoping, RATIFIED)
+> Agent outputs cannot become canonical facts directly. Everything an
+> agent diagnoses, recommends, synthesizes, or infers enters governed
+> knowledge only through the proposal lane: agent finding → proposal
+> document → connector ingestion → CANDIDATE → human gate → DERIVED
+> fact. There is no second door: no agent principal, workbench result,
+> diagnostic output, or MCP/tool return can write APPROVED knowledge or
+> any canonical fact state.
+>
+> The valve constrains agents, not people. Human decisions enter as
+> ordinary documents and become PRIMARY facts; the valve adds no
+> friction to human authorship.
+>
+> Proposal-lane candidates are never auto-approved. No policy tier —
+> Tier-0, Tier-2, or any future tier — applies to them; the human gate
+> on agent-proposed knowledge is constitutional, not configurable.
+
+The family principle's seventh instance (D17/D18/D19/D20/D25/D28):
+*agents propose knowledge; the human gate decides facts.* D15 stays
+absolute in the Knowledge Realm — extract and verify, never synthesize.
+Synthesis is the workbench's product, and the valve is what lets D15
+and synthesis coexist: EM extracts and verifies the proposal *document*
+exactly as it would any document; the proposal is evidence, not truth,
+until a human rules. The Operations Realm opens through this valve, or
+not at all.
+
+The lane-sentinel clause (third paragraph) is the heart of the ruling:
+it forecloses the dangerous future shortcut — "trusted agent
+auto-accept." If agent-proposed knowledge is ever to be auto-approved,
+that requires an explicit superseding decision recorded in this
+register, never a policy configuration change. The known configuration
+hole it closes: approval policies with `connector_id = NULL` apply to
+all connectors, so without the sentinel a global permissive policy
+would silently delete the human gate on agent output.
+
+Companion rulings made at the same scoping session (binding, recorded
+in docs/diagnostic-workbench-v1.4.md):
+- **The workbench is a reference consumer, never a subsystem** (D22
+  held): it lives at top-level `workbench/`, outside `backend/`
+  entirely. Its only doors are the existing ones — the .empkg via
+  `package_consumer`, the MCP server as a real client at a real AGENT
+  token's clearance, and file writes into the vault. Nothing under
+  `backend/app/` imports workbench code.
+- **Vault skeleton** under `EM_VAULT_DIR` (the EM_PACKAGE_DIR /
+  EM_PROJECTION_DIR pattern): `/00_system` is static, repo-versioned
+  contract material this milestone — NOT a projection render
+  (vault-as-renderer is v1.5; folders 01–06 are reserved for it);
+  `/07_agent_workspaces` is ungoverned scratch, never scanned;
+  `/08_proposals` is the only agent-writable governed ingress, watched
+  by ONE PROPOSAL-lane LocalFolderProvider connector — the existing
+  pipeline, zero new ingestion channels.
+- **Language rulings**: "proposal", "finding", "accepted as DERIVED",
+  "held for review", "primary prevails", "agent-synthesized", "human
+  accepted" — never "agent-approved", "auto-accepted", "derived is
+  wrong", "rejected by the engine", "synced into knowledge", or "agent
+  wrote a fact".
+
+**Why:** the Operations Realm's product is synthesis, and synthesis
+that can write itself into canon is self-reinforcement — the "trust
+me" the platform exists to remove, re-entering through agents. Six
+months after an agent's finding becomes an APPROVED fact, the system
+must prove which agent synthesized it, under which binding, from which
+package hash, citing which governed evidence, and which human accepted
+it — and prove no path existed by which the finding could have entered
+without that human.
+**Tradeoff accepted:** the valve is enforced at EM's boundary. An
+agent given filesystem write access to a PRIMARY-lane watched folder
+defeats it at deployment level — exactly as filesystem access to
+SQLite defeats the identity boundary (D21 posture: workspace
+discipline is deployment contract, documented in /00_system; EM proves
+everything within its boundary). And every agent finding pays the full
+document pipeline plus human-gate latency — the friction is the
+feature, never an optimization target.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_agent_authorship_guard.py` (Guard 5, the fifth permanent
+guard family, built at WS0 before any workbench code exists): AGENT
+principals frozen to `AGENT_CONSUMER` = `{mcp:consume}` with every
+write route refused and audited; the MCP surface writes nothing (AST
+sweep); THE LANE SENTINEL — under the most permissive policy
+environment constructible (global NULL-connector policy, satisfied
+Tier-0 conditions, a live approve-everything Tier-2 engine), a
+proposal-lane candidate is still PENDING after all background tasks
+complete; no cross-lane mutation (a proposal colliding by (type, name)
+with a PRIMARY asset creates a new CANDIDATE, never a candidate
+revision of it); workbench isolation swept the moment `workbench/`
+exists; adversarially self-proven.
+**Evidence:** recorded at the WS gates in
+docs/diagnostic-workbench-v1.4.md as each is accepted.
+
+## D30 — Derived Source Class (v1.4.0 scoping, RATIFIED)
+> Every knowledge asset carries a source class: PRIMARY (human-authored
+> or human-adopted knowledge) or DERIVED (agent-synthesized knowledge
+> accepted by a human through the proposal lane). The class is decided
+> by the ingestion channel, never claimed by document content: assets
+> extracted from a proposal-lane connector are DERIVED; everything else
+> is PRIMARY. A DERIVED fact carries complete synthesis provenance —
+> agent principal, binding, package hash, cited governed evidence,
+> accepting human — verified against governed records at the gate,
+> never trusted from the claim.
+>
+> Primary prevails over derived: a conflict between a PRIMARY and a
+> DERIVED fact is never resolved in favor of the DERIVED side by any
+> automatic mechanism, and the class asymmetry is declared wherever the
+> conflict is surfaced. DERIVED facts are ordinary APPROVED knowledge in
+> every other respect — retrievable, packageable, renderable — and their
+> class travels with them into every package, projection, citation, and
+> MCP response, so derivation is always visible to every consumer.
+
+D29 governs how agent output may re-enter governed knowledge; D30
+governs what accepted agent-synthesized knowledge becomes. They are
+deliberately separate laws: a future change to DERIVED handling must
+not weaken the valve, and a future valve hardening must not require
+redefining source classes.
+
+The channel-decides-class rule is the D20 shape applied to authorship:
+the proposal document *proposes* its provenance in frontmatter; the
+lane and the gate *decide* the class and verify the provenance. A
+proposal claiming to be PRIMARY is still DERIVED; a PRIMARY-lane
+document claiming agent provenance stays PRIMARY.
+
+Companion rulings made at the same scoping session (binding, recorded
+in docs/diagnostic-workbench-v1.4.md):
+- **Exactly two columns** — `KnowledgeAsset.source_class TEXT NOT NULL
+  DEFAULT 'PRIMARY'` and `SourceConnector.lane TEXT NOT NULL DEFAULT
+  'PRIMARY'` (`PRIMARY` | `PROPOSAL`). The D24 frozen snapshot moves
+  28 tables / 303 columns → 28 tables / 305 columns in the WS0 commit,
+  citing D29+D30 — a real schema milestone, recorded openly (the
+  deliberate contrast with v1.3.0's zero).
+- **Legacy is PRIMARY by construction, not reconstruction**: before
+  v1.4 no agent-writable ingress existed, so the default is a
+  derivable truth, never a backfilled guess (D12 satisfied).
+- **Synthesis provenance needs no columns** (D1): the proposal
+  document is immutable evidence (the frontmatter lives inside the
+  content-hashed document), verification results and the
+  verbatim-quoted provenance ride the approval event (the D26 Tier-0
+  pattern), and the accepting human is already the AssetReview +
+  IdentityFact.
+- **Provenance is verified, never trusted**: the claimed binding must
+  exist, belong to the claimed agent principal, and match the claimed
+  package hash, checked against governed records at ingestion and
+  quoted verbatim at approval. Unverifiable provenance is a computed
+  exception (`PROPOSAL_PROVENANCE_UNVERIFIED`, MEDIUM at most per D2,
+  no dismiss) — held loudly, never silently, never rejected by the
+  engine.
+- **Primary-prevails mechanics**: the class asymmetry is declared on
+  every PRIMARY×DERIVED conflict pair; review surfaces present the
+  DERIVED side as the presumptive review target; nothing auto-resolves
+  — humans confirm/dismiss exactly as today; the compile gate treats
+  these conflicts identically (a blocking contradiction blocks, no
+  special case).
+- **Class-travels-everywhere is the anti-inbreeding measure**: an
+  agent reading a DERIVED fact and synthesizing atop it cannot be
+  prevented — but every DERIVED fact cites the governed evidence it
+  drew from, so derivation depth is computable and second-generation
+  synthesis is visible at the gate. Discipline through provenance,
+  never through access denial.
+
+**Why:** accepted synthesis must never be mistakable for
+human-authored knowledge — at the review gate, in a package, in a
+graph, or in an agent's citation. The alternative failure mode is
+knowledge inbreeding: agent output laundered into canon, consumed by
+agents, and re-synthesized with its origin erased.
+**Tradeoff accepted:** a two-value vocabulary (no CURATED/SECONDARY
+classes until real pressure earns them); DERIVED facts are not
+access-restricted — the control is visible derivation, not denial.
+**Enforcement:** structural, in CI, permanent — Guard 5 sweeps
+`source_class` assignment (only the allowlisted channel-derivation
+path may write it; frontmatter-decided class is a planted-and-caught
+violation); the D24 snapshot asserts the two-column shape; class-travel
+asserted at the WS2 gate on every consumer channel.
+**Evidence:** recorded at the WS gates in
+docs/diagnostic-workbench-v1.4.md as each is accepted.

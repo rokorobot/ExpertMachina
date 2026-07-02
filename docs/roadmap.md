@@ -28,7 +28,7 @@
 | v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
 | v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | ✅ Completed (July 2026, D26 + D27 ratified) — all five gates PASSED; corpus proof 91.2% auto-approved, 100% exceptions surfaced |
 | v1.3.0 | Projection Engine + Graph Lens (D28 — governed rendered lenses, agent graph queries) | ✅ Completed (July 2026, D28 ratified) — all five gates PASSED; ZERO schema change; 31 CI suites |
-| v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
+| v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class) | 🔄 In Progress — scoping ratified July 2026; build contract [diagnostic-workbench-v1.4.md](diagnostic-workbench-v1.4.md) |
 | v1.5 | EM Vault (human-readable rendered workspace) | 🧭 Directional |
 
 ---
@@ -725,15 +725,30 @@ discipline; full rationale and dependency chain in
   D25 sweep → closing on D24 snapshot byte-identity). D10 extended:
   MCP graph tools = GOVERNED channel, rendered files = PORTABLE channel
   — stamped, tamper-evident, disposable, never authoritative.
-- **v1.4.0 — First Diagnostic Workbench Pilot.** The Operations Realm
-  opens: one workbench (onboarding diagnostic the candidate) on a real
-  corpus, its agents bound consumers using existing doors (package +
-  MCP). Ratifies derived-source-class (PRIMARY vs DERIVED, synthesis
-  provenance, primary-over-derived conflict discipline) and the one-way
-  valve. Vault skeleton arrives (/00_system contract, /07 workspaces,
-  /08_proposals). Gate: the full loop once, end to end — corpus in,
-  evidence-backed diagnosis out, one accepted finding re-entering as a
-  DERIVED fact with complete provenance.
+- **v1.4.0 — First Diagnostic Workbench Pilot (🔄 IN PROGRESS —
+  scoping ratified July 2026; D29 The One-Way Valve + D30 Derived
+  Source Class; build contract:
+  [diagnostic-workbench-v1.4.md](diagnostic-workbench-v1.4.md)).**
+  The Operations Realm opens: one workbench (onboarding diagnostic) on
+  a real corpus, its agent a bound consumer using existing doors only
+  (.empkg + MCP graph tools; D27 domain prefixes as scope). D29: agent
+  findings re-enter ONLY via the proposal lane (/08_proposals →
+  LocalFolderProvider → CANDIDATE → human gate → DERIVED fact);
+  proposal-lane candidates are never auto-approved — constitutional,
+  not configurable; the valve constrains agents, not people. D30:
+  PRIMARY vs DERIVED source class, channel-decided never
+  content-claimed, synthesis provenance verified against governed
+  records, primary-over-derived conflict discipline, class travels
+  into every package/projection/citation/MCP response. A real schema
+  milestone (two columns; D24 snapshot 28/305). Guard 5
+  (`test_agent_authorship_guard.py`, the fifth permanent guard) lands
+  at WS0 before any workbench code. Vault skeleton arrives (/00_system
+  static contract, /07_agent_workspaces ungoverned scratch,
+  /08_proposals return path; folders 01–06 reserved for v1.5). Gate:
+  the full loop once, end to end — corpus in, evidence-backed
+  diagnosis out, one accepted finding re-entering as a DERIVED fact
+  with complete provenance, the ledger alone proving no agent wrote
+  canonical facts directly.
 - **v1.5 — EM Vault.** The full human-readable rendered workspace
   (Obsidian-compatible, Git-trackable) as the projection engine's second
   renderer; domain-first/type-second asset folders rendering the v1.2.x
