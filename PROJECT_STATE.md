@@ -4,11 +4,11 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-02 · current version **v1.3.0** (Projection Engine &
-Graph Lens — all five gates PASSED; projections are governed,
-clearance-filtered, disposable rendered lenses, never a second knowledge
-system; ZERO schema change) · branch `main` · D28 ratified (register through
-D28)
+**Snapshot:** 2026-07-02 · current version **v1.4.0** (First Diagnostic
+Workbench Pilot — all five gates PASSED; the Operations Realm opens with
+the one-way valve intact: agents may diagnose and propose, but only
+governed human acceptance can turn a finding into DERIVED knowledge) ·
+branch `main` · D29 + D30 ratified (register through D30)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -43,19 +43,34 @@ and staleness is computed exactly by recompose-and-compare — with ZERO
 schema change: renders live in the ledger as PROJECTION_RENDERED events,
 every render disposable, regenerable, and tamper-evident. A projection is a
 governed lens over the knowledge system, never another knowledge system.
+v1.4.0 opens the Operations Realm (D29 The One-Way Valve + D30 Derived
+Source Class): a reference diagnostic workbench — a consumer outside the
+governed backend, using only the existing doors (.empkg + MCP at a real
+AGENT token's clearance) — diagnoses a corpus and its finding re-enters
+ONLY through the proposal lane (/08_proposals → PROPOSAL-lane connector →
+CANDIDATE → human gate → DERIVED fact with verified synthesis provenance).
+Proposal-lane candidates are never auto-approved — constitutional, not
+configurable; the class is channel-decided, never content-claimed; primary
+prevails over derived as presentation and review priority, never automatic
+resolution; and the fifth permanent guard proves from the ledger alone that
+no agent principal can write canonical facts directly.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
 knowledge as immutable evidence and compiles it into trusted, agent-ready
 packages — D15 absolute: extract and verify, never synthesize. The Operations
-Realm (the goal) is diagnostic and improvement workbenches — bound agents over
-expert packages — where synthesis IS the product. The border is the v1.1
-consumption arc, and the authorship rule that keeps it honest: **humans author
-facts; agents propose them** (human decisions enter as ordinary documents →
-PRIMARY facts; agent findings re-enter only via the proposal lane → human
-gate → DERIVED facts). The knowledge lifecycle is a closed loop; drift is the
-normal operating rhythm. Full arc: roadmap.md "The road to the Operations
-Realm" + docs/scoping-1.2-credentials-cloud-connector.md.
+Realm (**OPEN as of v1.4.0**) is diagnostic and improvement workbenches —
+bound agents over expert packages — where synthesis IS the product. The
+border is the v1.1 consumption arc, and the authorship rule that keeps it
+honest is now LAW (D29/D30): **humans author facts; agents propose them**
+(human decisions enter as ordinary documents → PRIMARY facts; agent findings
+re-enter only via the proposal lane → human gate → DERIVED facts, with
+synthesis provenance verified against governed records and the class
+channel-decided). D15 and synthesis coexist because of the valve: EM extracts
+and verifies the proposal *document* like any document; the proposal is
+evidence, not truth, until a human rules. The knowledge lifecycle is a closed
+loop; drift is the normal operating rhythm. Full arc: roadmap.md "The road to
+the Operations Realm" + docs/diagnostic-workbench-v1.4.md.
 
 ## The value chain (all segments working end-to-end)
 
@@ -102,9 +117,20 @@ MCP Gateway (live channel)        v0.9     9 read-only tools (v1.3: +graph neigh
   |                                        cursor-stamped, deterministic projections; ZERO
   |                                        schema — renders recorded as PROJECTION_RENDERED
   ↓ graph renderer                v1.3.0   graph.json + self-contained graph.html (vendored
-                                           vis-network, air-gapped); D27 domains = the groups;
-                                           disposable, regenerable, tamper-evident (never a
-                                           source; staleness computed → LOW inbox item)
+  |                                        vis-network, air-gapped); D27 domains = the groups;
+  |                                        disposable, regenerable, tamper-evident (never a
+  |                                        source; staleness computed → LOW inbox item)
+  ↓ diagnostic workbench (D29)    v1.4.0   reference consumer OUTSIDE the backend (workbench/):
+  |                                        consumes .empkg + MCP graph tools at a real AGENT
+  |                                        token's clearance, synthesizes behind the D19 seam,
+  |                                        writes ONE proposal to the vault's /08_proposals
+  ↓ the proposal lane (D29/D30)   v1.4.0   PROPOSAL-lane connector → CANDIDATE (never
+  |                                        auto-approved: no policy tier applies —
+  |                                        constitutional) → human gate → DERIVED fact;
+  |                                        class channel-decided, synthesis provenance
+  |                                        verified against ExpertAgentBinding records and
+  |                                        quoted verbatim in the approval event; primary
+  |                                        prevails over derived in every conflict surface
 ```
 
 The two consumption channels stay honest (D10): MCP = GOVERNED (live
@@ -218,16 +244,24 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `connectors/models.py` | provider contract (D18) |
 | `connectors/providers/local_folder.py` | LocalFolderProvider (~85 lines) |
 | `connectors/providers/sharepoint.py` | **v1.2.0 WS2**: SharePointProvider — four-method contract over Microsoft Graph (client-credentials), injectable transport (fake Graph in CI), verbatim metadata, policy-free; structural purity asserted (stdlib + contract only) |
-| `policy.py` | Policy-Based Auto Approval (D17); **v1.2.1 (D26)**: Tier-0 source_conditions evaluation (equals/in, dotted keys, absence never satisfies), domain_covered deny-by-default, deferred_to_tier2 honesty, held exceptions declared with ids |
+| `policy.py` | Policy-Based Auto Approval (D17); **v1.2.1 (D26)**: Tier-0 source_conditions evaluation (equals/in, dotted keys, absence never satisfies), domain_covered deny-by-default, deferred_to_tier2 honesty, held exceptions declared with ids; **v1.4.0 (D29)**: `proposal_lane_document_ids` — the lane floor consulted per-document by BOTH tiers; proposal-lane candidates are outside every policy tier, holds declared as `proposal_lane_held_ids` |
 | `classification.py` | **v1.2.1 WS1 (D27)**: governed domain classification — deterministic first-match assignment (ASSET_CLASSIFIED with policy snapshot + matched values), taxonomy reorganize (rename prefix-rewrite + policy-driven reclassify, TAXONOMY_REORGANIZED with old→new mapping); writes ONLY the domain column |
 | `tier2.py` | **v1.2.1 WS3 (D26)**: async candidate-contradiction check — refusal-to-approve, never rejection; background pass owns its session (D4), verdicts in event provenance ONLY (never AssetRelationship rows), injectable verifier seam (identity always in provenance), drain() hook for suites |
+| `proposals.py` | **v1.4.0 WS1 (D29/D30): the proposal lane** — the ONE allowlisted writer of `source_class` (Guard 5 sweeps every other writer): idempotent channel-derivation at scan (PROPOSAL-lane documents → DERIVED assets, INGESTED and CHANGED alike); frontmatter parsing from the stored content-hashed document file (never flattened chunks; claims recorded verbatim, never obeyed); governed provenance verification (binding exists + belongs to the claimed principal + active AGENT + package hash matches; cited assets checked, misses declared, DERIVED citations flagged = derivation depth computable); `approval_provenance` recomputed and quoted verbatim in the ASSET_APPROVED event at the human gate |
 | `llm.py` | D19 resolver (DB config → OPENAI_MODEL env → gpt-4o-mini) + **v1.1 provider adapters** (OPENAI/ANTHROPIC) + `generate()` boundary; PACKAGE_CONSUMER function added |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools (9 since v1.3: +get_graph_neighbors / get_lineage_path / get_domain_subgraph — the GOVERNED projection channel, composed live per call, never reading rendered files); EM_AGENT_TOKEN per-call resolution, registry clearance |
 | `projections/engine.py` | **v1.3.0 WS1 (D28): THE DECIDER** — compose() governed facts → clearance-filtered deterministic Projection (nodes/edges/domain groups, exclusions counted); render() writes + stamps + emits PROJECTION_RENDERED (the ONLY projection event emitter); is_stale() = recompose-and-compare (exact, no heuristics); render_history() ledger-projected. Content identity excludes stamps: rendered_at + audit_cursor live in manifest + event only |
 | `projections/contract.py` | **v1.3.0 WS0**: the frozen-dataclass model renderers receive; stamp fields are guard-checked contract fields — an unstamped render structurally cannot exist |
 | `projections/renderers/graph.py` | **v1.3.0 WS2**: the graphify port (MIT) — graph.json node-link + self-contained graph.html (search/filter/inspect, conflict edges styled, aggregated fallback above node limit; graph.json never loses detail); imports stdlib + contract + renderer siblings ONLY |
 | `projections/renderers/vis_network_js.py` | **v1.3.0 WS2**: vis-network 9.1.6 vendored (gzip+base64 constant, sourceMappingURL stripped, sha256 pinned) — renderers are write-only, so the library lives in code, never in a file to read back |
-| `query_engine.py` | LIVE-channel retrieval + validation + generation + claim verification; `ACCESS_RANK` |
+| `query_engine.py` | LIVE-channel retrieval + validation + generation + claim verification; `ACCESS_RANK`; v1.4.0: citations carry `source_class` (feeds ask_expert + MCP get_provenance) |
+
+Outside `backend/app/` (deliberately — D29/D22):
+
+| Location | Role |
+|---|---|
+| `workbench/onboarding_diagnostic.py` | **v1.4.0 WS3: the reference consumer**, never a subsystem — doors ONLY (Guard 5 Part 5 sweeps them in CI permanently): stdlib + `app.package_consumer` + `app.llm` + `mcp`. Verifies the .empkg chain, queries `get_domain_subgraph` (StdioMcpGraphClient = the real stdio door; a graph-client seam lets suites inject an in-process substitute resolving the same token), synthesizes behind an injectable seam (real = `consume()` via D19; CI = deterministic), writes ONE content-hash-named timestamp-free proposal to `/08_proposals` |
+| `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
 Key tables: Project, Document(+content_hash), DocumentChunk, KnowledgeAsset,
 AssetRevision(+identity_fact_id), AssetReview(+identity_fact_id),
@@ -244,11 +278,18 @@ Principal, Credential, IdentityFact (v1.0),
 KnowledgeAsset **+domain** (D27, NULL = honestly unclassified),
 SourceDocument **+source_metadata_json** (D26, verbatim Tier-0 evidence),
 ApprovalPolicy **+source_conditions_json/engine_conditions_json/domains_json**
-(D26; NULL preserves v0.10.2 behavior — the D19 invariant). D24 snapshot:
-28 tables / 303 columns — **unchanged by the entire v1.3.0 milestone**
-(the D28 constitutional claim, asserted in CI by the projection guard AND
-as the closing line of the milestone acceptance suite): renders live in
-the ledger as PROJECTION_RENDERED events; no projection table exists.
+(D26; NULL preserves v0.10.2 behavior — the D19 invariant),
+KnowledgeAsset **+source_class** (D30, TEXT NOT NULL DEFAULT 'PRIMARY' —
+PRIMARY | DERIVED, channel-decided; legacy rows PRIMARY by construction,
+not reconstruction), SourceConnector **+lane** (D29/D30, TEXT NOT NULL
+DEFAULT 'PRIMARY' — PRIMARY | PROPOSAL, the channel declaration the class
+derives from). D24 snapshot: **28 tables / 305 columns** (amended
+28/303 → 28/305 at the v1.4.0 WS0 gate citing D29+D30 — a real schema
+milestone, recorded openly; v1.3.0 held it byte-identical, the D28
+constitutional claim). Renders still live in the ledger as
+PROJECTION_RENDERED events; proposals persist NO provenance columns —
+the proposal document is the immutable evidence, verification rides the
+approval event (D1).
 
 ## Frontend (`frontend/src/app/page.tsx` + `src/store/index.ts`)
 
@@ -284,6 +325,18 @@ show the domain path with inline governed correction (ASSET_DOMAIN_CORRECTED,
 never a revision); the Governance Inbox ranks ingestion exceptions with
 provenance-derived "why held" (language: "held for review"/"exception",
 never "rejected by the engine"; "classified"/"corrected", never "moved").
+v1.4.0 WS4: the **DERIVED chip** on asset cards with state-dependent truth
+(approved: "agent-synthesized, accepted as DERIVED by <human> — synthesis
+provenance is on the ASSET_APPROVED event"; candidate: "held for the human
+gate (D29) — never auto-approved"); the **"Primary prevails · review #N"**
+chip on PRIMARY×DERIVED conflict cards naming the presumptive review target
+(presentation only — nothing auto-resolves, the gate is class-blind); the
+two proposal exception kinds (PROPOSAL_PROVENANCE_UNVERIFIED MEDIUM /
+PROPOSAL_AWAITING_GATE LOW) flow through the existing computed inbox.
+Language rulings: "proposal"/"finding"/"accepted as DERIVED"/"held for
+review"/"primary prevails"/"agent-synthesized"/"human accepted" — never
+"agent-approved", "auto-accepted", "derived is wrong", "rejected by the
+engine", or "agent wrote a fact".
 
 ## Release log (this development line)
 
@@ -318,6 +371,12 @@ never "rejected by the engine"; "classified"/"corrected", never "moved").
 | WS2 | `2325fdc` | graph renderer (graphify port, MIT): graph.json + self-contained graph.html, vendored vis-network, THE LENS PROOF; guard amendment: renderer siblings allowed, reaching up forbidden |
 | WS3 | `0d29f6a` | MCP graph query tools 6→9: lineage as a path query, engine-structure identity, audited denials, hostile-render invisibility |
 | **v1.3.0** | `1f6c7c3` | WS4 Projections panel (dashboard, D8) + THE MILESTONE GATE (test_projection_acceptance.py) closing on D24 snapshot byte-identity |
+| — | `9dc392e` | v1.4.0 scoping ratified — build contract + D29 The One-Way Valve + D30 Derived Source Class (two separate laws by ruling) |
+| WS0 | `a9e672a` | Guard 5 (test_agent_authorship_guard.py, the fifth permanent guard: THE LANE SENTINEL closes the connector_id=NULL hole, 40-route AGENT grid, seven plants) + source_class/lane columns + D24 snapshot 28/305 |
+| WS1 | `65c5eb6` | the proposal lane: proposals.py (the one allowlisted class writer), lane on the governed connector route, provenance verified never trusted, quoted verbatim at the human gate; two inbox kinds |
+| WS2 | `99728fe` | primary-over-derived discipline (one shared annotator, gate class-blind, nothing auto-resolves) + class travels into packages/projections/MCP/citations |
+| WS3 | `0b83a21` | workbench/onboarding_diagnostic.py (reference consumer, doors only) + vault skeleton (00_system contract, 07 scratch, 08_proposals) |
+| **v1.4.0** | `3f048e3` | WS4 operator surface (DERIVED chip, Primary-prevails chip, proposal inbox kinds) + THE MILESTONE GATE (test_workbench_acceptance.py: the full loop once, closing on ledger-proves-no-agent-wrote-facts + D24 28/305) |
 
 ## How to run
 
@@ -372,8 +431,28 @@ never "rejected by the engine"; "classified"/"corrected", never "moved").
   nothing, re-render hash-identical; air-gap; tamper from ledger alone),
   `test_mcp_graph_tools.py` (WS3: the path proof, audited denials,
   hostile-render invisibility), `test_projection_acceptance.py` (THE
-  MILESTONE GATE: seven stages closing on D24 snapshot byte-identity).
-  CI enforces all 31 on every push. `test_support.governed_actor` is the
+  v1.3 MILESTONE GATE: seven stages closing on the ratified D24
+  snapshot). **v1.4.0 authorship suites** (in CI):
+  `test_agent_authorship_guard.py` (Guard 5, the FIFTH permanent guard —
+  AGENT powerlessness frozen, every write route refuses AGENT bearers,
+  MCP no-write sweep + frozen 9-tool surface, THE LANE SENTINEL under
+  the most permissive policy environment constructible, source_class
+  writer allowlist {database.py, proposals.py}, workbench door sweep
+  (auto-activated on workbench/), provenance tripwire, seven adversarial
+  plants; NOTE: importing this module overrides db.engine — suites
+  reusing its checkers import it FIRST, then re-override),
+  `test_proposal_lane.py` (WS1: lane on the governed route,
+  channel-decided class, the verified chain closing on the opening
+  question, four forged postures, the valve live),
+  `test_derived_conflict_discipline.py` (WS2: one shared annotator,
+  asymmetry on every surface, gate class-blind, class in every consumer
+  channel), `test_workbench_pilot.py` (WS3: bootstrap idempotency, door
+  sweep, deterministic evidence-backed diagnosis, clearance at both
+  doors, the return path), `test_workbench_acceptance.py` (THE v1.4
+  MILESTONE GATE: eight stages + the closing lines — every approval
+  event carries a non-AGENT identity fact, every APPROVED DERIVED fact
+  has a human review, D24 at 28/305).
+  CI enforces all 36 on every push. `test_support.governed_actor` is the
   only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
@@ -386,7 +465,11 @@ never "rejected by the engine"; "classified"/"corrected", never "moved").
   request bodies), **`EM_PROJECTION_DIR`** (v1.3.0: where renders land;
   default `./projections` cwd-relative — referenced ONLY inside
   app/projections, guard-enforced; renders are disposable: delete freely,
-  regenerate identically).
+  regenerate identically), **`EM_VAULT_DIR`** (v1.4.0: the vault root —
+  consumed by vault/bootstrap.py; the PROPOSAL-lane connector's root_path
+  points at `<vault>/08_proposals`), **`EM_BACKEND_DIR`** (v1.4.0: how
+  the workbench runner locates app.package_consumer when run outside the
+  backend directory).
 - Verification tooling note: `preview_screenshot` times out on this machine —
   verify via accessibility snapshot / DOM eval instead.
 
@@ -433,33 +516,46 @@ update); WS4 the Projections panel (dashboard per D8) + THE MILESTONE
 GATE. Still open from v1.2.0: the ONE manual live-SharePoint-tenant
 scan (honest pending slot in credentials-cloud-connector-v1.2.md).
 
-**NEXT: v1.4.0 — First Diagnostic Workbench Pilot (the Operations
-Realm opens).** Open a fresh scoping session per D16 from this file +
-DECISIONS.md + roadmap.md (+ the "road to the Operations Realm" arc in
-roadmap.md and scoping-1.2-credentials-cloud-connector.md). It ratifies
-**derived-source-class** (PRIMARY vs DERIVED facts, agent-synthesis
-provenance, primary-over-derived conflict discipline) and **the one-way
-valve** (agent findings re-enter ONLY via the proposal lane →
-LocalFolderProvider → CANDIDATE → human gate; the valve constrains
-agents, not people — human decisions enter as ordinary documents).
-Vault skeleton arrives (/00_system contract, /07_agent_workspaces
-ungoverned scratch, /08_proposals return path). Candidate workbench:
-onboarding diagnostic. Gate: the full loop ONCE, end to end — corpus
-in, evidence-backed diagnosis out, one accepted finding re-entering as
-a DERIVED fact with complete provenance. The v1.3 graph/projection
-layer is the workbench agents' relational access; the v1.2.x taxonomy
-is their scoping dimension.
+**v1.4.0 DELIVERED (2026-07-02) — all five gates PASSED** (build
+contract + gate records: docs/diagnostic-workbench-v1.4.md; **D29 The
+One-Way Valve + D30 Derived Source Class** ratified as two separate
+laws). The Operations Realm opened guard-before-the-door: WS0 Guard 5
+(`test_agent_authorship_guard.py`, the fifth permanent guard family —
+THE LANE SENTINEL closed the connector_id=NULL global-policy hole
+before any workbench code existed) + the two ratified columns (D24
+snapshot 28/303 → 28/305, openly); WS1 the proposal lane (channel
+decides class, provenance verified never trusted, quoted verbatim at
+the human gate); WS2 primary-over-derived discipline (one shared
+annotator, gate class-blind, nothing auto-resolves) + class travels
+into every consumer channel; WS3 the reference workbench (outside the
+backend, doors only) + the vault skeleton; WS4 the operator surface +
+THE MILESTONE GATE — the full loop once, closing on the ledger alone
+proving no agent principal wrote canonical facts directly. **TWO open
+honest slots**: the ONE manual live-SharePoint-tenant scan (v1.2.0,
+still pending) and **the ONE real-model diagnostic run** (v1.4.0 —
+no provider key in the release environment; the stdio MCP door and
+D19 synthesis path are code-complete in workbench/; append evidence
+to the WS4 gate record when a key is available).
 
-The arc onward: v1.5 EM Vault (the projection engine's second renderer
-— full human-readable Obsidian-compatible workspace; domain-first
-folders rendering the D27 taxonomy; the D24 disappearance test as the
-gate; the top-level Projections UI area is earned HERE by renderer
-plurality, per the v1.3 scoping ruling). The acquisition-ladder
-narrative: v0.10 proved local acquisition, v0.11 provider abstraction,
-v1.0 identity, v1.1 consumption+binding, v1.2 credentialed enterprise
-acquisition, v1.2.1 review by exception at scale — **and v1.3 makes the
-governed system renderable and agent-queryable without ever creating a
-second source of truth.**
+**NEXT: v1.5 — EM Vault.** Open a fresh scoping session per D16 from
+this file + DECISIONS.md (through D30) + roadmap.md + the
+diagnostic-workbench-v1.4.md gate records. The projection engine's
+second renderer: the full human-readable Obsidian-compatible workspace
+— domain-first folders rendering the D27 taxonomy into the vault the
+v1.4 skeleton reserved (folders 01–06); all orientation files
+generated; the D24 disappearance test as the gate; the top-level
+Projections UI area is earned HERE by renderer plurality (the v1.3
+scoping ruling). The D28/D29 seam question to hold at scoping: the
+vault renderer writes rendered knowledge INTO the same tree agents
+write proposals into — the guard boundaries (renders are write-only
+disposable lenses; /08 is the only governed ingress; rendered files
+re-enter only as ordinary documents) must be re-proven where the two
+trees meet. The acquisition-ladder narrative: v0.10 local acquisition,
+v0.11 provider abstraction, v1.0 identity, v1.1 consumption+binding,
+v1.2 credentialed enterprise acquisition, v1.2.1 review by exception,
+v1.3 renderable and agent-queryable without a second source of truth —
+**and v1.4 opens governed diagnostic RETURN: agents propose, humans
+decide, derivation stays visible forever.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
@@ -475,7 +571,7 @@ auto-approval, AI Governance Analyst, trust history, grouped conflict API,
 coverage heatmap, notifications, agent runtime/orchestration — the last is
 out of scope by D22, not by omission).
 
-Read `docs/DECISIONS.md` (now through **D28**) for the binding architectural
+Read `docs/DECISIONS.md` (now through **D30**) for the binding architectural
 rulings before changing anything. Any schema change must update the frozen
 snapshot in `test_workbench_projection.py` alongside its ratified decision.
 Any new automation module must be declared in the D26 guard's
@@ -483,4 +579,11 @@ AUTOMATION_MODULES (the event-family sweep fails loudly otherwise). Any
 new projection or renderer module is swept automatically by the D28 guard
 the moment it exists under `app/projections/` — projection code cannot
 write governed state, renderers present and never decide, and rendered
-artifacts are never inputs.
+artifacts are never inputs. Any new workbench module is swept automatically
+by the D29/D30 guard the moment it exists under `workbench/` — doors only
+(stdlib + app.package_consumer + app.llm + mcp); the only writer of
+`source_class` is app/proposals.py; proposal-lane candidates are outside
+every policy tier, permanently ("trusted agent auto-accept" requires an
+explicit register supersession, never configuration). Five permanent guard
+families now stand in CI: D24 schema, D25 custody, D26 automation, D28
+projection, D29/D30 authorship.
