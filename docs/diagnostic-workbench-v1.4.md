@@ -325,4 +325,79 @@ content.
 
 ## Gate records
 
-*Appended as each workstream is accepted.*
+### WS0 — D29/D30 Schema + Agent Authorship Guard: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `a9e672a`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS0 is accepted as the
+constitutional boundary for v1.4.0. The milestone begins with D29 —
+The One-Way Valve and D30 — Derived Source Class implemented as
+schema, policy floor, and permanent CI guard before any diagnostic
+workbench code exists.
+
+The D24 frozen schema is amended by ratified decision from 28 tables /
+303 columns to 28 tables / 305 columns. The two added columns are
+KnowledgeAsset.source_class and SourceConnector.lane, both TEXT NOT
+NULL DEFAULT 'PRIMARY'. Legacy assets are PRIMARY by construction
+because no proposal-lane agent ingress existed before v1.4.
+
+Guard 5 is accepted as the fifth permanent guard family. It proves
+that no agent principal, workbench result, diagnostic output, MCP/tool
+return, or proposal-lane automation path can write APPROVED knowledge
+or canonical fact state except through the proposal lane and human
+gate.
+
+The structural powerlessness proof holds: AGENT principals remain
+kind-locked to AGENT_CONSUMER with exactly mcp:consume. REST write
+routes refuse AGENT bearer tokens. MCP tools remain read-only, with
+the frozen nine-tool surface and gateway AST sweep preventing governed
+writes.
+
+The lane sentinel passed. Under the most permissive policy environment
+constructible — global connector policies, empty-condition policies,
+Tier-2 approval, and an approve-everything fake engine — proposal-lane
+candidates remain CANDIDATE and are declared as held by both policy
+tiers. Human approval through the ordinary gate remains valid. The
+valve constrains agents, not people.
+
+Source class is channel-decided. Proposal-lane content becomes DERIVED
+only through the proposal lane and human gate; source_class cannot be
+caller-supplied, frontmatter-decided, or trusted from document
+content. A proposal colliding with an existing PRIMARY asset creates a
+separate held candidate and cannot mutate PRIMARY revision history.
+
+Workbench isolation is enforced. backend/app does not import workbench
+code, and future workbench modules are restricted to declared consumer
+doors. Provenance verification is guarded so that verified synthesis
+provenance cannot be claimed without consulting governed
+ExpertAgentBinding records.
+
+The guard is adversarially self-proven. Planted violations for
+write-capable MCP tools, widened AGENT roles, caller-supplied source
+class, frontmatter-decided class, workbench CRUD imports,
+content-trusted provenance, auto-approved proposal candidates, and
+proposal-to-PRIMARY collision are caught.
+
+All 32 CI suites pass. WS1 may proceed: proposal lane, connector lane
+declaration, channel-derived source_class assignment, proposal
+frontmatter parsing, governed synthesis provenance verification, and
+PROPOSAL_PROVENANCE_UNVERIFIED exception handling.
+
+Evidence (`backend/test_agent_authorship_guard.py`, 9 parts, in CI
+permanently — the fifth guard): frozen powerlessness (kind-role lock +
+exact permission set, both widening shapes caught in self-proof); the
+MCP AST sweep + the frozen nine-tool surface; the dynamic REST grid
+(40 write routes enumerated from the live route table, 40 explicit 403
+refusals, zero 2xx — new routes swept the moment they exist); the
+app-wide source_class writer sweep (allowlist: database.py +
+proposals.py, covered the moment WS1 lands) + the write-schema sweep;
+workbench isolation in both directions (auto-activates when
+`workbench/` exists); the provenance tripwire; THE LANE SENTINEL
+end-to-end with holds declared as `proposal_lane_held_ids` by both
+tiers' summary events, the human gate proven open, the sentinel
+self-proof (7b), and the cross-lane collision proof (7c); seven
+adversarial plants all caught with canonical clean shapes passing.
+Ratified ripple recorded: the D28 guard's Part 6 and the v1.3
+acceptance closing line now assert the CURRENT ratified D24 snapshot
+(28/305) — projection work may never be the reason FROZEN_SCHEMA
+changes.
