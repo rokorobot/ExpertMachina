@@ -279,4 +279,73 @@ projections by design; the graph renderer joins its swept surfaces.
 
 ## Gate records
 
-(appended as each workstream is accepted)
+### WS0 — Projection Guard: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `077c2be`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** The projection guard is
+accepted as the constitutional boundary for v1.3 projection work. It
+proves that projection modules cannot mutate governed state, renderers
+cannot import persistence or application internals, no schema changes
+are introduced, and the D24 frozen schema remains unchanged at 28
+tables / 303 columns.
+
+The only permitted durable trace of projection activity is
+`PROJECTION_RENDERED` in the audit ledger. Projection artifacts are
+disposable render outputs and are not a source of governed knowledge.
+The read-back sentinel proves that hostile, corrupted, or deleted
+render artifacts cannot alter governed state, computed read surfaces,
+or ledger history.
+
+WS1 and WS2 may now proceed under this guard. Projection engine and
+renderer code must remain inside the guarded contract: generated from
+governed facts, stamped with `rendered_at`, `audit_cursor`,
+`clearance`, `status_inclusion`, and `files`, with no schema writes, no
+governed model construction, no renderer persistence imports, and no
+artifact read-back path.
+
+Evidence (`backend/test_projection_guard.py`, in CI permanently — the
+fourth guard):
+
+- **No governed writes (dynamic, registry-aware)**: every module under
+  `app/projections/` swept by AST — session mutators, governed-model
+  construction (class list discovered from the live `db.Base` registry;
+  `AuditEvent` included — the ledger is reached only through
+  `crud.log_audit_event`), non-self attribute assignment, and schema
+  definition (`__tablename__` / `Table` / `Base` subclass) all
+  forbidden. WS1's `engine.py` is covered the moment it exists.
+- **Renderer isolation**: modules under `projections/renderers/` import
+  the stdlib (`sys.stdlib_module_names`) + `projections.contract` only,
+  relative imports included.
+- **Ledger-only durability, both directions**: inside the package, any
+  event emission not prefixed `PROJECTION_` is a violation (keyword and
+  positional `log_audit_event` forms); app-wide, the family may
+  originate only inside the package, and `EM_PROJECTION_DIR` may be
+  named nowhere else.
+- **Write-only file access**: `open()` requires an explicit `w`/`x`
+  mode; `.read()`/`.read_text()`/`json.load()` forbidden (`json.loads`
+  on governed column text stays legal — `load` reads files, `loads`
+  parses strings).
+- **Read-back sentinel (end-to-end)**: hostile render artifacts (a
+  graph.json claiming a HOSTILE fact as APPROVED, a manifest claiming
+  ledger cursor 999999, a scripted graph.html) planted at
+  `EM_PROJECTION_DIR` — governed snapshot of all 28 tables and the
+  computed read surfaces byte-identical with the hostile renders
+  present, after deleting them entirely, and a subsequent rescan
+  ingests zero hostile content and replays zero manifest events.
+- **Adversarial self-proof**: nine plants all caught (session write in
+  a renderer, governed-model construction, status write, foreign event
+  family, schema definition, read-mode open + `json.load` read-back,
+  persistence import in a renderer, unstamped manifest,
+  `PROJECTION_RENDERED` emitted outside the package); the canonical
+  clean renderer shape passes both checkers; the sentinel's detectors
+  proven non-vacuous against a simulated read-back (Part 5b).
+- **Stamps structural**: `contract.py` frozen dataclasses; the stamp
+  fields are guard-checked contract fields — a render without
+  `rendered_at` + audit cursor cannot exist.
+- **Accepted WS1/WS2 constraints (recorded at the gate)**: no
+  `set.add()` in projection modules (the blunt mutator sweep is
+  preferred over a clever permissive one); vendored vis-network is
+  inlined as a module constant at build time — WS2 must not read render
+  assets back from disk at runtime.
+- **All 26 pre-existing suites green with zero assertion edits.**
