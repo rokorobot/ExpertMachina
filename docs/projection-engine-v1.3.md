@@ -152,11 +152,23 @@ fourth time:
   unstamped render, plant a schema column — all three caught; the proof
   is recorded here.
 
-**Gate:** The projection guard is permanent in CI. It proves projection
-code cannot write governed state, proves renderers can only present,
-proves rendered artifacts cannot flow back, and adversarially
-self-proves that it fails when any of those rules is violated. The D24
-snapshot is untouched. All pre-existing suites pass unchanged.
+**Gate (user-ratified wording, at scoping acceptance):** Projection
+code may read governed facts and emit render artifacts/audit events,
+but it must not write governed state or create new canonical projection
+state. The guard establishes the permanent CI constraint before the
+engine exists:
+
+- Projection modules cannot write governed state.
+- Renderers can import only the projection contract, not
+  persistence/write services.
+- No schema changes allowed.
+- `PROJECTION_RENDERED` is the only allowed durable trace.
+- A read-back sentinel proves that deleting all render artifacts loses
+  no governed knowledge.
+- The D24 snapshot remains unchanged.
+
+The guard adversarially self-proves that it fails when any of these
+rules is violated. All pre-existing suites pass unchanged.
 
 ### WS1 — The projection engine (D28 made executable)
 
