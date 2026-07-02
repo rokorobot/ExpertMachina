@@ -599,3 +599,81 @@ citation-complete diagnosis; clearance held at both doors with the
 exclusion declared inside the proposal; the return path holding the
 DERIVED candidates under a live permissive policy with provenance
 verified against the governed binding.
+
+### WS4 — Operator Surface + Milestone Acceptance: ACCEPTED (2026-07-02, user-ratified) — THE MILESTONE GATE
+
+Commit: `3f048e3`. **Gate verdict: PASSED. Milestone verdict:
+ExpertMachina v1.4.0 is accepted.**
+
+**Gate wording (user-ratified at acceptance):** WS4 is accepted as the
+operator surface and final acceptance gate for v1.4.0.
+
+The operator surface remains inside existing areas. Asset cards expose
+DERIVED state through read-only chips. Candidate DERIVED assets are
+shown as held for the human gate under D29; approved DERIVED assets
+are shown as agent-synthesized findings accepted by a human, with
+synthesis provenance available through the ASSET_APPROVED audit event.
+Conflict cards declare PRIMARY_OVER_DERIVED asymmetry with the DERIVED
+side as presumptive review target, while making clear that nothing
+auto-resolves. Governance Inbox surfaces PROPOSAL_AWAITING_GATE and
+PROPOSAL_PROVENANCE_UNVERIFIED through the existing computed inbox
+path.
+
+Browser verification passed against a seeded throwaway database. The
+DERIVED chips, proposal inbox reasons, primary-over-derived conflict
+language, and unresolved conflict status all rendered correctly. The
+live demo database was untouched. Console verification showed zero
+errors.
+
+The milestone acceptance test passed. A corpus enters through the real
+governed pipeline, PRIMARY facts are approved by a human, a package is
+compiled and bound to a real AGENT principal, the reference workbench
+diagnoses through package and MCP doors, and a proposal is written to
+/08_proposals. The proposal is re-ingested through a PROPOSAL-lane
+connector and all extracted candidates remain CANDIDATE under both
+Tier-1 policy evaluation and a live approve-everything Tier-2 engine.
+The lane sentinel holds at the milestone gate.
+
+One finding is accepted by a human as an APPROVED DERIVED fact. Its
+approval event records the agent, binding, package hash, cited
+governed evidence, and accepting human identity fact. The DERIVED
+class travels through citations, package bytes, rendered graph.json,
+and MCP graph nodes. A PRIMARY contradiction declares
+primary-over-derived asymmetry, leaves the conflict unresolved, and
+blocks the compile gate in the same class-blind way as any
+contradiction.
+
+The D25 custody sweep is clean across vault, render, package, and
+ledger surfaces. The closing ledger proof holds: every approval event
+carries a non-AGENT identity fact, every APPROVED DERIVED fact has a
+human review row, and no agent principal wrote canonical facts
+directly.
+
+The D24 schema snapshot stands at 28 tables / 305 columns, exactly as
+ratified in WS0.
+
+The honest real-model diagnostic slot is recorded as PENDING because
+no provider key is available in the session environment. The stdio MCP
+door and D19 synthesis path are implemented; the slot remains open for
+one later real-model run.
+
+All 36 CI suites pass. TypeScript is clean. ESLint has zero errors.
+
+**v1.4.0 is accepted as the First Diagnostic Workbench Pilot. The
+Operations Realm opens with the one-way valve intact: agents may
+diagnose and propose, but only governed human acceptance can turn a
+finding into DERIVED knowledge.**
+
+Evidence: `backend/test_workbench_acceptance.py` (THE MILESTONE GATE,
+in CI — eight stages + the closing lines: every approval event carries
+a non-AGENT identity fact, every APPROVED DERIVED fact has a human
+review row, the D24 snapshot at 28/305); the in-browser verification
+against the seeded throwaway DB (DERIVED chips with state-dependent
+tooltips, the Primary-prevails chip with the presumptive target, both
+proposal kinds with held-for-review language, zero console errors; one
+harness artifact found and fixed — the seeded package lacked
+expert_model_id and the response schema rightly refused the NULL, a
+seed-side fix, not an app bug). **Honest slot (open): the ONE
+real-model diagnostic run** — append its evidence here when a provider
+key is available; the workbench's stdio MCP client and D19 synthesis
+path are code-complete.
