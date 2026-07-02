@@ -107,6 +107,8 @@ export default function Home() {
     projections,
     projectionsLoading,
     fetchProjections,
+    fetchProjectionRenderers,
+    projectionRenderers,
     renderProjection,
     conflicts,
     conflictScanSummary,
@@ -189,7 +191,7 @@ export default function Home() {
   // route guards remain the source of truth - this is presentation only.
   const allow = (permission: string) => can(currentUser, permission);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'sources' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'operations' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'sources' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'operations' | 'projections' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
 
   // v1.1.x Consumption Operations Workbench (D24): which package the
   // operator is looking at, and the in-flight selection proposal. Both are
@@ -506,13 +508,18 @@ export default function Home() {
 
   // v1.3 (D28): render history is projected from the ledger on demand;
   // the panel's parameters are declared render inputs, never saved state.
+  // v1.5 WS3 (D8): the panel GRADUATED from the dashboard to a top-level
+  // Projections area - renderer plurality (graph + vault) earned it, per
+  // the v1.3 scoping ruling. Renderer metadata comes from the registry
+  // endpoint, never hardcoded.
   const [projectionRenderer, setProjectionRenderer] = useState('graph');
   const [projectionClearance, setProjectionClearance] = useState('INTERNAL');
   const [projectionDomainPrefix, setProjectionDomainPrefix] = useState('');
   const [projectionRendering, setProjectionRendering] = useState(false);
   useEffect(() => {
-    if (activeTab === 'dashboard' && activeProjectId !== null && currentUser) {
+    if (activeTab === 'projections' && activeProjectId !== null && currentUser) {
       fetchProjections(activeProjectId);
+      fetchProjectionRenderers();
     }
   }, [activeTab, activeProjectId, currentUser]);
 
@@ -688,7 +695,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'operations', 'agents', 'audit', 'console', 'settings'] as const;
+    const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'operations', 'projections', 'agents', 'audit', 'console', 'settings'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -1223,6 +1230,29 @@ export default function Home() {
             </button>
             )}
 
+            {/* v1.5 WS3 (D8): Projections is a top-level area, earned by
+                renderer plurality (graph + vault) exactly as the v1.3
+                scoping ruled. Governed lenses - regenerated, never
+                synced; never a source. */}
+            {allow('assets:read') && (
+            <button
+              onClick={() => setActiveTab('projections')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'projections'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <FileCode2 className="w-4 h-4" />
+              <span>Projections</span>
+              {projections.some(p => p.current && p.stale === true) && (
+                <span className="ml-auto bg-amber-950/40 text-[10px] text-amber-400 font-mono px-2 py-0.5 rounded-full border border-amber-900/40">
+                  stale
+                </span>
+              )}
+            </button>
+            )}
+
             {allow('audit:read') && (
             <button
               onClick={() => setActiveTab('agents')}
@@ -1499,117 +1529,8 @@ export default function Home() {
                     </div>
                   </div>
 
-                  {/* PROJECTIONS PANEL (v1.3, D28): a governed lens, never
-                      a source. History is projected from PROJECTION_RENDERED
-                      ledger events; staleness is computed; a stale render is
-                      regenerated, never edited. Render = assets:approve
-                      (the .empkg act-class); history = assets:read. */}
-                  <div className="glass-panel p-6 rounded-xl space-y-4">
-                    <div className="flex items-center justify-between flex-wrap gap-3">
-                      <div>
-                        <h4 className="text-sm font-semibold text-slate-300">Projections</h4>
-                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
-                          Computed views over governed facts — regenerated, never edited; stamps live in manifest.json
-                        </p>
-                      </div>
-                      {can(currentUser, 'assets:approve') && (
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <select
-                            value={projectionRenderer}
-                            onChange={(e) => setProjectionRenderer(e.target.value)}
-                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
-                            aria-label="Renderer"
-                          >
-                            <option value="graph">graph (json + html)</option>
-                            <option value="projection">projection (canonical json)</option>
-                          </select>
-                          <select
-                            value={projectionClearance}
-                            onChange={(e) => setProjectionClearance(e.target.value)}
-                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
-                            aria-label="Compiled for clearance"
-                          >
-                            {['PUBLIC', 'INTERNAL', 'RESTRICTED', 'EXECUTIVE'].map(c => (
-                              <option key={c} value={c}>{c}</option>
-                            ))}
-                          </select>
-                          <input
-                            value={projectionDomainPrefix}
-                            onChange={(e) => setProjectionDomainPrefix(e.target.value)}
-                            placeholder="domain prefix (optional)"
-                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 w-44"
-                            aria-label="Domain prefix"
-                          />
-                          <button
-                            disabled={projectionRendering || activeProjectId === null}
-                            onClick={async () => {
-                              if (activeProjectId === null) return;
-                              setProjectionRendering(true);
-                              await renderProjection(activeProjectId, {
-                                renderer: projectionRenderer,
-                                clearance: projectionClearance,
-                                domain_prefix: projectionDomainPrefix.trim() || null,
-                              });
-                              setProjectionRendering(false);
-                            }}
-                            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs tracking-wider uppercase"
-                          >
-                            {projectionRendering ? 'Rendering…' : 'Render'}
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                    {projectionsLoading && projections.length === 0 ? (
-                      <p className="text-xs text-slate-500">Projecting render history from the ledger…</p>
-                    ) : projections.length === 0 ? (
-                      <p className="text-xs text-slate-500">
-                        No renders recorded for this project. A render exports a clearance-filtered,
-                        cursor-stamped view of approved knowledge — the ledger records every one.
-                      </p>
-                    ) : (
-                      <div className="space-y-2">
-                        {projections.slice(0, 8).map((p) => (
-                          <div key={p.event_id}
-                               className="flex items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 flex-wrap">
-                            <div className="flex items-center gap-2 flex-wrap">
-                              <span className="text-xs font-mono text-cyan-300">{p.renderer}</span>
-                              <span className="text-[10px] font-mono text-slate-500">
-                                {p.rendered_at ? p.rendered_at.slice(0, 19).replace('T', ' ') : '—'}
-                              </span>
-                              <span className="text-[10px] font-mono text-slate-400">
-                                {p.clearance} · {(p.status_inclusion || []).join('/')}
-                                {p.domain_prefix ? ` · ${p.domain_prefix}` : ''}
-                              </span>
-                              <span className="text-[10px] font-mono text-slate-500">
-                                {p.counts ? `${p.counts.nodes}n/${p.counts.edges}e` : ''}
-                                {' '}· cursor {p.audit_cursor}
-                              </span>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {p.current && p.stale === true && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/50 text-amber-300 border border-amber-700/50 uppercase tracking-wider">
-                                  Stale — regenerate
-                                </span>
-                              )}
-                              {p.current && p.stale === false && (
-                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-800/50 uppercase tracking-wider">
-                                  Current
-                                </span>
-                              )}
-                              {!p.current && (
-                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-wider">
-                                  Superseded
-                                </span>
-                              )}
-                              <span className="text-[10px] font-mono text-slate-600" title={`manifest ${p.manifest_hash || ''}`}>
-                                {p.output || ''}
-                              </span>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  {/* The Projections panel GRADUATED to a top-level area
+                      (v1.5 WS3, D8: renderer plurality - graph + vault). */}
 
                   {/* DEMO TRANSFORMATION ACTION CARD */}
                   {documents.length === 0 && (
@@ -4923,6 +4844,152 @@ export default function Home() {
                       </div>
                     </>
                   )}
+                </div>
+              )}
+
+              {/* TAB: PROJECTIONS (v1.5 WS3, D28/D31/D8). The top-level
+                  area earned by renderer plurality (graph + vault).
+                  Governed lenses over the knowledge system, never another
+                  knowledge system: history is projected from
+                  PROJECTION_RENDERED ledger events; staleness is computed;
+                  a stale render is regenerated, never edited, never
+                  "synced". Render = assets:approve (the .empkg act-class);
+                  history = assets:read. Render authority dies at ingress
+                  (D31): a rendered file re-entering the system is ordinary
+                  proposal evidence behind the valve. */}
+              {activeTab === 'projections' && (
+                <div className="space-y-6">
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <div className="flex items-center justify-between flex-wrap gap-3">
+                      <div>
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide">Projections</h3>
+                        <p className="text-[10px] text-slate-500 font-mono mt-0.5">
+                          Governed lenses over the knowledge system — clearance-filtered, cursor-stamped, disposable;
+                          regenerated, never edited; stamps live in manifest.json + the ledger; render authority dies at ingress (D31)
+                        </p>
+                      </div>
+                      {can(currentUser, 'assets:approve') && (
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <select
+                            value={projectionRenderer}
+                            onChange={(e) => setProjectionRenderer(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
+                            aria-label="Renderer"
+                          >
+                            {(projectionRenderers.length > 0
+                              ? projectionRenderers
+                              : [{ name: 'graph', content_mode: 'METADATA_EXCERPT', output: 'PROJECTION_DIR', managed_folders: [] }]
+                            ).map(r => (
+                              <option key={r.name} value={r.name}>
+                                {r.name} · {r.content_mode === 'FULL_CONTENT' ? 'full content' : 'metadata + excerpt'}
+                                {r.output === 'VAULT' ? ' · vault' : ''}
+                              </option>
+                            ))}
+                          </select>
+                          <select
+                            value={projectionClearance}
+                            onChange={(e) => setProjectionClearance(e.target.value)}
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300"
+                            aria-label="Compiled for clearance"
+                          >
+                            {['PUBLIC', 'INTERNAL', 'RESTRICTED', 'EXECUTIVE'].map(c => (
+                              <option key={c} value={c}>{c}</option>
+                            ))}
+                          </select>
+                          <input
+                            value={projectionDomainPrefix}
+                            onChange={(e) => setProjectionDomainPrefix(e.target.value)}
+                            placeholder="domain prefix (optional)"
+                            className="bg-slate-900 border border-slate-700 rounded-lg px-2 py-1.5 text-xs text-slate-300 w-44"
+                            aria-label="Domain prefix"
+                          />
+                          <button
+                            disabled={projectionRendering || activeProjectId === null}
+                            onClick={async () => {
+                              if (activeProjectId === null) return;
+                              setProjectionRendering(true);
+                              await renderProjection(activeProjectId, {
+                                renderer: projectionRenderer,
+                                clearance: projectionClearance,
+                                domain_prefix: projectionDomainPrefix.trim() || null,
+                              });
+                              setProjectionRendering(false);
+                            }}
+                            className="bg-cyan-600 hover:bg-cyan-500 disabled:opacity-50 text-slate-950 font-bold px-4 py-1.5 rounded-lg text-xs tracking-wider uppercase"
+                          >
+                            {projectionRendering ? 'Rendering…' : 'Render'}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                    {(() => {
+                      const vaultInfo = projectionRenderers.find(r => r.name === 'vault');
+                      return vaultInfo ? (
+                        <p className="text-[10px] font-mono text-slate-500 bg-slate-950/60 border border-slate-900 rounded p-2">
+                          The <span className="text-fuchsia-400">vault</span> renderer writes the human/agent-readable knowledge tree
+                          directly into its managed folders ({vaultInfo.managed_folders.join(', ')}) inside EM_VAULT_DIR — full governed
+                          content after clearance filtering, every note visibly non-canonical. The untouchable folders
+                          (the vault contract, agent workspaces, the proposal ingress) are outside every render path (D31).
+                        </p>
+                      ) : null;
+                    })()}
+                    {projectionsLoading && projections.length === 0 ? (
+                      <p className="text-xs text-slate-500">Projecting render history from the ledger…</p>
+                    ) : projections.length === 0 ? (
+                      <p className="text-xs text-slate-500">
+                        No renders recorded for this project. A render exports a clearance-filtered,
+                        cursor-stamped view of approved knowledge — the ledger records every one.
+                      </p>
+                    ) : (
+                      <div className="space-y-2">
+                        {projections.slice(0, 20).map((p) => (
+                          <div key={p.event_id}
+                               className="flex items-center justify-between gap-3 bg-slate-900/60 border border-slate-800 rounded-lg px-3 py-2 flex-wrap">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <span className="text-xs font-mono text-cyan-300">{p.renderer}</span>
+                              {p.content_mode === 'FULL_CONTENT' && (
+                                <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950/40 text-fuchsia-400 border border-fuchsia-900/40"
+                                      title="Declared content mode (D31): this render carries full governed content, clearance-filtered before composition">
+                                  FULL CONTENT
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {p.rendered_at ? p.rendered_at.slice(0, 19).replace('T', ' ') : '—'}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-400">
+                                {p.clearance} · {(p.status_inclusion || []).join('/')}
+                                {p.domain_prefix ? ` · ${p.domain_prefix}` : ''}
+                              </span>
+                              <span className="text-[10px] font-mono text-slate-500">
+                                {p.counts ? `${p.counts.nodes}n/${p.counts.edges}e` : ''}
+                                {' '}· cursor {p.audit_cursor}
+                              </span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                              {p.current && p.stale === true && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-amber-900/50 text-amber-300 border border-amber-700/50 uppercase tracking-wider">
+                                  Stale — regenerate
+                                </span>
+                              )}
+                              {p.current && p.stale === false && (
+                                <span className="text-[10px] font-bold px-2 py-0.5 rounded bg-emerald-900/40 text-emerald-300 border border-emerald-800/50 uppercase tracking-wider">
+                                  Current
+                                </span>
+                              )}
+                              {!p.current && (
+                                <span className="text-[10px] px-2 py-0.5 rounded bg-slate-800 text-slate-500 uppercase tracking-wider">
+                                  Superseded
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono text-slate-600" title={`manifest ${p.manifest_hash || ''}`}>
+                                {p.output || ''}
+                              </span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
 

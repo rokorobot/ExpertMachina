@@ -1039,6 +1039,18 @@ def list_projections(project_id: int,
                      actor: identity.Actor = Depends(require_perm("assets:read"))):
     return projection_engine.render_history(db_session, project_id)
 
+# v1.5 WS3 (D31/D8): the renderer registry, metadata only - name, the
+# DECLARED content mode, and the output species. The top-level
+# Projections area (earned by renderer plurality: graph + vault) builds
+# its render controls from this instead of hardcoding backend truth.
+@app.get("/api/projections/renderers")
+def list_projection_renderers(actor: identity.Actor = Depends(require_perm("assets:read"))):
+    return [{"name": name,
+             "content_mode": spec.get("content_mode"),
+             "output": spec.get("output"),
+             "managed_folders": list(spec.get("managed_folders") or [])}
+            for name, spec in sorted(projection_engine.RENDERERS.items())]
+
 # LLM Provider Settings routes (MVP 0.12): governed model-per-function
 # configuration. Stores model selection, never credentials (D14/D19
 # candidate). Empty config preserves prior behavior:

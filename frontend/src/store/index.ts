@@ -721,6 +721,18 @@ export interface ProjectionRenderRecord {
   manifest_hash?: string;
   files?: Record<string, string>;
   output?: string;
+  content_mode?: string; // v1.5 (D31): the declared content mode
+  managed_folders?: string[]; // v1.5: VAULT renders declare their managed set
+}
+
+// v1.5 WS3 (D31/D8): renderer registry metadata for the top-level
+// Projections area - the declared content mode is backend truth,
+// never hardcoded in the UI.
+export interface ProjectionRendererInfo {
+  name: string;
+  content_mode: string;
+  output: string;
+  managed_folders: string[];
 }
 
 export interface GovernanceInbox {
@@ -876,6 +888,8 @@ interface AppState {
   projections: ProjectionRenderRecord[];
   projectionsLoading: boolean;
   fetchProjections: (projectId: number) => Promise<void>;
+  projectionRenderers: ProjectionRendererInfo[];
+  fetchProjectionRenderers: () => Promise<void>;
   renderProjection: (projectId: number, body: {
     renderer: string; clearance: string; domain_prefix?: string | null;
   }) => Promise<boolean>;
@@ -1383,6 +1397,15 @@ export const useAppStore = create<AppState>((set, get) => ({
 
   projections: [],
   projectionsLoading: false,
+  projectionRenderers: [],
+  fetchProjectionRenderers: async () => {
+    try {
+      const res = await apiFetch(`${API_BASE}/projections/renderers`);
+      if (res.ok) set({ projectionRenderers: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
   fetchProjections: async (projectId: number) => {
     set({ projectionsLoading: true });
     try {
