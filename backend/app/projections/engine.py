@@ -30,6 +30,7 @@ from app import database as db
 from app import crud
 from app.projections import contract
 from app.projections.renderers import graph as graph_renderer
+from app.projections.renderers import vault as vault_renderer
 
 ENGINE_VERSION = "projection-engine-v2"  # v2: declared content mode (v1.5 WS0, D31)
 EXCERPT_LIMIT = 240  # bounded excerpt (scoping ruling 3; FULL content only under a DECLARED mode)
@@ -54,6 +55,14 @@ RENDERERS = {
     "graph": {"files": graph_renderer.render_files,
               "content_mode": contract.METADATA_EXCERPT,
               "output": "PROJECTION_DIR"},
+    # v1.5 WS1 (D31): the vault - the second renderer, a CONTENT
+    # artifact by ratified amendment. Writes directly into its managed
+    # folders inside EM_VAULT_DIR; the floor keeps 00/07/08 out of reach.
+    "vault": {"files": vault_renderer.render_files,
+              "content_mode": contract.FULL_CONTENT,
+              "output": "VAULT",
+              "managed_folders": vault_renderer.MANAGED_FOLDERS,
+              "governance_folder": vault_renderer.GOVERNANCE_FOLDER},
 }
 
 # THE UNTOUCHABLE FLOOR (v1.5 WS0, D31 - constitutional): the vault is
@@ -154,8 +163,11 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
             # v1.4.0 WS2 (D30): class travels - the graph lens shows
             # derivation; agent-synthesized knowledge is never mistakable
             # for human-authored knowledge in any rendered view.
+            # v1.5 WS1: source_hash joins the node metadata - vault note
+            # frontmatter carries machine-readable provenance.
             metadata={"type": asset.type, "access_level": asset.access_level,
-                      "source_class": asset.source_class or "PRIMARY"}))
+                      "source_class": asset.source_class or "PRIMARY",
+                      "source_hash": asset.source_hash}))
         if asset.domain:
             groups[asset.domain] = groups.get(asset.domain, []) + [node_id]
 
