@@ -118,6 +118,10 @@ class KnowledgeAssetResponse(KnowledgeAssetBase):
     project_id: int
     status: str
     domain: Optional[str] = None  # v1.2.1 WS1 (D27): governed domain path
+    # v1.4.0 WS2 (D30): PRIMARY | DERIVED - read-only exposure; the class
+    # is channel-decided and never caller-suppliable (Guard 5 sweeps any
+    # write-shaped schema carrying it).
+    source_class: str = "PRIMARY"
     document_id: Optional[int]
     chunk_id: Optional[int]
     source_page: Optional[int]
@@ -480,6 +484,15 @@ class AssetRelationshipResponse(BaseModel):
     reviewed_at: Optional[datetime] = None
     notes: Optional[str] = None
     verifier: Optional[dict] = None
+    # v1.4.0 WS2 (D30): source-class context, computed at read time by
+    # conflict_engine.class_annotations - never stored on the relationship.
+    # PRIMARY×DERIVED conflicts declare the asymmetry; the DERIVED side is
+    # the presumptive review target ("primary prevails unless a human
+    # rules otherwise"). Nothing auto-resolves; the gate is class-blind.
+    source_asset_source_class: Optional[str] = None
+    target_asset_source_class: Optional[str] = None
+    class_asymmetry: Optional[str] = None  # PRIMARY_OVER_DERIVED when declared
+    presumptive_review_target_asset_id: Optional[int] = None
     class Config:
         from_attributes = True
 

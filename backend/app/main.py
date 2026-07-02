@@ -1622,21 +1622,33 @@ def get_expert_model_conflict_score(expert_model_id: int, db_session: Session = 
         raise HTTPException(status_code=404, detail=f"Expert Model with ID {expert_model_id} not found")
     return conflict_engine.compute_semantic_conflict_score(db_session, expert_model_id)
 
+def _annotated_relationship(db_session, rel, annotations=None):
+    """v1.4.0 WS2 (D30): serialize a relationship with its computed
+    source-class context - the shared annotator, so every conflict
+    surface declares the same asymmetry."""
+    annotations = annotations or conflict_engine.class_annotations(db_session, [rel])
+    data = schemas.AssetRelationshipResponse.model_validate(rel).model_dump()
+    data.update(annotations[rel.id])
+    return data
+
 @app.get("/api/experts/{expert_model_id}/conflicts", response_model=List[schemas.AssetRelationshipResponse])
 def get_expert_model_conflicts(expert_model_id: int, relationship_type: Optional[str] = None, db_session: Session = Depends(get_db),
                                actor: identity.Actor = Depends(require_perm("assets:read"))):
     query = db_session.query(db.AssetRelationship).filter(db.AssetRelationship.expert_model_id == expert_model_id)
     if relationship_type:
         query = query.filter(db.AssetRelationship.relationship_type == relationship_type)
-    return query.order_by(db.AssetRelationship.confidence.desc()).all()
+    rels = query.order_by(db.AssetRelationship.confidence.desc()).all()
+    annotations = conflict_engine.class_annotations(db_session, rels)
+    return [_annotated_relationship(db_session, r, annotations) for r in rels]
 
 @app.patch("/api/conflicts/{relationship_id}", response_model=schemas.AssetRelationshipResponse)
 def review_conflict(relationship_id: int, review: schemas.ConflictReviewUpdate, db_session: Session = Depends(get_db),
                     actor: identity.Actor = Depends(require_perm("assets:approve"))):
     try:
-        return conflict_engine.review_relationship(
+        rel = conflict_engine.review_relationship(
             db_session, relationship_id, status=review.status, reviewer=actor, notes=review.notes
         )
+        return _annotated_relationship(db_session, rel)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except LookupError as e:

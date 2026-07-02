@@ -375,6 +375,10 @@ def _build_citation(session: Session, asset: db.KnowledgeAsset) -> dict:
         "revision": asset.active_revision_number,
         "name": asset.name,
         "content": asset.content,
+        # v1.4.0 WS2 (D30): class travels - every consumer of a citation
+        # sees whether it cites human-authored or agent-synthesized
+        # knowledge. Derivation is always visible, never laundered.
+        "source_class": asset.source_class or "PRIMARY",
         "source_document": doc.filename if doc else None,
         "source_page": asset.source_page,
         "source_section": asset.source_section,

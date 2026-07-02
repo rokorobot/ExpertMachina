@@ -81,6 +81,9 @@ def _knowledge_file(session: Session, assets: list) -> list:
             "type": asset.type,
             "content": asset.content,
             "access_level": asset.access_level or "INTERNAL",
+            # v1.4.0 WS2 (D30): class travels into the portable artifact -
+            # a consumer of the package sees derivation, indefinitely.
+            "source_class": asset.source_class or "PRIMARY",
             "active_revision_number": asset.active_revision_number,
             "provenance": {
                 "source_document": doc.filename if doc else None,

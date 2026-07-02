@@ -114,7 +114,11 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
             id=node_id, kind="ASSET", label=asset.name, status=asset.status,
             domain=asset.domain,
             excerpt=(asset.content or "")[:EXCERPT_LIMIT],
-            metadata={"type": asset.type, "access_level": asset.access_level}))
+            # v1.4.0 WS2 (D30): class travels - the graph lens shows
+            # derivation; agent-synthesized knowledge is never mistakable
+            # for human-authored knowledge in any rendered view.
+            metadata={"type": asset.type, "access_level": asset.access_level,
+                      "source_class": asset.source_class or "PRIMARY"}))
         if asset.domain:
             groups[asset.domain] = groups.get(asset.domain, []) + [node_id]
 
@@ -217,18 +221,27 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
 
     # Governed relationships between INCLUDED assets; edges with an
     # excluded endpoint are dropped and the drop is declared (D12).
+    # v1.4.0 WS2 (D30): a PRIMARY×DERIVED conflict edge declares the
+    # asymmetry - computed from the included assets' current class,
+    # never stored on the relationship.
+    class_by_id = {a.id: (a.source_class or "PRIMARY") for a in assets}
     for rel in session.query(db.AssetRelationship).filter(
             db.AssetRelationship.project_id == project_id).order_by(
             db.AssetRelationship.id):
         if rel.source_asset_id in asset_ids and rel.target_asset_id in asset_ids:
+            edge_metadata = {"classification": rel.classification,
+                             "confidence": rel.confidence,
+                             "review_status": rel.status,
+                             "expert_model_id": rel.expert_model_id}
+            if (rel.relationship_type == "CONFLICTS_WITH"
+                    and {class_by_id[rel.source_asset_id],
+                         class_by_id[rel.target_asset_id]} == {"PRIMARY", "DERIVED"}):
+                edge_metadata["class_asymmetry"] = "PRIMARY_OVER_DERIVED"
             edges.append(contract.ProjectionEdge(
                 source_id=f"asset:{rel.source_asset_id}",
                 target_id=f"asset:{rel.target_asset_id}",
                 relation=rel.relationship_type,
-                metadata={"classification": rel.classification,
-                          "confidence": rel.confidence,
-                          "review_status": rel.status,
-                          "expert_model_id": rel.expert_model_id}))
+                metadata=edge_metadata))
         else:
             excluded["relationship_edges_out_of_scope"] += 1
 

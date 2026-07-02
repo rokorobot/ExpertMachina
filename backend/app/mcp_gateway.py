@@ -233,6 +233,9 @@ def get_conflicts(expert_model_id: int, session=None) -> dict:
             db.AssetRelationship.expert_model_id == expert_model_id
         ).order_by(db.AssetRelationship.confidence.desc()).all()
         score = conflict_engine.compute_semantic_conflict_score(session, expert_model_id)
+        # v1.4.0 WS2 (D30): class travels - agents see the same declared
+        # asymmetry every human surface shows (the shared annotator).
+        annotations = conflict_engine.class_annotations(session, rels)
         return {
             "expert_model_id": expert_model_id,
             "semantic_conflict_score": score["semantic_conflict_score"],
@@ -248,7 +251,8 @@ def get_conflicts(expert_model_id: int, session=None) -> dict:
                 "detected_at": r.detected_at.isoformat() if r.detected_at else None,
                 "reviewed_by": r.reviewed_by,
                 "review_notes": r.notes,
-                "verifier": r.verifier
+                "verifier": r.verifier,
+                **annotations[r.id],
             } for r in rels]
         }
     finally:

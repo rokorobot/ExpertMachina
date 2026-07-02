@@ -344,6 +344,48 @@ def _gate_policy() -> dict:
     }
 
 
+def class_annotations(session: Session, relationships: list) -> dict:
+    """v1.4.0 WS2 (D30 - primary prevails over derived): per-relationship
+    source-class context, computed at read time from the assets' current
+    class (D1/D24 - never stored on the relationship). ONE shared
+    function consulted by every surface that shows a conflict (the REST
+    conflicts routes, the governance inbox, MCP get_conflicts), so the
+    surfaces cannot disagree - the relationship_gate_disposition
+    discipline applied to source class.
+
+    For a PRIMARY×DERIVED CONFLICTS_WITH pair the asymmetry is declared
+    and the DERIVED side is the presumptive review target. This is a
+    presentation ruling ONLY: nothing auto-resolves, humans confirm and
+    dismiss exactly as before, and the compile gate disposition is
+    class-blind (a blocking contradiction blocks, whichever class it
+    involves)."""
+    asset_ids = set()
+    for rel in relationships:
+        asset_ids.add(rel.source_asset_id)
+        asset_ids.add(rel.target_asset_id)
+    classes = {a.id: (a.source_class or "PRIMARY")
+               for a in session.query(db.KnowledgeAsset).filter(
+                   db.KnowledgeAsset.id.in_(asset_ids or {-1})).all()}
+    annotations = {}
+    for rel in relationships:
+        source_class = classes.get(rel.source_asset_id, "PRIMARY")
+        target_class = classes.get(rel.target_asset_id, "PRIMARY")
+        annotation = {
+            "source_asset_source_class": source_class,
+            "target_asset_source_class": target_class,
+            "class_asymmetry": None,
+            "presumptive_review_target_asset_id": None,
+        }
+        if (rel.relationship_type == "CONFLICTS_WITH"
+                and {source_class, target_class} == {"PRIMARY", "DERIVED"}):
+            annotation["class_asymmetry"] = "PRIMARY_OVER_DERIVED"
+            annotation["presumptive_review_target_asset_id"] = (
+                rel.source_asset_id if source_class == "DERIVED"
+                else rel.target_asset_id)
+        annotations[rel.id] = annotation
+    return annotations
+
+
 def relationship_gate_disposition(rel, policy: dict = None) -> str:
     """How a single conflict relationship affects the compile gate under the
     given policy: BLOCKING, ADVISORY, or DISMISSED. Single source of truth

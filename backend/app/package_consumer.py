@@ -157,6 +157,10 @@ def consume(package_path: str, question: str, top_k: int = 8,
             "type": entry.get("type"),
             "content": entry.get("content"),
             "access_level": entry.get("access_level"),
+            # v1.4.0 WS2 (D30): class travels through the portable channel.
+            # Pre-v1.4 packages carry no class - honestly None, never
+            # backfilled (D12).
+            "source_class": entry.get("source_class"),
             "provenance": entry.get("provenance"),
         } for entry in retrieval["selected"]],
         "retrieval": {k: v for k, v in retrieval.items() if k != "selected"},

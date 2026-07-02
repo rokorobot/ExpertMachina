@@ -55,10 +55,14 @@ def _conflict_items(session: Session, project_id: int, model_names: dict,
         db.AssetRelationship.project_id == project_id,
         db.AssetRelationship.relationship_type == "CONFLICTS_WITH"
     ).all()
+    # v1.4.0 WS2 (D30): the shared class annotator - the inbox and the
+    # conflicts workbench cannot disagree about asymmetry.
+    annotations = conflict_engine.class_annotations(session, rels)
 
     items = []
     for rel in rels:
         disposition = conflict_engine.relationship_gate_disposition(rel, policy)
+        annotation = annotations[rel.id]
         label = _CLASS_LABELS.get(rel.classification, "conflict")
         name_a = asset_names.get(rel.source_asset_id, f"Asset {rel.source_asset_id}")
         name_b = asset_names.get(rel.target_asset_id, f"Asset {rel.target_asset_id}")
@@ -83,6 +87,13 @@ def _conflict_items(session: Session, project_id: int, model_names: dict,
                 severity, bucket = "MEDIUM", "NEEDS_REVIEW"
                 reason = "Advisory conflict awaiting review (does not block compile)."
 
+        # D30: the asymmetry is declared wherever the conflict is
+        # surfaced - a presentation ruling; severity and disposition
+        # above are class-blind.
+        if annotation["class_asymmetry"] == "PRIMARY_OVER_DERIVED" and bucket != "RESOLVED":
+            reason += (" Primary prevails: the derived side is the presumptive "
+                       "review target unless a human rules otherwise.")
+
         items.append({
             "id": f"CONFLICT-{rel.id}",
             "type": "CONFLICT",
@@ -101,6 +112,7 @@ def _conflict_items(session: Session, project_id: int, model_names: dict,
             "deep_link": f"/?tab=conflicts&expert={rel.expert_model_id}&relationship={rel.id}",
             "created_at": _iso(rel.detected_at),
             "resolved_at": _iso(rel.reviewed_at) if bucket == "RESOLVED" else None,
+            **annotation,
         })
     return items
 
