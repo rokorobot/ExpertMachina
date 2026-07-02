@@ -465,3 +465,64 @@ real NLI stays behind the EM_NLI_* knobs):
   asset; NULL = all domains), exposed as a definition change.
 - All 23 suites green; the only pre-existing file touched by the suites
   is the WS0 guard, changed exactly as its binding note mandated.
+
+### WS4 — PASSED (2026-07-02, user-accepted) — THE MILESTONE GATE
+
+**Gate wording (user-ratified at acceptance):** WS4 PASSED. The
+automation ladder is now operator-visible as a computed exception
+surface: policy-declined candidates, Tier-0 source-condition holds,
+Tier-2 contradiction holds, Tier-2 unverified candidates, no-policy
+candidates, and unclassified candidates are projected into the
+governance inbox with ranked severity and provenance-derived "why held,"
+without creating new mutable exception state or dismiss semantics. The
+UI exposes policy condition editing, domain coverage, Tier-2 controls,
+asset domain paths, and governed domain correction through existing
+policy and asset-update paths only. The corpus acceptance test proves a
+mature synthetic corpus reaches at least 90% auto-approval with
+machine-verifiable provenance, surfaces 100% of exceptions,
+auto-approves zero revisions, silently holds zero assets, and leaves the
+north-star metric from document arrival to usable expert model
+derivable from audit events alone.
+
+**Accepted final guardrail:** WS4 did not invent workflow state. It
+projects governed facts into an operator cockpit.
+
+Evidence:
+
+- **The corpus acceptance test** (`backend/test_automation_corpus.py`,
+  in CI): 34 documents through one governed fake-Graph SharePoint
+  corpus with classification + Tier-0 + Tier-2 policies active —
+  **91.2% auto-approved** (30 Tier-0 quoting inherited authority, 1
+  Tier-2 with the engine verdict recorded); 100% of exceptions surfaced
+  with set-equality asserted (zero silent holds AND zero spurious
+  items); ranked (MEDIUM before LOW, never HIGH); zero revisions
+  auto-approved (the CHANGED source-approved document produced a
+  pending candidate revision, approved content untouched); every
+  approval carries machine-verifiable provenance (asserted per event);
+  north-star metric derived from audit events ALONE
+  (INGESTION_JOB_STARTED → first ASSET_AUTO_APPROVED →
+  EXPERT_MODEL_CREATED); D25 sweep clean at the end.
+- **The exception surface** (`governance_inbox.py`): pure projection —
+  no new state, no dismiss, no exception table; items computed from
+  ledger facts + current governed objects and leave when the asset
+  leaves CANDIDATE; ONE severity function failing loudly on unknown
+  kinds; never HIGH (D2). Five categories accepted:
+  TIER2_CONTRADICTION_HELD, SOURCE_AUTHORITY_HELD, TIER2_UNVERIFIED
+  (failed/unavailable engine passes cannot disappear silently),
+  NOT_COVERED, UNCLASSIFIED — with **most-specific-wins ordering**
+  (user-ratified: an unclassified asset under active classification
+  policies surfaces as UNCLASSIFIED, the more actionable explanation,
+  rather than NOT_COVERED).
+- **UI, browser-verified against a seeded throwaway DB** (live demo DB
+  untouched, confirmed by file mtimes), with server-side proof behind
+  each click: inbox shows MEDIUM holds in "Needs Review Now" with
+  provenance-derived why-held and the contradicting asset named, LOW in
+  "Can Wait", Review Candidate deep links; the policy editor created a
+  combined Tier-0 + Tier-2 + domains policy through the real governed
+  route (POLICY_CREATED carrying all three condition species, validated
+  conditions stored); inline domain correction on the asset card emitted
+  ASSET_DOMAIN_CORRECTED with an identity fact, zero revisions, zero
+  generic ASSET_UPDATED, content untouched. Browser console clean; tsc
+  clean; eslint 0 errors (warnings baseline).
+- **Prior gates intact**: all 24 suites green, WS0–WS3 gates re-run,
+  the pre-existing governance-inbox suite unchanged.

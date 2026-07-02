@@ -160,6 +160,7 @@ export default function Home() {
     fetchApprovalPolicies,
     createApprovalPolicy,
     toggleApprovalPolicy,
+    correctAssetDomain,
     llmSettings,
     fetchLLMSettings,
     updateLLMSetting,
@@ -398,6 +399,15 @@ export default function Home() {
   const [policyName, setPolicyName] = useState('');
   const [policyTypes, setPolicyTypes] = useState<string[]>([]);
   const [policyConnectorId, setPolicyConnectorId] = useState<number | null>(null);
+  // v1.2.1 (D26): policy-tier condition editors. The UI only shapes the
+  // request; validation, versioning, and audit stay on the governed
+  // policy routes - no separate semantics path.
+  const [policyConditions, setPolicyConditions] = useState<{ key: string; op: 'equals' | 'in'; value: string }[]>([]);
+  const [policyTier2, setPolicyTier2] = useState(false);
+  const [policyDomains, setPolicyDomains] = useState('');
+  // v1.2.1 (D27): inline governed domain correction on asset cards.
+  const [domainEditAssetId, setDomainEditAssetId] = useState<number | null>(null);
+  const [domainEditValue, setDomainEditValue] = useState('');
   const [showPolicyApprovedOnly, setShowPolicyApprovedOnly] = useState(false);
 
   // An asset counts as policy-approved when its most recent approval was
@@ -1895,6 +1905,45 @@ export default function Home() {
                                                 Policy: {approvedByPolicy}
                                               </span>
                                             )}
+                                            {/* v1.2.1 (D27): the governed domain path. Correction is a
+                                                governed act on the normal asset-update path
+                                                (ASSET_DOMAIN_CORRECTED) — never a content edit. */}
+                                            {domainEditAssetId === asset.id ? (
+                                              <span className="flex items-center gap-1">
+                                                <input autoFocus type="text" value={domainEditValue}
+                                                  placeholder="finances/accounting"
+                                                  onChange={(e) => setDomainEditValue(e.target.value)}
+                                                  onKeyDown={async (e) => {
+                                                    if (e.key === 'Enter') {
+                                                      e.preventDefault();
+                                                      await correctAssetDomain(asset.id, domainEditValue.trim() || null);
+                                                      setDomainEditAssetId(null);
+                                                    }
+                                                    if (e.key === 'Escape') setDomainEditAssetId(null);
+                                                  }}
+                                                  className="text-[10px] font-mono w-40 bg-slate-950 border border-emerald-700/60 rounded px-2 py-0.5 text-emerald-300 outline-none" />
+                                                <button onClick={() => setDomainEditAssetId(null)}
+                                                  className="text-[10px] text-slate-500 hover:text-slate-300 font-mono">esc</button>
+                                              </span>
+                                            ) : (
+                                              <span
+                                                title={asset.domain
+                                                  ? `Governed domain path (assigned by classification policy or human correction)${allow('assets:review') ? ' — click to correct' : ''}`
+                                                  : `Unclassified — no classification policy assigned a domain${allow('assets:review') ? '; click to correct' : ''}`}
+                                                onClick={() => {
+                                                  if (!allow('assets:review')) return;
+                                                  setDomainEditAssetId(asset.id);
+                                                  setDomainEditValue(asset.domain ?? '');
+                                                }}
+                                                className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${
+                                                  asset.domain
+                                                    ? 'bg-emerald-950/30 border-emerald-900/40 text-emerald-400'
+                                                    : 'bg-slate-950 border-slate-900 text-slate-500'
+                                                } ${allow('assets:review') ? 'cursor-pointer hover:border-emerald-600/60' : ''}`}
+                                              >
+                                                {asset.domain ?? 'unclassified'}
+                                              </span>
+                                            )}
                                             <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-950 border border-slate-900 text-slate-400">
                                               Access: {asset.access_level}
                                             </span>
@@ -2830,10 +2879,24 @@ export default function Home() {
                       onSubmit={async (e) => {
                         e.preventDefault();
                         if (activeProjectId === null || !policyName.trim() || policyTypes.length === 0) return;
-                        await createApprovalPolicy(activeProjectId, policyName.trim(), policyTypes, policyConnectorId);
+                        const sourceConditions = policyConditions
+                          .filter(c => c.key.trim() && c.value.trim())
+                          .map(c => c.op === 'equals'
+                            ? { key: c.key.trim(), equals: c.value.trim() }
+                            : { key: c.key.trim(), in: c.value.split(',').map(s => s.trim()).filter(Boolean) });
+                        await createApprovalPolicy(activeProjectId, policyName.trim(), policyTypes, policyConnectorId, {
+                          source_conditions: sourceConditions.length ? sourceConditions : null,
+                          engine_conditions: policyTier2 ? { contradiction_check: 'CLEAN_REQUIRED' } : null,
+                          domains: policyDomains.trim()
+                            ? policyDomains.split(',').map(s => s.trim()).filter(Boolean)
+                            : null,
+                        });
                         setPolicyName('');
                         setPolicyTypes([]);
                         setPolicyConnectorId(null);
+                        setPolicyConditions([]);
+                        setPolicyTier2(false);
+                        setPolicyDomains('');
                       }}
                       className="space-y-3"
                     >
@@ -2879,6 +2942,63 @@ export default function Home() {
                           })}
                         </div>
                       </div>
+
+                      {/* v1.2.1 (D26 Tier-0): source-authority conditions —
+                          deterministic matches against the verbatim source
+                          metadata of the scan row. Absent metadata never
+                          satisfies a condition; the source must vouch. */}
+                      <div className="space-y-2">
+                        <label className="block text-xs text-slate-400 font-mono uppercase">
+                          Source-Authority Conditions <span className="text-slate-600 normal-case">(Tier-0 — the source must vouch; leave empty for none)</span>
+                        </label>
+                        {policyConditions.map((c, i) => (
+                          <div key={i} className="flex flex-wrap items-center gap-2">
+                            <input type="text" value={c.key} placeholder="list_item_fields.ApprovalStatus"
+                              onChange={(e) => setPolicyConditions(prev => prev.map((x, j) => j === i ? { ...x, key: e.target.value } : x))}
+                              className="flex-1 min-w-[200px] bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs font-mono focus:border-violet-500 outline-none text-slate-200" />
+                            <select value={c.op}
+                              onChange={(e) => setPolicyConditions(prev => prev.map((x, j) => j === i ? { ...x, op: e.target.value as 'equals' | 'in' } : x))}
+                              className="bg-slate-950 border border-slate-800 rounded px-2 py-1.5 text-xs font-mono text-slate-300 outline-none">
+                              <option value="equals">equals</option>
+                              <option value="in">is one of</option>
+                            </select>
+                            <input type="text" value={c.value}
+                              placeholder={c.op === 'in' ? 'Approved, Published' : 'Approved'}
+                              onChange={(e) => setPolicyConditions(prev => prev.map((x, j) => j === i ? { ...x, value: e.target.value } : x))}
+                              className="flex-1 min-w-[160px] bg-slate-950 border border-slate-800 rounded px-3 py-1.5 text-xs font-mono focus:border-violet-500 outline-none text-slate-200" />
+                            <button type="button" onClick={() => setPolicyConditions(prev => prev.filter((_, j) => j !== i))}
+                              className="text-[10px] text-rose-400 hover:text-rose-300 font-mono px-2 py-1.5">✕</button>
+                          </div>
+                        ))}
+                        <button type="button"
+                          onClick={() => setPolicyConditions(prev => [...prev, { key: '', op: 'equals', value: '' }])}
+                          className="text-[10px] text-violet-400 hover:text-violet-300 font-mono bg-violet-950/20 border border-violet-900/30 rounded px-3 py-1.5 uppercase tracking-wider">
+                          + Add source condition
+                        </button>
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        {/* v1.2.1 (D26 Tier-2): engine verification — the
+                            engine may refuse to approve; only humans refuse
+                            content. */}
+                        <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer bg-slate-950/60 border border-slate-900 rounded px-3 py-2.5">
+                          <input type="checkbox" checked={policyTier2} onChange={(e) => setPolicyTier2(e.target.checked)}
+                            className="accent-violet-500" />
+                          <span className="font-mono uppercase tracking-wider text-[10px]">Engine-verified (Tier-2)</span>
+                          <span className="text-[10px] text-slate-500">requires a clean candidate-contradiction check, applied asynchronously</span>
+                        </label>
+                        {/* v1.2.1 (D26/D27): domain coverage — deny-by-default
+                            narrowing; unclassified assets are never covered
+                            by a domain-scoped policy. */}
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">
+                            Domain Coverage <span className="text-slate-600 normal-case">(prefixes, comma-separated; empty = all domains)</span>
+                          </label>
+                          <input type="text" value={policyDomains} onChange={(e) => setPolicyDomains(e.target.value)}
+                            placeholder="finances, hr/policies"
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs font-mono focus:border-violet-500 outline-none text-slate-200" />
+                        </div>
+                      </div>
                     </form>
                     )}
 
@@ -2894,6 +3014,24 @@ export default function Home() {
                               <span className="text-[10px] font-mono bg-violet-950/40 text-violet-400 border border-violet-900/40 px-2 py-0.5 rounded">v{p.version}</span>
                               <span className="font-bold text-sm text-slate-200">{p.name}</span>
                               <span className="text-[10px] font-mono text-slate-500">{p.asset_types.join(', ')}</span>
+                              {(p.source_conditions?.length ?? 0) > 0 && (
+                                <span title={p.source_conditions!.map(c => `${c.key} ${c.equals !== undefined ? `= ${c.equals}` : `in [${(c.in || []).join(', ')}]`}`).join(' AND ')}
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-cyan-950/30 border border-cyan-900/40 text-cyan-400">
+                                  TIER-0 · {p.source_conditions!.length} condition{p.source_conditions!.length !== 1 ? 's' : ''}
+                                </span>
+                              )}
+                              {p.engine_conditions && (
+                                <span title="Engine-verified: a clean candidate-contradiction check is required before this policy approves — applied asynchronously; the engine may refuse to approve, only humans refuse content"
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950/30 border border-amber-900/40 text-amber-400">
+                                  TIER-2 · ENGINE
+                                </span>
+                              )}
+                              {(p.domains?.length ?? 0) > 0 && (
+                                <span title="Domain coverage (deny-by-default): only assets under these domain prefixes are covered"
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/30 border border-emerald-900/40 text-emerald-400">
+                                  {p.domains!.join(', ')}
+                                </span>
+                              )}
                               <span className="text-[10px] font-mono text-slate-600 flex-1 min-w-[120px]">{scope}</span>
                               <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${p.enabled ? 'bg-emerald-950/40 text-emerald-400' : 'bg-slate-900 text-slate-500'}`}>
                                 {p.enabled ? 'ENABLED' : 'DISABLED'}
@@ -3554,6 +3692,11 @@ export default function Home() {
                       REVISION: { label: 'REVISION', action: 'Review Revision' },
                       GOVERNANCE_WARNING: { label: 'WARNING', action: 'Open Expert Model' },
                       EVIDENCE_GAP: { label: 'EVIDENCE GAP', action: 'Review Evaluation' },
+                      // v1.2.1 WS4 (D26): the automation ladder's held and
+                      // uncovered candidates — computed from ledger facts,
+                      // never HIGH (they don't block the compile gate), no
+                      // dismiss: items leave when a human reviews the asset.
+                      INGESTION_EXCEPTION: { label: 'INGESTION EXCEPTION', action: 'Review Candidate' },
                     };
                     const BUCKETS = [
                       { key: 'NEEDS_REVIEW', label: 'Needs Review Now', hint: 'blocking or awaiting a human verdict' },

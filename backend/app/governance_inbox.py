@@ -6,6 +6,8 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import conflict_engine
 from app import trust
+from app import policy as policy_module
+from app import tier2 as tier2_module
 
 # Governance Inbox & Readiness Console (MVP 0.9.1).
 #
@@ -255,6 +257,177 @@ def _warning_items(trust_score: dict, model_id: int, model_name: str) -> list:
     } for signal, title, reason in items]
 
 
+# v1.2.1 WS4 (D26): ingestion exceptions - the automation ladder's held
+# and uncovered candidates, projected from ledger facts and current
+# governed objects. NO new state, NO dismiss: an item exists while the
+# asset is CANDIDATE and leaves the moment a human reviews it or the
+# governing facts change (D1/D24). Per D2, ingestion exceptions never
+# block the compile gate, so they are never HIGH - ranked visibility,
+# not false emergency.
+#
+# ONE severity function; an unknown kind fails loudly (the consumption-
+# inbox discipline).
+_EXCEPTION_SEVERITY = {
+    "TIER2_CONTRADICTION_HELD": "MEDIUM",  # the engine refused; a human must judge the content
+    "TIER2_UNVERIFIED": "MEDIUM",          # automation was configured but could not complete
+    "SOURCE_AUTHORITY_HELD": "MEDIUM",     # covered by Tier-0, but the source did not vouch
+    "NOT_COVERED": "LOW",                  # no automation covers it - the ordinary human queue
+    "UNCLASSIFIED": "LOW",                 # classification exists but assigned nothing
+}
+
+
+def ingestion_exception_severity(kind: str) -> str:
+    if kind not in _EXCEPTION_SEVERITY:
+        raise ValueError(f"Unknown ingestion exception kind: {kind}")
+    return _EXCEPTION_SEVERITY[kind]
+
+
+def _latest_automation_evidence(session: Session, candidate_ids: set) -> tuple:
+    """(tier2_holds, source_holds): per-asset evidence from the newest
+    ledger event naming each asset. Read-only ledger projection."""
+    tier2_holds, source_holds = {}, {}
+    for event in session.query(db.AuditEvent).filter(
+            db.AuditEvent.event_type == "POLICY_TIER2_COMPLETED"
+    ).order_by(db.AuditEvent.id).all():
+        try:
+            details = json.loads(event.details or "{}")
+        except ValueError:
+            continue
+        for hold in details.get("held") or []:
+            if hold.get("asset_id") in candidate_ids:
+                tier2_holds[hold["asset_id"]] = {**hold, "event_id": event.id,
+                                                 "created_at": event.timestamp}
+    for event in session.query(db.AuditEvent).filter(
+            db.AuditEvent.event_type == "POLICY_AUTOAPPROVAL_COMPLETED"
+    ).order_by(db.AuditEvent.id).all():
+        try:
+            details = json.loads(event.details or "{}")
+        except ValueError:
+            continue
+        for asset_id in details.get("source_condition_held_ids") or []:
+            if asset_id in candidate_ids:
+                source_holds[asset_id] = {
+                    "event_id": event.id, "created_at": event.timestamp,
+                    "policies": details.get("policies") or []}
+    return tier2_holds, source_holds
+
+
+def _ingestion_exception_items(session: Session, project_id: int,
+                               asset_names: dict) -> list:
+    candidates = session.query(db.KnowledgeAsset).filter(
+        db.KnowledgeAsset.project_id == project_id,
+        db.KnowledgeAsset.status == "CANDIDATE",
+    ).order_by(db.KnowledgeAsset.id).all()
+    if not candidates:
+        return []
+
+    tier2_holds, source_holds = _latest_automation_evidence(
+        session, {a.id for a in candidates})
+    approval_policies = session.query(db.ApprovalPolicy).filter(
+        db.ApprovalPolicy.project_id == project_id,
+        db.ApprovalPolicy.enabled == True,  # noqa: E712 - SQLAlchemy expression
+    ).order_by(db.ApprovalPolicy.id).all()
+    classification_in_scope = session.query(db.ClassificationPolicy).filter(
+        db.ClassificationPolicy.project_id == project_id,
+        db.ClassificationPolicy.enabled == True,  # noqa: E712
+    ).count() > 0
+
+    # A candidate's connector context, for honest connector-scope coverage.
+    doc_connector = {}
+    doc_ids = {a.document_id for a in candidates if a.document_id}
+    if doc_ids:
+        for sd in session.query(db.SourceDocument).filter(
+                db.SourceDocument.document_id.in_(doc_ids)
+        ).order_by(db.SourceDocument.id).all():
+            doc_connector[sd.document_id] = sd.connector_id
+
+    items = []
+    for asset in candidates:
+        connector_id = doc_connector.get(asset.document_id)
+        covering = [p for p in approval_policies
+                    if (p.connector_id is None or p.connector_id == connector_id)
+                    and asset.type in p.asset_types
+                    and policy_module.domain_covered(p, asset)]
+        tier2_covering = [p for p in covering if tier2_module.is_tier2(p)]
+
+        # Most specific explanation wins; exactly one item per candidate.
+        if asset.id in tier2_holds:
+            hold = tier2_holds[asset.id]
+            top = (hold.get("contradictions") or [{}])[0]
+            contra_name = asset_names.get(top.get("asset_id"),
+                                          f"Asset {top.get('asset_id')}")
+            kind = "TIER2_CONTRADICTION_HELD"
+            title = f"Held: '{asset.name}' contradicts approved '{contra_name}'"
+            reason = (f"The engine refused to auto-approve: contradiction with "
+                      f"approved asset {top.get('asset_id')} "
+                      f"(score {top.get('score')}). Engines refuse to approve; "
+                      f"only humans refuse content - review the candidate.")
+            extra = {"contradicting_asset_id": top.get("asset_id"),
+                     "contradiction_score": top.get("score"),
+                     "audit_event_id": hold["event_id"]}
+            created_at = hold.get("created_at")
+        elif asset.id in source_holds:
+            hold = source_holds[asset.id]
+            kind = "SOURCE_AUTHORITY_HELD"
+            title = f"Held: '{asset.name}' lacks source authority"
+            reason = ("Covered by a source-authority policy, but the source "
+                      "metadata did not satisfy its conditions - the source "
+                      "did not vouch for this document. Review manually.")
+            extra = {"audit_event_id": hold["event_id"],
+                     "policies": hold["policies"]}
+            created_at = hold.get("created_at")
+        elif tier2_covering:
+            kind = "TIER2_UNVERIFIED"
+            title = f"Unverified: '{asset.name}' awaits engine verification"
+            reason = (f"Covered by Tier-2 policy "
+                      f"'{tier2_covering[0].name}' (v{tier2_covering[0].version}) "
+                      f"but no engine verdict approved or held it - the pass "
+                      f"may be pending, unavailable, or failed. Review manually "
+                      f"or re-scan.")
+            extra = {"policy_id": tier2_covering[0].id}
+            created_at = asset.created_at
+        elif classification_in_scope and not asset.domain:
+            kind = "UNCLASSIFIED"
+            title = f"Unclassified: '{asset.name}' has no domain"
+            reason = ("Classification policies are active but none assigned a "
+                      "domain. Correct the domain on the asset or extend a "
+                      "classification policy.")
+            extra = {}
+            created_at = asset.created_at
+        else:
+            kind = "NOT_COVERED"
+            title = f"Awaiting review: '{asset.name}'"
+            reason = ("No enabled approval policy covers this candidate - it "
+                      "is in the ordinary human review queue by design "
+                      "(deny-by-default coverage).")
+            extra = {}
+            created_at = asset.created_at
+
+        items.append({
+            "id": f"INGESTION_EXCEPTION-{asset.id}",
+            "type": "INGESTION_EXCEPTION",
+            "source_id": asset.id,
+            "expert_model_id": None,
+            "expert_model_name": None,
+            "asset_id": asset.id,
+            "document_id": asset.document_id,
+            "domain": asset.domain,
+            "status": "CANDIDATE",
+            "classification": kind,
+            "confidence": None,
+            "severity": ingestion_exception_severity(kind),
+            "bucket": "NEEDS_REVIEW" if ingestion_exception_severity(kind) == "MEDIUM"
+                      else ("CAN_WAIT" if kind == "UNCLASSIFIED" else "NEEDS_REVIEW"),
+            "title": title,
+            "reason": reason,
+            "deep_link": f"/?tab=assets&asset={asset.id}",
+            "created_at": _iso(created_at),
+            "resolved_at": None,
+            **extra,
+        })
+    return items
+
+
 def build_inbox(session: Session, project_id: int) -> dict:
     models = session.query(db.ExpertModel).filter(
         db.ExpertModel.project_id == project_id
@@ -278,6 +451,7 @@ def build_inbox(session: Session, project_id: int) -> dict:
 
     items = _conflict_items(session, project_id, model_names, asset_names, policy, resolved_cutoff)
     items += _revision_items(session, project_id, resolved_cutoff, model_assets)
+    items += _ingestion_exception_items(session, project_id, asset_names)
 
     # Per-model readiness: the existing compile gate response plus trust facts.
     # compute_trust_score is all cheap queries (no NLI), same as the existing
@@ -318,6 +492,7 @@ def build_inbox(session: Session, project_id: int) -> dict:
         "can_wait": sum(1 for i in items if i["bucket"] == "CAN_WAIT"),
         "recently_resolved": sum(1 for i in items if i["bucket"] == "RESOLVED"),
         "high_severity": sum(1 for i in items if i["severity"] == "HIGH"),
+        "ingestion_exceptions": sum(1 for i in items if i["type"] == "INGESTION_EXCEPTION"),
         "blocked_expert_models": sum(1 for r in readiness if not r["compile_allowed"]),
         "total_expert_models": len(models),
     }

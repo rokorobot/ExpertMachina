@@ -60,6 +60,7 @@ export interface KnowledgeAsset {
   source_hash: string;
   extraction_method: string;
   created_at: string;
+  domain: string | null; // v1.2.1 (D27): governed hierarchical domain path
   quality_scores: QualityScore[];
   reviews: AssetReview[];
   revision_count: number;
@@ -459,6 +460,13 @@ export interface LLMFunctionSetting {
   source: string;                  // CONFIG | ENV | DEFAULT
 }
 
+// v1.2.1 (D26): a Tier-0 source-authority condition on an approval policy.
+export interface SourceCondition {
+  key: string;              // dotted path into the verbatim source metadata
+  equals?: string;          // exactly one of equals / in
+  in?: string[];
+}
+
 export interface ApprovalPolicy {
   id: number;
   project_id: number;
@@ -467,6 +475,9 @@ export interface ApprovalPolicy {
   connector_id: number | null; // null = applies to any source, incl. manual upload
   enabled: boolean;
   version: number; // bumped on every definition change
+  source_conditions: SourceCondition[] | null; // v1.2.1 (D26 Tier-0)
+  engine_conditions: { contradiction_check?: string } | null; // v1.2.1 (D26 Tier-2)
+  domains: string[] | null; // v1.2.1 (D26/D27): domain-prefix coverage
   created_by: string | null;
   created_at: string;
   updated_at: string;
@@ -793,8 +804,14 @@ interface AppState {
 
   approvalPolicies: ApprovalPolicy[];
   fetchApprovalPolicies: (projectId: number) => Promise<void>;
-  createApprovalPolicy: (projectId: number, name: string, assetTypes: string[], connectorId: number | null) => Promise<void>;
+  createApprovalPolicy: (projectId: number, name: string, assetTypes: string[], connectorId: number | null,
+                         conditions?: { source_conditions?: SourceCondition[] | null;
+                                        engine_conditions?: { contradiction_check: string } | null;
+                                        domains?: string[] | null }) => Promise<void>;
   toggleApprovalPolicy: (policyId: number, enabled: boolean, projectId: number) => Promise<void>;
+  // v1.2.1 (D27): a domain correction is a governed act on the normal
+  // asset-update path (ASSET_DOMAIN_CORRECTED) - never a content edit.
+  correctAssetDomain: (assetId: number, domain: string | null) => Promise<void>;
 
   agentActivity: AgentActivitySummary | null;
   fetchAgentActivity: () => Promise<void>;
@@ -1535,18 +1552,41 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  createApprovalPolicy: async (projectId: number, name: string, assetTypes: string[], connectorId: number | null) => {
+  createApprovalPolicy: async (projectId: number, name: string, assetTypes: string[], connectorId: number | null,
+                               conditions?: { source_conditions?: SourceCondition[] | null;
+                                              engine_conditions?: { contradiction_check: string } | null;
+                                              domains?: string[] | null }) => {
     try {
       const res = await apiFetch(`${API_BASE}/projects/${projectId}/approval-policies`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, asset_types: assetTypes, connector_id: connectorId }),
+        body: JSON.stringify({ name, asset_types: assetTypes, connector_id: connectorId,
+                               ...(conditions ?? {}) }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
         throw new Error(body?.detail || 'Failed to create approval policy');
       }
       await get().fetchApprovalPolicies(projectId);
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  correctAssetDomain: async (assetId: number, domain: string | null) => {
+    const pid = get().activeProjectId;
+    if (!pid) return;
+    try {
+      const res = await apiFetch(`${API_BASE}/assets/${assetId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ domain }),
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => null);
+        throw new Error(body?.detail || 'Failed to correct asset domain');
+      }
+      await get().fetchProjectData(pid);
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
     }
