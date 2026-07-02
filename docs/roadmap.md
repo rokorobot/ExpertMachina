@@ -25,7 +25,7 @@
 | MVP 1.0 | Enterprise Platform — Identity Boundary (one constitutional release) | ✅ Completed — Governance Core Complete (D20 ratified, D21) |
 | v1.1.0 | Expert Package Consumption & Model Binding (the consumption arc) | ✅ Completed — all four WS gates passed (D22, D23 deferred) |
 | v1.1.1 | Consumption Operations Workbench | ✅ Completed — D24 ratified, schema projection guard permanent |
-| v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | 📋 Planned — pre-scoping brief written |
+| v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | 🔨 Scoped — build contract ratified July 2026 (D25) |
 | v1.2.x (likely v1.2.1) | Ingestion Automation (policy tiers) + Domain Classification | 📋 Planned |
 | v1.3.0 | Projection Engine + Graph Renderer (agent-facing export) | 🧭 Directional |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens) | 🧭 Directional |
@@ -649,8 +649,14 @@ discipline; full rationale and dependency chain in
   lineage, never revealed by any surface) as a new governed species
   distinct from v1.0's hash-only inbound credentials; SharePoint as the
   first credentialed provider on the unchanged D18 framework; "Sources &
-  Connectors" UI area earned (D8). Decision candidate: credential custody
-  (the D9 no-keys rule generalized platform-wide).
+  Connectors" UI area earned (D8). **Scoping ratified July 2026 — D25
+  (Credential Custody: the D9 no-keys rule generalized platform-wide)
+  plus companion rulings (envelope encryption under `EM_SECRET_KEY`,
+  ADMIN-only `credentials:manage` as the 12th permission, per-scan use
+  events, provider-key migration deferred, fake-Graph-in-CI + one live
+  run as WS2 gate evidence). Build contract:
+  [credentials-cloud-connector-v1.2.md](credentials-cloud-connector-v1.2.md)
+  — four workstreams, custody guard first (WS0), each gated.**
 - **v1.2.x (likely v1.2.1) — Ingestion Automation + Domain
   Classification.** Humans review by exception, never by document (D5
   applied): Tier-0 source-authority inheritance ("approved in the source

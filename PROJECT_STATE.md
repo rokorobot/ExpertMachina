@@ -5,7 +5,7 @@
 > Regenerate at every milestone release.
 
 **Snapshot:** 2026-07-02 · current version **v1.1.1** (Consumption Operations Workbench) · branch `main`
-· post-release strategy + v1.2 pre-scoping recorded (`b9d123c`)
+· post-release strategy + v1.2 pre-scoping recorded (`b9d123c`) · **v1.2.0 scoping RATIFIED (D25)**
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -244,17 +244,27 @@ package" never "deployed agent".
 ## Next milestones — the planned arc (ruled July 2026)
 
 **NEXT: v1.2.0 — Governed Credential Store + First Cloud Connector
-(SharePoint).** Pre-scoping brief committed:
-**docs/scoping-1.2-credentials-cloud-connector.md** — open the v1.2 scoping
-session from it (plus this file, DECISIONS.md, roadmap.md). Core rulings
-already recorded there: outbound credentials are a NEW governed species
-(encrypted-at-rest, custody lineage) — the v1.0 hash-only `credentials`
+(SharePoint). SCOPED AND RATIFIED (2026-07-02): D25 Credential Custody in
+docs/DECISIONS.md; build contract docs/credentials-cloud-connector-v1.2.md.**
+The rulings: outbound credentials are a NEW governed species in their own
+`external_credentials` table (encrypted-at-rest, custody lineage,
+non-nullable creation identity fact) — the v1.0 hash-only `credentials`
 table is never weakened; *outbound credential plaintext is not a governed
-fact; custody events are governed facts* (decision candidate, number at
-ratification); adversarial custody proof (seed a secret, sweep every
-surface) is the lead acceptance test; SharePointProvider stays thin on the
-unchanged D18 contract; Graph permission scope minimization is a scoping
-question.
+fact; custody events are governed facts*; NO surface ever returns a stored
+secret ("never", not "once" — the operator supplied it). Companion rulings:
+envelope encryption under env `EM_SECRET_KEY` (master-key rotation re-wraps,
+never re-enters); a 12th permission `credentials:manage`, ADMIN-only
+(custody must not ride on `connectors:manage` — SERVICE can hold
+KNOWLEDGE_OPERATOR); scans propose credential use, the custody layer decides
+release and writes per-scan `CREDENTIAL_USED`; granted Graph scopes are
+custody evidence (Sites.Selected recommended minimum); LLM-provider-key
+migration deferred (store is purpose-generic, D19 unchanged); WS2 gate =
+fake Graph transport in CI + ONE recorded live-tenant run. Four gated
+workstreams: WS0 D25 + adversarial custody sweep guard
+(`test_credential_custody.py`, in CI permanently; schema + D24 snapshot in
+the same commit) → WS1 custody layer (the Alice test for secrets) → WS2
+SharePointProvider (framework diff zero, seam suite untouched) → WS3
+Sources & Connectors UI area (D8 earned).
 
 Then (v1.2.x/likely v1.2.1 planned; v1.3+ directional — see roadmap.md
 "The road to the Operations Realm"): ingestion automation (Tier-0
@@ -282,6 +292,6 @@ auto-approval, AI Governance Analyst, trust history, grouped conflict API,
 coverage heatmap, notifications, agent runtime/orchestration — the last is
 out of scope by D22, not by omission).
 
-Read `docs/DECISIONS.md` (now through **D24**) for the binding architectural
+Read `docs/DECISIONS.md` (now through **D25**) for the binding architectural
 rulings before changing anything. Any schema change must update the frozen
 snapshot in `test_workbench_projection.py` alongside its ratified decision.

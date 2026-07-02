@@ -367,3 +367,68 @@ alike. Stronger than checking a milestone diff: a future milestone that
 legitimately changes the schema updates the frozen snapshot alongside the
 ratified decision that justifies it, in the same commit — never silently.
 **Evidence:** backend/test_workbench_projection.py (in CI).
+
+## D25 — Credential Custody (v1.2.0 scoping, RATIFIED)
+> Outbound credentials are governed secrets: stored encrypted, never
+> returned by any API, never exported in any artifact or projection,
+> never written into audit events or logs. The audit ledger records
+> custody events — created, rotated, revoked, used — never contents.
+> Configuration and connectors reference credentials by id; they never
+> contain them. The permission scope granted to a credential is custody
+> evidence: recorded at creation, carried on use events, never inferred.
+>
+> Routes and connectors propose credential use; the custody layer
+> decides release.
+
+The D9 hard rule (".empkg never contains keys") generalized to the whole
+platform, and the D17/D18/D19/D20 family shape applied a fifth time. The
+sharpest statement of the distinction: **outbound credential plaintext is
+not a governed fact; custody events are governed facts.** The system
+governs the existence, ownership, use, rotation, and revocation of the
+secret — never the secret value itself.
+
+The two credential species stay in separate tables: the v1.0
+`credentials` table's hash-only contract is a security property and is
+never overloaded. Outbound secrets live in `external_credentials`
+(encrypted-at-rest, revoke-never-delete lineage, non-nullable creation
+identity fact). One asymmetry is constitutional: inbound secrets are
+minted by EM and shown once at issuance; outbound secrets are supplied BY
+the operator, so no surface ever returns one — "never", not "once".
+
+Companion rulings made at the same scoping session (binding, recorded in
+docs/credentials-cloud-connector-v1.2.md):
+- **Envelope encryption under an env master key** (`EM_SECRET_KEY`, the
+  D19 tier; OS keystore/KMS is a later enterprise extension) — master-key
+  rotation re-wraps data keys; no secret is ever re-entered. Recovery
+  from key loss is a documented procedure, never a bypass (D21 posture).
+- **A new 12th permission, `credentials:manage`, ADMIN-only** — custody
+  must not ride on `connectors:manage`, which KNOWLEDGE_OPERATOR (and
+  therefore SERVICE principals) may hold. Administering a credential and
+  using one are separate layers: a scan proposes use; the custody layer
+  decides release and writes `CREDENTIAL_USED` (per scan, not per HTTP
+  request).
+- **LLM provider keys deferred**: the store is generic
+  (`purpose = CONNECTOR | PROVIDER`) but migrating OPENAI/ANTHROPIC keys
+  is a separate later step — it touches D19's resolution invariant. D19
+  holds unchanged until that explicit decision.
+- **SharePoint gate evidence**: fake Graph transport in CI (the D18
+  `fake://` pattern) + ONE manual live-tenant scan recorded at the gate.
+
+**Why:** half-governed secrets would give false assurance exactly as
+half-built auth would (D14's reasoning, completing what D19 deferred);
+and a secret that can be read back through any surface is not in custody
+— it is merely stored.
+**Tradeoff accepted:** no reveal endpoint means a lost secret is
+re-entered by rotation, never recovered; every credential surface pays
+the metadata-only discipline; the env master key is a single trust
+anchor until the enterprise keystore extension.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_credential_custody.py` seeds a sentinel secret and
+adversarially sweeps every surface (API responses, audit payloads, logs,
+exports, projections, error paths); any hit fails CI. Schema changes land
+with the D24 frozen-snapshot update in the same commit, citing this
+decision.
+**Evidence:** to be recorded at the WS gates
+(docs/credentials-cloud-connector-v1.2.md): the custody sweep (WS0), the
+Alice test for secrets + the 12-permission authorization grid (WS1), the
+unchanged-framework SharePoint proof (WS2).
