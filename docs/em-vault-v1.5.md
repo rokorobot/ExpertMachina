@@ -419,3 +419,49 @@ schema drift, no hidden dependency on rendered artifacts).
 Evidence (`backend/test_vault_renderer.py`, 8 parts, in CI — 39
 suites): the proof set above, closing green in the full regression
 with zero assertion edits to pre-existing suites.
+
+### WS3 — The Top-Level Projections Area: ACCEPTED (2026-07-03, user-ratified)
+
+Commit: `7310920`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS3 gate is accepted.
+The top-level Projections area is now constitutionally justified and
+correctly graduated from the dashboard: renderer plurality earned the
+surface; metadata-only registry truth controls it; projections remain
+renderable lenses, not knowledge.
+
+Accepted WS3 record: graph + vault establish renderer plurality;
+/api/projections/renderers is metadata-only and registry-driven; the
+UI no longer hardcodes projection assumptions; the dashboard
+projection panel is removed; the Projections area exposes declared
+renderer mode, output species, managed folders, floor boundaries,
+history, current/stale state, and regeneration; language remains
+correct — regenerated, not synced; the only write remains the existing
+governed render route at assets:approve; READ_ONLY refusal, admin
+render, ledger-projected history, staleness lifecycle, and
+regeneration clearing are all proven; browser proof confirms the real
+UI can render the vault and produce the full tree while preserving
+00_system, 07_agent_workspaces, and 08_proposals; D24 remains
+untouched at 28/305; all 40 backend suites are green, with frontend
+type-check and eslint clean.
+
+WS4 may proceed — the milestone gate: THE DISAPPEARANCE TEST + THE
+SEAM PROOF. Acceptance target (user-ratified): delete the entire
+rendered vault output, prove no governed fact is lost, regenerate
+byte-identical managed outputs against ledger hashes, keep
+untouchables intact throughout, and prove the live seam — a rendered
+note entering through 08_proposals becomes held DERIVED proposal
+material, and only after human acceptance becomes an honest DERIVED
+fact, never laundering projection authority. Close v1.5.0 with the
+final line: 28 tables / 305 columns; no schema drift; projections are
+disposable governed lenses.
+
+Evidence (`backend/test_projections_area.py`, 3 parts, in CI — 40
+suites): the registry endpoint (three renderers, ratified modes and
+managed folders, metadata only); the governed render route (reader
+403, admin vault render, metadata-only responses, ledger-projected
+history with the declared mode); the staleness lifecycle re-verified
+on the vault renderer. In-browser verification against the seeded
+throwaway DB: the graduated area, registry-driven renderer options, a
+live UI vault render producing the full nine-folder tree with
+untouchables preserved, zero console errors.
