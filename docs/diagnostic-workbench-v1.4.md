@@ -401,3 +401,69 @@ Ratified ripple recorded: the D28 guard's Part 6 and the v1.3
 acceptance closing line now assert the CURRENT ratified D24 snapshot
 (28/305) — projection work may never be the reason FROZEN_SCHEMA
 changes.
+
+### WS1 — Proposal Lane: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `65c5eb6`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS1 is accepted as the
+proposal-lane implementation for v1.4.0. The lane is a governed
+connector declaration, validated as PRIMARY or PROPOSAL, defaulted to
+PRIMARY, and recorded in SOURCE_CONNECTOR_CREATED. No connector update
+surface exists, so lane is create-time and stable.
+
+Channel decides source class. Assets from PROPOSAL connectors become
+DERIVED; assets from PRIMARY connectors remain PRIMARY. Document
+content and frontmatter cannot override the lane. A proposal claiming
+source_class: PRIMARY is still DERIVED, with the ignored claim
+declared as unrecognized evidence rather than obeyed.
+
+Synthesis provenance is verified against governed records. Proposal
+frontmatter is parsed from the stored content-hashed document file,
+not from flattened chunks. Verification checks the claimed agent
+principal, binding, binding ownership, active AGENT status, package
+hash, and cited governed evidence. On human acceptance, the
+ASSET_APPROVED event records the recomputed verification verdict,
+verbatim claims, verified binding coordinates, cited evidence, and
+accepting human identity fact.
+
+Forged or missing provenance is held and declared as
+PROPOSAL_PROVENANCE_UNVERIFIED with MEDIUM severity. Nonexistent
+bindings, wrong-principal bindings, mismatched package hashes, and
+absent frontmatter are named specifically. These proposals are held
+for review; they are not silently rejected by the engine. The human
+gate remains open, and accepting an unverified proposal records
+provenance_verified: false honestly.
+
+PROPOSAL_AWAITING_GATE is accepted as a LOW inbox kind. A verified
+proposal waiting for human acceptance is not a policy coverage gap. It
+is intentionally held by D29: proposal-lane candidates are never
+auto-approved, and accepting them creates DERIVED facts.
+
+The valve remains live under WS1 machinery. A global permissive
+approval policy can auto-approve PRIMARY-lane content but cannot
+auto-approve PROPOSAL-lane candidates. Holds are declared.
+
+Guard 5 amendment accepted: the provenance tripwire now guards
+assertions of provenance_verified: True rather than mere mentions.
+Modules may copy computed verdicts as projections, but any module
+asserting verified provenance must consult governed ExpertAgentBinding
+records. The self-proof includes subscript-assignment plants.
+
+All 33 CI suites pass. Existing suites required zero assertion edits.
+Guard 5 and the projection guard re-pass with proposals.py included in
+their sweep.
+
+WS2 may proceed: primary-over-derived conflict discipline and
+source_class propagation into packages, projection nodes, MCP
+responses, and citations.
+
+Evidence (`backend/test_proposal_lane.py`, 5 parts, in CI): the lane
+declaration on the governed route (validated, defaulted, ledgered);
+channel-decided class with the PRIMARY claim recorded verbatim and
+never obeyed, idempotent across rescans; the verified chain closing on
+the opening question answered from the approval event + governed
+records alone; four forged/bare postures held as declared MEDIUM
+exceptions with named reasons and the human gate proven open and
+honest; the valve live on the lane's own corpus under a global
+permissive policy with holds declared by both tiers.
