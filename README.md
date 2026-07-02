@@ -207,7 +207,8 @@ A role-aware single-page console (the interface hides what the backend would ref
 - **Ask Expert Console** (evidence-backed Q&A with citations)
 - **Evaluations** (benchmarks, scorecards, refusal tests as first-class results)
 - **Consumption** (Selection Workbench, Consumption Inbox, Binding Explorer with full lineage)
-- **Agent Center** (MCP activity, clearances, denials) and **Audit Ledger Explorer**
+- **Operations** (the Operations Realm surface: Workbenches — bound agents and their governed record; Proposal Pipeline — held proposals with recomputed provenance verdicts and the Accept-as-DERIVED human gate; Lanes & Vault — the proposal-lane connectors and the `08_proposals` return path. ExpertMachina never launches agents; execution stays outside the boundary)
+- **Agent Center** (MCP activity, clearances, denials) and **Audit Ledger Explorer** (including the structured synthesis-provenance trace for DERIVED acceptances)
 - **Settings** (LLM model-per-function selection, Users & Tokens)
 
 ---
@@ -320,7 +321,7 @@ ExpertMachina is under active development. Shipped and stable:
 - the governed credential store and the first credentialed cloud connector (SharePoint) — **v1.2.0**;
 - ingestion automation and domain classification (review by exception: source-authority and engine-verified approval tiers, governed taxonomy, the ranked exception inbox) — **v1.2.1**;
 - the projection engine and graph lens (clearance-filtered, cursor-stamped, deterministic rendered views; a self-contained air-gapped interactive graph; agent graph queries with lineage as a path query — delivered with **zero schema change**: a projection is a governed lens over the knowledge system, never another knowledge system) — **v1.3.0**;
-- the first diagnostic workbench pilot — **the Operations Realm opens** with the one-way valve and derived source class (D29/D30): a reference workbench outside the backend diagnoses through the existing doors, its findings re-enter only through the proposal lane and human gate as DERIVED facts with verified synthesis provenance, primary prevails over derived in every conflict surface, and the fifth permanent CI guard proves from the ledger alone that no agent can write canonical facts directly — **v1.4.0**.
+- the first diagnostic workbench pilot — **the Operations Realm opens** with the one-way valve and derived source class (D29/D30): a reference workbench outside the backend diagnoses through the existing doors, its findings re-enter only through the proposal lane and human gate as DERIVED facts with verified synthesis provenance, primary prevails over derived in every conflict surface, and the fifth permanent CI guard proves from the ledger alone that no agent can write canonical facts directly — **v1.4.0**; plus the **Operations area** (Workbenches, Proposal Pipeline, Lanes & Vault — a pure computed operator surface where humans work the gate; ExpertMachina never launches agents) — **v1.4.1**.
 
 **The road ahead** (directional): the EM Vault — a full human-readable, Obsidian-compatible rendered workspace as the projection engine's second renderer, filling the vault folders v1.4 reserved (v1.5).
 

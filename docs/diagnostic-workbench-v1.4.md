@@ -734,3 +734,60 @@ with no write method). In-browser verification against the seeded
 throwaway DB: all three panels, the live Accept-as-DERIVED action
 (held → APPROVED, tile 0→1), the lane selector + badge, the audit
 trace, zero console errors. tsc clean; eslint 0 errors.
+
+### v1.4.1 — Operations UI Completion: ACCEPTED (2026-07-03, user-ratified)
+
+Commit: `212a0fa`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** v1.4.1 is accepted as
+the Operations Realm UI-completion release.
+
+D8 amendment accepted: Operations earns a top-level area not by
+workbench plurality, but by Operations-Realm surface plurality.
+Agents, bindings, proposal lanes, held candidates, DERIVED facts,
+provenance verdicts, and return-path activity now share one operator
+surface.
+
+The Operations area is accepted as a governed operator surface, not an
+agent runtime. It states the D22 boundary explicitly: ExpertMachina
+never launches agents; execution remains outside the boundary. The
+area exposes three views: Workbenches, Proposal Pipeline, and Lanes &
+Vault.
+
+Workbenches shows bound-agent operational state, including bindings,
+clearance, proposal counts, accepted DERIVED counts, and, for
+audit-authorized viewers, MCP activity and denials. Agent Center
+remains the identity/token-facing surface.
+
+Proposal Pipeline recomputes proposal provenance verdicts at read time
+and renders verified/unverified status, binding/model/package
+coordinates, cited evidence, missing evidence, and DERIVED-evidence
+flags. The only write is Accept as DERIVED, which uses the existing
+human asset-review path.
+
+Lanes & Vault exposes PROPOSAL-lane connectors, scan history,
+scan-now, and the 08_proposals return path.
+
+The two v1.4.0 UI gaps are closed: Sources & Connectors now has a lane
+selector and PROPOSAL-lane badge, and the Audit Ledger Explorer
+renders DERIVED acceptance provenance structurally instead of raw
+JSON.
+
+The backend implementation is pure projection: app/operations_view.py
+serves one computed read endpoint, writes no audit events on read, and
+introduces no schema changes. D24 remains 28 tables / 305 columns.
+
+Browser verification passed on a seeded throwaway database. All three
+Operations panels rendered, forged proposal reasons were visible,
+Accept as DERIVED moved a candidate to APPROVED and updated the
+accepted-DERIVED count, the audit provenance trace rendered, Sources
+displayed the lane selector and badge, and the console showed zero
+errors.
+
+All 37 CI suites pass. TypeScript is clean. ESLint has zero errors.
+All five permanent guard families pass.
+
+**v1.4.1 is accepted as a UI-completion release over v1.4.0. It makes
+the Operations Realm visible and operable while preserving the one-way
+valve: agents propose; humans accept; DERIVED knowledge remains
+governed.**

@@ -4,11 +4,14 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-02 · current version **v1.4.0** (First Diagnostic
-Workbench Pilot — all five gates PASSED; the Operations Realm opens with
-the one-way valve intact: agents may diagnose and propose, but only
-governed human acceptance can turn a finding into DERIVED knowledge) ·
-branch `main` · D29 + D30 ratified (register through D30)
+**Snapshot:** 2026-07-03 · current version **v1.4.1** (v1.4.0 First
+Diagnostic Workbench Pilot — all five gates PASSED; the Operations Realm
+opens with the one-way valve intact: agents may diagnose and propose,
+but only governed human acceptance can turn a finding into DERIVED
+knowledge — plus the v1.4.1 Operations UI completion: a top-level
+Operations area earned by the D8 amendment "Operations-Realm surface
+plurality", operating the HUMAN side of the loop only) · branch `main` ·
+D29 + D30 ratified (register through D30)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -254,6 +257,7 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `projections/contract.py` | **v1.3.0 WS0**: the frozen-dataclass model renderers receive; stamp fields are guard-checked contract fields — an unstamped render structurally cannot exist |
 | `projections/renderers/graph.py` | **v1.3.0 WS2**: the graphify port (MIT) — graph.json node-link + self-contained graph.html (search/filter/inspect, conflict edges styled, aggregated fallback above node limit; graph.json never loses detail); imports stdlib + contract + renderer siblings ONLY |
 | `projections/renderers/vis_network_js.py` | **v1.3.0 WS2**: vis-network 9.1.6 vendored (gzip+base64 constant, sourceMappingURL stripped, sha256 pinned) — renderers are write-only, so the library lives in code, never in a file to read back |
+| `operations_view.py` | **v1.4.1 (the D8 amendment)**: the Operations area's pure projection — bound agents + bindings + per-agent proposal stats, the proposal pipeline (provenance verdicts recomputed per read, never stored), PROPOSAL lanes + scan history; ONE endpoint `GET /api/projects/{id}/operations` (assets:read; MCP aggregates stay behind audit:read `/api/agents/activity`); reads write nothing |
 | `query_engine.py` | LIVE-channel retrieval + validation + generation + claim verification; `ACCESS_RANK`; v1.4.0: citations carry `source_class` (feeds ask_expert + MCP get_provenance) |
 
 Outside `backend/app/` (deliberately — D29/D22):
@@ -325,6 +329,18 @@ show the domain path with inline governed correction (ASSET_DOMAIN_CORRECTED,
 never a revision); the Governance Inbox ranks ingestion exceptions with
 provenance-derived "why held" (language: "held for review"/"exception",
 never "rejected by the engine"; "classified"/"corrected", never "moved").
+v1.4.1: the top-level **Operations** area (assets:read; sidebar badge =
+held candidates) — Workbenches (bound agents: bindings, per-agent
+proposal stats, MCP activity merged only for audit:read viewers,
+unattributed proposals declared; header states D22: "ExpertMachina never
+launches agents"), Proposal Pipeline (verdicts recomputed per read,
+verified/unverified chips w/ named reasons, cited evidence w/ missing +
+second-generation DERIVED flags, **Accept as DERIVED** = the
+pre-existing review PATCH, the area's only write), Lanes & Vault
+(PROPOSAL connectors, scan history, scan-now). Sources & Connectors
+gained the lane selector (D29 warning on PROPOSAL) + PROPOSAL LANE
+badge; the Audit Ledger Explorer gained the synthesis-provenance trace
+for DERIVED acceptances. Agent Center stays identity/MCP-facing.
 v1.4.0 WS4: the **DERIVED chip** on asset cards with state-dependent truth
 (approved: "agent-synthesized, accepted as DERIVED by <human> — synthesis
 provenance is on the ASSET_APPROVED event"; candidate: "held for the human
@@ -377,6 +393,7 @@ engine", or "agent wrote a fact".
 | WS2 | `99728fe` | primary-over-derived discipline (one shared annotator, gate class-blind, nothing auto-resolves) + class travels into packages/projections/MCP/citations |
 | WS3 | `0b83a21` | workbench/onboarding_diagnostic.py (reference consumer, doors only) + vault skeleton (00_system contract, 07 scratch, 08_proposals) |
 | **v1.4.0** | `3f048e3` | WS4 operator surface (DERIVED chip, Primary-prevails chip, proposal inbox kinds) + THE MILESTONE GATE (test_workbench_acceptance.py: the full loop once, closing on ledger-proves-no-agent-wrote-facts + D24 28/305) |
+| **v1.4.1** | `212a0fa` | the Operations area (D8 amendment: earned by Operations-Realm surface plurality; operate = the human gate only, D22 held) + lane selector/badge + audit synthesis-provenance trace; operations_view.py pure projection, ONE read endpoint, 37 CI suites |
 
 ## How to run
 
@@ -451,8 +468,11 @@ engine", or "agent wrote a fact".
   doors, the return path), `test_workbench_acceptance.py` (THE v1.4
   MILESTONE GATE: eight stages + the closing lines — every approval
   event carries a non-AGENT identity fact, every APPROVED DERIVED fact
-  has a human review, D24 at 28/305).
-  CI enforces all 36 on every push. `test_support.governed_actor` is the
+  has a human review, D24 at 28/305), `test_operations_view.py`
+  (v1.4.1: the Operations projection — correctness incl. forged
+  attribution, purity as deterministic event-free reads, the governed
+  route with no write method).
+  CI enforces all 37 on every push. `test_support.governed_actor` is the
   only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1

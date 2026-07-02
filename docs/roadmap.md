@@ -28,7 +28,8 @@
 | v1.2.0 | Governed Credential Store + First Cloud Connector (SharePoint) | ✅ Completed (July 2026, D25 ratified) — live SharePoint tenant verification pending availability |
 | v1.2.1 | Ingestion Automation (policy tiers) + Domain Classification | ✅ Completed (July 2026, D26 + D27 ratified) — all five gates PASSED; corpus proof 91.2% auto-approved, 100% exceptions surfaced |
 | v1.3.0 | Projection Engine + Graph Lens (D28 — governed rendered lenses, agent graph queries) | ✅ Completed (July 2026, D28 ratified) — all five gates PASSED; ZERO schema change; 31 CI suites |
-| v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class; Guard 5) | ✅ Completed (July 2026, D29 + D30 ratified) — all five gates PASSED; the full loop once end-to-end; 36 CI suites; real-model run honestly pending |
+| v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class; Guard 5) | ✅ Completed (July 2026, D29 + D30 ratified) — all five gates PASSED; the full loop once end-to-end; real-model run honestly pending |
+| v1.4.1 | Operations UI Completion (the D8 amendment: a top-level Operations area — Workbenches, Proposal Pipeline, Lanes & Vault; operate = the human gate only) | ✅ Completed (July 2026) — pure projection, one read endpoint, zero schema; lane selector + provenance trace close the v1.4.0 UI gaps; 37 CI suites |
 | v1.5 | EM Vault (human-readable rendered workspace — the second renderer) | 🧭 Directional |
 
 ---
