@@ -59,6 +59,9 @@ jobs:
       - name: Credential custody guard (D25 sentinel sweep)
         working-directory: backend
         run: python test_credential_custody.py
+      - name: Ingestion automation guard (D26 single approval path + revision sentinel)
+        working-directory: backend
+        run: python test_ingestion_automation_guard.py
 
   frontend:
     runs-on: ubuntu-latest

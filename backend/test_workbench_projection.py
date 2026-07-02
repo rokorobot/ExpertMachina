@@ -30,6 +30,14 @@ from app import database as db
 #     external_credentials custody table and
 #     source_connectors.external_credential_id (connectors reference
 #     outbound credentials by id, never by value).
+#   v1.2.1 WS0 (D26 + D27, docs/ingestion-automation-v1.2.1.md): adds
+#     source_documents.source_metadata_json (Tier-0 source-authority
+#     evidence, preserved not merely observed), knowledge_assets.domain
+#     (governed hierarchical domain path, NULL = honestly unclassified),
+#     the classification_policies governed object, and the
+#     approval_policies condition columns (source_conditions_json /
+#     engine_conditions_json / domains_json - NULL preserves v0.10.2
+#     behavior exactly).
 
 FROZEN_SCHEMA = {
     "agent_packages": [
@@ -40,7 +48,12 @@ FROZEN_SCHEMA = {
     ],
     "approval_policies": [
         "asset_types_json", "connector_id", "created_at", "created_by",
-        "enabled", "id", "name", "project_id", "updated_at", "version",
+        "domains_json",  # v1.2.1 WS0 (D26): domain-prefix coverage narrowing
+        "enabled",
+        "engine_conditions_json",  # v1.2.1 WS0 (D26): Tier-2 engine conditions
+        "id", "name", "project_id",
+        "source_conditions_json",  # v1.2.1 WS0 (D26): Tier-0 authority matches
+        "updated_at", "version",
     ],
     "asset_relationships": [
         "classification", "confidence", "detected_at", "expert_model_id",
@@ -78,6 +91,13 @@ FROZEN_SCHEMA = {
         "created_at", "expires_at", "fingerprint", "id",
         "issued_by_credential_id", "kind", "label", "last_used_at",
         "principal_id", "revoked_at", "secret_hash",
+    ],
+    # v1.2.1 WS0 (D27): domain classification is its own governed object -
+    # assigning a domain and granting APPROVED are different outcome
+    # species; provenance and version counters never blur.
+    "classification_policies": [
+        "connector_id", "created_at", "created_by", "enabled", "id",
+        "name", "project_id", "rules_json", "updated_at", "version",
     ],
     "customers": [
         "api_key", "id", "name",
@@ -139,7 +159,9 @@ FROZEN_SCHEMA = {
     ],
     "knowledge_assets": [
         "access_level", "chunk_id", "condition", "content", "created_at",
-        "document_id", "extraction_method", "id", "name", "owner",
+        "document_id",
+        "domain",  # v1.2.1 WS0 (D27): governed hierarchical domain path
+        "extraction_method", "id", "name", "owner",
         "project_id", "source_citation", "source_hash", "source_page",
         "source_section", "status", "type",
     ],
@@ -171,7 +193,8 @@ FROZEN_SCHEMA = {
     "source_documents": [
         "connector_id", "created_at", "details_json", "document_id",
         "error", "file_hash", "id", "ingestion_job_id", "project_id",
-        "size_bytes", "source_modified_at", "source_uri", "status",
+        "size_bytes", "source_metadata_json",  # v1.2.1 WS0 (D26): Tier-0 evidence
+        "source_modified_at", "source_uri", "status",
     ],
 }
 
@@ -216,9 +239,9 @@ def main():
     column_count = sum(len(cols) for cols in FROZEN_SCHEMA.values())
     print(f"D24 projection guard passed: live schema is identical to the "
           f"frozen snapshot ({table_count} tables, "
-          f"{column_count} columns; v1.1.0 baseline + the D25 custody "
-          f"amendment). No new tables, no new writable columns beyond "
-          f"ratified decisions.")
+          f"{column_count} columns; v1.1.0 baseline + the D25 custody and "
+          f"D26/D27 automation amendments). No new tables, no new writable "
+          f"columns beyond ratified decisions.")
 
 
 if __name__ == "__main__":

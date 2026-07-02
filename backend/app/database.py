@@ -208,12 +208,25 @@ class SourceDocument(Base):
     error = Column(Text, nullable=True)
     details_json = Column(Text, nullable=True) # MVP 0.10.1: change summary (revisions created, assets added, ...)
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
+    # v1.2.1 WS0 (D26): verbatim provider discovery metadata at scan time
+    # (ConnectorItem.metadata) - the Tier-0 source-authority evidence.
+    # Described context per D18 (recorded, never decisive for the change
+    # verdict); persisted per scan row because per-scan rows are the
+    # permanent version history (D7) and Tier-0 provenance must quote the
+    # authority that carried an approval, indefinitely. Legacy rows are
+    # honestly NULL, never backfilled (D12).
+    source_metadata_json = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
     @property
     def details(self):
         import json
         return json.loads(self.details_json) if self.details_json else None
+
+    @property
+    def source_metadata(self):
+        import json
+        return json.loads(self.source_metadata_json) if self.source_metadata_json else None
 
 
 class ApprovalPolicy(Base):
@@ -236,11 +249,72 @@ class ApprovalPolicy(Base):
     created_by = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+    # v1.2.1 WS0 (D26): policy tiers as condition columns. The NULL
+    # invariant (the D19 shape): a policy with NULL conditions behaves
+    # exactly as v0.10.2 - new condition machinery changes nothing by
+    # existing. Condition changes are definition changes -> version bump.
+    #   source_conditions_json (Tier-0): deterministic matches against the
+    #     verbatim source metadata of the document the asset came from
+    #     (operators `equals`/`in`, dotted keys); absent metadata never
+    #     satisfies a condition (D12).
+    #   engine_conditions_json (Tier-2): engine-verdict requirements
+    #     (candidate-contradiction check); consulted by the async Tier-2
+    #     pass, never inline (D4).
+    #   domains_json: optional domain-prefix coverage narrowing (D27
+    #     paths); NULL = all domains (existing behavior preserved) -
+    #     asset types remain the mandatory deny-by-default coverage.
+    source_conditions_json = Column(Text, nullable=True)
+    engine_conditions_json = Column(Text, nullable=True)
+    domains_json = Column(Text, nullable=True)
 
     @property
     def asset_types(self):
         import json
         return json.loads(self.asset_types_json) if self.asset_types_json else []
+
+    @property
+    def source_conditions(self):
+        import json
+        return json.loads(self.source_conditions_json) if self.source_conditions_json else None
+
+    @property
+    def engine_conditions(self):
+        import json
+        return json.loads(self.engine_conditions_json) if self.engine_conditions_json else None
+
+    @property
+    def domains(self):
+        import json
+        return json.loads(self.domains_json) if self.domains_json else None
+
+
+class ClassificationPolicy(Base):
+    """Domain classification policy (v1.2.1 WS0, D27). A deterministic,
+    versioned rule assigning the governed hierarchical domain path to
+    newly extracted assets at ingestion (connector scope, source URI
+    prefix, and/or source-metadata matches -> domain). Its own governed
+    object, deliberately NOT a kind flag on ApprovalPolicy: assigning a
+    domain and granting APPROVED are different outcome species - their
+    provenance and version counters never blur. D17 shape throughout:
+    definition changes bump version, enable/disable is audited without a
+    bump, no delete endpoint - disable instead. Every assignment writes
+    ASSET_CLASSIFIED with the policy snapshot that fired."""
+    __tablename__ = "classification_policies"
+    id = Column(Integer, primary_key=True, index=True)
+    project_id = Column(Integer, ForeignKey("projects.id"))
+    name = Column(String, nullable=False)
+    rules_json = Column(Text, nullable=False)  # JSON: match rules -> domain path
+    connector_id = Column(Integer, ForeignKey("source_connectors.id"), nullable=True)  # NULL = any source
+    enabled = Column(Boolean, default=True)
+    version = Column(Integer, default=1)  # bumped on every definition change
+    created_by = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    @property
+    def rules(self):
+        import json
+        return json.loads(self.rules_json) if self.rules_json else []
 
 
 class LLMFunctionConfig(Base):
@@ -301,6 +375,14 @@ class KnowledgeAsset(Base):
     content = Column(Text, nullable=False)
     status = Column(String, default="CANDIDATE") # CANDIDATE, REVIEWED, APPROVED, ARCHIVED
     access_level = Column(String, default="INTERNAL") # PUBLIC, INTERNAL, RESTRICTED, EXECUTIVE
+    # v1.2.1 WS0 (D27): governed hierarchical domain path
+    # ("finances/accounting"), assigned at ingestion by classification
+    # policies, human-correctable through the normal review surface.
+    # Business dimension, orthogonal to `type` (semantic species) - never
+    # siblings in any hierarchy. NULL = honestly unclassified (D12),
+    # never fabricated as "general". Reorganizations rewrite this field
+    # only via the audited taxonomy operation (old->new mapping recorded).
+    domain = Column(String, nullable=True)
     
     # Advanced Provenance fields
     document_id = Column(Integer, ForeignKey("documents.id"), nullable=True)
@@ -669,6 +751,21 @@ def _ensure_columns():
         },
         "source_documents": {
             "details_json": "TEXT",
+            # v1.2.1 WS0 (D26): Tier-0 source-authority evidence. NULL on
+            # pre-v1.2.1 scan rows = "we did not record it" (D12).
+            "source_metadata_json": "TEXT",
+        },
+        # v1.2.1 WS0 (D27): governed domain path; NULL = honestly
+        # unclassified, never backfilled.
+        "knowledge_assets": {
+            "domain": "TEXT",
+        },
+        # v1.2.1 WS0 (D26): policy-tier condition columns; NULL preserves
+        # v0.10.2 behavior exactly (the D19 empty-config invariant).
+        "approval_policies": {
+            "source_conditions_json": "TEXT",
+            "engine_conditions_json": "TEXT",
+            "domains_json": "TEXT",
         },
         # v1.2.0 WS0 (D25): connectors reference outbound credentials by
         # id, never by value. NULL = the provider needs none (LOCAL_FOLDER)

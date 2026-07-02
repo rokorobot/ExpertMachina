@@ -260,4 +260,42 @@ citing D26 or D27.
 
 ## Gate records
 
-(appended at each WS acceptance — empty at scoping)
+### WS0 — PASSED (2026-07-02, user-accepted)
+
+The automation guard (`backend/test_ingestion_automation_guard.py`) is
+permanent in CI, one step after the D25 custody guard. Evidence against
+the ratified gate wording:
+
+- **One governed transition path (structural, AST-based)**: automation
+  modules (`AUTOMATION_MODULES`, currently `policy.py`) contain no direct
+  `.status` write, no direct AssetReview/AssetRevision construction, and
+  every APPROVED grant sits inside a `crud.update_knowledge_asset` call.
+  App-wide sweep: the `ASSET_AUTO_APPROVED` event family may originate
+  only from declared automation modules — WS3's Tier-2 module must be
+  declared there or CI fails loudly.
+- **Revisions never auto-approved (end-to-end sentinel)**: the most
+  permissive policy set constructible (raw rows bypassing API validation:
+  all 7 asset types unscoped + every v1.2.1 condition column populated
+  maximally permissively — inert today, exercised automatically when
+  WS2/WS3 give them semantics) auto-approves the corpus; the changed
+  source file yields revision 2 CANDIDATE, approved content untouched.
+  Binding note in the suite: WS3 must drain the async Tier-2 pass inside
+  `run_scan` before the sentinel judges.
+- **Adversarial self-proof (both rules)**: three planted structural
+  violations (direct status write, direct AssetReview row, APPROVED
+  outside the path) all caught, canonical shape clean; a simulated
+  policy-approved revision with promoted content caught with 3 findings,
+  clean after restore.
+- **Accepted sentinel interpretation (user-ratified at the gate)**:
+  revision 1 may be created as the legitimate lazy baseline during
+  initial approval; only revisions > 1 approved by a policy actor are
+  violations. The forbidden case is automation promoting a later
+  candidate revision and changing trusted content without human review.
+- **Schema, atomic**: `source_documents.source_metadata_json` (source
+  authority evidence survives the scan), `knowledge_assets.domain`,
+  `classification_policies`, ApprovalPolicy condition columns
+  (`source_conditions_json` / `engine_conditions_json` / `domains_json`),
+  `_ensure_columns` additive migrations, and the D24 frozen-snapshot
+  amendment citing D26/D27 — one commit. D24 guard reports 28 tables /
+  303 columns.
+- **All 19 pre-existing CI suites green with zero assertion edits.**
