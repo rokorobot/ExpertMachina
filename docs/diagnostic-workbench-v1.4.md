@@ -521,3 +521,81 @@ gate verdicts identical across classes and only a human dismissal
 reopening the gate; the class present in package bytes, consumer
 retrieval, composed projection, rendered graph.json, MCP graph node,
 and citations.
+
+### WS3 — Reference Diagnostic Workbench + Vault Skeleton: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `0b83a21`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** WS3 is accepted as the
+first diagnostic workbench pilot and vault skeleton for v1.4.0.
+
+The vault skeleton ships as a scoped v1.4 contract. vault/bootstrap.py
+creates 00_system, 07_agent_workspaces, and 08_proposals idempotently.
+The repo-versioned 00_system/agent-contract.md declares the one-way
+valve, lane discipline, proposal frontmatter, folder rules, and
+deployment warning. Folders 01–06 remain absent and reserved for the
+v1.5 vault renderer.
+
+The workbench is accepted as a reference consumer, not a governed
+backend subsystem. It lives at top-level workbench/ and is outside
+backend/app. Guard 5 auto-activated on the new workbench directory and
+swept the real modules against the ruled doors. The workbench may use
+stdlib, app.package_consumer, app.llm, and mcp. It may not import
+database, CRUD, routes, identity internals, or other governed backend
+write surfaces.
+
+The diagnosis proof passed. A corpus enters through the real governed
+pipeline, is approved and classified, compiled into an INTERNAL
+package with EXECUTIVE material excluded, and bound to a real AGENT
+principal and token. The workbench consumes the package, queries the
+graph through the MCP door, synthesizes behind an injectable seam, and
+writes exactly one content-hash-named proposal to 08_proposals.
+
+The proposal is deterministic and evidence-backed. Re-running on the
+same inputs produces byte-identical proposal content with no
+timestamps inside the proposal. Writes are confined to 08_proposals.
+Frontmatter claims match the governed binding, package hash, agent
+principal, and cited governed evidence. Every citation names an
+INTERNAL governed asset the agent actually consumed.
+
+Clearance honesty passed. EXECUTIVE material is absent from citations
+and from every byte of the proposal. The proposal declares the gateway
+exclusion count, so the reviewing human can see what the agent could
+not access.
+
+The return path passed. A PROPOSAL-lane connector rooted at
+08_proposals re-ingests the diagnosis. All extracted candidates are
+DERIVED, all remain held under global permissive policies, and
+verify_provenance confirms the proposal frontmatter against governed
+binding records.
+
+Implementation record accepted: the real workbench includes
+StdioMcpGraphClient, which runs mcp_server.py with EM_AGENT_TOKEN in
+the environment for the live run. CI injects an in-process substitute
+that resolves the same token through the same gateway functions,
+clearance checks, and MCP_TOOL_CALLED audit behavior; only transport
+differs. The stdio transport itself was proven in earlier milestones.
+
+Observed behavior recorded: ordinary extraction currently creates
+multiple DERIVED candidates from shaped proposal text such as evidence
+lists and observations. This does not weaken the valve because all
+proposal-lane candidates are held for human review. Proposal-aware
+extraction tuning is deferred to a future decision.
+
+All 35 CI suites pass. Existing suites required zero assertion edits.
+
+WS4 may proceed: operator surface and milestone acceptance, including
+DERIVED badge, synthesis provenance panel, class asymmetry in conflict
+UI, proposal inbox kinds, browser verification, the full end-to-end
+workbench acceptance test, and the honest real-model diagnostic slot.
+
+Evidence (`backend/test_workbench_pilot.py`, 6 parts, in CI):
+bootstrap idempotency with 01–06 honestly absent; the door sweep run
+against the real modules with the guard's own checker (and the
+permanent guard's Part 5 auto-activated: 2 workbench modules swept in
+CI); the corpus through the real pipeline into the compiled INTERNAL
+package; the byte-identical, vault-confined, frontmatter-valid,
+citation-complete diagnosis; clearance held at both doors with the
+exclusion declared inside the proposal; the return path holding the
+DERIVED candidates under a live permissive policy with provenance
+verified against the governed binding.
