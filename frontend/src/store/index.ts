@@ -426,7 +426,83 @@ export interface SourceConnector {
   root_path: string;
   include_extensions: string | null;
   external_credential_id: number | null; // v1.2.0 (D25): by reference, never by value
+  lane: string; // v1.4.0 (D29/D30): PRIMARY | PROPOSAL — the channel declaration
   created_at: string;
+}
+
+// v1.4.1 (the D8 amendment): the Operations view — a pure computed
+// projection of Operations Realm activity. Nothing here is stored; the
+// provenance verdicts are recomputed by the backend at every read.
+export interface OperationsProvenance {
+  provenance_claimed: boolean;
+  provenance_verified: boolean;
+  reasons: string[];
+  claimed: Record<string, string>;
+  unrecognized_keys: string[];
+  verified: {
+    binding_id: number;
+    agent_principal: string;
+    agent_principal_id: number;
+    agent_package_id: number | null;
+    package_hash: string;
+    package_version: string | null;
+    selected_provider: string | null;
+    selected_model_name: string | null;
+    binding_identity_fact_id: number;
+  } | null;
+  cited_assets: {
+    claimed: number[];
+    found: number[];
+    missing: number[];
+    malformed: string[];
+    derived_evidence: number[];
+  } | null;
+}
+
+export interface OperationsPipelineEntry {
+  document_id: number;
+  filename: string;
+  connector_id: number;
+  ingested_at: string | null;
+  agent_principal: string | null;
+  provenance: OperationsProvenance;
+  candidates: { asset_id: number; name: string; type: string; status: string; source_class: string }[];
+  held_count: number;
+  accepted_count: number;
+}
+
+export interface OperationsAgent {
+  principal_id: number;
+  name: string;
+  display_name: string;
+  active: boolean;
+  clearance: string | null;
+  bindings: number;
+  latest_binding: {
+    binding_id: number;
+    package_version: string | null;
+    package_hash: string;
+    selected_provider: string | null;
+    selected_model_name: string | null;
+    created_at: string | null;
+  } | null;
+  proposals: { proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number };
+}
+
+export interface OperationsView {
+  project_id: number;
+  agents: OperationsAgent[];
+  pipeline: OperationsPipelineEntry[];
+  lanes: {
+    connector_id: number;
+    name: string;
+    root_path: string;
+    include_extensions: string | null;
+    created_at: string | null;
+    last_scan: { job_id: number; status: string; started_at: string | null; completed_at: string | null; files_discovered: number; files_ingested: number; files_changed: number } | null;
+  }[];
+  unattributed_proposals: { proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number } | null;
+  summary: { agents: number; active_agents: number; lanes: number; proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number };
 }
 
 // v1.2.0 (D25): outbound credential METADATA. There is deliberately no
@@ -809,8 +885,16 @@ interface AppState {
   jobFiles: Record<number, SourceDocument[]>;
   fetchConnectors: (projectId: number) => Promise<void>;
   createConnector: (projectId: number, name: string, rootPath: string, extensions?: string,
-                    type?: string, externalCredentialId?: number | null) => Promise<void>;
+                    type?: string, externalCredentialId?: number | null,
+                    lane?: string) => Promise<void>;
   scanConnector: (connectorId: number, projectId: number) => Promise<void>;
+
+  // v1.4.1 (the D8 amendment): the Operations area — a computed
+  // projection; the only write in the area is the pre-existing
+  // asset-review PATCH (updateAssetStatus).
+  operations: OperationsView | null;
+  operationsLoading: boolean;
+  fetchOperations: (projectId: number) => Promise<void>;
   fetchIngestionJobs: (projectId: number) => Promise<void>;
   fetchJobFiles: (jobId: number) => Promise<void>;
 
@@ -1342,7 +1426,8 @@ export const useAppStore = create<AppState>((set, get) => ({
   },
 
   createConnector: async (projectId: number, name: string, rootPath: string, extensions?: string,
-                          type?: string, externalCredentialId?: number | null) => {
+                          type?: string, externalCredentialId?: number | null,
+                          lane?: string) => {
     try {
       const res = await apiFetch(`${API_BASE}/projects/${projectId}/connectors`, {
         method: 'POST',
@@ -1351,6 +1436,10 @@ export const useAppStore = create<AppState>((set, get) => ({
           name, root_path: rootPath, include_extensions: extensions || null,
           type: type || 'LOCAL_FOLDER',
           external_credential_id: externalCredentialId ?? null,
+          // v1.4.0 (D29/D30): the channel declaration — PROPOSAL marks
+          // the agent-finding return path; its candidates hold for the
+          // human gate and become DERIVED on acceptance.
+          lane: lane || 'PRIMARY',
         }),
       });
       if (!res.ok) {
@@ -1394,6 +1483,22 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // v1.4.1 (the D8 amendment): the Operations view — pure projection,
+  // recomputed by the backend on every read; nothing to invalidate.
+  operations: null,
+  operationsLoading: false,
+  fetchOperations: async (projectId: number) => {
+    set({ operationsLoading: true });
+    try {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/operations`);
+      if (!res.ok) throw new Error('Failed to fetch the Operations view');
+      set({ operations: await res.json(), operationsLoading: false });
+    } catch (err) {
+      set({ operationsLoading: false,
+            error: err instanceof Error ? err.message : String(err) });
     }
   },
 

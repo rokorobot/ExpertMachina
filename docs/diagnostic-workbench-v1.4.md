@@ -677,3 +677,60 @@ seed-side fix, not an app bug). **Honest slot (open): the ONE
 real-model diagnostic run** — append its evidence here when a provider
 key is available; the workbench's stdio MCP client and D19 synthesis
 path are code-complete.
+
+## Post-release amendment: the Operations area (v1.4.1, user-ratified 2026-07-03)
+
+**The D8 amendment (user product ruling):** a top-level **Operations**
+area is earned — not by workbench plurality (one workbench exists) but
+by **Operations-Realm surface plurality**: agents, bindings, proposal
+lanes, held candidates, and DERIVED facts had real activity spread
+across four tabs with no shared home. The v1.4.0 WS4 ruling ("UI
+inside existing areas") is amended accordingly; D8's underlying
+discipline is intact — the category with plurality is named honestly.
+
+**The "operate" boundary (user-ratified):** operate means the HUMAN
+side of the loop only — reviewing and accepting held proposals through
+the pre-existing asset-review write, administering PROPOSAL-lane
+connectors, scan-now, and watching agent activity. **ExpertMachina
+never launches agents** (D22 held): workbench execution stays outside
+the boundary; launching runs from the UI would be a superseding
+decision, deliberately not taken.
+
+The area (name **Operations**; its first view is the Workbenches
+surface; Agent Center stays identity/MCP-facing and its ledger-derived
+MCP aggregates are merged into Operations only for viewers holding
+audit:read):
+
+- **Workbenches** — bound agents and their governed record: bindings,
+  latest binding coordinates, per-agent proposal statistics
+  (submitted / held / accepted DERIVED / unverified), MCP activity
+  when the viewer may see it, unattributed proposals declared (D12).
+- **Proposal Pipeline** — every proposal document with its provenance
+  verdict recomputed at read time (verified/unverified chips, named
+  failure reasons, cited governed evidence with missing and
+  DERIVED-evidence counts declared), its candidates, and
+  **Accept as DERIVED** — the pre-existing review PATCH, the area's
+  only write.
+- **Lanes & Vault** — the PROPOSAL-lane connectors with scan history
+  and scan-now; lanes are created in Sources & Connectors, which
+  gained the **lane selector** (with the D29 warning on PROPOSAL) and
+  the **PROPOSAL LANE badge** — closing the v1.4.0 gap where the lane
+  declaration was API-only.
+
+Also delivered: the **synthesis-provenance trace** in the Audit Ledger
+Explorer — a DERIVED acceptance renders structurally (accepted-as,
+verdict, verbatim claims, agent + binding, package + model, cited
+evidence with second-generation DERIVED flags), completing the
+provenance story the asset-card chip points to.
+
+Backend: ONE computed read endpoint
+(`GET /api/projects/{id}/operations`, assets:read) over the new pure
+projection `app/operations_view.py` — verdicts recomputed on every
+read, nothing stored, no dismiss, zero schema (D24). Evidence:
+`backend/test_operations_view.py` (in CI — 37 suites: projection
+correctness incl. verified/forged attribution and accepted-DERIVED
+counts; purity — deterministic, event-free reads; the governed route
+with no write method). In-browser verification against the seeded
+throwaway DB: all three panels, the live Accept-as-DERIVED action
+(held → APPROVED, tile 0→1), the lane selector + badge, the audit
+trace, zero console errors. tsc clean; eslint 0 errors.

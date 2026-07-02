@@ -21,6 +21,7 @@ from app import revisions
 from app import trust
 from app import governance_inbox
 from app import consumption_inbox
+from app import operations_view
 from app import binding_lineage
 from app import connectors
 from app import policy
@@ -1664,6 +1665,20 @@ def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db),
     if not project:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return governance_inbox.build_inbox(db_session, project_id)
+
+# The Operations view (v1.4.1, the D8 amendment recorded in
+# docs/diagnostic-workbench-v1.4.md): a computed projection of Operations
+# Realm activity - agents, the proposal pipeline (verdicts recomputed at
+# read time, never stored), and the PROPOSAL lanes. Read-only; the only
+# write in the area is the pre-existing asset-review PATCH (the human
+# gate). MCP call aggregates stay behind audit:read (/api/agents/activity).
+@app.get("/api/projects/{project_id}/operations")
+def get_operations_view(project_id: int, db_session: Session = Depends(get_db),
+                        actor: identity.Actor = Depends(require_perm("assets:read"))):
+    project = db_session.query(db.Project).filter(db.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    return operations_view.build_operations(db_session, project_id)
 
 # Computed Consumption Inbox (v1.1.x WS2, D24): the v0.9.1 inbox pattern
 # applied to consumption. Read-only and the ONE endpoint this milestone

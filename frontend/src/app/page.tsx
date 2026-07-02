@@ -34,7 +34,8 @@ import {
   Inbox,
   Settings,
   KeyRound,
-  Cloud
+  Cloud,
+  Wrench
 } from 'lucide-react';
 import { useAppStore, can, type ExternalCredentialDetail } from '../store';
 
@@ -127,6 +128,9 @@ export default function Home() {
     startEvaluation,
     agentActivity,
     fetchAgentActivity,
+    operations,
+    operationsLoading,
+    fetchOperations,
     packageSelection,
     packageComparison,
     selectionHistory,
@@ -185,7 +189,7 @@ export default function Home() {
   // route guards remain the source of truth - this is presentation only.
   const allow = (permission: string) => can(currentUser, permission);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'sources' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'sources' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'operations' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
 
   // v1.1.x Consumption Operations Workbench (D24): which package the
   // operator is looking at, and the in-flight selection proposal. Both are
@@ -203,6 +207,17 @@ export default function Home() {
       fetchConsumptionInbox(activeProjectId);
     }
   }, [activeTab, activeProjectId, consumptionView]);
+
+  // v1.4.1 Operations area (the D8 amendment): the view is recomputed on
+  // every visit — nothing cached, nothing stored (D24). MCP call
+  // aggregates ride the existing audit:read endpoint and are merged only
+  // for viewers who hold that grant.
+  useEffect(() => {
+    if (activeTab === 'operations' && activeProjectId !== null) {
+      fetchOperations(activeProjectId);
+      if (allow('audit:read')) fetchAgentActivity();
+    }
+  }, [activeTab, activeProjectId]);
 
   // The sidebar HIGH badge must alert without requiring a visit to the tab
   // (a computed read, the governance-inbox badge pattern).
@@ -376,6 +391,9 @@ export default function Home() {
   // values go into one request and are cleared - nothing reads them back.
   const [connectorType, setConnectorType] = useState<'LOCAL_FOLDER' | 'SHAREPOINT'>('LOCAL_FOLDER');
   const [connectorCredentialId, setConnectorCredentialId] = useState<number | null>(null);
+  // v1.4.0 (D29/D30): the channel declaration — a deliberate governed act,
+  // defaulting PRIMARY. PROPOSAL marks the agent-finding return path.
+  const [connectorLane, setConnectorLane] = useState<'PRIMARY' | 'PROPOSAL'>('PRIMARY');
   const [sourcesError, setSourcesError] = useState<string | null>(null);
   const [credName, setCredName] = useState('');
   const [credPurpose, setCredPurpose] = useState<'CONNECTOR' | 'PROVIDER'>('CONNECTOR');
@@ -670,7 +688,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'agents', 'audit', 'console', 'settings'] as const;
+    const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'operations', 'agents', 'audit', 'console', 'settings'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -1175,6 +1193,31 @@ export default function Home() {
               {consumptionInbox && consumptionInbox.summary.high > 0 && (
                 <span className="ml-auto bg-rose-950/40 text-[10px] text-rose-400 font-mono px-2 py-0.5 rounded-full border border-rose-900/40">
                   {consumptionInbox.summary.high}
+                </span>
+              )}
+            </button>
+            )}
+
+            {/* v1.4.1 (the D8 amendment): Operations is the Operations
+                Realm area — workbench activity, the proposal pipeline at
+                the human gate, and the lanes. A pure projection; its only
+                write is the pre-existing asset-review PATCH. "Operate"
+                means the human side of the loop (D22) — EM never
+                launches agents. */}
+            {allow('assets:read') && (
+            <button
+              onClick={() => setActiveTab('operations')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'operations'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Wrench className="w-4 h-4" />
+              <span>Operations</span>
+              {operations && operations.summary.held_candidates > 0 && (
+                <span className="ml-auto bg-fuchsia-950/40 text-[10px] text-fuchsia-400 font-mono px-2 py-0.5 rounded-full border border-fuchsia-900/40">
+                  {operations.summary.held_candidates}
                 </span>
               )}
             </button>
@@ -3225,10 +3268,12 @@ export default function Home() {
                         await createConnector(activeProjectId, connectorName.trim(), connectorPath.trim(),
                                               connectorExts.trim(), connectorType,
                                               connectorType === 'SHAREPOINT' || connectorCredentialId !== null
-                                                ? connectorCredentialId : null);
+                                                ? connectorCredentialId : null,
+                                              connectorLane);
                         setConnectorName('');
                         setConnectorPath('');
                         setConnectorCredentialId(null);
+                        setConnectorLane('PRIMARY');
                       }}
                       className="space-y-3"
                     >
@@ -3267,6 +3312,27 @@ export default function Home() {
                           className="py-2 px-5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
                           Add Connector
                         </button>
+                      </div>
+                      {/* v1.4.0 (D29/D30): the lane declaration. A deliberate
+                          governed act — its candidates hold for the human gate
+                          and become DERIVED facts on acceptance. */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Lane</label>
+                          <select value={connectorLane}
+                            onChange={(e) => setConnectorLane(e.target.value as 'PRIMARY' | 'PROPOSAL')}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200">
+                            <option value="PRIMARY">PRIMARY — ordinary knowledge acquisition</option>
+                            <option value="PROPOSAL">PROPOSAL — the agent-finding return path</option>
+                          </select>
+                        </div>
+                        {connectorLane === 'PROPOSAL' && (
+                          <p className="text-[10px] font-mono text-fuchsia-400/90 bg-fuchsia-950/20 border border-fuchsia-900/30 rounded p-2">
+                            Proposal-lane candidates are never auto-approved — no policy tier applies (D29).
+                            Everything it ingests holds for the human gate and becomes a DERIVED fact on acceptance.
+                            Point it at the vault&apos;s 08_proposals folder.
+                          </p>
+                        )}
                       </div>
                       {(connectorType === 'SHAREPOINT' || allow('credentials:manage')) && (
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
@@ -3310,6 +3376,16 @@ export default function Home() {
                                   ? 'bg-sky-950/40 text-sky-400 border-sky-900/40'
                                   : 'bg-slate-900 text-slate-400 border-slate-850'
                               }`}>{c.type}</span>
+                              {/* v1.4.0 (D29/D30): the lane badge — a proposal-lane
+                                  connector must be distinguishable at a glance. */}
+                              {c.lane === 'PROPOSAL' && (
+                                <span
+                                  title="PROPOSAL lane (D29): the agent-finding return path — its candidates are never auto-approved; they hold for the human gate and become DERIVED facts on acceptance"
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded border bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-900/40"
+                                >
+                                  PROPOSAL LANE
+                                </span>
+                              )}
                               <span className="font-bold text-sm text-slate-200">{c.name}</span>
                               <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={c.root_path}>{c.root_path}</span>
                               {c.external_credential_id !== null && (
@@ -4637,6 +4713,219 @@ export default function Home() {
                 </div>
               )}
 
+              {/* TAB: OPERATIONS (v1.4.1, the D8 amendment recorded in
+                  docs/diagnostic-workbench-v1.4.md). The Operations Realm
+                  area: workbench activity, the proposal pipeline at the
+                  human gate, and the lanes. A pure projection (D24) - the
+                  only write is the pre-existing asset-review PATCH.
+                  "Operate" = the human side of the loop (D22): EM never
+                  launches agents; execution stays outside the boundary. */}
+              {activeTab === 'operations' && (
+                <div className="space-y-6">
+                  {operationsLoading && !operations ? (
+                    <p className="text-xs text-slate-500 font-mono">Computing the Operations view…</p>
+                  ) : !operations ? (
+                    <p className="text-xs text-slate-500 font-mono">No Operations data yet.</p>
+                  ) : (
+                    <>
+                      {/* Summary strip */}
+                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                        {[
+                          { label: 'Agents', value: `${operations.summary.active_agents}/${operations.summary.agents}`, hint: 'active / registered AGENT principals' },
+                          { label: 'Proposal Lanes', value: operations.summary.lanes, hint: 'PROPOSAL-lane connectors' },
+                          { label: 'Proposals', value: operations.summary.proposal_documents, hint: 'proposal documents ingested' },
+                          { label: 'Held', value: operations.summary.held_candidates, hint: 'candidates awaiting the human gate (never auto-approved, D29)' },
+                          { label: 'Accepted DERIVED', value: operations.summary.accepted_derived, hint: 'findings a human accepted as DERIVED facts' },
+                          { label: 'Unverified', value: operations.summary.unverified_documents, hint: 'proposals whose claimed provenance did not verify against governed records' },
+                        ].map(t => (
+                          <div key={t.label} title={t.hint} className="glass-panel rounded-xl p-4">
+                            <p className="text-[10px] font-mono text-slate-500 uppercase tracking-wider">{t.label}</p>
+                            <p className="text-xl font-bold text-cyan-400 font-mono">{t.value}</p>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* WORKBENCHES — bound agents and what they proposed */}
+                      <div className="glass-panel p-6 rounded-xl space-y-3">
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                          <Bot className="w-4 h-4 text-fuchsia-400" />
+                          Workbenches
+                          <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
+                            Bound agents and their governed record — ExpertMachina never launches agents (D22); execution stays outside the boundary
+                          </span>
+                        </h3>
+                        {operations.agents.length === 0 ? (
+                          <p className="text-xs text-slate-500 italic">No AGENT principals registered — create one in Settings → Users &amp; Tokens and bind it in Consumption.</p>
+                        ) : operations.agents.map(a => {
+                          const act = agentActivity?.agents.find(x => x.agent_id === a.name);
+                          return (
+                            <div key={a.principal_id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-2">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="font-bold text-sm text-slate-200">{a.display_name || a.name}</span>
+                                <span className="text-[10px] font-mono text-slate-500">{a.name}</span>
+                                <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full border ${a.active ? 'bg-emerald-950/40 text-emerald-400 border-emerald-900/40' : 'bg-slate-900 text-slate-500 border-slate-800'}`}>
+                                  {a.active ? 'ACTIVE' : 'DEACTIVATED'}
+                                </span>
+                                {a.clearance && (
+                                  <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">{a.clearance}</span>
+                                )}
+                                {act && (
+                                  <span className="text-[10px] font-mono text-slate-500 ml-auto" title="MCP gateway activity (audit ledger)">
+                                    {act.calls} MCP calls · {act.denied} denied · last seen {new Date(act.last_seen).toLocaleString()}
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                                {a.latest_binding ? (
+                                  <span className="text-slate-400" title={`Package hash ${a.latest_binding.package_hash}`}>
+                                    binding #{a.latest_binding.binding_id} · {a.latest_binding.selected_provider}/{a.latest_binding.selected_model_name} · pkg {a.latest_binding.package_hash.slice(0, 12)}… ({a.bindings} total)
+                                  </span>
+                                ) : (
+                                  <span className="text-slate-600 italic">no binding issued</span>
+                                )}
+                                <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-850 text-slate-400">{a.proposals.proposal_documents} proposals</span>
+                                <span className="px-2 py-0.5 rounded bg-yellow-950/30 border border-yellow-900/30 text-yellow-400">{a.proposals.held_candidates} held</span>
+                                <span className="px-2 py-0.5 rounded bg-fuchsia-950/30 border border-fuchsia-900/30 text-fuchsia-400">{a.proposals.accepted_derived} accepted DERIVED</span>
+                                {a.proposals.unverified_documents > 0 && (
+                                  <span className="px-2 py-0.5 rounded bg-amber-950/30 border border-amber-900/30 text-amber-400">{a.proposals.unverified_documents} unverified</span>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                        {operations.unattributed_proposals && (
+                          <p className="text-[10px] font-mono text-amber-400/90 bg-amber-950/20 border border-amber-900/30 rounded p-2">
+                            {operations.unattributed_proposals.proposal_documents} proposal document(s) name no resolvable agent — declared here, held for review like every proposal.
+                          </p>
+                        )}
+                      </div>
+
+                      {/* PROPOSAL PIPELINE — the human gate */}
+                      <div className="glass-panel p-6 rounded-xl space-y-3">
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                          <Scale className="w-4 h-4 text-fuchsia-400" />
+                          Proposal Pipeline
+                          <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
+                            Proposal-lane candidates are never auto-approved (D29) — accepting a finding creates a DERIVED fact with its verified provenance quoted in the ledger
+                          </span>
+                        </h3>
+                        {operations.pipeline.length === 0 ? (
+                          <p className="text-xs text-slate-500 italic">No proposals in flight.</p>
+                        ) : operations.pipeline.map(p => (
+                          <div key={p.document_id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2">
+                              <span className="font-bold text-sm text-slate-200 font-mono">{p.filename}</span>
+                              {p.agent_principal && (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">{p.agent_principal}</span>
+                              )}
+                              {p.provenance.provenance_verified ? (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-950/40 text-emerald-400 border border-emerald-900/40"
+                                  title={`Verified against governed records: binding ${p.provenance.verified?.binding_id}, package ${p.provenance.verified?.package_hash?.slice(0, 12)}…`}>
+                                  PROVENANCE VERIFIED
+                                </span>
+                              ) : (
+                                <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-950/40 text-amber-400 border border-amber-900/40"
+                                  title={p.provenance.reasons.join('; ')}>
+                                  PROVENANCE UNVERIFIED
+                                </span>
+                              )}
+                              <span className="text-[10px] font-mono text-slate-500 ml-auto">{p.held_count} held · {p.accepted_count} accepted</span>
+                            </div>
+                            {!p.provenance.provenance_verified && p.provenance.reasons.length > 0 && (
+                              <p className="text-[10px] font-mono text-amber-400/80">
+                                Held for review — the human gate decides: {p.provenance.reasons.join('; ')}
+                              </p>
+                            )}
+                            {p.provenance.verified && (
+                              <p className="text-[10px] font-mono text-slate-500">
+                                binding #{p.provenance.verified.binding_id} · {p.provenance.verified.selected_provider}/{p.provenance.verified.selected_model_name} · pkg {p.provenance.verified.package_hash.slice(0, 12)}…
+                                {p.provenance.cited_assets && (
+                                  <> · cites {p.provenance.cited_assets.found.length} governed asset(s)
+                                    {p.provenance.cited_assets.missing.length > 0 && <span className="text-amber-400"> ({p.provenance.cited_assets.missing.length} missing)</span>}
+                                    {p.provenance.cited_assets.derived_evidence.length > 0 && <span className="text-fuchsia-400"> ({p.provenance.cited_assets.derived_evidence.length} DERIVED — second-generation synthesis)</span>}
+                                  </>
+                                )}
+                              </p>
+                            )}
+                            <div className="space-y-1.5">
+                              {p.candidates.map(c => (
+                                <div key={c.asset_id} className="flex flex-wrap items-center gap-2 text-[11px] border border-slate-900 rounded px-3 py-1.5">
+                                  <a href={`/?tab=assets&asset=${c.asset_id}`} className="font-mono text-cyan-400 hover:text-cyan-300">#{c.asset_id}</a>
+                                  <span className="text-slate-300">{c.name}</span>
+                                  <span className="text-[9px] font-mono text-slate-500 uppercase">{c.type}</span>
+                                  <span className={`text-[9px] font-mono px-1.5 py-0.5 rounded ${c.status === 'APPROVED' ? 'bg-emerald-950/40 text-emerald-400' : c.status === 'CANDIDATE' ? 'bg-yellow-950/40 text-yellow-400' : 'bg-slate-900 text-slate-500'}`}>{c.status}</span>
+                                  {c.source_class === 'DERIVED' && (
+                                    <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-fuchsia-950/40 text-fuchsia-400">DERIVED</span>
+                                  )}
+                                  {c.status === 'CANDIDATE' && allow('assets:approve') && (
+                                    <button
+                                      onClick={async () => {
+                                        await updateAssetStatus(c.asset_id, 'APPROVED', 'accepted at the gate (Operations)');
+                                        if (activeProjectId !== null) fetchOperations(activeProjectId);
+                                      }}
+                                      className="ml-auto text-[10px] text-emerald-400 hover:text-emerald-300 font-mono bg-emerald-950/20 border border-emerald-900/30 rounded px-2 py-1 uppercase tracking-wider"
+                                      title="Accept this finding as a DERIVED fact — the governed human decision; the approval event quotes the recomputed synthesis provenance"
+                                    >
+                                      Accept as DERIVED
+                                    </button>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* LANES & VAULT */}
+                      <div className="glass-panel p-6 rounded-xl space-y-3">
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                          <Folder className="w-4 h-4 text-fuchsia-400" />
+                          Lanes &amp; Vault
+                          <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
+                            The vault&apos;s 08_proposals folder is the only agent-writable governed ingress — lanes are created in Sources &amp; Connectors (lane: PROPOSAL)
+                          </span>
+                        </h3>
+                        {operations.lanes.length === 0 ? (
+                          <p className="text-xs text-slate-500 italic">
+                            No PROPOSAL-lane connector yet — create one in Sources &amp; Connectors pointing at the vault&apos;s 08_proposals folder (vault/bootstrap.py creates the skeleton).
+                          </p>
+                        ) : operations.lanes.map(l => {
+                          const busy = ingestionJobs.some(j => j.connector_id === l.connector_id && (j.status === 'PENDING' || j.status === 'RUNNING'));
+                          return (
+                            <div key={l.connector_id} className="flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3">
+                              <span className="text-[10px] font-mono px-2 py-0.5 rounded border bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-900/40">PROPOSAL LANE</span>
+                              <span className="font-bold text-sm text-slate-200">{l.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={l.root_path}>{l.root_path}</span>
+                              {l.last_scan ? (
+                                <span className="text-[9px] font-mono text-slate-500" title={`Job #${l.last_scan.job_id}`}>
+                                  last scan {l.last_scan.status} · {l.last_scan.files_ingested} ingested · {l.last_scan.files_changed} changed
+                                </span>
+                              ) : (
+                                <span className="text-[9px] font-mono text-slate-600 italic">never scanned</span>
+                              )}
+                              {allow('connectors:manage') && (
+                                <button
+                                  onClick={async () => {
+                                    if (activeProjectId !== null) {
+                                      await scanConnector(l.connector_id, activeProjectId);
+                                      fetchOperations(activeProjectId);
+                                    }
+                                  }}
+                                  disabled={busy}
+                                  className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider disabled:opacity-40"
+                                >
+                                  {busy ? 'Scanning…' : 'Scan for proposals'}
+                                </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </>
+                  )}
+                </div>
+              )}
+
               {/* TAB: CONSUMPTION (v1.1.x Selection Workbench, D24).
                   A decision workspace, NOT a leaderboard: comparisons are
                   computed, the selection is a governed decision through the
@@ -5716,6 +6005,42 @@ export default function Home() {
                             <Row label="Conflict scan performed">{String(d.compile_gate.conflict_scan_performed)}</Row>
                             <Row label="Advisory / dismissed">{d.compile_gate.advisory_conflicts} / {d.compile_gate.dismissed_conflicts}</Row>
                             <Row label="Policy">confirmed={d.compile_gate.policy?.confirmed_policy}</Row>
+                          </div>
+                        );
+                      }
+                      // v1.4.1 (D29/D30): the synthesis-provenance trace — a
+                      // DERIVED acceptance answers "which agent, which binding,
+                      // which package, citing what, verified how, accepted by
+                      // whom" from this event alone.
+                      if (t === 'ASSET_APPROVED' && d.synthesis_provenance) {
+                        const sp = d.synthesis_provenance;
+                        return (
+                          <div className="space-y-1.5">
+                            <Row label="Accepted as"><span className="text-fuchsia-400 font-bold">DERIVED</span> <span className="text-slate-500">— agent-synthesized, human accepted (D29/D30)</span></Row>
+                            <Row label="Provenance verdict">
+                              {sp.provenance_verified
+                                ? <span className="text-emerald-400">VERIFIED against governed records</span>
+                                : <span className="text-amber-400">UNVERIFIED — the human accepted anyway: {(sp.reasons || []).join('; ')}</span>}
+                            </Row>
+                            {sp.claimed && Object.keys(sp.claimed).length > 0 && (
+                              <Row label="Claimed (verbatim)">
+                                {Object.entries(sp.claimed as Record<string, string>).map(([k, v]) => `${k}: ${v}`).join(' · ')}
+                              </Row>
+                            )}
+                            {sp.verified && (
+                              <>
+                                <Row label="Agent">{sp.verified.agent_principal} <span className="text-slate-500">· binding #{sp.verified.binding_id}</span></Row>
+                                <Row label="Package">{short(sp.verified.package_hash)} <span className="text-slate-500">· {sp.verified.selected_provider}/{sp.verified.selected_model_name} · {sp.verified.package_version || '—'}</span></Row>
+                              </>
+                            )}
+                            {sp.cited_assets && (
+                              <Row label="Cited evidence">
+                                {(sp.cited_assets.found || []).join(', ') || 'none'}
+                                {(sp.cited_assets.missing || []).length > 0 && <span className="text-amber-400"> · missing: {sp.cited_assets.missing.join(', ')}</span>}
+                                {(sp.cited_assets.derived_evidence || []).length > 0 && <span className="text-fuchsia-400"> · DERIVED evidence (second-generation): {sp.cited_assets.derived_evidence.join(', ')}</span>}
+                              </Row>
+                            )}
+                            {d.note && <Row label="Note">{d.note}</Row>}
                           </div>
                         );
                       }
