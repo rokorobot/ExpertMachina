@@ -2033,6 +2033,21 @@ export default function Home() {
                                                 Policy: {approvedByPolicy}
                                               </span>
                                             )}
+                                            {/* v1.4.0 (D29/D30): agent-synthesized knowledge is never
+                                                mistakable for human-authored knowledge. The class is
+                                                channel-decided; the full synthesis provenance (agent,
+                                                binding, package hash, cited evidence, verification
+                                                verdict) is on the ASSET_APPROVED event in the ledger. */}
+                                            {asset.source_class === 'DERIVED' && (
+                                              <span
+                                                title={asset.status === 'APPROVED'
+                                                  ? `Agent-synthesized, accepted as DERIVED by ${asset.reviews?.find(r => r.approver && !r.approver.startsWith('policy:'))?.approver || 'a human'} — synthesis provenance is on the ASSET_APPROVED event (Audit tab). Primary prevails in conflicts unless a human rules otherwise.`
+                                                  : 'Agent-synthesized proposal, held for the human gate (D29) — proposal-lane candidates are never auto-approved. Accepting it creates a DERIVED fact.'}
+                                                className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-fuchsia-950/40 border border-fuchsia-900/40 text-fuchsia-400"
+                                              >
+                                                DERIVED
+                                              </span>
+                                            )}
                                             {/* v1.2.1 (D27): the governed domain path. Correction is a
                                                 governed act on the normal asset-update path
                                                 (ASSET_DOMAIN_CORRECTED) — never a content edit. */}
@@ -4168,6 +4183,17 @@ export default function Home() {
                             {isConflict && rel.classification && (
                               <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${CLASS_STYLES[rel.classification]?.badge || 'bg-slate-900 text-slate-400 border-slate-800'}`}>
                                 {CLASS_STYLES[rel.classification]?.label || rel.classification}
+                              </span>
+                            )}
+                            {/* v1.4.0 (D30): primary prevails — declared asymmetry, computed
+                                at read time. Presentation only: the human confirms or
+                                dismisses exactly as before; the compile gate is class-blind. */}
+                            {isConflict && rel.class_asymmetry === 'PRIMARY_OVER_DERIVED' && (
+                              <span
+                                title={`Primary prevails: asset #${rel.presumptive_review_target_asset_id} is agent-synthesized (DERIVED) and is the presumptive review target unless a human rules otherwise. Nothing is auto-resolved.`}
+                                className="text-[10px] font-mono px-2 py-0.5 rounded border bg-fuchsia-950/40 text-fuchsia-400 border-fuchsia-900/50"
+                              >
+                                Primary prevails · review #{rel.presumptive_review_target_asset_id}
                               </span>
                             )}
                           </div>

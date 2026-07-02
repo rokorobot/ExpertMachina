@@ -61,6 +61,7 @@ export interface KnowledgeAsset {
   extraction_method: string;
   created_at: string;
   domain: string | null; // v1.2.1 (D27): governed hierarchical domain path
+  source_class: string; // v1.4.0 (D30): PRIMARY | DERIVED — channel-decided, read-only
   quality_scores: QualityScore[];
   reviews: AssetReview[];
   revision_count: number;
@@ -292,6 +293,13 @@ export interface AssetRelationship {
   reviewed_at: string | null;
   notes: string | null;
   verifier: Record<string, unknown> | null;
+  // v1.4.0 (D30): computed source-class context — never stored on the
+  // relationship. Primary prevails: the DERIVED side is the presumptive
+  // review target; nothing auto-resolves; the compile gate is class-blind.
+  source_asset_source_class: string | null;
+  target_asset_source_class: string | null;
+  class_asymmetry: string | null; // PRIMARY_OVER_DERIVED when declared
+  presumptive_review_target_asset_id: number | null;
 }
 
 export interface ConflictScanSummary {

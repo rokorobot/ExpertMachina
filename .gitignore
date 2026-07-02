@@ -22,3 +22,6 @@ frontend/.env.production
 Thumbs.db
 backend/packages/
 packages/
+
+# v1.4.0 WS4 in-browser verification harness (throwaway DB, never committed)
+backend/.ui-gate-db/

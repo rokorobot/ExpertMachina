@@ -39,6 +39,7 @@ jobs:
           python test_proposal_lane.py
           python test_derived_conflict_discipline.py
           python test_workbench_pilot.py
+          python test_workbench_acceptance.py
           python test_domain_classification.py
           python test_tier0_source_authority.py
           python test_tier2_engine_verification.py
