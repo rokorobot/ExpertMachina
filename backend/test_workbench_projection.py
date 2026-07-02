@@ -14,16 +14,24 @@ from app import database as db
 #
 #   The workbench milestone adds NO new tables and NO new writable columns.
 #
-# This suite freezes the v1.1.0 schema - every table, every column - and
-# fails on ANY divergence, additions and removals alike. It is permanent,
-# not a diff check: a future milestone that legitimately changes the schema
-# updates V1_1_0_SCHEMA below alongside the ratified decision that
+# This suite freezes the schema - every table, every column - and fails
+# on ANY divergence, additions and removals alike. It is permanent, not a
+# diff check: a future milestone that legitimately changes the schema
+# updates FROZEN_SCHEMA below alongside the ratified decision that
 # justifies the change (docs/DECISIONS.md), in the same commit - never
 # silently. The UI door is where leaderboard disease would re-enter (D1);
 # this is the lock on that door, guarding it the way test_connector_seam.py
 # guards D18 and the purity assertions guard D20.
+#
+# Snapshot history (every amendment names its ratified decision):
+#   v1.1.0 baseline (D24, this guard's founding commit) - 26 tables,
+#     271 columns; survived the entire v1.1.1 milestone untouched.
+#   v1.2.0 WS0 (D25, docs/credentials-cloud-connector-v1.2.md): adds the
+#     external_credentials custody table and
+#     source_connectors.external_credential_id (connectors reference
+#     outbound credentials by id, never by value).
 
-V1_1_0_SCHEMA = {
+FROZEN_SCHEMA = {
     "agent_packages": [
         "asset_references", "clearance_level", "created_at",
         "expert_model_id", "file_path", "governance_version", "id",
@@ -109,6 +117,16 @@ V1_1_0_SCHEMA = {
         "asset_count", "asset_ids_json", "coverage_score", "created_at",
         "description", "id", "name", "project_id", "quality_score",
     ],
+    # v1.2.0 WS0 (D25): outbound credential custody. Encrypted secret
+    # material + custody lineage; NO plaintext-shaped column may ever
+    # appear here (test_credential_custody.py asserts the shape).
+    "external_credentials": [
+        "ciphertext", "coordinates_json", "created_at",
+        "created_identity_fact_id", "fingerprint", "granted_scopes_json",
+        "id", "key_id", "name", "owner_principal_id", "purpose",
+        "replaces_credential_id", "revoked_at", "revoked_identity_fact_id",
+        "status", "wrapped_data_key",
+    ],
     "identity_facts": [
         "authentication_method", "created_at", "credential_fingerprint",
         "display_name", "id", "on_behalf_of_fact_id", "principal_id",
@@ -146,7 +164,8 @@ V1_1_0_SCHEMA = {
         "id", "overall_score", "recorded_at", "verification_score",
     ],
     "source_connectors": [
-        "created_at", "id", "include_extensions", "name", "project_id",
+        "created_at", "external_credential_id",  # v1.2.0 WS0 (D25): by reference, never by value
+        "id", "include_extensions", "name", "project_id",
         "root_path", "type",
     ],
     "source_documents": [
@@ -157,7 +176,7 @@ V1_1_0_SCHEMA = {
 }
 
 GUIDANCE = ("If this change is justified by a ratified decision, record it "
-            "in docs/DECISIONS.md and update V1_1_0_SCHEMA in the same "
+            "in docs/DECISIONS.md and update FROZEN_SCHEMA in the same "
             "commit - never silently.")
 
 
@@ -165,7 +184,7 @@ def main():
     live = {t.name: sorted(c.name for c in t.columns)
             for t in db.Base.metadata.sorted_tables}
 
-    frozen_tables = set(V1_1_0_SCHEMA)
+    frozen_tables = set(FROZEN_SCHEMA)
     live_tables = set(live)
 
     added = sorted(live_tables - frozen_tables)
@@ -177,11 +196,11 @@ def main():
     removed = sorted(frozen_tables - live_tables)
     assert not removed, (
         f"Schema regression: table(s) {removed} disappeared from the "
-        f"frozen v1.1.0 schema. Governed facts are never dropped. "
+        f"frozen schema. Governed facts are never dropped. "
         f"{GUIDANCE}")
 
     for table in sorted(frozen_tables):
-        frozen_cols = set(V1_1_0_SCHEMA[table])
+        frozen_cols = set(FROZEN_SCHEMA[table])
         live_cols = set(live[table])
         added_cols = sorted(live_cols - frozen_cols)
         assert not added_cols, (
@@ -191,14 +210,15 @@ def main():
         removed_cols = sorted(frozen_cols - live_cols)
         assert not removed_cols, (
             f"Schema regression: column(s) {removed_cols} dropped from "
-            f"'{table}' in the frozen v1.1.0 schema. {GUIDANCE}")
+            f"'{table}' in the frozen schema. {GUIDANCE}")
 
     table_count = len(frozen_tables)
-    column_count = sum(len(cols) for cols in V1_1_0_SCHEMA.values())
+    column_count = sum(len(cols) for cols in FROZEN_SCHEMA.values())
     print(f"D24 projection guard passed: live schema is identical to the "
-          f"frozen v1.1.0 snapshot ({table_count} tables, "
-          f"{column_count} columns). No new tables, no new writable "
-          f"columns - the workbench remains a projection layer.")
+          f"frozen snapshot ({table_count} tables, "
+          f"{column_count} columns; v1.1.0 baseline + the D25 custody "
+          f"amendment). No new tables, no new writable columns beyond "
+          f"ratified decisions.")
 
 
 if __name__ == "__main__":

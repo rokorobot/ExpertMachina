@@ -92,6 +92,61 @@ class IdentityFact(Base):
     on_behalf_of_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+class ExternalCredential(Base):
+    """Outbound credential custody (v1.2.0 WS0, D25). The species v1.0
+    deliberately excluded: secrets ExpertMachina HOLDS and presents outward
+    (SharePoint client secret, later LLM provider keys). Constitutionally
+    separate from the hash-only inbound `credentials` table - hashes verify
+    and never reveal; these decrypt, so they live behind the custody layer
+    (app/custody.py) under envelope encryption: EM_SECRET_KEY wraps a
+    per-credential data key, the data key encrypts the secret. Master-key
+    rotation re-wraps; no secret is ever re-entered.
+
+    The rule (D25): outbound credential plaintext is not a governed fact;
+    custody events are governed facts. No API returns, no artifact exports,
+    no audit event or log contains the secret - enforced permanently by
+    test_credential_custody.py. Reveal is "never", not "once": the operator
+    supplied the secret, so nothing legitimate ever needs it back.
+
+    Lineage mirrors the inbound table: revoke, never delete; rotation =
+    revoke old row + create new row linked via replaces_credential_id.
+    fingerprint is a RANDOM public identifier, deliberately not derived
+    from the plaintext (a derived fingerprint is an oracle).
+    granted_scopes_json is custody evidence: what the credential was
+    ALLOWED to reach, recorded at creation, carried on
+    EXTERNAL_CREDENTIAL_USED events, never inferred (the CREDENTIAL_*
+    event family belongs to v1.0 inbound credentials).
+    created_identity_fact_id is NOT nullable -
+    no pre-boundary outbound credentials exist."""
+    __tablename__ = "external_credentials"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, nullable=False)
+    purpose = Column(String, nullable=False)  # custody.CREDENTIAL_PURPOSES: CONNECTOR | PROVIDER
+    owner_principal_id = Column(Integer, ForeignKey("principals.id"), nullable=False)
+    fingerprint = Column(String, nullable=False, unique=True, index=True)  # random public id: excred_<hex>
+    granted_scopes_json = Column(Text, nullable=True)  # JSON array - e.g. Microsoft Graph scopes as granted
+    coordinates_json = Column(Text, nullable=True)  # JSON dict of NON-secret identifiers (tenant id, client id)
+    ciphertext = Column(Text, nullable=False)  # secret, encrypted by the per-credential data key
+    wrapped_data_key = Column(Text, nullable=False)  # data key, wrapped by the master key
+    key_id = Column(String, nullable=False)  # master-key GENERATION that wrapped the data key
+    status = Column(String, default="ACTIVE")  # ACTIVE | REVOKED
+    replaces_credential_id = Column(Integer, ForeignKey("external_credentials.id"), nullable=True)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+    created_identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=False)
+    revoked_at = Column(DateTime, nullable=True)
+    revoked_identity_fact_id = Column(Integer, ForeignKey("identity_facts.id"), nullable=True)
+
+    @property
+    def granted_scopes(self):
+        import json
+        return json.loads(self.granted_scopes_json) if self.granted_scopes_json else []
+
+    @property
+    def coordinates(self):
+        import json
+        return json.loads(self.coordinates_json) if self.coordinates_json else {}
+
+
 class Project(Base):
     __tablename__ = "projects"
     id = Column(Integer, primary_key=True, index=True)
@@ -102,17 +157,19 @@ class Project(Base):
 
 class SourceConnector(Base):
     """Enterprise Source Connector (MVP 0.10.0). Read-only discovery over an
-    existing repository. LOCAL_FOLDER only for now - cloud connectors wait
-    for the credentials/identity layer. Connector output becomes ordinary
-    ExpertMachina objects (Document -> CANDIDATE assets); there is no
-    connector-specific review flow by design."""
+    existing repository. Connector output becomes ordinary ExpertMachina
+    objects (Document -> CANDIDATE assets); there is no connector-specific
+    review flow by design. v1.2.0 (D25): credentialed cloud providers
+    REFERENCE their outbound credential by id - configuration never
+    contains secrets; NULL for providers that need none (LOCAL_FOLDER)."""
     __tablename__ = "source_connectors"
     id = Column(Integer, primary_key=True, index=True)
     project_id = Column(Integer, ForeignKey("projects.id"))
     name = Column(String, nullable=False)
-    type = Column(String, default="LOCAL_FOLDER") # LOCAL_FOLDER (cloud types reserved for v1.x)
+    type = Column(String, default="LOCAL_FOLDER") # LOCAL_FOLDER | SHAREPOINT (v1.2.0 WS2)
     root_path = Column(String, nullable=False)
     include_extensions = Column(String, default=".txt,.md,.pdf,.docx") # comma-separated
+    external_credential_id = Column(Integer, ForeignKey("external_credentials.id"), nullable=True)  # v1.2.0 (D25): by reference, never by value
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
 
@@ -612,6 +669,12 @@ def _ensure_columns():
         },
         "source_documents": {
             "details_json": "TEXT",
+        },
+        # v1.2.0 WS0 (D25): connectors reference outbound credentials by
+        # id, never by value. NULL = the provider needs none (LOCAL_FOLDER)
+        # - an honest NULL, not a dummy credential.
+        "source_connectors": {
+            "external_credential_id": "INTEGER",
         },
         # Identity Boundary v1.0: nullable fact references on the landing
         # pads. NULL on pre-boundary rows means "we did not know" - facts

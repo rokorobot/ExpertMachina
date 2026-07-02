@@ -405,8 +405,9 @@ docs/credentials-cloud-connector-v1.2.md):
   must not ride on `connectors:manage`, which KNOWLEDGE_OPERATOR (and
   therefore SERVICE principals) may hold. Administering a credential and
   using one are separate layers: a scan proposes use; the custody layer
-  decides release and writes `CREDENTIAL_USED` (per scan, not per HTTP
-  request).
+  decides release and writes `EXTERNAL_CREDENTIAL_USED` (per scan, not
+  per HTTP request; the event family is `EXTERNAL_CREDENTIAL_*` because
+  `CREDENTIAL_*` already names v1.0 inbound lineage events).
 - **LLM provider keys deferred**: the store is generic
   (`purpose = CONNECTOR | PROVIDER`) but migrating OPENAI/ANTHROPIC keys
   is a separate later step — it touches D19's resolution invariant. D19

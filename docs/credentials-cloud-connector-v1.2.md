@@ -142,8 +142,11 @@ WS0/WS1, additions require no new ruling, new WRITABLE semantics do):
 `source_connectors` gains nullable `external_credential_id` (LocalFolder
 needs none — honest NULL, not a dummy credential).
 
-New audit events: `CREDENTIAL_CREATED`, `CREDENTIAL_ROTATED`,
-`CREDENTIAL_REVOKED`, `CREDENTIAL_USED` — custody events, never contents.
+New audit events: `EXTERNAL_CREDENTIAL_CREATED`, `_ROTATED`, `_REVOKED`,
+`_USED` — custody events, never contents. (Amended at WS0: the working
+names `CREDENTIAL_*` collide with the v1.0 boundary's inbound events —
+`CREDENTIAL_CREATED`/`_REVOKED` already mean password/token lineage. The
+two species stay distinguishable in the ledger, exactly as in storage.)
 
 API surface: POST create / POST rotate / POST revoke /
 GET list-and-detail returning **metadata only**. There is no reveal
@@ -189,6 +192,25 @@ ships — the lock goes on the door first.
 
 Evidence: `backend/test_credential_custody.py` +
 `test_workbench_projection.py` snapshot diff (one commit).
+
+**Gate: PASSED (accepted July 2026).** Accepted on the constitutional
+point proven: the custody guard exists BEFORE the credential door opens.
+The guard's five parts landed in CI permanently: frozen custody schema
+shape (no plaintext-shaped column, species separation from the v1.0
+inbound table), loud refusal without `EM_SECRET_KEY`, the real creation
+path (envelope encryption, random plaintext-independent fingerprints,
+scope evidence, D20 seam), the sentinel sweep (every table, audit
+payloads, reprs, failure paths, raw database bytes), and the adversarial
+self-proof — CI demonstrably catches the two most likely regressions
+(encryption silently disabled; a plaintext-shaped column). D24 snapshot
+updated in the same commit (27 tables, 288 columns); all 20 suites green,
+`test_connector_seam.py` untouched.
+
+**Accepted deviation:** custody audit events use `EXTERNAL_CREDENTIAL_*`
+rather than `CREDENTIAL_*`, because v1.0 already uses
+`CREDENTIAL_CREATED` / `CREDENTIAL_REVOKED` for inbound identity
+credentials. This preserves the D25 species separation in both storage
+and audit history.
 
 ### WS1 — The custody layer
 

@@ -28,3 +28,8 @@ mcp==1.27.2
 # environment-based (OPENAI_API_KEY / ANTHROPIC_API_KEY) per D19.
 openai==2.41.0
 anthropic==0.109.1
+
+# Credential custody layer (v1.2.0 WS0, D25): envelope encryption of
+# outbound secrets under EM_SECRET_KEY. Previously transitive; pinned
+# explicitly now that app/custody.py imports Fernet directly.
+cryptography==48.0.1

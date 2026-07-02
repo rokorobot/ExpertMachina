@@ -55,6 +55,9 @@ jobs:
       - name: Workbench projection guard (D24 schema snapshot)
         working-directory: backend
         run: python test_workbench_projection.py
+      - name: Credential custody guard (D25 sentinel sweep)
+        working-directory: backend
+        run: python test_credential_custody.py
 
   frontend:
     runs-on: ubuntu-latest
