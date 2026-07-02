@@ -172,7 +172,7 @@ class SourceConnector(Base):
     external_credential_id = Column(Integer, ForeignKey("external_credentials.id"), nullable=True)  # v1.2.0 (D25): by reference, never by value
     # v1.4.0 WS0 (D29/D30): the channel declaration source classes derive
     # from. PRIMARY = ordinary knowledge acquisition; PROPOSAL = the
-    # agent-finding return path (/08_proposals). Candidates from a
+    # agent-finding return path (the vault's proposal folder). Candidates from a
     # PROPOSAL-lane connector are constitutionally outside every policy
     # tier (D29: the human gate on agent-proposed knowledge) and become
     # DERIVED facts on acceptance (D30: channel decides class).

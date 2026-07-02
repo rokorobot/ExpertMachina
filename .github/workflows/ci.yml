@@ -81,6 +81,9 @@ jobs:
       - name: Agent authorship guard (D29/D30 one-way valve + derived source class)
         working-directory: backend
         run: python test_agent_authorship_guard.py
+      - name: Render-ingress guard (D31 - render authority dies at ingress)
+        working-directory: backend
+        run: python test_render_ingress_guard.py
 
   frontend:
     runs-on: ubuntu-latest

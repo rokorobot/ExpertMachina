@@ -33,7 +33,7 @@ from app import policy
 #   - Language (D26/D29 rulings): unverifiable provenance is "held for
 #     review", never "rejected by the engine".
 #
-# Frontmatter contract (the /00_system vault contract documents this for
+# Frontmatter contract (the vault's system contract documents this for
 # agents at WS3): the proposal document begins with a '---' line,
 # followed by 'key: value' lines, closed by a '---' line:
 #

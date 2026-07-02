@@ -31,18 +31,43 @@ from app import crud
 from app.projections import contract
 from app.projections.renderers import graph as graph_renderer
 
-ENGINE_VERSION = "projection-engine-v1"
-EXCERPT_LIMIT = 240  # bounded excerpt, never full content (scoping ruling 3)
+ENGINE_VERSION = "projection-engine-v2"  # v2: declared content mode (v1.5 WS0, D31)
+EXCERPT_LIMIT = 240  # bounded excerpt (scoping ruling 3; FULL content only under a DECLARED mode)
 ALLOWED_STATUSES = ("CANDIDATE", "REVIEWED", "APPROVED", "ARCHIVED")
 DEFAULT_STATUS_INCLUSION = ("APPROVED",)  # scoping ruling 4
 ACCESS_RANK = {"PUBLIC": 0, "INTERNAL": 1, "RESTRICTED": 2, "EXECUTIVE": 3}
 
-# Renderer registry: name -> callable(Projection) -> {filename: bytes}.
-# The canonical projection.json + manifest.json are always written by
-# the engine itself; a renderer only ADDS presentation files. Renderers
-# receive a completed projection - they never see the session.
-RENDERERS = {"projection": None,
-             "graph": graph_renderer.render_files}
+# Renderer registry (v1.5 WS0: specs, not bare callables). Each spec
+# declares: `files` - callable(Projection) -> {relpath: bytes} (None =
+# the engine's canonical files only); `content_mode` - the DECLARED
+# composition mode (D31 companion ruling: a renderer must declare that
+# it needs full content; the declaration travels in projection,
+# manifest, and event); `output` - PROJECTION_DIR (the classic
+# disposable render dir) or VAULT (managed folders inside EM_VAULT_DIR,
+# see the floor below); VAULT specs also declare `managed_folders` and
+# the `governance_folder` that receives projection.json + manifest.json.
+# Renderers receive a completed projection - they never see the session.
+RENDERERS = {
+    "projection": {"files": None,
+                   "content_mode": contract.METADATA_EXCERPT,
+                   "output": "PROJECTION_DIR"},
+    "graph": {"files": graph_renderer.render_files,
+              "content_mode": contract.METADATA_EXCERPT,
+              "output": "PROJECTION_DIR"},
+}
+
+# THE UNTOUCHABLE FLOOR (v1.5 WS0, D31 - constitutional): the vault is
+# one tree with two natures. These folders are INPUTS (the repo-deployed
+# contract, agents' ungoverned scratch, the governed proposal ingress) -
+# no render path may delete, overwrite, scan-as-render-state, or manage
+# them. This constant is the ONLY place their names may appear inside
+# the projection package (the render-ingress guard sweeps for strays),
+# so no renderer code path can even construct a path into them.
+UNTOUCHABLE_FOLDERS = frozenset(
+    {"00_system", "07_agent_workspaces", "08_proposals"})
+# The reserved render window (v1.4 WS3 reserved 01-06 for the vault
+# renderer): a VAULT spec may manage folders ONLY inside this window.
+MANAGED_FOLDER_PREFIXES = ("01_", "02_", "03_", "04_", "05_", "06_")
 
 
 def _rank(level):
@@ -68,10 +93,14 @@ def _node_sort_key(node):
 
 def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
             status_inclusion=DEFAULT_STATUS_INCLUSION,
-            domain_prefix: str = None) -> contract.Projection:
+            domain_prefix: str = None,
+            content_mode: str = contract.METADATA_EXCERPT) -> contract.Projection:
     """Compose the projection: exactly the governed facts in scope, with
     every exclusion counted and declared (D12). Deterministic by
-    construction - stable queries, stable ordering, no timestamps."""
+    construction - stable queries, stable ordering, no timestamps.
+    content_mode (v1.5, D31): FULL_CONTENT populates node.content for
+    asset nodes - only on nodes that already survived the clearance and
+    scope filters, so clearance applies before content by construction."""
     statuses = tuple(sorted({s.upper() for s in status_inclusion}))
     for status in statuses:
         if status not in ALLOWED_STATUSES:
@@ -81,6 +110,9 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
     if clearance not in ACCESS_RANK:
         raise ValueError(f"Unknown clearance '{clearance}'. "
                          f"Known: {sorted(ACCESS_RANK)}")
+    if content_mode not in contract.CONTENT_MODES:
+        raise ValueError(f"Unknown content mode '{content_mode}'. "
+                         f"Known: {sorted(contract.CONTENT_MODES)}")
 
     cursor = session.query(func.max(db.AuditEvent.id)).scalar() or 0
 
@@ -114,6 +146,11 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
             id=node_id, kind="ASSET", label=asset.name, status=asset.status,
             domain=asset.domain,
             excerpt=(asset.content or "")[:EXCERPT_LIMIT],
+            # v1.5 (D31): full content ONLY under the declared mode, and
+            # only here - after the clearance/status/domain filters have
+            # already decided this node is included.
+            content=(asset.content if content_mode == contract.FULL_CONTENT
+                     else None),
             # v1.4.0 WS2 (D30): class travels - the graph lens shows
             # derivation; agent-synthesized knowledge is never mistakable
             # for human-authored knowledge in any rendered view.
@@ -249,6 +286,7 @@ def compose(session: Session, project_id: int, clearance: str = "INTERNAL",
     return contract.Projection(
         project_id=project_id, clearance=clearance, status_inclusion=statuses,
         audit_cursor=cursor, engine_version=ENGINE_VERSION,
+        content_mode=content_mode,
         nodes=tuple(sorted(nodes, key=_node_sort_key)),
         edges=tuple(sorted(edges, key=lambda e: (e.relation, e.source_id, e.target_id))),
         groups={k: sorted(v) for k, v in sorted(groups.items())},
@@ -276,6 +314,54 @@ def _output_base() -> str:
         os.getcwd(), "projections")
 
 
+def _vault_base() -> str:
+    # Named ONLY inside app/projections (the EM_PROJECTION_DIR
+    # discipline extended by the render-ingress guard, D31).
+    return os.environ.get("EM_VAULT_DIR") or os.path.join(
+        os.getcwd(), "vault")
+
+
+def _validated_managed_folders(renderer: str, spec: dict) -> tuple:
+    """THE FLOOR (D31): a VAULT renderer manages ONLY folders it
+    declares, only inside the reserved 01-06 window, and never an
+    untouchable folder. Unknown or untouchable folders are refused
+    loudly BEFORE any deletion can occur - regeneration must be
+    structurally incapable of destroying an input."""
+    managed = tuple(spec.get("managed_folders") or ())
+    if not managed:
+        raise ValueError(
+            f"VAULT renderer '{renderer}' declares no managed folders - "
+            f"a vault render without a declared managed set cannot exist (D31)")
+    for folder in managed:
+        if folder in UNTOUCHABLE_FOLDERS:
+            raise ValueError(
+                f"REFUSED (D31): '{folder}' is an untouchable folder - no "
+                f"render path may delete, overwrite, or manage it")
+        if (os.sep in folder or "/" in folder or ".." in folder
+                or not folder.startswith(MANAGED_FOLDER_PREFIXES)):
+            raise ValueError(
+                f"REFUSED (D31): '{folder}' is outside the reserved managed "
+                f"window {MANAGED_FOLDER_PREFIXES} - unknown folders are "
+                f"refused, never managed by accident")
+    governance = spec.get("governance_folder")
+    if governance not in managed:
+        raise ValueError(
+            f"VAULT renderer '{renderer}' must place its stamps inside a "
+            f"managed governance folder; got {governance!r}")
+    return managed
+
+
+def _assert_managed_path(relpath: str, managed: tuple):
+    top = relpath.replace("\\", "/").split("/")[0]
+    if ".." in relpath or os.path.isabs(relpath):
+        raise ValueError(f"REFUSED (D31): render output path escapes the "
+                         f"vault: {relpath!r}")
+    if top not in managed:
+        raise ValueError(
+            f"REFUSED (D31): render output '{relpath}' is outside the "
+            f"renderer's managed folders {sorted(managed)}")
+
+
 def render(session: Session, actor, project_id: int,
            renderer: str = "projection", clearance: str = "INTERNAL",
            status_inclusion=DEFAULT_STATUS_INCLUSION,
@@ -286,26 +372,53 @@ def render(session: Session, actor, project_id: int,
     if renderer not in RENDERERS:
         raise ValueError(f"Unknown renderer '{renderer}'. "
                          f"Known: {sorted(RENDERERS)}")
+    spec = RENDERERS[renderer]
+    content_mode = spec.get("content_mode", contract.METADATA_EXCERPT)
     projection = compose(session, project_id, clearance=clearance,
                          status_inclusion=status_inclusion,
-                         domain_prefix=domain_prefix)
+                         domain_prefix=domain_prefix,
+                         content_mode=content_mode)
     canonical = canonical_json(projection).encode("utf-8")
 
-    relative_dir = os.path.join(f"project_{project_id}", renderer)
-    out_dir = os.path.join(_output_base(), relative_dir)
-    if os.path.isdir(out_dir):
-        shutil.rmtree(out_dir)  # renders regenerate wholesale (D28)
-    os.makedirs(out_dir)
+    vault_output = spec.get("output") == "VAULT"
+    if vault_output:
+        managed = _validated_managed_folders(renderer, spec)
+        base = _vault_base()
+        stamp_dir = spec["governance_folder"]
+        output_label = f"vault:{','.join(managed)}"
+        # Wholesale regeneration, confined to the MANAGED set (D31):
+        # the untouchable folders are never in `managed` by the floor
+        # above, so this loop is structurally incapable of touching them.
+        for folder in managed:
+            path = os.path.join(base, folder)
+            if os.path.isdir(path):
+                shutil.rmtree(path)
+            os.makedirs(path)
+    else:
+        managed = None
+        relative_dir = os.path.join(f"project_{project_id}", renderer)
+        base = os.path.join(_output_base(), relative_dir)
+        stamp_dir = ""
+        output_label = relative_dir.replace(os.sep, "/")
+        if os.path.isdir(base):
+            shutil.rmtree(base)  # renders regenerate wholesale (D28)
+        os.makedirs(base)
 
-    outputs = {"projection.json": canonical}
-    renderer_fn = RENDERERS[renderer]
+    outputs = {}
+    renderer_fn = spec.get("files")
     if renderer_fn is not None:
         for name, content in renderer_fn(projection).items():
             outputs[name] = content if isinstance(content, bytes) \
                 else content.encode("utf-8")
+    stamp_prefix = f"{stamp_dir}/" if stamp_dir else ""
+    outputs[f"{stamp_prefix}projection.json"] = canonical
     file_hashes = {}
     for name in sorted(outputs):
-        with open(os.path.join(out_dir, name), "wb") as f:
+        if vault_output:
+            _assert_managed_path(name, managed)
+        target = os.path.join(base, name.replace("/", os.sep))
+        os.makedirs(os.path.dirname(target), exist_ok=True)
+        with open(target, "wb") as f:
             f.write(outputs[name])
         file_hashes[name] = _sha256(outputs[name])
 
@@ -317,10 +430,14 @@ def render(session: Session, actor, project_id: int,
         rendered_at=rendered_at, audit_cursor=projection.audit_cursor,
         clearance=projection.clearance,
         status_inclusion=projection.status_inclusion,
+        content_mode=content_mode,
         files=file_hashes, counts=counts)
     manifest_bytes = json.dumps(dataclasses.asdict(manifest), sort_keys=True,
                                 separators=(",", ":")).encode("utf-8")
-    with open(os.path.join(out_dir, "manifest.json"), "wb") as f:
+    manifest_name = f"{stamp_prefix}manifest.json"
+    if vault_output:
+        _assert_managed_path(manifest_name, managed)
+    with open(os.path.join(base, manifest_name.replace("/", os.sep)), "wb") as f:
         f.write(manifest_bytes)
     manifest_hash = _sha256(manifest_bytes)
 
@@ -329,6 +446,7 @@ def render(session: Session, actor, project_id: int,
         "engine_version": ENGINE_VERSION,
         "clearance": projection.clearance,
         "status_inclusion": list(projection.status_inclusion),
+        "content_mode": content_mode,
         "domain_prefix": domain_prefix,
         "audit_cursor": projection.audit_cursor,
         "rendered_at": rendered_at,
@@ -337,8 +455,10 @@ def render(session: Session, actor, project_id: int,
         "projection_hash": _sha256(canonical),
         "manifest_hash": manifest_hash,
         "files": file_hashes,
-        "output": relative_dir.replace(os.sep, "/"),
+        "output": output_label,
     }
+    if vault_output:
+        details["managed_folders"] = list(managed)
     crud.log_audit_event(
         session, actor=actor.display,
         identity_fact_id=actor.fact(session).id,
@@ -357,7 +477,9 @@ def is_stale(session: Session, project_id: int, recorded: dict) -> bool:
                       status_inclusion=tuple(
                           recorded.get("status_inclusion")
                           or DEFAULT_STATUS_INCLUSION),
-                      domain_prefix=recorded.get("domain_prefix"))
+                      domain_prefix=recorded.get("domain_prefix"),
+                      content_mode=recorded.get(
+                          "content_mode", contract.METADATA_EXCERPT))
     return projection_hash(current) != recorded.get("projection_hash")
 
 
