@@ -32,9 +32,11 @@ import {
   Scale,
   ExternalLink,
   Inbox,
-  Settings
+  Settings,
+  KeyRound,
+  Cloud
 } from 'lucide-react';
-import { useAppStore, can } from '../store';
+import { useAppStore, can, type ExternalCredentialDetail } from '../store';
 
 // The deterministic class dimension auto-approval rules are keyed on (MVP 0.10.2).
 const POLICY_ASSET_TYPES = ['PROCEDURE', 'POLICY', 'ROLE', 'SYSTEM', 'WORKFLOW', 'PRODUCT', 'DEPARTMENT'];
@@ -148,6 +150,12 @@ export default function Home() {
     scanConnector,
     fetchIngestionJobs,
     fetchJobFiles,
+    externalCredentials,
+    fetchExternalCredentials,
+    createExternalCredential,
+    rotateExternalCredential,
+    revokeExternalCredential,
+    fetchCredentialDetail,
     approvalPolicies,
     fetchApprovalPolicies,
     createApprovalPolicy,
@@ -172,7 +180,7 @@ export default function Home() {
   // route guards remain the source of truth - this is presentation only.
   const allow = (permission: string) => can(currentUser, permission);
 
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'inbox' | 'documents' | 'sources' | 'assets' | 'experts' | 'evaluations' | 'conflicts' | 'revisions' | 'consumption' | 'agents' | 'audit' | 'console' | 'settings'>('dashboard');
 
   // v1.1.x Consumption Operations Workbench (D24): which package the
   // operator is looking at, and the in-flight selection proposal. Both are
@@ -358,6 +366,24 @@ export default function Home() {
   const [connectorPath, setConnectorPath] = useState('');
   const [connectorExts, setConnectorExts] = useState('.txt,.md,.pdf,.docx');
   const [expandedJobId, setExpandedJobId] = useState<number | null>(null);
+  // v1.2.0 WS3 (Sources & Connectors): connector type + credential binding,
+  // and custody administration state. Secret fields are WRITE-ONLY: their
+  // values go into one request and are cleared - nothing reads them back.
+  const [connectorType, setConnectorType] = useState<'LOCAL_FOLDER' | 'SHAREPOINT'>('LOCAL_FOLDER');
+  const [connectorCredentialId, setConnectorCredentialId] = useState<number | null>(null);
+  const [sourcesError, setSourcesError] = useState<string | null>(null);
+  const [credName, setCredName] = useState('');
+  const [credPurpose, setCredPurpose] = useState<'CONNECTOR' | 'PROVIDER'>('CONNECTOR');
+  const [credSecret, setCredSecret] = useState('');
+  const [credTenant, setCredTenant] = useState('');
+  const [credClient, setCredClient] = useState('');
+  const [credScopes, setCredScopes] = useState('Sites.Selected');
+  const [rotateForId, setRotateForId] = useState<number | null>(null);
+  const [rotateSecret, setRotateSecret] = useState('');
+  const [revokeForId, setRevokeForId] = useState<number | null>(null);
+  const [revokeReason, setRevokeReason] = useState('');
+  const [credDetailId, setCredDetailId] = useState<number | null>(null);
+  const [credDetail, setCredDetail] = useState<ExternalCredentialDetail | null>(null);
 
   // LLM Provider Settings state (MVP 0.12)
   const [llmDrafts, setLlmDrafts] = useState<Record<string, string>>({});
@@ -387,16 +413,22 @@ export default function Home() {
   };
 
   useEffect(() => {
-    if (activeTab === 'documents' && activeProjectId !== null) {
+    if ((activeTab === 'documents' || activeTab === 'sources') && activeProjectId !== null) {
       fetchConnectors(activeProjectId);
       fetchIngestionJobs(activeProjectId);
       fetchApprovalPolicies(activeProjectId);
     }
+    // Custody metadata is credentials:manage-only on the backend; the UI
+    // mirror avoids a guaranteed 403 for everyone else.
+    if (activeTab === 'sources' && can(currentUser, 'credentials:manage')) {
+      fetchExternalCredentials();
+    }
   }, [activeTab, activeProjectId]);
 
-  // Live progress: poll while any job is pending/running on the documents tab.
+  // Live progress: poll while any job is pending/running on the sources tab
+  // (scan history lives there since v1.2.0 WS3; documents keeps uploads).
   useEffect(() => {
-    if (activeTab !== 'documents' || activeProjectId === null) return;
+    if ((activeTab !== 'documents' && activeTab !== 'sources') || activeProjectId === null) return;
     const active = ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING');
     if (!active) return;
     const timer = setInterval(() => {
@@ -612,7 +644,7 @@ export default function Home() {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
     const tab = params.get('tab');
-    const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'agents', 'audit', 'console', 'settings'] as const;
+    const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'consumption', 'agents', 'audit', 'console', 'settings'] as const;
     if (tab && (urlTabs as readonly string[]).includes(tab)) {
       const expert = params.get('expert');
       const relationship = params.get('relationship');
@@ -721,7 +753,7 @@ export default function Home() {
       const documentIdParam = searchParams.get('documentId');
       const documentParam = searchParams.get('document');
       const tabParam = searchParams.get('tab');
-      const urlTabs = ['inbox', 'documents', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console', 'settings'];
+      const urlTabs = ['inbox', 'documents', 'sources', 'experts', 'evaluations', 'conflicts', 'revisions', 'agents', 'audit', 'console', 'settings'];
 
       if (pathname.includes('/knowledge-assets')) {
         setActiveTab('assets');
@@ -980,13 +1012,30 @@ export default function Home() {
             >
               <FileText className="w-4 h-4" />
               <span>Document Inventory</span>
-              {ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING') ? (
-                <span className="ml-auto bg-cyan-950/40 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-900/40 animate-pulse">
-                  scanning
-                </span>
-              ) : documents.length > 0 && (
+              {documents.length > 0 && (
                 <span className="ml-auto bg-slate-800 text-[10px] text-slate-300 font-mono px-2 py-0.5 rounded-full">
                   {documents.length}
+                </span>
+              )}
+            </button>
+
+            {/* v1.2.0 WS3: Sources & Connectors - earned by provider
+                plurality (D8): LocalFolder + SharePoint. Connector and
+                credential administration lives here; Document Inventory
+                keeps uploads and the extracted inventory. */}
+            <button
+              onClick={() => setActiveTab('sources')}
+              className={`w-full flex items-center space-x-3 px-3 py-2.5 rounded-lg text-sm transition-all ${
+                activeTab === 'sources'
+                  ? 'bg-cyan-950/40 text-cyan-400 border-l-2 border-cyan-400 font-medium'
+                  : 'text-slate-400 hover:bg-slate-900/50 hover:text-slate-200'
+              }`}
+            >
+              <Cloud className="w-4 h-4" />
+              <span>Sources &amp; Connectors</span>
+              {ingestionJobs.some(j => j.status === 'PENDING' || j.status === 'RUNNING') && (
+                <span className="ml-auto bg-cyan-950/40 text-[10px] text-cyan-400 font-mono px-2 py-0.5 rounded-full border border-cyan-900/40 animate-pulse">
+                  scanning
                 </span>
               )}
             </button>
@@ -2744,83 +2793,23 @@ export default function Home() {
                 </div>
               )}
 
-              {/* SCAN FOLDER + INGESTION JOBS (MVP 0.10.0) — second ingestion
-                  method inside Document Inventory, NOT a separate area: one
-                  source type does not justify a connector administration
-                  surface (that arrives with multiple source types in v0.11+).
-                  Output is ordinary documents and CANDIDATE assets. */}
+              {/* APPROVAL POLICIES stay with Document Inventory; connector
+                  and credential administration moved to the top-level
+                  Sources & Connectors area (v1.2.0 WS3 - the plurality D8
+                  required arrived with the SharePoint provider). */}
               {activeTab === 'documents' && (
                 <div className="space-y-6 mt-6">
 
-                  {/* SCAN FOLDER */}
-                  <div className="glass-panel p-6 rounded-xl space-y-4">
-                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
-                      <Folder className="w-4 h-4 text-cyan-400" />
-                      Scan Folder
-                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
-                        Bulk ingestion from a local or mounted folder — discovered files become ordinary documents and CANDIDATE assets
-                      </span>
-                    </h3>
-                    {allow('connectors:manage') && (
-                    <form
-                      onSubmit={async (e) => {
-                        e.preventDefault();
-                        if (activeProjectId === null || !connectorName.trim() || !connectorPath.trim()) return;
-                        await createConnector(activeProjectId, connectorName.trim(), connectorPath.trim(), connectorExts.trim());
-                        setConnectorName('');
-                        setConnectorPath('');
-                      }}
-                      className="grid grid-cols-1 md:grid-cols-4 gap-4 items-end"
-                    >
-                      <div>
-                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Connector Name</label>
-                        <input type="text" required value={connectorName} onChange={(e) => setConnectorName(e.target.value)}
-                          placeholder="e.g. Quality SOP Share"
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Folder Path</label>
-                        <input type="text" required value={connectorPath} onChange={(e) => setConnectorPath(e.target.value)}
-                          placeholder="C:\\shares\\policies or /mnt/docs"
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
-                      </div>
-                      <div>
-                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">File Types</label>
-                        <input type="text" value={connectorExts} onChange={(e) => setConnectorExts(e.target.value)}
-                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
-                      </div>
-                      <button type="submit"
-                        className="py-2 px-5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
-                        Add Connector
+                  <div className="glass-panel p-4 rounded-xl flex items-center gap-3 text-xs text-slate-400">
+                    <Cloud className="w-4 h-4 text-cyan-400 shrink-0" />
+                    <span>
+                      Folder and SharePoint connectors are administered in{' '}
+                      <button onClick={() => setActiveTab('sources')}
+                        className="text-cyan-400 hover:text-cyan-300 underline decoration-dotted">
+                        Sources &amp; Connectors
                       </button>
-                    </form>
-                    )}
-
-                    {/* CONNECTOR LIST */}
-                    {sourceConnectors.length > 0 && (
-                      <div className="space-y-2 pt-2">
-                        {sourceConnectors.map((c) => {
-                          const busy = ingestionJobs.some(j => j.connector_id === c.id && (j.status === 'PENDING' || j.status === 'RUNNING'));
-                          return (
-                            <div key={c.id} className="flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3">
-                              <span className="text-[10px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-2 py-0.5 rounded">{c.type}</span>
-                              <span className="font-bold text-sm text-slate-200">{c.name}</span>
-                              <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={c.root_path}>{c.root_path}</span>
-                              <span className="text-[9px] font-mono text-slate-600">{c.include_extensions}</span>
-                              {allow('connectors:manage') && (
-                              <button
-                                onClick={() => activeProjectId !== null && scanConnector(c.id, activeProjectId)}
-                                disabled={busy}
-                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider disabled:opacity-40"
-                              >
-                                {busy ? 'Scanning…' : 'Scan Now'}
-                              </button>
-                              )}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
+                      {' '}— scans still land here as ordinary documents and CANDIDATE assets.
+                    </span>
                   </div>
 
                   {/* APPROVAL POLICIES (MVP 0.10.2) — deterministic, versioned
@@ -2924,12 +2913,354 @@ export default function Home() {
                     )}
                   </div>
 
-                  {/* RECENT INGESTION JOBS */}
+                </div>
+              )}
+
+              {/* TAB: SOURCES & CONNECTORS (v1.2.0 WS3) — the operator
+                  surface over the proven backend path: connector
+                  administration (LocalFolder + SharePoint), credential
+                  custody (D25: create/rotate/revoke, metadata only - no
+                  reveal affordance exists), and scan history. Visibility
+                  over existing facts; the only writes are the governed
+                  connector/credential administration routes. */}
+              {activeTab === 'sources' && (
+                <div className="space-y-6">
+
+                  {/* CONNECTORS */}
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <Cloud className="w-4 h-4 text-cyan-400" />
+                      Connectors
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Read-only discovery over company repositories — output becomes ordinary documents and CANDIDATE assets in the existing pipeline
+                      </span>
+                    </h3>
+                    {allow('connectors:manage') && (
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (activeProjectId === null || !connectorName.trim() || !connectorPath.trim()) return;
+                        setSourcesError(null);
+                        await createConnector(activeProjectId, connectorName.trim(), connectorPath.trim(),
+                                              connectorExts.trim(), connectorType,
+                                              connectorType === 'SHAREPOINT' || connectorCredentialId !== null
+                                                ? connectorCredentialId : null);
+                        setConnectorName('');
+                        setConnectorPath('');
+                        setConnectorCredentialId(null);
+                      }}
+                      className="space-y-3"
+                    >
+                      <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Type</label>
+                          <select value={connectorType}
+                            onChange={(e) => setConnectorType(e.target.value as 'LOCAL_FOLDER' | 'SHAREPOINT')}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200">
+                            <option value="LOCAL_FOLDER">Local Folder</option>
+                            <option value="SHAREPOINT" disabled={!allow('credentials:manage') && externalCredentials.length === 0}>SharePoint</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Connector Name</label>
+                          <input type="text" required value={connectorName} onChange={(e) => setConnectorName(e.target.value)}
+                            placeholder="e.g. Quality SOP Share"
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">
+                            {connectorType === 'SHAREPOINT' ? 'Site URL (optionally ::Library)' : 'Folder Path'}
+                          </label>
+                          <input type="text" required value={connectorPath} onChange={(e) => setConnectorPath(e.target.value)}
+                            placeholder={connectorType === 'SHAREPOINT'
+                              ? 'https://tenant.sharepoint.com/sites/QMS::Policies'
+                              : 'C:\\shares\\policies or /mnt/docs'}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">File Types</label>
+                          <input type="text" value={connectorExts} onChange={(e) => setConnectorExts(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono" />
+                        </div>
+                        <button type="submit"
+                          className="py-2 px-5 bg-gradient-to-r from-cyan-500 to-cyan-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
+                          Add Connector
+                        </button>
+                      </div>
+                      {(connectorType === 'SHAREPOINT' || allow('credentials:manage')) && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-end">
+                          <div>
+                            <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">
+                              Credential used for scans {connectorType === 'SHAREPOINT' ? '(required)' : '(optional)'}
+                            </label>
+                            {allow('credentials:manage') ? (
+                              <select value={connectorCredentialId ?? ''}
+                                onChange={(e) => setConnectorCredentialId(e.target.value === '' ? null : Number(e.target.value))}
+                                className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-cyan-500 outline-none text-slate-200 font-mono">
+                                <option value="">— none —</option>
+                                {externalCredentials.filter(c => c.status === 'ACTIVE' && c.purpose === 'CONNECTOR').map((c) => (
+                                  <option key={c.id} value={c.id}>{c.name} · {c.fingerprint}</option>
+                                ))}
+                              </select>
+                            ) : (
+                              <p className="text-[10px] font-mono text-yellow-400/90 bg-yellow-950/20 border border-yellow-900/30 rounded p-2">
+                                Binding a credential is a custody action (credentials:manage) — ask an ADMIN to create the SharePoint connector.
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                    </form>
+                    )}
+
+                    {/* CONNECTOR LIST */}
+                    {sourceConnectors.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic">No connectors yet for this workspace.</p>
+                    ) : (
+                      <div className="space-y-2 pt-2">
+                        {sourceConnectors.map((c) => {
+                          const busy = ingestionJobs.some(j => j.connector_id === c.id && (j.status === 'PENDING' || j.status === 'RUNNING'));
+                          const bound = c.external_credential_id !== null
+                            ? externalCredentials.find(x => x.id === c.external_credential_id) : undefined;
+                          return (
+                            <div key={c.id} className="flex flex-wrap items-center gap-3 bg-slate-950/60 border border-slate-900 rounded-lg p-3">
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded border ${
+                                c.type === 'SHAREPOINT'
+                                  ? 'bg-sky-950/40 text-sky-400 border-sky-900/40'
+                                  : 'bg-slate-900 text-slate-400 border-slate-850'
+                              }`}>{c.type}</span>
+                              <span className="font-bold text-sm text-slate-200">{c.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500 flex-1 min-w-[180px] truncate" title={c.root_path}>{c.root_path}</span>
+                              {c.external_credential_id !== null && (
+                                <span className="text-[9px] font-mono bg-violet-950/30 text-violet-400 border border-violet-900/40 px-2 py-0.5 rounded"
+                                  title="Credential used for scans — released per scan by the custody layer, never shown">
+                                  <KeyRound className="w-2.5 h-2.5 inline mr-1" />
+                                  {bound ? bound.fingerprint : `credential #${c.external_credential_id}`}
+                                </span>
+                              )}
+                              <span className="text-[9px] font-mono text-slate-600">{c.include_extensions}</span>
+                              {allow('connectors:manage') && (
+                              <button
+                                onClick={() => activeProjectId !== null && scanConnector(c.id, activeProjectId)}
+                                disabled={busy}
+                                className="text-[10px] text-cyan-400 hover:text-cyan-300 font-mono bg-cyan-950/20 border border-cyan-900/30 rounded px-3 py-1.5 uppercase tracking-wider disabled:opacity-40"
+                              >
+                                {busy ? 'Scanning…' : 'Scan Now'}
+                              </button>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    )}
+                  </div>
+
+                  {/* OUTBOUND CREDENTIALS (D25 custody administration) */}
+                  {allow('credentials:manage') ? (
+                  <div className="glass-panel p-6 rounded-xl space-y-4">
+                    <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                      <KeyRound className="w-4 h-4 text-violet-400" />
+                      Outbound Credentials
+                      <span className="text-[10px] font-mono text-slate-500 font-normal normal-case ml-2">
+                        Secrets are entered once, stored encrypted, and never displayed again — rotate to replace, revoke to retire; custody events are the audit record
+                      </span>
+                    </h3>
+                    {sourcesError && (
+                      <p className="text-[10px] text-rose-400/90 font-mono bg-rose-950/20 border border-rose-900/30 rounded p-2">{sourcesError}</p>
+                    )}
+                    <form
+                      onSubmit={async (e) => {
+                        e.preventDefault();
+                        if (!credName.trim() || !credSecret) return;
+                        setSourcesError(null);
+                        try {
+                          const coords: Record<string, string> = {};
+                          if (credTenant.trim()) coords.tenant_id = credTenant.trim();
+                          if (credClient.trim()) coords.client_id = credClient.trim();
+                          await createExternalCredential(
+                            credName.trim(), credPurpose, credSecret,
+                            credScopes.split(',').map(s => s.trim()).filter(Boolean), coords);
+                          setCredName(''); setCredSecret(''); setCredTenant(''); setCredClient('');
+                        } catch (err) {
+                          setSourcesError(err instanceof Error ? err.message : String(err));
+                        }
+                      }}
+                      className="grid grid-cols-1 md:grid-cols-6 gap-4 items-end"
+                    >
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Name</label>
+                        <input type="text" required value={credName} onChange={(e) => setCredName(e.target.value)}
+                          placeholder="e.g. QMS Graph client"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Purpose</label>
+                        <select value={credPurpose} onChange={(e) => setCredPurpose(e.target.value as 'CONNECTOR' | 'PROVIDER')}
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200">
+                          <option value="CONNECTOR">CONNECTOR</option>
+                          <option value="PROVIDER">PROVIDER</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Secret (entered once)</label>
+                        <input type="password" required value={credSecret} onChange={(e) => setCredSecret(e.target.value)}
+                          autoComplete="new-password" placeholder="never displayed again"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200 font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Tenant ID</label>
+                        <input type="text" value={credTenant} onChange={(e) => setCredTenant(e.target.value)}
+                          placeholder="Graph tenant (non-secret)"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200 font-mono" />
+                      </div>
+                      <div>
+                        <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Client ID</label>
+                        <input type="text" value={credClient} onChange={(e) => setCredClient(e.target.value)}
+                          placeholder="app registration (non-secret)"
+                          className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200 font-mono" />
+                      </div>
+                      <div className="flex gap-2 items-end">
+                        <div className="flex-1">
+                          <label className="block text-xs text-slate-400 font-mono mb-1.5 uppercase">Granted Scopes</label>
+                          <input type="text" value={credScopes} onChange={(e) => setCredScopes(e.target.value)}
+                            className="w-full bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200 font-mono" />
+                        </div>
+                        <button type="submit"
+                          className="py-2 px-4 bg-gradient-to-r from-violet-500 to-violet-600 text-slate-950 font-bold rounded text-xs tracking-wider uppercase disabled:opacity-40">
+                          Create
+                        </button>
+                      </div>
+                    </form>
+
+                    {/* CREDENTIAL LIST */}
+                    {externalCredentials.length === 0 ? (
+                      <p className="text-xs text-slate-500 italic">No outbound credentials yet.</p>
+                    ) : (
+                      <div className="space-y-2 pt-2">
+                        {externalCredentials.map((cred) => (
+                          <div key={cred.id} className={`bg-slate-950/60 border border-slate-900 rounded-lg p-3 space-y-2 ${cred.status === 'REVOKED' ? 'opacity-60' : ''}`}>
+                            <div className="flex flex-wrap items-center gap-3">
+                              <span className="text-[10px] font-mono bg-violet-950/30 text-violet-400 border border-violet-900/40 px-2 py-0.5 rounded">{cred.fingerprint}</span>
+                              <span className="font-bold text-sm text-slate-200">{cred.name}</span>
+                              <span className="text-[10px] font-mono text-slate-500">{cred.purpose}</span>
+                              {cred.granted_scopes.map(s => (
+                                <span key={s} className="text-[9px] font-mono bg-slate-900 text-slate-400 border border-slate-850 px-1.5 py-0.5 rounded">{s}</span>
+                              ))}
+                              <span className="text-[9px] font-mono text-slate-600" title="Master-key generation that wraps this credential">{cred.key_id}</span>
+                              <span className={`text-[10px] font-mono px-2 py-0.5 rounded-full ${
+                                cred.status === 'ACTIVE' ? 'bg-emerald-950/40 text-emerald-400' : 'bg-rose-950/30 text-rose-400'
+                              }`}>{cred.status}</span>
+                              <span className="flex-1" />
+                              <button
+                                onClick={async () => {
+                                  const next = credDetailId === cred.id ? null : cred.id;
+                                  setCredDetailId(next);
+                                  setCredDetail(next !== null ? await fetchCredentialDetail(cred.id) : null);
+                                }}
+                                className="text-[10px] text-slate-400 hover:text-slate-200 font-mono bg-slate-900/60 border border-slate-800 rounded px-3 py-1.5 uppercase tracking-wider"
+                              >
+                                {credDetailId === cred.id ? 'Hide History' : 'Custody History'}
+                              </button>
+                              {cred.status === 'ACTIVE' && (
+                                <>
+                                  <button onClick={() => { setRotateForId(rotateForId === cred.id ? null : cred.id); setRotateSecret(''); setRevokeForId(null); }}
+                                    className="text-[10px] text-violet-400 hover:text-violet-300 font-mono bg-violet-950/20 border border-violet-900/30 rounded px-3 py-1.5 uppercase tracking-wider">
+                                    Rotate
+                                  </button>
+                                  <button onClick={() => { setRevokeForId(revokeForId === cred.id ? null : cred.id); setRevokeReason(''); setRotateForId(null); }}
+                                    className="text-[10px] text-rose-400 hover:text-rose-300 font-mono bg-rose-950/20 border border-rose-900/30 rounded px-3 py-1.5 uppercase tracking-wider">
+                                    Revoke
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                            {rotateForId === cred.id && (
+                              <form className="flex gap-2 items-center" onSubmit={async (e) => {
+                                e.preventDefault();
+                                if (!rotateSecret) return;
+                                setSourcesError(null);
+                                try {
+                                  await rotateExternalCredential(cred.id, rotateSecret);
+                                  setRotateForId(null); setRotateSecret('');
+                                  // Rotation re-points bound connectors to the
+                                  // successor generation (WS1 ruling) - refresh
+                                  // so the chips follow.
+                                  if (activeProjectId !== null) await fetchConnectors(activeProjectId);
+                                } catch (err) {
+                                  setSourcesError(err instanceof Error ? err.message : String(err));
+                                }
+                              }}>
+                                <input type="password" required value={rotateSecret} onChange={(e) => setRotateSecret(e.target.value)}
+                                  autoComplete="new-password" placeholder="new secret — entered once, never displayed again"
+                                  className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-violet-500 outline-none text-slate-200 font-mono" />
+                                <button type="submit" className="text-[10px] text-violet-300 font-mono bg-violet-950/40 border border-violet-900/40 rounded px-3 py-2 uppercase tracking-wider">
+                                  Rotate — old generation is retired, bound connectors follow the new one
+                                </button>
+                              </form>
+                            )}
+                            {revokeForId === cred.id && (
+                              <form className="flex gap-2 items-center" onSubmit={async (e) => {
+                                e.preventDefault();
+                                setSourcesError(null);
+                                try {
+                                  await revokeExternalCredential(cred.id, revokeReason.trim());
+                                  setRevokeForId(null); setRevokeReason('');
+                                } catch (err) {
+                                  setSourcesError(err instanceof Error ? err.message : String(err));
+                                }
+                              }}>
+                                <input type="text" value={revokeReason} onChange={(e) => setRevokeReason(e.target.value)}
+                                  placeholder="reason (recorded as a custody event)"
+                                  className="flex-1 bg-slate-950 border border-slate-800 rounded px-3 py-2 text-xs focus:border-rose-500 outline-none text-slate-200" />
+                                <button type="submit" className="text-[10px] text-rose-300 font-mono bg-rose-950/40 border border-rose-900/40 rounded px-3 py-2 uppercase tracking-wider">
+                                  Revoke — scans using this credential will refuse loudly
+                                </button>
+                              </form>
+                            )}
+                            {credDetailId === cred.id && credDetail && (
+                              <div className="border-t border-slate-900/60 pt-2 space-y-1 max-h-64 overflow-y-auto">
+                                {credDetail.custody_events.length === 0 ? (
+                                  <p className="text-[10px] text-slate-500 italic">No custody events recorded.</p>
+                                ) : credDetail.custody_events.map((ev, i) => (
+                                  <div key={i} className="flex flex-wrap items-center gap-2 text-[9px] font-mono bg-slate-950/50 rounded px-2 py-1">
+                                    <span className={`px-1.5 py-0.5 rounded font-bold ${
+                                      ev.event_type === 'EXTERNAL_CREDENTIAL_USED' ? 'bg-emerald-950/40 text-emerald-400' :
+                                      ev.event_type === 'EXTERNAL_CREDENTIAL_RELEASE_REFUSED' ? 'bg-rose-950/40 text-rose-400' :
+                                      ev.event_type === 'EXTERNAL_CREDENTIAL_REVOKED' ? 'bg-rose-950/40 text-rose-400' :
+                                      'bg-violet-950/40 text-violet-400'
+                                    }`}>{ev.event_type.replace('EXTERNAL_CREDENTIAL_', '')}</span>
+                                    <span className="text-slate-500">{new Date(ev.timestamp).toLocaleString()}</span>
+                                    <span className="text-slate-400">{ev.actor}</span>
+                                    {ev.details?.ingestion_job_id != null && <span className="text-cyan-400">JOB-{String(ev.details.ingestion_job_id)}</span>}
+                                    {typeof ev.details?.refusal === 'string' && <span className="text-rose-400">{ev.details.refusal}</span>}
+                                    {typeof ev.details?.successor_fingerprint === 'string' && <span className="text-violet-400">→ {ev.details.successor_fingerprint}</span>}
+                                    {typeof ev.details?.reason === 'string' && ev.details.reason && <span className="text-slate-500 italic">{ev.details.reason}</span>}
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                  ) : (
+                  <div className="glass-panel p-4 rounded-xl flex items-center gap-3 text-xs text-slate-500">
+                    <Lock className="w-4 h-4 text-slate-600 shrink-0" />
+                    <span>
+                      Outbound credential custody (create / rotate / revoke) requires the
+                      <span className="font-mono text-slate-400"> credentials:manage</span> permission — ADMIN only.
+                      Scans on credential-bound connectors still run under your connector permission; the custody layer releases the credential per scan and records it.
+                    </span>
+                  </div>
+                  )}
+
+                  {/* SCAN HISTORY */}
                   {ingestionJobs.length > 0 && (
                     <div className="space-y-4">
                       <h4 className="text-xs font-bold text-slate-300 tracking-wide flex items-center gap-2">
                         <Clock className="w-3.5 h-3.5 text-cyan-400" />
-                        Recent Ingestion Jobs
+                        Scan History
                         <span className="text-slate-500 font-mono text-[10px] font-normal">
                           {ingestionJobs.length} job{ingestionJobs.length > 1 ? 's' : ''}
                         </span>

@@ -371,6 +371,54 @@ connector and credential administration, both governed by WS1.
 **"revoke"** — never "password", never "delete". Nothing in the UI ever
 implies a secret can be viewed.
 
+**Gate: PASSED (accepted July 2026).** The UI reflects the proven backend
+authority without creating a second authority layer. Verified in the
+browser against a seeded throwaway database, the full operator path as
+ADMIN: create a credential (secret entered once — the sentinel secret was
+absent from rendered pages, the DOM, errors, audit views, and custody
+views at every step, under every login) → bind it to a SharePoint
+connector → scan a credential-bound connector (COMPLETED through custody
+release) → custody history projected from the ledger (CREATED/USED with
+job references) → rotate (successor ACTIVE, old generation REVOKED,
+connector chips follow the successor — the WS1 re-point ruling visible)
+→ revoke (the next scan FAILED loudly in Scan History with the audited
+refusal, fingerprint shown, secret never). Non-admin projections:
+KNOWLEDGE_OPERATOR adds/scans connectors but has no custody surface and
+cannot reach SharePoint binding; READ_ONLY sees connector list and scan
+history with zero action affordances. tsc clean; eslint 0 errors; D24
+and D25 guards green. No backend files changed — WS3 is purely the
+projection of already-governed authority.
+
+**Verification-found fix (recorded as gate evidence):** after credential
+rotation, connector chips initially showed the old fingerprint until
+reload. Backend lineage and rebinding were correct; the UI projection
+was stale. The rotate handler now refreshes connectors, and the behavior
+was re-verified live. The browser verification caught a real projection
+bug and closed it — WS3 was not a static UI build.
+
+**Projection principle (named at acceptance, carried forward):** the UI
+is a governance cockpit, never a database viewer. *Backend stores the
+full evidence; the UI shows the actionable projection of that evidence.*
+Operator-relevant custody facts (fingerprint, purpose, status, scopes,
+key generation, who created/rotated/revoked, which scan used it) are
+shown; secret material, raw payloads, and custody mechanics stay in the
+backend, the Audit Ledger, and the CI guards. A connector "status"
+column was deliberately NOT invented — the last scan's declared outcome
+is the computed equivalent (D24 posture).
+
+## Milestone closed — v1.2.0 (July 2026)
+
+All four gates PASSED. **v1.2.0 is functionally complete; the one open
+item is the honest pending live-tenant evidence append for SharePoint
+(WS2 slot above) — recorded as pending availability, never silently
+completed.** The release narrative sentence: *v1.2.0 gives ExpertMachina
+custody of outbound credentials and its first credentialed enterprise
+source — secrets are usable but never visible, every use is evidence,
+and SharePoint scans through the same governed pipeline every other
+source uses.* The acquisition ladder: v0.10 proved local acquisition,
+v0.11 provider abstraction, v1.0 identity, v1.1 consumption + binding —
+**v1.2 proves credentialed enterprise acquisition.**
+
 ## Build order
 
 WS0 first, alone — guard before door, exactly as v1.1.1 did. Then

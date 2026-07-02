@@ -413,10 +413,41 @@ export interface SourceConnector {
   id: number;
   project_id: number;
   name: string;
-  type: string;
+  type: string; // LOCAL_FOLDER | SHAREPOINT (v1.2.0)
   root_path: string;
   include_extensions: string | null;
+  external_credential_id: number | null; // v1.2.0 (D25): by reference, never by value
   created_at: string;
+}
+
+// v1.2.0 (D25): outbound credential METADATA. There is deliberately no
+// field for secret material anywhere in these shapes - the backend never
+// returns it and the UI never asks for it back. Reveal is "never".
+export interface ExternalCredential {
+  id: number;
+  name: string;
+  purpose: string; // CONNECTOR | PROVIDER
+  fingerprint: string;
+  status: string; // ACTIVE | REVOKED
+  granted_scopes: string[];
+  coordinates: Record<string, string>;
+  owner_principal_id: number;
+  key_id: string; // master-key generation identifier - reveals nothing
+  replaces_credential_id: number | null;
+  created_at: string;
+  revoked_at: string | null;
+}
+
+export interface CustodyEvent {
+  event_type: string;
+  timestamp: string;
+  actor: string;
+  identity_fact_id: number | null;
+  details: Record<string, unknown> | null;
+}
+
+export interface ExternalCredentialDetail extends ExternalCredential {
+  custody_events: CustodyEvent[]; // projected from the audit ledger (D24)
 }
 
 export interface LLMFunctionSetting {
@@ -653,7 +684,7 @@ export interface ApiToken {
 const ROLE_PERMISSIONS: Record<string, string[]> = {
   ADMIN: ['identity:manage', 'tokens:manage', 'assets:read', 'assets:review', 'assets:approve',
           'assets:delete', 'documents:ingest', 'connectors:manage', 'audit:read',
-          'settings:manage', 'mcp:consume'],
+          'settings:manage', 'mcp:consume', 'credentials:manage'],
   GOVERNANCE_REVIEWER: ['assets:read', 'assets:review', 'assets:approve', 'audit:read'],
   KNOWLEDGE_OPERATOR: ['assets:read', 'documents:ingest', 'connectors:manage'],
   AGENT_CONSUMER: ['mcp:consume'],
@@ -725,10 +756,23 @@ interface AppState {
   ingestionJobs: IngestionJob[];
   jobFiles: Record<number, SourceDocument[]>;
   fetchConnectors: (projectId: number) => Promise<void>;
-  createConnector: (projectId: number, name: string, rootPath: string, extensions?: string) => Promise<void>;
+  createConnector: (projectId: number, name: string, rootPath: string, extensions?: string,
+                    type?: string, externalCredentialId?: number | null) => Promise<void>;
   scanConnector: (connectorId: number, projectId: number) => Promise<void>;
   fetchIngestionJobs: (projectId: number) => Promise<void>;
   fetchJobFiles: (jobId: number) => Promise<void>;
+
+  // v1.2.0 (D25) custody administration - credentials:manage only. The
+  // secret is sent once at create/rotate and never returned by anything;
+  // these shapes have no field it could come back through.
+  externalCredentials: ExternalCredential[];
+  fetchExternalCredentials: () => Promise<void>;
+  createExternalCredential: (name: string, purpose: string, secret: string,
+                             grantedScopes: string[],
+                             coordinates: Record<string, string>) => Promise<void>;
+  rotateExternalCredential: (credentialId: number, secret: string) => Promise<void>;
+  revokeExternalCredential: (credentialId: number, reason: string) => Promise<void>;
+  fetchCredentialDetail: (credentialId: number) => Promise<ExternalCredentialDetail | null>;
 
   llmSettings: LLMFunctionSetting[];
   fetchLLMSettings: () => Promise<void>;
@@ -1208,12 +1252,17 @@ export const useAppStore = create<AppState>((set, get) => ({
     }
   },
 
-  createConnector: async (projectId: number, name: string, rootPath: string, extensions?: string) => {
+  createConnector: async (projectId: number, name: string, rootPath: string, extensions?: string,
+                          type?: string, externalCredentialId?: number | null) => {
     try {
       const res = await apiFetch(`${API_BASE}/projects/${projectId}/connectors`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, root_path: rootPath, include_extensions: extensions || null }),
+        body: JSON.stringify({
+          name, root_path: rootPath, include_extensions: extensions || null,
+          type: type || 'LOCAL_FOLDER',
+          external_credential_id: externalCredentialId ?? null,
+        }),
       });
       if (!res.ok) {
         const body = await res.json().catch(() => null);
@@ -1256,6 +1305,76 @@ export const useAppStore = create<AppState>((set, get) => ({
       }
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  // v1.2.0 (D25) custody administration. Secrets travel one way: into
+  // create/rotate request bodies, never back. Errors surface the backend
+  // detail so refusals (custody permission, revoked binding) stay loud.
+  externalCredentials: [],
+
+  fetchExternalCredentials: async () => {
+    try {
+      const res = await apiFetch(`${API_BASE}/credentials`);
+      if (res.ok) set({ externalCredentials: await res.json() });
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+    }
+  },
+
+  createExternalCredential: async (name: string, purpose: string, secret: string,
+                                   grantedScopes: string[],
+                                   coordinates: Record<string, string>) => {
+    const res = await apiFetch(`${API_BASE}/credentials`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name, purpose, secret,
+        granted_scopes: grantedScopes.length ? grantedScopes : null,
+        coordinates: Object.keys(coordinates).length ? coordinates : null,
+      }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.detail || 'Failed to create credential');
+    }
+    await get().fetchExternalCredentials();
+  },
+
+  rotateExternalCredential: async (credentialId: number, secret: string) => {
+    const res = await apiFetch(`${API_BASE}/credentials/${credentialId}/rotate`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ secret }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.detail || 'Failed to rotate credential');
+    }
+    await get().fetchExternalCredentials();
+  },
+
+  revokeExternalCredential: async (credentialId: number, reason: string) => {
+    const res = await apiFetch(`${API_BASE}/credentials/${credentialId}/revoke`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: reason || null }),
+    });
+    if (!res.ok) {
+      const body = await res.json().catch(() => null);
+      throw new Error(body?.detail || 'Failed to revoke credential');
+    }
+    await get().fetchExternalCredentials();
+  },
+
+  fetchCredentialDetail: async (credentialId: number) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/credentials/${credentialId}`);
+      if (res.ok) return await res.json() as ExternalCredentialDetail;
+      return null;
+    } catch (err) {
+      set({ error: err instanceof Error ? err.message : String(err) });
+      return null;
     }
   },
 
