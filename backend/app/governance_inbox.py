@@ -8,6 +8,7 @@ from app import conflict_engine
 from app import trust
 from app import policy as policy_module
 from app import tier2 as tier2_module
+from app.projections import engine as projection_engine
 
 # Governance Inbox & Readiness Console (MVP 0.9.1).
 #
@@ -312,6 +313,35 @@ def _latest_automation_evidence(session: Session, candidate_ids: set) -> tuple:
     return tier2_holds, source_holds
 
 
+def _projection_staleness_items(session: Session, project_id: int) -> list:
+    """v1.3 WS1 (D28): staleness is computed, detectable, never silent.
+    The latest render per renderer (projected from PROJECTION_RENDERED
+    ledger events alone) is recomposed and compared by content hash; a
+    drifted render surfaces as a LOW hygiene item. LOW by ruling: a
+    stale render never blocks the compile gate (D2), and it is repaired
+    by regenerating, never by editing. No dismiss - the item leaves when
+    the render is regenerated."""
+    items = []
+    for entry in projection_engine.render_history(session, project_id):
+        if entry.get("current") and entry.get("stale"):
+            items.append({
+                "id": f"PROJECTION-{entry['event_id']}",
+                "type": "PROJECTION_STALE",
+                "source_id": entry["event_id"],
+                "renderer": entry.get("renderer"),
+                "clearance": entry.get("clearance"),
+                "rendered_at": entry.get("rendered_at"),
+                "audit_cursor": entry.get("audit_cursor"),
+                "severity": "LOW",
+                "bucket": "CAN_WAIT",
+                "reason": (f"The latest '{entry.get('renderer')}' render no "
+                           f"longer reflects governed facts - regenerate it."),
+                "created_at": entry.get("timestamp"),
+                "resolved_at": None,
+            })
+    return items
+
+
 def _ingestion_exception_items(session: Session, project_id: int,
                                asset_names: dict) -> list:
     candidates = session.query(db.KnowledgeAsset).filter(
@@ -452,6 +482,7 @@ def build_inbox(session: Session, project_id: int) -> dict:
     items = _conflict_items(session, project_id, model_names, asset_names, policy, resolved_cutoff)
     items += _revision_items(session, project_id, resolved_cutoff, model_assets)
     items += _ingestion_exception_items(session, project_id, asset_names)
+    items += _projection_staleness_items(session, project_id)
 
     # Per-model readiness: the existing compile gate response plus trust facts.
     # compute_trust_score is all cheap queries (no NLI), same as the existing

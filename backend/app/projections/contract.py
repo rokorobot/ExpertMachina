@@ -37,7 +37,7 @@ class ProjectionEdge:
     """One governed relation as an edge."""
     source_id: str
     target_id: str
-    relation: str              # PROVENANCE | MEMBER_OF | CONFLICTS_WITH | SUPPORTS | SUPERSEDES | SELECTED | BOUND_TO
+    relation: str              # PROVENANCE | MEMBER_OF | COMPILED_FROM | CONFLICTS_WITH | SUPPORTS | SELECTED | BOUND_TO
     metadata: dict = field(default_factory=dict)
 
 

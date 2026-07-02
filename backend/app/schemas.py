@@ -351,6 +351,15 @@ class TaxonomyReorganizeRequest(BaseModel):
     operations: List[dict]
     reason: str
 
+class ProjectionRenderRequest(BaseModel):
+    # v1.3 WS1 (D28): a file render is a declared, parameterized act.
+    # status_inclusion defaults to APPROVED-only (scoping ruling 4);
+    # whatever is included is recorded in the manifest and the event.
+    renderer: str = "projection"
+    clearance: str = "INTERNAL"
+    status_inclusion: Optional[List[str]] = None
+    domain_prefix: Optional[str] = None
+
 class IngestionJobResponse(BaseModel):
     id: int
     project_id: int

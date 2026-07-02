@@ -3697,6 +3697,10 @@ export default function Home() {
                       // never HIGH (they don't block the compile gate), no
                       // dismiss: items leave when a human reviews the asset.
                       INGESTION_EXCEPTION: { label: 'INGESTION EXCEPTION', action: 'Review Candidate' },
+                      // v1.3 WS1 (D28): a render whose content no longer
+                      // matches governed facts — "stale", never "wrong";
+                      // repaired by regenerating, never by editing.
+                      PROJECTION_STALE: { label: 'STALE RENDER', action: 'Open' },
                     };
                     const BUCKETS = [
                       { key: 'NEEDS_REVIEW', label: 'Needs Review Now', hint: 'blocking or awaiting a human verdict' },

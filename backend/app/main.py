@@ -28,6 +28,7 @@ from app import classification
 from app import tier2
 from app import llm
 from app import custody
+from app.projections import engine as projection_engine
 
 # Initialize FastAPI app
 app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
@@ -995,6 +996,38 @@ def reorganize_taxonomy(project_id: int, request: schemas.TaxonomyReorganizeRequ
             db_session, project_id, request.operations, request.reason, actor)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
+
+# Projection routes (v1.3 WS1, D28): a file render exports governed
+# knowledge as a portable artifact - the .empkg act-class, so it rides
+# assets:approve (scoping ruling 2). The history is a computed read
+# projected from PROJECTION_RENDERED ledger events alone (D24), with a
+# recompose-and-compare staleness verdict on the latest render per
+# renderer. Responses are metadata-only summaries, never file contents.
+# The engine is the only module that emits PROJECTION_* events or names
+# the render directory - this route proposes; the engine decides.
+@app.post("/api/projects/{project_id}/projections/render")
+def render_projection(project_id: int, request: schemas.ProjectionRenderRequest,
+                      db_session: Session = Depends(get_db),
+                      actor: identity.Actor = Depends(require_perm("assets:approve"))):
+    project = db_session.query(db.Project).filter(db.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail="Project not found")
+    try:
+        return projection_engine.render(
+            db_session, actor, project_id,
+            renderer=request.renderer,
+            clearance=request.clearance,
+            status_inclusion=tuple(request.status_inclusion)
+            if request.status_inclusion else projection_engine.DEFAULT_STATUS_INCLUSION,
+            domain_prefix=request.domain_prefix)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.get("/api/projects/{project_id}/projections")
+def list_projections(project_id: int,
+                     db_session: Session = Depends(get_db),
+                     actor: identity.Actor = Depends(require_perm("assets:read"))):
+    return projection_engine.render_history(db_session, project_id)
 
 # LLM Provider Settings routes (MVP 0.12): governed model-per-function
 # configuration. Stores model selection, never credentials (D14/D19
