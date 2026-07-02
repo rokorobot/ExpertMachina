@@ -404,3 +404,73 @@ route refusals (assets:approve render / assets:read history,
 metadata-only responses); the D25 sentinel sweep over the new export
 surface. All 26 pre-existing suites green with zero assertion edits;
 tsc clean; eslint 0 errors.
+
+### WS2 — Graph Renderer: ACCEPTED (2026-07-02, user-ratified)
+
+Commit: `2325fdc`. **Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** The graph renderer is
+accepted as the first v1.3 projection renderer. It ports
+graphify-style node-link JSON and interactive HTML rendering into the
+governed projection model. The renderer emits graph.json and
+graph.html from the Projection contract only; it does not create
+governed facts, does not read rendered artifacts back, and does not
+become a graph database or secondary knowledge system.
+
+D27 domain paths are used as the graph grouping/community mechanism.
+No community detection, Louvain clustering, LLM labeling, or
+extraction is introduced. The graph is a rendered view of governed
+projection content.
+
+The HTML renderer is accepted as air-gapped. It contains no external
+script or link dependencies, no CDN references, and no source-map
+leakage. vis-network 9.1.6 is vendored with pinned SHA256 and inlined
+into the generated HTML. Browser verification confirmed a live canvas,
+search, group filtering, click inspection, relation styling, and zero
+non-localhost network requests.
+
+The lens proof passed. Deleting every rendered artifact loses no
+governed knowledge, and re-rendering reproduces ledger-recorded file
+hashes. Tampering with graph.json is detectable from the
+PROJECTION_RENDERED ledger event and manifest hashes, while tampered
+render files do not feed back into governed state or staleness
+computation.
+
+Clearance filtering is enforced in rendered artifacts. Out-of-scope
+EXECUTIVE content is absent from every byte of an INTERNAL render, and
+exclusions are declared inside the artifact.
+
+**Guard amendment accepted (ruling):** renderers may import sibling
+modules inside projections/renderers/ when those modules are swept by
+the same renderer boundary. Upward imports remain forbidden. A
+renderer may not import the engine, routes, CRUD, models, persistence,
+or application internals. Vendored visualization assets must live as
+inert renderer constants, not as runtime file read-back. Justified
+because vendored renderer assets must be static code constants;
+constitutionally intact because sibling renderer modules have no
+governed-state access, upward imports remain forbidden, `from .. import
+engine` is explicitly planted and caught, and the engine may see the
+database but the renderer may not see the engine.
+
+The D24 schema freeze remains intact at 28 tables / 303 columns. The
+WS0 guard, D25 sentinel sweep, and all pre-existing suites pass with
+zero assertion edits.
+
+WS3 may proceed: MCP graph query tools over the governed projection
+output, preserving the same rule that projections answer as disposable
+rendered lenses, never as canonical state.
+
+Evidence (`backend/test_graph_renderer.py`, 8 parts, in CI): contract
+shape with domain groups + conflict evidence on edges + stamp-free
+content; the D9 clearance proof on rendered bytes with exclusions
+declared inside the artifact; the air-gap proof (structural + `node
+--check` on every script block + real-browser verification: zero
+console messages, zero non-localhost requests, live canvas, working
+search/filter/legend, the full governed chain drawn); byte-identical
+determinism for graph.json AND graph.html; THE LENS PROOF (total
+deletion → snapshot byte-identical → re-render reproduces every
+ledger-recorded file hash exactly); single-byte tamper detection from
+ledger + files alone with staleness unaffected; the aggregation
+fallback (graph.html aggregates above the node limit, graph.json never
+loses detail); the D25 sweep over the graph surface. 29 suites in CI,
+all green; zero assertion edits to pre-existing suites.
