@@ -49,6 +49,7 @@ jobs:
           python test_graph_renderer.py
           python test_vault_renderer.py
           python test_projections_area.py
+          python test_vault_acceptance.py
           python test_mcp_graph_tools.py
           python test_projection_acceptance.py
           python test_revision_workflow.py
