@@ -4,7 +4,8 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-06-12 · current version **v1.1.1** (Consumption Operations Workbench) · branch `main`
+**Snapshot:** 2026-07-02 · current version **v1.1.1** (Consumption Operations Workbench) · branch `main`
+· post-release strategy + v1.2 pre-scoping recorded (`b9d123c`)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -19,6 +20,19 @@ which model consumes an Expert Package is an evidence-backed, audited decision.
 v1.1.1 turns governed consumption from backend capability into operator-visible
 evidence: selection decisions, computed drift, and binding lineage are now
 inspectable without adding new governed state (D24).
+
+**The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
+two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
+knowledge as immutable evidence and compiles it into trusted, agent-ready
+packages — D15 absolute: extract and verify, never synthesize. The Operations
+Realm (the goal) is diagnostic and improvement workbenches — bound agents over
+expert packages — where synthesis IS the product. The border is the v1.1
+consumption arc, and the authorship rule that keeps it honest: **humans author
+facts; agents propose them** (human decisions enter as ordinary documents →
+PRIMARY facts; agent findings re-enter only via the proposal lane → human
+gate → DERIVED facts). The knowledge lifecycle is a closed loop; drift is the
+normal operating rhythm. Full arc: roadmap.md "The road to the Operations
+Realm" + docs/scoping-1.2-credentials-cloud-connector.md.
 
 ## The value chain (all segments working end-to-end)
 
@@ -227,18 +241,41 @@ package" never "deployed agent".
 - Verification tooling note: `preview_screenshot` times out on this machine —
   verify via accessibility snapshot / DOM eval instead.
 
-## Next milestones
+## Next milestones — the planned arc (ruled July 2026)
 
-1. **Enterprise extensions** (integrations, not boundary shape):
-   OIDC / SAML / SSO / SCIM / LDAP / Azure AD / Google Workspace; stored
-   provider/connector credentials (the D19/D14 cloud-connector unblock);
-   enterprise read-audit defaults.
-2. **Open consumption-direction items**: more provider adapters (Gemini /
-   open models — adapter additions behind the D19 seam), binding lifecycle
-   (**D23, deferred — held again at v1.1.1**: no withdrawal mechanics; the
-   likely shape is deactivate / never delete / never mutate history —
-   discuss before building), embedding index inside .empkg (a format
-   decision, not an interpretation of WS1).
+**NEXT: v1.2.0 — Governed Credential Store + First Cloud Connector
+(SharePoint).** Pre-scoping brief committed:
+**docs/scoping-1.2-credentials-cloud-connector.md** — open the v1.2 scoping
+session from it (plus this file, DECISIONS.md, roadmap.md). Core rulings
+already recorded there: outbound credentials are a NEW governed species
+(encrypted-at-rest, custody lineage) — the v1.0 hash-only `credentials`
+table is never weakened; *outbound credential plaintext is not a governed
+fact; custody events are governed facts* (decision candidate, number at
+ratification); adversarial custody proof (seed a secret, sweep every
+surface) is the lead acceptance test; SharePointProvider stays thin on the
+unchanged D18 contract; Graph permission scope minimization is a scoping
+question.
+
+Then (v1.2.x/likely v1.2.1 planned; v1.3+ directional — see roadmap.md
+"The road to the Operations Realm"): ingestion automation (Tier-0
+source-authority inheritance + Tier-2 engine-verified auto-approval; humans
+review by exception; ≥90% is a mature-corpus target) + hierarchical domain
+classification (DB-resident, policy-assigned; folders only render it) →
+v1.3 renderer-agnostic projection engine + graph renderer (ratifies the
+projection rule; graphify's export layer is the reference implementation) →
+v1.4 first diagnostic workbench pilot (ratifies derived-source-class
+PRIMARY/DERIVED + the one-way valve; vault skeleton: /00_system,
+/07_agent_workspaces, /08_proposals) → v1.5 EM Vault (full human-readable
+rendered workspace). The acquisition-ladder narrative: v0.10 proved local
+acquisition, v0.11 provider abstraction, v1.0 identity, v1.1
+consumption+binding — **v1.2 proves credentialed enterprise acquisition.**
+
+**Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
+(gate sales, not the product loop — after v1.2.0); more provider adapters
+(Gemini / open models behind the D19 seam); binding lifecycle (**D23,
+deferred — held again at v1.1.1**: no withdrawal mechanics; likely shape
+deactivate / never delete / never mutate history — discuss before
+building); embedding index inside .empkg.
 
 Deprioritized/deferred: unchanged (semantic auto-approval, revision
 auto-approval, AI Governance Analyst, trust history, grouped conflict API,
