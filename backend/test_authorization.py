@@ -80,7 +80,8 @@ def main_test():
                 ("DELETE", f"/api/knowledge-assets/{asset_id}", None),
                 ("GET", "/api/audit", None),
                 ("GET", "/api/settings/llm", None),
-                ("GET", "/api/identity/principals", None)]:
+                ("GET", "/api/identity/principals", None),
+                ("GET", "/api/credentials", None)]:
             r = client.request(method, url, json=body, headers=ALICE)
             assert r.status_code == 403, f"READ_ONLY {method} {url} must 403: {r.status_code}"
         # KNOWLEDGE_OPERATOR: ingest yes, governance no
@@ -88,6 +89,14 @@ def main_test():
         assert r.status_code == 403, "KNOWLEDGE_OPERATOR must not review"
         r = client.get("/api/audit", headers=OPERATOR)
         assert r.status_code == 403, "KNOWLEDGE_OPERATOR lacks audit:read"
+        # v1.2.0 (D25): custody is credentials:manage, ADMIN-only - NOT under
+        # connectors:manage, because SERVICE principals may hold
+        # KNOWLEDGE_OPERATOR and credentialed automation must never mint or
+        # rotate outbound secrets.
+        r = client.get("/api/credentials", headers=OPERATOR)
+        assert r.status_code == 403, "KNOWLEDGE_OPERATOR must not hold custody"
+        r = client.get("/api/credentials", headers=REVIEWER)
+        assert r.status_code == 403, "GOVERNANCE_REVIEWER must not hold custody"
         # GOVERNANCE_REVIEWER: governance yes, ingest/delete/settings no
         r = client.post(f"/api/projects/{project_id}/documents",
                         files={"file": ("nope.txt", b"x", "text/plain")}, headers=REVIEWER)

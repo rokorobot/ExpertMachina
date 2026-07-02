@@ -49,6 +49,14 @@ PERMISSIONS = {
     "audit:read",        # the audit ledger and agent activity
     "settings:manage",   # platform configuration (LLM provider settings)
     "mcp:consume",       # the MCP gateway (read channel under clearance)
+    # v1.2.0 WS1 (D25): outbound credential CUSTODY - create, rotate,
+    # revoke, bind, read metadata. Deliberately NOT under
+    # connectors:manage: KNOWLEDGE_OPERATOR holds that, SERVICE
+    # principals may hold KNOWLEDGE_OPERATOR, and credentialed automation
+    # must never mint or rotate outbound secrets. ADMIN-only via the
+    # matrix. USING a bound credential (a scan) stays a connectors:manage
+    # action - the custody layer decides release (custody.release).
+    "credentials:manage",
 }
 
 ROLE_PERMISSIONS = {

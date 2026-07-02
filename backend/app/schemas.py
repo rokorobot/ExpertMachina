@@ -151,6 +151,9 @@ class SourceConnectorCreate(BaseModel):
     root_path: str
     type: Optional[str] = "LOCAL_FOLDER"
     include_extensions: Optional[str] = None # comma-separated; defaults to all supported
+    # v1.2.0 (D25): BINDING a credential to a connector is a custody act
+    # (credentials:manage, checked in-route) - by reference, never by value.
+    external_credential_id: Optional[int] = None
 
 class SourceConnectorResponse(BaseModel):
     id: int
@@ -159,9 +162,56 @@ class SourceConnectorResponse(BaseModel):
     type: str
     root_path: str
     include_extensions: Optional[str] = None
+    external_credential_id: Optional[int] = None  # v1.2.0 (D25)
     created_at: datetime
     class Config:
         from_attributes = True
+
+# v1.2.0 WS1 (D25): outbound credential custody. The response model is the
+# structural no-leak boundary: it HAS no field for secret material -
+# ciphertext, wrapped keys, and master-key material cannot serialize
+# through it. There is no reveal schema and never will be one (the
+# operator supplied the secret; reveal is "never", not "once").
+class ExternalCredentialCreate(BaseModel):
+    name: str
+    purpose: str  # custody.CREDENTIAL_PURPOSES: CONNECTOR | PROVIDER
+    secret: str   # accepted once, encrypted immediately, never returned
+    granted_scopes: Optional[List[str]] = None  # custody evidence (D25)
+    coordinates: Optional[dict] = None  # NON-secret identifiers (tenant/client ids)
+
+class ExternalCredentialRotate(BaseModel):
+    secret: str   # the ONLY thing rotation re-enters
+    granted_scopes: Optional[List[str]] = None  # None = inherit from the old generation
+    coordinates: Optional[dict] = None
+
+class ExternalCredentialRevoke(BaseModel):
+    reason: Optional[str] = None
+
+class ExternalCredentialResponse(BaseModel):
+    id: int
+    name: str
+    purpose: str
+    fingerprint: str
+    status: str
+    granted_scopes: List[str] = []
+    coordinates: dict = {}
+    owner_principal_id: int
+    key_id: str  # master-key GENERATION identifier - reveals nothing
+    replaces_credential_id: Optional[int] = None
+    created_at: datetime
+    revoked_at: Optional[datetime] = None
+    class Config:
+        from_attributes = True
+
+class ExternalCredentialDetailResponse(ExternalCredentialResponse):
+    # Custody history: a computed projection of EXTERNAL_CREDENTIAL_* /
+    # custody audit events (D24 posture - never a persisted view).
+    custody_events: List[dict] = []
+
+class MasterKeyRotationResponse(BaseModel):
+    old_key_id: str
+    new_key_id: str
+    credentials_rewrapped: int
 
 class LLMFunctionSettingUpdate(BaseModel):
     model: Optional[str] = None  # None/empty clears the row -> env/default resolution

@@ -238,6 +238,40 @@ Evidence: `backend/test_credential_custody.py` (extended),
 `test_authorization.py` (the 12-permission grid), master-key rotation
 covered without secret re-entry.
 
+**Gate: PASSED (accepted July 2026).** The Alice test for secrets +
+boundary-integrity denials proven end to end, preserving the D25 line:
+secrets are usable through governed custody release but never become
+visible governed facts. Evidence (custody suite parts 6–8 + the extended
+authorization grid; all 20 suites green): the ADMIN
+create/use-for-scan/rotate/revoke lifecycle; non-admin custody routes
+denied with audited AUTHZ_DENIED; operators scan admin-bound connectors
+under connectors:manage but cannot bind credentials (binding is a
+custody act, payload-dependent authorization); revoked generations can
+be neither released (refusal = custody event; a refused scan FAILS
+loudly) nor bound (409); every EXTERNAL_CREDENTIAL_USED carries
+fingerprint, key generation, granted scopes, connector context, job id,
+and identity fact — the ledger alone resolves which generation
+authenticated which scan across rotation; the route-level sentinel sweep
+covers custody APIs, connector/job endpoints, and the audit surface;
+master-key rotation re-wraps with ciphertexts byte-identical (no secret
+re-entered), key material env-only. Language discipline held: "release"
+is internal seam vocabulary; operator surfaces say "use credential for
+scan".
+
+**Accepted ruling (WS1): rotation re-points bound connectors to the
+successor generation.** Connectors bind the LOGICAL credential;
+credential generations remain custody lineage; historical
+EXTERNAL_CREDENTIAL_USED events keep the exact generation/fingerprint
+used for each scan. Rotation preserves operational continuity without
+rewriting history; the re-point is recorded in the
+EXTERNAL_CREDENTIAL_ROTATED event (`rebound_connector_ids`).
+
+**Accepted ruling (WS1): CUSTODY_MASTER_KEY_ROTATED is a separate
+custody event type.** Master-key rotation is store-wide, not
+credential-specific; the audit fact records old key id, new key id,
+credential/data-key count, actor/identity fact, and timestamp — never
+key material.
+
 ### WS2 — SharePointProvider
 
 The D18 payoff: a provider speaking the existing four-method contract

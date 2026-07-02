@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app import database as db
 from app import crud
+from app import custody
 from app import identity
 from app import ingestion
 from app import extraction
@@ -36,11 +37,14 @@ SUPPORTED_EXTENSIONS = {".txt", ".md", ".pdf", ".docx"}
 UPLOAD_DIR = "./uploads"
 
 
-def _provider_for(connector: db.SourceConnector) -> LocalFolderProvider:
+def _provider_for(connector: db.SourceConnector, secret: str = None) -> LocalFolderProvider:
     """Provider construction. Only LOCAL_FOLDER exists; a registry is earned
     when a second provider type does (D8). SUPPORTED_EXTENSIONS is the
     framework's parser capability, handed to the provider so enumeration
-    filters on the capability/config intersection (seam 1)."""
+    filters on the capability/config intersection (seam 1).
+    `secret` is the custody-released credential for credentialed providers
+    (v1.2.0 WS2, D25) - in memory only, on its way to the provider adapter;
+    LOCAL_FOLDER needs none and ignores it."""
     return LocalFolderProvider(connector, SUPPORTED_EXTENSIONS)
 
 
@@ -71,8 +75,6 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
     connector = session.query(db.SourceConnector).filter(
         db.SourceConnector.id == job.connector_id).first()
 
-    provider = _provider_for(connector)
-
     # Identity Boundary v1.0: the connector is a DELEGATED actor whose fact
     # chains to whoever scheduled the scan (the WHO chain); the job row and
     # audit payloads remain the causal ActionContext, independent of it.
@@ -84,15 +86,32 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
     job.status = "RUNNING"
     job.started_at = datetime.datetime.utcnow()
     session.commit()
-    # describe(): provider-specific source context, logged without
-    # interpretation. Key order keeps the payload identical to pre-0.11.
-    crud.log_audit_event(
-        session, actor=connector_actor.display, identity_fact_id=connector_fact.id,
-        event_type="INGESTION_JOB_STARTED",
-        target_id=str(job.id),
-        details=json.dumps({"connector_id": connector.id, **provider.describe()}))
 
     try:
+        # v1.2.0 WS1 (D25): the scan PROPOSES use of the connector's bound
+        # credential; the custody layer DECIDES release - per scan, as one
+        # EXTERNAL_CREDENTIAL_USED event carrying the job context. A refusal
+        # (revoked, wrong purpose) fails the job loudly and is itself a
+        # custody event. The released secret exists in memory only, on its
+        # way to a credentialed provider; LOCAL_FOLDER carries none.
+        released_secret = None
+        if connector.external_credential_id is not None:
+            released_secret = custody.release_for_scan(
+                session, connector, job, actor=connector_actor)
+
+        # The secret argument exists only when a credential was released -
+        # credential-free providers (and the seam suite's fakes) see the
+        # pre-v1.2 construction signature unchanged.
+        provider = (_provider_for(connector, secret=released_secret)
+                    if released_secret is not None else _provider_for(connector))
+        # describe(): provider-specific source context, logged without
+        # interpretation. Key order keeps the payload identical to pre-0.11.
+        crud.log_audit_event(
+            session, actor=connector_actor.display, identity_fact_id=connector_fact.id,
+            event_type="INGESTION_JOB_STARTED",
+            target_id=str(job.id),
+            details=json.dumps({"connector_id": connector.id, **provider.describe()}))
+
         # Reachability is the provider's question; whether ingestion runs
         # remains the framework's.
         provider.validate()
