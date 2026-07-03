@@ -1,0 +1,88 @@
+skill_id: extract_compliance_obligations
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: extract-candidates
+consolidates:
+  # the v1.7 consolidation ruling (WS0 gate): four extraction drafts
+  # + the classifier become ONE contract; the drafts carry
+  # consolidated_into + ratified_path pointing here.
+  - extract_obligations_from_contracts
+  - extract_obligations_from_policies
+  - extract_obligations_from_certifications
+  - extract_obligations_from_regulatory_documents
+  - classify_obligation_type
+purpose: >
+  Extract explicit obligation statements from approved governed
+  documents - contracts, policies, certifications, regulatory
+  documents - as obligation candidates for the human gate. Every
+  candidate quotes its excerpt verbatim and declares its source type
+  and obligation type. Extraction states what the documents SAY the
+  company is obliged to do; it never states that the company does it.
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    document content only)
+  - MCP get_domain_subgraph(compliance) at the AGENT token's clearance
+explicit_markers:
+  # a sentence is an obligation candidate ONLY when it carries an
+  # explicit obligation marker - never "should", "encouraged",
+  # "may", or any implied duty
+  - "must"
+  - "shall"
+  - "is required to"
+source_type_rules:
+  # deterministic first-match on the cited document's filename
+  - contains "agreement" or "contract" -> contract
+  - contains "certification" or "certificate" -> certification
+  - contains "regulatory" or "regulation" -> regulatory
+  - otherwise -> policy
+obligation_type_rules:
+  # deterministic first-match keyword rules over the excerpt; a type
+  # is assigned only when the excerpt itself names it - otherwise
+  # UNCLASSIFIED, honestly (the classify_obligation_type fold-in)
+  - "notify" or "notification" -> notification
+  - "training" -> training
+  - "certification" or "certified" -> certification
+  - "retain", "retention", or "destroy" -> retention
+  - "report" -> reporting
+  - "approval" -> approval
+  - "payment" or "pay " -> payment
+  - "deliver" -> delivery
+  - otherwise -> UNCLASSIFIED
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - implied, inferred, or paraphrased obligations
+  - other skills' pending (ungated) findings
+  - rendered vault notes as authority
+evidence_rules: >
+  Explicit statements only - never invented, never inferred, never
+  paraphrased: every obligation candidate cites its source asset id
+  and quotes the obligation excerpt VERBATIM, with the declared
+  source_type (from the filename rules) and obligation_type (from the
+  excerpt keyword rules, UNCLASSIFIED when the excerpt does not
+  support classification). A sentence without an explicit marker is
+  never an obligation. evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: [COMPLIANCE_OBLIGATION]
+output_format: >
+  One proposal document per extracted obligation to /08_proposals
+  with the D30 + catalog frontmatter claims (workbench, skill,
+  skill_version, finding_kind, evidence_basis); body = the verbatim
+  obligation excerpt, source asset id, declared source_type and
+  obligation_type, and the business statement of what the document
+  obliges - stated as documentation, never as practice.
+human_approval_requirement: >
+  The valve (D29): every obligation candidate is a held CANDIDATE
+  until a human accepts it as a DERIVED fact; no policy tier ever
+  applies. Accepted obligation facts become governed inputs for
+  detect_missing_evidence (composition ACROSS the valve - never
+  before acceptance).
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approval quotes verified provenance verbatim.
+refusal_conditions:
+  - the statement carries no explicit obligation marker -> not an
+    obligation, never extracted
+  - the excerpt cannot be cited verbatim from a governed asset ->
+    refuse to emit
+  - classification not supported by the excerpt -> UNCLASSIFIED,
+    never guessed

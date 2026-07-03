@@ -53,6 +53,7 @@ jobs:
           python test_customer_ops_corpus.py
           python test_customer_ops_workbench.py
           python test_customer_ops_acceptance.py
+          python test_compliance_corpus.py
           python test_mcp_graph_tools.py
           python test_projection_acceptance.py
           python test_revision_workflow.py

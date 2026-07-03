@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_sla_evidence_gaps
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED
+status: CONSOLIDATED
+consolidated_into: detect_missing_evidence
+ratified_path: workbench/compliance_obligation/skills/detect_missing_evidence.yaml
 boundary_tags: [now]
 pattern: missing_evidence
 purpose: >

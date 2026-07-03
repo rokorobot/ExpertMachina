@@ -1,0 +1,64 @@
+skill_id: detect_undocumented_obligation_owner
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: missing-evidence (owner axis)
+split_ruling: >
+  THE SPLIT RULING (v1.7 WS0, user-ratified): detecting that no
+  approved document names an owner for an explicit obligation is
+  document-grounded and ratified here. Assigning, routing, tracking,
+  or maintaining owners remains [ES]-gated in
+  identify_obligation_owner_gaps (unpromoted). The proposed action on
+  a finding is "document the owner" - this skill never nominates one.
+purpose: >
+  Detect explicit documented obligations for which no approved
+  document names a responsible owner. The finding states that the
+  governed corpus does not document an owner - never that no one owns
+  the obligation in practice.
+question_frame:
+  # each frame = the obligation it rests on + the owner question
+  # asked through consume(). Refusal-first cuts both ways: an
+  # obligation whose owner question the corpus answers produces NO
+  # finding (the covered control).
+  - obligation_trigger: "personal data breach"
+    question: "Who is responsible for sending personal data breach
+      notifications?"
+  - obligation_trigger: "ISO 27001 surveillance audit"
+    question: "Who is responsible for coordinating the annual ISO
+      27001 surveillance audit?"
+allowed_inputs:
+  - the compiled expert package at binding clearance (explicit
+    obligation statements and any owner-naming statements)
+  - the declared owner questions, run through package consume()
+    under the packaged answering contract
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - org charts, directories, or any non-governed people data
+  - owner inference from job titles or document authorship
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires: the obligation excerpt (asset id + verbatim
+  quote, explicit obligations only) AND the reproducible INSUFFICIENT
+  EVIDENCE refusal for the declared owner question. An obligation
+  whose owner question the corpus answers (an approved document names
+  the owner) produces NO finding. Absence of a documented owner
+  becomes a finding, never a fact about the organization.
+  evidence_basis: REFUSAL_BACKED with the obligation excerpt cited.
+allowed_finding_kinds: [UNDOCUMENTED_OBLIGATION_OWNER]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims; body = the obligation (excerpt +
+  source), the refused owner question, proposed action ("document the
+  owner in an approved source" - naming a candidate owner is human
+  work and [ES] territory, never performed by this skill).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - the obligation is implied rather than explicit -> NEEDS_REVIEW
+  - an approved document names the owner (the covered control - no
+    finding)
+  - owner assignment, routing, or stewardship is requested -> refuse;
+    the Exception Stewardship decision is not minted

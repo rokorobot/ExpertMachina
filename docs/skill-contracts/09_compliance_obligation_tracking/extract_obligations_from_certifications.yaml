@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: extract_obligations_from_certifications
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED
+status: CONSOLIDATED
+consolidated_into: extract_compliance_obligations
+ratified_path: workbench/compliance_obligation/skills/extract_compliance_obligations.yaml
 boundary_tags: [now]
 pattern: extract
 purpose: >

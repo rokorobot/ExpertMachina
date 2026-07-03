@@ -5,7 +5,7 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_compliance_risk_register
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED
+status: DRAFT (workbench ACTIVE; this skill not in the ratified ACTIVE set)
 boundary_tags: [now, synth]
 pattern: assist
 purpose: >

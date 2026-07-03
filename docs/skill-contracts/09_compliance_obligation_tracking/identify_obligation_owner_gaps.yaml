@@ -6,6 +6,8 @@
 skill_id: identify_obligation_owner_gaps
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
 status: FUTURE
+split_note: >
+  detection ratified as detect_undocumented_obligation_owner (v1.7); owner assignment, routing, and stewardship remain [ES]-gated here
 boundary_tags: [ES]
 pattern: stewardship
 purpose: >

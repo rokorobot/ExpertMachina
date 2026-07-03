@@ -213,7 +213,7 @@ Document-grounded, or refused.
 | `workbench/compliance_obligation/workbench.yaml` | the manifest: canonical #9, domain scope `compliance`, binding expectations, the six-skill list, the gated list |
 | `workbench/compliance_obligation/skills/*.yaml` | the six ratified contracts (13-field shape) |
 | `workbench/compliance_obligation/runner.py` | the reference consumer on `common.py` — doors only; contracts drive runtime; gated skills refused live |
-| `workbench/compliance_obligation/corpus/` (+ `corpus_seed/`, `CORPUS.md` outside) | the ~12-document plant corpus + the non-runtime oracle |
+| `workbench/compliance_obligation/corpus/` (+ `CORPUS.md` outside the scanned folder) | the 12-document plant corpus + the non-runtime oracle (no `corpus_seed/`: the outdated-policy plant is the review-interval species — the supersession species was proven at v1.6, so no revision choreography here) |
 | `backend/test_compliance_corpus.py` (WS1) | THE CORPUS PROOF — before any runner |
 | `backend/test_compliance_workbench.py` (WS2) | THE DIAGNOSIS PROOF |
 | `backend/test_compliance_acceptance.py` (WS3) | THE MILESTONE GATE + THE COMPOSITION PROOF |
@@ -386,3 +386,104 @@ Accepted at the gate, verbatim in substance:
 **Verdict: v1.7.0 WS0 PASSED.** WS1 may proceed: the six contracts,
 the compliance corpus, CORPUS.md, and
 `backend/test_compliance_corpus.py`.
+
+### WS1 — The Contracts, the Corpus, and THE CORPUS PROOF: evidence recorded, gate pending ratification
+
+Deliverables: the ratified bundle
+(`workbench/compliance_obligation/workbench.yaml` + the six contracts
+in `skills/*.yaml`), the 12-document corpus (`corpus/`) with
+`CORPUS.md` outside the scanned folder (the non-runtime oracle), the
+registry/generator consolidation machinery, and
+`backend/test_compliance_corpus.py` (added to CI — now 45 suites).
+**Both execution modes green; every WS0-ratified WS1 requirement
+proven BEFORE any runner exists.**
+
+**The seven parts, all green:**
+
+1. **The corpus through the real pipeline**: 12 documents scanned via
+   a PRIMARY-lane connector, 50 assets human-approved, every plant
+   sentence present in governed content.
+2. **Explicit obligation extraction only**: the declared
+   explicit-marker rule (must / shall / is required to) selects 16
+   explicit statements including every P1 plant; the P7 implied
+   sentence ("encouraged to archive...") carries no marker and never
+   enters the obligation set; the declared source_type (filename
+   rules) and obligation_type (excerpt keyword rules, UNCLASSIFIED
+   when unsupported) reproduce the plant-map expectations across all
+   four source types.
+3. **The review-interval condition** (the new plant species): from
+   the documents' OWN declared convention ("must be reviewed every N
+   months, and its last completed review was dated YYYY-MM-DD") at
+   the pinned declared `as_of` 2026-06-01 — the acceptable-use policy
+   is OVERDUE (due 2025-05-02) and the access-control policy is
+   CURRENT (due 2026-11-10). Never age alone, never wall-clock.
+4. **Real-NLI detection (`EM_CORPUS_PROOF_NLI=1`, the gate-evidence
+   run)**: the scan judges ALL 1225 pairs and detects P5 — "retained
+   for ten years" × "destroyed three years", same subject,
+   cross-document — as a governed **DIRECT_CONTRADICTION at
+   confidence 0.995** (31 conflicts total; the long tail is the known
+   v1.6 signal-to-noise territory, handled by the WS2 declared
+   evidence rules). The compile gate blocks on the unreviewed
+   contradictions and opens only by governed human dismissal; the
+   INTERNAL package compiles with the EXECUTIVE sentinel
+   (`EM-EXEC-SENTINEL-7C2R`) absent from every byte. In bare CI the
+   detection assertion skips loudly and a declared fixture conflict
+   drives the gate flow (the v1.6 honesty pattern).
+5. **Refusal preconditions, deterministically**: the gap questions
+   are uncovered (max retrieval overlaps 4/3 < 6) while the covered
+   controls are covered (14/9 ≥ 6) — the requirement excerpts
+   retrievable, the gaps real.
+6. **consume() refuses AND answers, reproducibly**: both gap
+   questions (the training completion summary; the breach-notification
+   owner) refused identically across runs with zero citations; both
+   covered controls (the incident-response test report exists; the
+   Compliance Officer IS named) answered WITH citations — refusing
+   correctly before answering correctly, **in both directions** (the
+   covered-control half is new at v1.7: refusal-first cuts both
+   ways). CI runs the declared deterministic contract-follower at the
+   D19 seam; the real-model refusal remains the open honest slot.
+7. **Draft ≠ ratified + the consolidation ruling**: 364 drafts swept
+   (361 at v1.6 + the three v1.7-minted skill ids); exactly 11 ACTIVE
+   (5 customer-ops + 6 compliance), each with a resolving
+   ratified_path; the 8 CONSOLIDATED drafts each carry
+   `consolidated_into` + a ratified_path resolving to the
+   consolidating contract; the four deadline-family drafts stay
+   SEQUENCED with the deferral named; both bundle manifests agree
+   with their ratified skill files; the suite's question frames are
+   asserted to be the ratified contracts' frames verbatim.
+
+**Honesty discipline recorded at the gate:**
+
+- **The pair-cap raise in gate-evidence mode** (declared in the
+  suite): the embedding pre-filter ranks by `ingestion.get_embedding`,
+  which is a mock under the CI key — the first gate run showed it
+  silently dropping the plant pair. Gate-evidence mode raises the
+  declared `EM_CONFLICT_MAX_PAIRS` knob so EVERY pair is judged (D12:
+  no silent caps deciding plant fate). Deployment posture unchanged.
+- **One corpus wording tuning** (the v1.6 P1 precedent): the finance
+  guideline's section heading was renamed ("Contract records" →
+  "Disposal of customer agreements") because identical glued headings
+  gave both assets identical extracted names, which the metadata
+  classifier correctly reads as TEMPORAL_SUPERSESSION (same policy,
+  two documents). The rename makes the plant classify as the
+  DIRECT_CONTRADICTION it is; business meaning unchanged; the suite
+  now asserts the classification explicitly.
+- **One recorded assertion edit** (driven by the ratified promotion):
+  `test_customer_ops_corpus.py` Part 7 now scopes its
+  exactly-5-ACTIVE assertion to the customer-ops draft folder — the
+  global count is 11 by this milestone's ratified promotion. The v1.6
+  suite is otherwise untouched and green.
+- **No `corpus_seed/`, by design**: the outdated-policy plant is the
+  review-interval species; the supersession species was proven at
+  v1.6, so no revision choreography is repeated here.
+- **The sensitivity posture held in the proof itself**: every
+  assertion is about what the governed corpus states or cannot answer
+  — nothing in the suite verifies practice.
+
+**Regression at the gate**: the v1.6 customer-ops corpus, workbench,
+and acceptance suites green; Guard 5 swept the new bundle with zero
+guard edits (Part 5: 3 workbench modules); the D24 guard green at
+exactly 28 tables / 305 columns.
+
+**THE GATE (per WS0): user ratification of the corpus as realistic
+and the six contracts as the declared product is now requested.**

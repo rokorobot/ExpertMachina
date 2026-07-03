@@ -8,9 +8,11 @@ Output tree:  docs/skill-contracts/<NN>_<workbench_id>/<skill_id>.yaml
 
 These are catalog-level DRAFTS: the binding, versioned contracts are
 ratified at each workbench's own scoping session and live in
-workbench/<name>/skills/ (registry rule 1). The five ACTIVE Customer
-Operations contracts are already ratified there; their drafts carry a
-ratified_path pointer.
+workbench/<name>/skills/ (registry rule 1). Ratified ACTIVE contracts
+(the v1.6 Customer Operations five, the v1.7 Compliance & Obligation
+six) carry a ratified_path pointer in their drafts. CONSOLIDATED
+drafts (the v1.7 consolidation ruling) carry consolidated_into AND
+ratified_path - consolidation never becomes silent promotion.
 
 Deterministic and stdlib-only: rerun after editing INVENTORY; output
 is stable byte-for-byte for a fixed inventory.
@@ -211,7 +213,8 @@ INVENTORY = [
         ("detect_bottlenecks_from_traces", "OE", "finding"),
         ("process_mining_from_operational_systems", "OE", "finding"),
     ]),
-    (9, "compliance_obligation_tracking", "Compliance / Obligation Tracking Workbench", "SEQUENCED (second)", [
+    (9, "compliance_obligation_tracking", "Compliance / Obligation Tracking Workbench", "ACTIVE (v1.7.0, second)", [
+        ("extract_compliance_obligations", "now", "extract"),
         ("extract_obligations_from_contracts", "now", "extract"),
         ("extract_obligations_from_policies", "now", "extract"),
         ("extract_obligations_from_certifications", "now", "extract"),
@@ -221,9 +224,11 @@ INVENTORY = [
         ("track_recurrence_rules", "now", "deadline"),
         ("detect_missing_evidence", "now", "missing_evidence"),
         ("identify_outdated_policies", "now", "revision"),
+        ("detect_undocumented_obligation_owner", "now", "missing_evidence"),
+        ("detect_conflicting_compliance_statements", "now", "conflict"),
         ("compare_policy_vs_policy", "now", "compare"),
         ("compare_contract_obligation_vs_procedure", "now", "compare"),
-        ("prepare_audit_readiness_package", "assist", "assist"),
+        ("prepare_audit_readiness_pack", "assist", "assist"),
         ("detect_unapproved_compliance_guidance", "PMD", "finding"),
         ("generate_compliance_evidence_binder", "assist", "assist"),
         ("answer_auditor_questions", "assist", "assist"),
@@ -420,13 +425,61 @@ INVENTORY = [
     ]),
 ]
 
-# The five ratified ACTIVE contracts (drafts point at them).
+# The ratified ACTIVE contracts (drafts point at them): the v1.6
+# Customer Operations five + the v1.7 Compliance & Obligation six.
 RATIFIED = {
     ("customer_operations", "detect_customer_promise_conflict"),
     ("customer_operations", "detect_missing_support_playbook"),
     ("customer_operations", "detect_outdated_customer_guidance"),
     ("customer_operations", "detect_sla_obligation_gap"),
     ("customer_operations", "prepare_customer_policy_brief"),
+    ("compliance_obligation_tracking", "extract_compliance_obligations"),
+    ("compliance_obligation_tracking", "detect_missing_evidence"),
+    ("compliance_obligation_tracking", "identify_outdated_policies"),
+    ("compliance_obligation_tracking", "detect_undocumented_obligation_owner"),
+    ("compliance_obligation_tracking", "detect_conflicting_compliance_statements"),
+    ("compliance_obligation_tracking", "prepare_audit_readiness_pack"),
+}
+
+# Bundle folder per workbench (ratified_path targets). The registry
+# id and the bundle folder may differ (compliance's bundle is
+# workbench/compliance_obligation/ per the v1.7 build contract).
+BUNDLE_DIR = {
+    "customer_operations": "customer_operations",
+    "compliance_obligation_tracking": "compliance_obligation",
+}
+
+# The v1.7 consolidation ruling (WS0 gate): consolidated drafts carry
+# ratified_path AND consolidated_into, so consolidation never becomes
+# silent promotion. status: CONSOLIDATED, never ACTIVE, never DRAFT.
+CONSOLIDATED = {
+    ("compliance_obligation_tracking", "extract_obligations_from_contracts"): "extract_compliance_obligations",
+    ("compliance_obligation_tracking", "extract_obligations_from_policies"): "extract_compliance_obligations",
+    ("compliance_obligation_tracking", "extract_obligations_from_certifications"): "extract_compliance_obligations",
+    ("compliance_obligation_tracking", "extract_obligations_from_regulatory_documents"): "extract_compliance_obligations",
+    ("compliance_obligation_tracking", "classify_obligation_type"): "extract_compliance_obligations",
+    ("compliance_obligation_tracking", "detect_sla_evidence_gaps"): "detect_missing_evidence",
+    ("compliance_obligation_tracking", "detect_reporting_obligation_gaps"): "detect_missing_evidence",
+    ("compliance_obligation_tracking", "detect_notification_obligation_gaps"): "detect_missing_evidence",
+}
+
+# The v1.7 deadline deferral (WS0 gate): document-side in theory, but
+# persistent deadline stewardship risks a second operational state
+# machine before [ES] is scoped. These stay SEQUENCED, deliberately.
+DEFERRED_SEQUENCED = {
+    ("compliance_obligation_tracking", "track_explicit_deadlines"),
+    ("compliance_obligation_tracking", "track_recurrence_rules"),
+    ("compliance_obligation_tracking", "identify_upcoming_obligations_30_60_90"),
+    ("compliance_obligation_tracking", "detect_certification_expiry_risk"),
+}
+
+# The v1.7 owner split ruling: detection is ratified as
+# detect_undocumented_obligation_owner; assignment/routing/stewardship
+# remains [ES]-gated in the draft named here.
+SPLIT_NOTES = {
+    ("compliance_obligation_tracking", "identify_obligation_owner_gaps"):
+        "detection ratified as detect_undocumented_obligation_owner (v1.7); "
+        "owner assignment, routing, and stewardship remain [ES]-gated here",
 }
 
 OUT_ROOT = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
@@ -482,12 +535,16 @@ def contract(wb_num, wb_id, wb_name, wb_status, skill_id, tags, pattern):
     is_stewardship = pattern == "stewardship"
     is_finding = not (is_assist or is_platform or is_stewardship)
 
-    if gates:
+    if (wb_id, skill_id) in CONSOLIDATED:
+        status = "CONSOLIDATED"
+    elif gates:
         status = "FUTURE"
     elif (wb_id, skill_id) in RATIFIED:
         status = "ACTIVE"
+    elif (wb_id, skill_id) in DEFERRED_SEQUENCED:
+        status = "SEQUENCED (deliberately deferred to after the [ES] scoping - the v1.7 deadline deferral)"
     elif wb_status.startswith("ACTIVE"):
-        status = "DRAFT (workbench ACTIVE; this skill not in the v1.6 set)"
+        status = "DRAFT (workbench ACTIVE; this skill not in the ratified ACTIVE set)"
     elif wb_status.startswith("SEQUENCED"):
         status = "SEQUENCED"
     elif wb_status.startswith("PLATFORM"):
@@ -505,7 +562,16 @@ def contract(wb_num, wb_id, wb_name, wb_status, skill_id, tags, pattern):
     lines.append("workbench: %s   # %d. %s" % (wb_id, wb_num, wb_name))
     lines.append("status: %s" % status)
     if (wb_id, skill_id) in RATIFIED:
-        lines.append("ratified_path: workbench/%s/skills/%s.yaml" % (wb_id, skill_id))
+        lines.append("ratified_path: workbench/%s/skills/%s.yaml"
+                     % (BUNDLE_DIR[wb_id], skill_id))
+    if (wb_id, skill_id) in CONSOLIDATED:
+        target = CONSOLIDATED[(wb_id, skill_id)]
+        lines.append("consolidated_into: %s" % target)
+        lines.append("ratified_path: workbench/%s/skills/%s.yaml"
+                     % (BUNDLE_DIR[wb_id], target))
+    if (wb_id, skill_id) in SPLIT_NOTES:
+        lines.append("split_note: >")
+        lines.append("  %s" % SPLIT_NOTES[(wb_id, skill_id)])
     lines.append("boundary_tags: [%s]" % ", ".join(tag_list))
     lines.append("pattern: %s" % pattern)
     lines.append("purpose: >")

@@ -1,0 +1,51 @@
+skill_id: detect_conflicting_compliance_statements
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: contradictory-guidance
+purpose: >
+  Detect contradictions between compliance statements in approved
+  governed documents - a policy and a guideline that oblige
+  incompatible handling of the same subject. The finding states that
+  two approved documents disagree; it never rules which one is
+  correct and never implies anything about practice.
+allowed_inputs:
+  - the compiled expert package at binding clearance
+  - MCP get_domain_subgraph(compliance) and get_conflicts at the
+    AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - other skills' pending (ungated) findings
+  - rendered vault notes as authority
+evidence_rules: >
+  A finding requires a governed CONFLICTS_WITH relationship
+  (DIRECT_CONTRADICTION) between two approved compliance assets,
+  cited with both asset ids and both excerpts. The v1.6 evidence
+  rules are inherited WHOLESALE: the two statements must share
+  SUBJECT MATTER, not merely parallel timeframe structure - the
+  declared same-subject rule (>= 2 shared subject tokens:
+  alphabetic, length >= 4, excluding the timeframe and governance
+  vocabulary); and the conflict must be CROSS-DOCUMENT (intra-document
+  pairs are process ordering, not compliance contradictions). Pairs
+  without shared subject are deferred to the governance conflict
+  review, declared, never silently dropped.
+  evidence_basis: CONFLICT_BACKED. Clearance exclusions declared.
+allowed_finding_kinds: [CONFLICTING_COMPLIANCE_STATEMENTS]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims; body = business statement, the two
+  assets with excerpts, the governed conflict reference, proposed
+  action (a human reconciles the statements - the workbench never
+  picks the surviving one).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+  Never auto-approved.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the trail;
+  approval quotes verified provenance verbatim.
+refusal_conditions:
+  - no governed conflict relationship exists (a suspected
+    inconsistency without one is not a finding)
+  - the pair fails the same-subject or cross-document rule ->
+    deferred to the governance conflict review, declared
+  - evidence cannot be cited with governed asset ids
