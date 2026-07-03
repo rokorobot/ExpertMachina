@@ -370,6 +370,12 @@ Every skill contract has the same ten-field shape:
 > approval requirement · audit expectations · failure & refusal
 > conditions
 
+**The complete decomposition — every workbench, every subtask, each as
+a draft skill contract in this shape — lives in
+[workbench-skill-registry.md](workbench-skill-registry.md)** (the base
+contract every skill inherits + the per-skill specifics + the registry
+rules). This catalog holds the map; the registry holds the contracts.
+
 Each workbench ships as a bundle under the guard-swept `workbench/`
 root (ONE root, deliberately: Guard 5 Part 5 auto-sweeps `workbench/`;
 a second root would sit outside the sweep until a guard amendment):
