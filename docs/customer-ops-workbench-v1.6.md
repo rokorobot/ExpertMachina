@@ -780,3 +780,40 @@ required; non-canonical DERIVED vault notes; non-AGENT identity facts
 on approvals; D24 at 28/305; honest slots explicit). **Customer
 Operations v1.6 may proceed to the remaining in-browser before/after
 proof, then full WS3 ratification and the v1.6.0 release.**
+
+### WS3 — The in-browser before/after: PASSED (evidence recorded)
+
+Seeded throwaway DB (`backend/.ui-gate-db/seed_v16.py`, gitignored —
+the live demo DB untouched): the full loop up to but NOT including
+acceptance — 35 PRIMARY facts, the INTERNAL package + AGENT binding,
+the fixture P1/P3 conflicts, THE DIAGNOSIS via the runner, 6 proposals,
+31 candidates held DERIVED. Backend served from the throwaway cwd
+(`backend-uigate` launch config); verified via accessibility snapshots
+and DOM evaluation (screenshots time out on this machine — the
+standing verification note).
+
+- **Login + role-aware UI**: the `gatekeeper` ADMIN sees the Customer
+  Operations workspace (18 documents, 35 governed assets, 31 new
+  candidates, 1 expert model, 1 package).
+- **Operations → Workbenches**: the `customer-operations` bound agent —
+  ACTIVE, INTERNAL, 6 MCP calls / 0 denied, binding #1
+  ANTHROPIC/claude-opus-4-8 with the package hash, **6 proposals · 31
+  held · 0 accepted DERIVED**; the D22 header ("EM never launches
+  agents") present.
+- **Proposal Pipeline (the BEFORE)**: every per-finding proposal
+  document rendered with its **PROVENANCE VERIFIED** chip, binding
+  coordinates, cited governed asset counts, and its held candidates
+  each showing CANDIDATE + DERIVED + **Accept as DERIVED**.
+- **The live gate action (the AFTER)**: one click on Accept as DERIVED
+  → the accepted-DERIVED tile **0 → 1**, the promise-conflict card
+  **5 held · 0 accepted → 4 held · 1 accepted**, the candidate
+  APPROVED with its DERIVED chip and the accept button gone.
+- **Knowledge Assets**: the accepted finding renders as an APPROVED
+  asset with the **DERIVED** chip, Rev 1 · Current, INTERNAL access,
+  owned by `connector:Proposal Lane`.
+- **Zero console errors** throughout.
+
+The full WS3 gate is now complete: THE MILESTONE GATE suite (44th in
+CI, both modes), THE COMMERCIAL VERDICT (PASSED), and the in-browser
+before/after. **Full WS3 ratification and the v1.6.0 release are
+requested.**

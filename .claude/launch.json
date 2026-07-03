@@ -14,6 +14,13 @@
       "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--port", "8000"],
       "cwd": "backend",
       "port": 8000
+    },
+    {
+      "name": "backend-uigate",
+      "runtimeExecutable": "../.venv/Scripts/python",
+      "runtimeArgs": ["-m", "uvicorn", "app.main:app", "--app-dir", "..", "--port", "8000"],
+      "cwd": "backend/.ui-gate-db",
+      "port": 8000
     }
   ]
 }
