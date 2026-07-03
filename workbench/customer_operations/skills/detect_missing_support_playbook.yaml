@@ -1,0 +1,40 @@
+skill_id: detect_missing_support_playbook
+workbench: customer_operations
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: coverage-gap
+purpose: >
+  Detect customer situations that approved contracts and policies
+  create but no approved support procedure covers.
+allowed_inputs:
+  - approved policy/contract assets in the customer_operations scope
+    (the situations they explicitly name)
+  - the derived procedure questions, run through package consume()
+    under the packaged answering contract
+question_frame:
+  # Situations are derived from explicit policy/contract statements;
+  # each derived question names its triggering excerpt.
+  - "What is the approved procedure for enterprise refund exceptions?"
+  - "What is the approved escalation playbook for enterprise refund
+     exception requests?"
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - questions not derived from an explicit governed statement
+evidence_rules: >
+  A finding requires: the triggering policy excerpt (asset id +
+  quote) AND the reproducible INSUFFICIENT EVIDENCE refusal for the
+  derived procedure question, with nearest partial evidence ids
+  declared. evidence_basis: REFUSAL_BACKED.
+allowed_finding_kinds: [MISSING_SUPPORT_PLAYBOOK]
+output_format: >
+  One proposal document per finding to /08_proposals; body = the
+  situation, the triggering excerpt, the refused question, partial
+  evidence, proposed action (author the missing playbook).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - the corpus answers the procedure question (no gap exists)
+  - the situation is not explicitly named by a governed document

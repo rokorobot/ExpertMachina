@@ -1,0 +1,34 @@
+skill_id: prepare_customer_policy_brief
+workbench: customer_operations
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+purpose: >
+  Produce an evidence-backed internal brief for a named
+  customer-operations topic (refunds, escalations, response times,
+  complaint handling): the approved guidance plus the conflicts,
+  gaps, and escalation points the finding skills surfaced.
+allowed_inputs:
+  - approved knowledge in the customer_operations scope
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every statement cited to governed assets; conflicts and gaps
+  referenced by their governed evidence; narrative framing declared
+  SYNTHESIS_INFERRED.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A brief for humans (written to 07_agent_workspaces or handed to the
+  caller) - NOT a proposal, never written to /08_proposals, never
+  enters knowledge.
+human_approval_requirement: >
+  None required - the output never enters knowledge. If a human wants
+  brief content to become knowledge, they author it as an ordinary
+  document (PRIMARY) or an agent proposes it through the valve.
+audit_event: >
+  MCP calls audited per call; package consumption is locally verifiable.
+refusal_conditions:
+  - the topic has no approved coverage at all - the brief says so
+    rather than composing an unsupported narrative

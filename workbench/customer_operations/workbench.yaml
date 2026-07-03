@@ -1,0 +1,33 @@
+# The Customer Operations Workbench manifest (v1.6.0)
+# Canonical workbench #5 (Customer Support) in the 16-workbench catalog.
+# Convention, not constitution: this manifest governs the reference
+# runner; its claims travel in proposal frontmatter, recorded verbatim
+# at the gate, verified where governed records permit, never obeyed.
+workbench: customer_operations
+canonical_number: 5
+status: ACTIVE
+version: 1
+purpose: >
+  Find where customer promises, support procedures, SLA obligations,
+  and customer-facing guidance do not line up - before customers are
+  harmed. Document-governed slice only (D27): no tickets, no customer
+  records, no transaction exports.
+domain_scope: customer_operations
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+skills:
+  - detect_customer_promise_conflict
+  - detect_missing_support_playbook
+  - detect_outdated_customer_guidance
+  - detect_sla_obligation_gap
+  - prepare_customer_policy_brief
+refused_until_minted:
+  operational_evidence: ticket streams, SLA breach detection from
+    timestamps, complaint clustering, customer-risk scoring
