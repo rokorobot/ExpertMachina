@@ -641,3 +641,103 @@ deterministic CI proves reproducibility and structural behavior.
 
 **Customer Operations v1.6 may proceed to WS3: THE MILESTONE GATE and
 THE COMMERCIAL VERDICT.**
+
+### WS3 — THE MILESTONE GATE: evidence recorded, verdict pending
+
+Commits: the gate suite `8ecab87`; the three declared evidence-rule
+refinements `9b22926`, `5caf33e`, `9d56e19`. Suite:
+`backend/test_customer_ops_acceptance.py` (CI — now 44 suites),
+**passed first run** and green in every mode since.
+
+**The seven stages, all green:** (1) the ratified corpus through the
+real pipeline with the revision choreography, 35 PRIMARY facts
+human-approved into the `customer_operations` domain; (2) INTERNAL
+package + real AGENT binding; (3) THE DIAGNOSIS through the doors —
+per-finding proposals across all four kinds, `/08_proposals` only; (4)
+**the valve at the gate**: every extracted candidate held DERIVED
+under a global permissive Tier-1 policy AND a live approve-everything
+Tier-2 engine — never auto-approved; (5) a human accepts one finding
+per kind → four APPROVED DERIVED facts, each ASSET_APPROVED event
+quoting VERIFIED synthesis provenance (agent, binding, package hash,
+cited governed evidence, accepting human, `cited_assets.missing ==
+[]`); (6) **the vault before/after**: the re-rendered vault shows
+every accepted finding as a `02_knowledge` note with
+`source_class: "DERIVED"`, the **DERIVED** notice, and "This note is
+not canonical." — the untouchable floor intact through the render;
+(7) **THE CLOSING LINES**: every approval event carries a non-AGENT
+identity fact; every APPROVED DERIVED fact has a human review; the
+EXECUTIVE sentinel absent from every vault/render/package byte; the
+live schema equals the frozen D24 snapshot at exactly **28 tables /
+305 columns**.
+
+**The signal-to-noise work (the WS3 evidence-rule refinements, each
+declared in the contract and suite-proven):** the commercial-mode run
+(real NLI at the 0.95 deployment threshold) initially surfaced 29
+findings — the NLI engine over-fires on parallel timeframe sentences
+about different subjects (0.96–0.999; thresholds cannot separate
+them). Three declared evidence rules restored diagnosis quality
+without hiding anything: (1) **the same-subject rule** — a promise
+conflict requires ≥ 2 shared subject tokens beyond the timeframe and
+governance vocabulary; (2) **the cross-document rule** — a promise
+conflict is customer-facing vs internal, necessarily cross-document;
+intra-document pairs are process ordering; (3) **subject-token
+triggers** for the coverage skills. Every deferred pair is declared in
+the run summary and remains in EM's own governance conflict review —
+the workbench diagnoses the business; EM governs the knowledge.
+Result: **29 → 6 findings**, all four kinds, every trigger citing the
+right governed excerpt.
+
+**THE COMMERCIAL DIAGNOSIS (real NLI @ 0.95, the artifact for the
+business-reader verdict) — the six findings verbatim:**
+
+1. *CUSTOMER_PROMISE_CONFLICT* — "A customer-facing commitment and an
+   internal working rule disagree: governed asset 22 states 'Enterprise
+   customers are guaranteed a first response within 24 hours, every day
+   of the year.' while governed asset 26 states 'The first-response
+   target for enterprise incidents is 48 hours.' Until a human
+   reconciles them, staff and customers are working from different
+   promises." (conflict confidence 0.972)
+2. *OUTDATED_CUSTOMER_GUIDANCE* — "Governed asset 29 still gives
+   guidance ('Our refund policy allows customers to request a refund
+   within 30 days of delivery.') that tracks a superseded revision of
+   asset 19, whose current approved revision states 'Refund policy:
+   customers may request a refund within 14 days of delivery.' The
+   outdated guidance is customer-visible until revised or retired."
+   (revision chain cited)
+3. *MISSING_SUPPORT_PLAYBOOK* — "Approved guidance creates a customer
+   situation ('Such requests must be handled under the enterprise
+   refund exception playbook with documented approval.', asset 37) but
+   the governed corpus cannot answer 'Which approved playbook governs
+   enterprise refund exception handling?' — no approved procedure
+   covers it."
+4. *MISSING_SUPPORT_PLAYBOOK* — the same uncovered situation triggered
+   independently by the sales brochure's promise: "'Enterprise
+   agreements support custom terms, including extended refund
+   consideration...' but the governed corpus cannot answer 'What is
+   the approved procedure for enterprise refund exceptions?'"
+5. *SLA_OBLIGATION_GAP* — "An approved document commits the company to
+   an obligation ('The provider shall deliver a monthly service
+   performance report to the customer within five business days of the
+   end of each calendar month.', asset 14) but the governed corpus
+   cannot answer 'What is the approved procedure for producing the
+   monthly service performance report?'"
+6. *SLA_OBLIGATION_GAP* — the same obligation, unowned: "...cannot
+   answer 'Who is responsible for delivering the monthly service
+   performance report, and by when?'"
+
+Plus the assist brief (never a proposal): approved guidance for the
+topic, the run's 6 pending findings declared as PENDING and not
+consulted as facts, gateway exclusions declared
+(`assets_above_clearance: 1`).
+
+**Honest slots at this gate:** the ONE real-model diagnostic run —
+PENDING (no provider key in this environment; the runner's stdio MCP
+door and D19 synthesis path are code-complete; the deterministic
+contract-follower carried CI). The live-SharePoint tenant scan —
+carries unchanged.
+
+**Remaining WS3 item:** the in-browser before/after on a seeded
+throwaway DB (the Operations pipeline holding the findings, Accept as
+DERIVED live, the vault render) — runs before the final milestone
+ratification. **THE COMMERCIAL VERDICT (the user reads the diagnosis
+as the business reader) is now requested.**
