@@ -817,3 +817,47 @@ The full WS3 gate is now complete: THE MILESTONE GATE suite (44th in
 CI, both modes), THE COMMERCIAL VERDICT (PASSED), and the in-browser
 before/after. **Full WS3 ratification and the v1.6.0 release are
 requested.**
+
+### FINAL MILESTONE RATIFICATION — v1.6.0 PASSED (2026-07-03, user-ratified)
+
+**"I ratify v1.6.0 as Workbench Catalog v1 — the Customer Operations
+Workbench."**
+
+Accepted final record: WS1 passed (the corpus, five ratified skill
+contracts, contradiction plants, revision choreography, refusal
+proofs, and the draft-contract boundary — proven before runner
+construction); WS2 passed (the runner as a governed bundle of exact
+skills: contracts driving runtime behavior, refusal-first execution,
+evidence-driven finding kinding, byte-identical output, every finding
+returning only through the proposal valve); WS3 passed (the full
+milestone gate, the commercial diagnosis, and the in-browser
+before/after).
+
+**Accepted product claim:** ExpertMachina can now turn enterprise
+knowledge into agent-readable operational views without letting those
+views become canonical truth.
+
+**Accepted commercial claim:** the Customer Operations Workbench
+produced a six-finding diagnosis that a business reader accepts as
+useful, bounded, and worth acting on.
+
+**Accepted governance claim:** agents diagnose and propose. Humans
+accept. The knowledge system remains governed.
+
+**Accepted architecture boundaries:** no D32; no seventh guard family;
+no schema change — the D24 floor holds at 28 tables / 305 columns;
+D23 remains deferred; the catalog remains convention over standing
+constitutional law; generated draft contracts remain drafts unless
+promoted; runner outputs remain proposals, not canonical truth;
+DERIVED knowledge remains visibly non-canonical; approval requires
+human identity facts; the EXECUTIVE sentinel remains excluded from
+INTERNAL package bytes; Guard 5 swept every new module with zero
+edits.
+
+**Accepted honest slots:** the real-model diagnostic run remains
+pending (no provider key available); the live SharePoint scan remains
+carried.
+
+**Final verdict: v1.6.0 PASSED.** Release authorized: append this
+record, regenerate PROJECT_STATE.md / roadmap.md / README under D16,
+tag and push v1.6.0.

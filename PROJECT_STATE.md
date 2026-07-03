@@ -4,11 +4,13 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-03 · current version **v1.5.0** (the Governed
-Projection Vault — all gates PASSED; "delete everything, lose nothing;
-re-submit anything, launder nothing": the projection engine's second
-renderer fills the vault beside the proposal lane with render authority
-dying at ingress) · branch `main` · D31 ratified (register through D31)
+**Snapshot:** 2026-07-03 · current version **v1.6.0** (Workbench
+Catalog v1 — the Customer Operations Workbench: the first commercial
+Operations Workbench, a governed bundle of five ratified skill
+contracts producing a business-reader-ratified diagnosis; all gates
+PASSED incl. THE COMMERCIAL VERDICT) · branch `main` · register
+through D31 (**no D32, deliberately** — the catalog is convention
+over standing law)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -68,6 +70,25 @@ authority — and total deletion of the vault loses nothing, with re-renders
 byte-identical to ledger-recorded hashes. The top-level Projections area is
 earned by renderer plurality. Delete everything, lose nothing; re-submit
 anything, launder nothing.
+v1.6.0 opens the commercial catalog (Workbench Catalog v1): a
+workbench is a **bundle of declared skill contracts**, never a vague
+agent — the Customer Operations Workbench ships five ratified skills
+(promise conflicts, outdated customer guidance, missing playbooks,
+SLA obligation gaps, the assist policy brief) whose contracts drive
+the runner at runtime (question frames read from skills/*.yaml,
+non-ACTIVE contracts refused, refusal-first, evidence-driven kinding,
+declared same-subject/cross-document evidence rules). The catalog
+(docs/workbench-catalog.md, 16 workbenches / 3 layers) and the master
+skill registry (docs/workbench-skill-registry.md + 361 generated
+draft contracts) enter the record as strategy artifacts, not law —
+**no D32 and no seventh guard family, deliberately**: D22/D29/D30/D31
+and the six standing guards wall every seam, with three future
+decisions named but not minted (the Operational Evidence Realm,
+Exception Stewardship, the Pipeline Metadata Door). THE COMMERCIAL
+VERDICT closed the milestone: a six-finding diagnosis a Customer
+Operations manager accepts as useful, bounded, and worth acting on —
+agents diagnose and propose; humans accept; the knowledge system
+remains governed.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -284,6 +305,8 @@ Outside `backend/app/` (deliberately — D29/D22):
 | Location | Role |
 |---|---|
 | `workbench/onboarding_diagnostic.py` | **v1.4.0 WS3: the reference consumer**, never a subsystem — doors ONLY (Guard 5 Part 5 sweeps them in CI permanently): stdlib + `app.package_consumer` + `app.llm` + `mcp`. Verifies the .empkg chain, queries `get_domain_subgraph` (StdioMcpGraphClient = the real stdio door; a graph-client seam lets suites inject an in-process substitute resolving the same token), synthesizes behind an injectable seam (real = `consume()` via D19; CI = deterministic), writes ONE content-hash-named timestamp-free proposal to `/08_proposals` |
+| `workbench/customer_operations/` | **v1.6.0: the first commercial workbench bundle** — `workbench.yaml` (manifest: canonical #5, domain scope, binding expectations) + `skills/*.yaml` (the five ratified 13-field contracts) + `runner.py` (doors only, Guard 5-swept: contracts drive runtime behavior — frames read from the YAMLs, non-ACTIVE refused, refusal-first, evidence-driven kinding via `get_revision_history` content, the declared same-subject / cross-document / subject-token evidence rules; ONE proposal per finding to `/08_proposals`, the assist brief to `/07_agent_workspaces`) + `corpus/` (the 12-document plant corpus; `corpus_seed/` = revision-1 content; `CORPUS.md` = the plant map, outside the scanned folder) |
+| `tools/generate_skill_contracts.py` | **v1.6.0: the skill-contract generator** — the master inventory as data (16 workbenches, ~360 subtasks) deterministically emitting one 13-field draft YAML per skill into `docs/skill-contracts/`; drafts are scaffolding, never runtime permission (promotion happens at each workbench's scoping session) |
 | `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
 Key tables: Project, Document(+content_hash), DocumentChunk, KnowledgeAsset,
@@ -425,6 +448,12 @@ engine", or "agent wrote a fact".
 | WS1 | `4f87a36` | the vault renderer: six managed folders, domain-first full-content notes, visibly non-canonical, deterministic; WS2 collapsed into WS1 as delivered by ruling |
 | WS3 | `7310920` | the top-level Projections area (renderer plurality earned; registry-driven; dashboard panel graduated) |
 | **v1.5.0** | `b270994` | WS4 THE MILESTONE GATE (test_vault_acceptance.py: THE DISAPPEARANCE TEST + THE SEAM PROOF, closing at 28/305 — "delete everything, lose nothing; re-submit anything, launder nothing") |
+| — | `b53d551` | v1.6 scoping ratified — build contract + the workbench catalog (no D32, no 7th guard, deliberately) |
+| WS0 | `f825a9c`+`8694cda` | the skill-contract convention in vault/00_system + THE MASTER SUBTASK INVENTORY (16 workbenches, ~360 skills, boundary-tagged) + 361 generated draft contracts (`f928ebd`) |
+| WS1 | `fcfa1d3`+`ce7a270` | the Customer Operations bundle (manifest, five ratified contracts, the plant corpus) + THE CORPUS PROOF (real NLI detects P1 @0.972 / P3 @0.980; consume() refuses before it answers; draft≠ratified swept) |
+| WS2 | `c5d08f6` | the runner — a governed skill bundle, not a vague agent (contracts drive runtime, tags are gates, refusal-first, evidence-driven kinding; both modes green) |
+| WS3 | `8ecab87`+`9b22926`..`9d56e19` | THE MILESTONE GATE (44th suite, passed first run) + the three declared evidence rules (29→6 findings: same-subject, cross-document, subject-token triggers) |
+| **v1.6.0** | `0a8354b`+release | THE COMMERCIAL VERDICT PASSED ("useful, bounded, worth acting on") + the in-browser before/after (Accept-as-DERIVED live, 0→1) + FINAL RATIFICATION at 28/305 |
 
 ## How to run
 
@@ -517,7 +546,25 @@ engine", or "agent wrote a fact".
   DISAPPEARANCE TEST — byte-level 28-table fingerprint identical after
   total deletion, re-render reproducing every ledger hash — + THE SEAM
   PROOF live, closing at 28/305).
-  CI enforces all 41 on every push. `test_support.governed_actor` is the
+  **v1.6.0 customer-ops suites** (in CI): `test_customer_ops_corpus.py`
+  (THE CORPUS PROOF — the plants verifiable through EM's own machinery
+  before any runner code: real-NLI detection under
+  `EM_CORPUS_PROOF_NLI=1` (bare CI skips Part 3 loudly with declared
+  fixture conflicts), the revision choreography, reproducible
+  consume() refusals via the declared deterministic contract-follower
+  at the D19 seam, the draft≠ratified sweep over all 361 generated
+  contracts), `test_customer_ops_workbench.py` (THE DIAGNOSIS PROOF —
+  plants found + correctly kinded, skill claims conform to the
+  ratified contracts, a covered question produces NO finding, a
+  SEQUENCED contract refused at runtime, byte-identical, the noise
+  plant deferred-declared; NOTE: imports the guard FIRST for its
+  door-sweep checker, and the guard import forces
+  EM_NLI_VERIFICATION=off — real-NLI mode must restore it after),
+  `test_customer_ops_acceptance.py` (THE v1.6 MILESTONE GATE: seven
+  stages closing on ledger-proves-no-agent-wrote-facts + 28/305;
+  `EM_COMMERCIAL_ARTIFACT_DIR` exports the diagnosis for the business
+  reader).
+  CI enforces all 44 on every push. `test_support.governed_actor` is the
   only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
@@ -617,24 +664,38 @@ anything, launder nothing"* and the final line 28 tables / 305
 columns. **The planned arc (v1.2 → v1.5, the road to the Operations
 Realm) is COMPLETE.**
 
-**NEXT: to be scoped in a fresh strategy session (D16)** from this
-file + DECISIONS.md (through D31) + roadmap.md. Candidates, in no
-ruled order: **the workbench catalog** (the Operations Realm's
-commercial arc — finance leakage, procurement, customer operations,
-compliance workbenches over the now-complete substrate: packages +
-MCP graph + vault + the proposal lane); **the two honest slots**
-(the v1.2.0 live-SharePoint-tenant scan; the v1.4.0 real-model
-diagnostic run — both one action away when credentials/keys exist);
-the standing backlog (SSO/SAML/SCIM; OS keystore/KMS for the custody
-master key; Confluence/Drive providers; Gemini/open-model adapters;
-D23 binding lifecycle — deferred through five milestones; embedding
-index inside .empkg). The acquisition-ladder narrative, complete:
-v0.10 local acquisition, v0.11 provider abstraction, v1.0 identity,
-v1.1 consumption+binding, v1.2 credentialed enterprise acquisition,
-v1.2.1 review by exception, v1.3 renderable and agent-queryable
-without a second source of truth, v1.4 governed diagnostic RETURN —
-**and v1.5 makes the whole governed system a readable, navigable,
-disposable workspace that can never become a second source of truth.**
+**v1.6.0 DELIVERED (2026-07-03) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/customer-ops-workbench-v1.6.md; companion artifacts:
+docs/workbench-catalog.md — the 16-workbench commercial map — and
+docs/workbench-skill-registry.md — the master subtask inventory +
+361 generated draft contracts). **No new law, deliberately**: no D32
+(the named ruling moment = skill-aware acceptance) and no seventh
+guard family (Guard 5 swept every new module with zero edits). Three
+future decisions NAMED, not minted: **the Operational Evidence Realm**
+(transactional records as finding evidence — every workbench stays in
+its document slice until minted), **Exception Stewardship** ("the
+exception never becomes a row; the human decisions about it do"), and
+**the Pipeline Metadata Door** (what agents may know ABOUT ungated
+material — metadata only, expected). The signal-to-noise arc is a
+recorded commercial finding: NLI thresholds cannot separate
+parallel-timeframe different-subject false positives; three declared,
+contract-backed evidence rules took the diagnosis 29→6 findings.
+
+**NEXT: the ratified catalog sequence — the Compliance & Obligation
+Workbench (second), then Procurement Document Intelligence (third)**,
+each at its own scoping session promoting its drafted contracts from
+the registry. Also on the table: the Executive Briefing v1 (accepted
+facts + governance health, zero door growth), the three named
+decisions when their pressure arrives, **the two honest slots** (the
+v1.2.0 live-SharePoint-tenant scan; the v1.4.0/v1.6.0 real-model
+diagnostic run — the customer-ops corpus is the natural vehicle when
+a key exists), and the standing backlog (SSO/SAML/SCIM; OS
+keystore/KMS; Confluence/Drive providers; Gemini/open-model adapters;
+**D23 — deferred through six milestones**; embedding index inside
+.empkg). The narrative, complete: v1.2→v1.5 built the substrate;
+**v1.6 proves a business reader will pay attention to what a governed
+workbench finds.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody

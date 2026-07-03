@@ -31,6 +31,7 @@
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class; Guard 5) | ✅ Completed (July 2026, D29 + D30 ratified) — all five gates PASSED; the full loop once end-to-end; real-model run honestly pending |
 | v1.4.1 | Operations UI Completion (the D8 amendment: a top-level Operations area — Workbenches, Proposal Pipeline, Lanes & Vault; operate = the human gate only) | ✅ Completed (July 2026) — pure projection, one read endpoint, zero schema; lane selector + provenance trace close the v1.4.0 UI gaps; 37 CI suites |
 | v1.5.0 | EM Vault — the Governed Projection Vault (D31 Render Authority Dies at Ingress; Guard 6; the second renderer beside the proposal lane) | ✅ Completed (July 2026, D31 ratified) — "delete everything, lose nothing; re-submit anything, launder nothing"; 41 CI suites; 28/305 held |
+| v1.6.0 | Workbench Catalog v1 — the Customer Operations Workbench (the first commercial Operations Workbench; the 16-workbench catalog + master skill registry; NO new law, NO new guard, deliberately) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT ("useful, bounded, worth acting on"); 44 CI suites; 28/305 held; real-model slot honestly pending |
 
 ---
 
@@ -792,6 +793,55 @@ discipline; full rationale and dependency chain in
   fact with provenance_verified: false — no laundering path exists),
   closing at 28 tables / 305 columns. **The road to the Operations
   Realm (v1.2 → v1.5) is complete.**
+
+## v1.6.0 — Workbench Catalog v1: the Customer Operations Workbench (Completed)
+
+**The commercial arc opens (2026-07-03; build contract + all gate
+records: [customer-ops-workbench-v1.6.md](customer-ops-workbench-v1.6.md)).**
+The product claim proven: *ExpertMachina can now turn enterprise
+knowledge into agent-readable operational views without letting those
+views become canonical truth* — this time as commercial value, not
+mechanics: THE COMMERCIAL VERDICT closed the milestone on a
+six-finding diagnosis a Customer Operations manager accepted as
+"useful, bounded, and worth acting on."
+
+- **The catalog and the registry**
+  ([workbench-catalog.md](workbench-catalog.md) +
+  [workbench-skill-registry.md](workbench-skill-registry.md)): 16
+  workbenches in three layers (Layer 1 = already-shipped platform
+  primitives), every subtask a named skill, every skill
+  boundary-tagged, 361 generated draft contracts
+  (`tools/generate_skill_contracts.py`) — strategy and contract
+  artifacts, never law. **A workbench is a bundle of declared skill
+  contracts, not a vague agent.**
+- **No new law, deliberately**: no D32 (the named ruling moment is
+  skill-aware acceptance) and no seventh guard family (a catalog
+  workbench adds no new seam — Guard 5 swept every new module with
+  zero edits). Three future decisions named, not minted: the
+  Operational Evidence Realm, Exception Stewardship ("the exception
+  never becomes a row; the human decisions about it do"), the
+  Pipeline Metadata Door.
+- **The Customer Operations bundle** (`workbench/customer_operations/`):
+  five ratified contracts driving the runner at runtime — question
+  frames read from the contracts, non-ACTIVE contracts refused (tags
+  are gates), refusal-first (a covered question produces no finding),
+  evidence-driven kinding (an ARCHIVED-revision match makes OUTDATED,
+  else PROMISE_CONFLICT), the declared same-subject / cross-document
+  / subject-token evidence rules (the signal-to-noise arc: 29→6
+  findings — a recorded commercial finding that NLI thresholds alone
+  cannot separate parallel-timeframe false positives).
+- **The gates**: THE CORPUS PROOF (real NLI detects the plants at
+  0.972/0.980; consume() refuses correctly before it answers
+  correctly), THE DIAGNOSIS PROOF (both modes), THE MILESTONE GATE
+  (the valve under a global permissive Tier-1 + live
+  approve-everything Tier-2; four human acceptances with verified
+  synthesis provenance; the vault re-render showing marked
+  non-canonical DERIVED notes; closing at 28/305), and the in-browser
+  before/after (Accept-as-DERIVED live, 0→1, zero console errors).
+- **The ratified sequence continues**: Compliance & Obligation second,
+  Procurement Document Intelligence third; the Executive Briefing is
+  two-stage. Honest slots carry: the real-model diagnostic run and
+  the live SharePoint scan.
 
 ## Future Direction
 
