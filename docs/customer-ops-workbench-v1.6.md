@@ -92,7 +92,10 @@ and the Operations area.
    not constitution: EM cannot enforce behavior on code it does not
    execute (D22); the contracts govern the reference runner and
    travel as claims the human gate can always see.
-4. **Four finding kinds, one refused.** Every finding carries a
+4. **Four finding kinds, one refused.** *(AMENDED at the WS0 gate:
+   the ACTIVE set is now the five customer-outcome skills — see the
+   WS0 gate record. The kinds below survive as named base patterns.)*
+   Every finding carries a
    declared kind, a business statement, a proposed action, and a
    declared evidence basis — cited governed asset ids/hashes,
    conflict relationship ids, or a reproducible refusal. No evidence,
@@ -331,4 +334,76 @@ vocabulary.
 
 ## Gate records
 
-*(appended as each workstream is accepted)*
+### WS0 — The Catalog, the Registry, and the Two Refusals: ACCEPTED (2026-07-03, user-ratified)
+
+Commits: scoping `b53d551`, WS0 `f825a9c`, skill registry `8694cda`.
+**Gate verdict: PASSED.**
+
+**Gate wording (user-ratified at acceptance):** v1.6 WS0 establishes
+the workbench catalog and skill registry without adding new
+constitutional law, without adding a new guard family, and without
+changing schema.
+
+Accepted WS0 rulings:
+
+- `docs/workbench-catalog.md` holds the commercial map.
+- `docs/workbench-skill-registry.md` holds the agent-skill contracts.
+- The catalog and registry are strategy and contract artifacts, not
+  canonical facts and not new executable authority.
+- The ten-field skill contract convention is operative for future
+  workbenches.
+- Boundary tags are real gates: ACTIVE may be implemented now;
+  SEQUENCED is drafted but waits for its workbench scope; PLATFORM
+  maps to already-shipped machinery; FUTURE is roadmap only; [OE],
+  [PMD], and [ES] refuse execution until their decisions are minted.
+- Customer Operations v1.6 is correctly limited to the
+  document-governed slice.
+- Ticket-stream intelligence remains out of scope behind the future
+  Operational Evidence decision.
+- Pipeline metadata and exception stewardship remain named future
+  decisions, not silently built.
+- D24 remains intact at 28 / 305.
+
+**THE REGISTRY-SCOPE AMENDMENT (user-ratified at the gate):** WS0 does
+not only define the Customer Operations skills. WS0 establishes the
+complete Workbench Skill Registry covering the full commercial
+catalog. Customer Operations v1.6 is only the first executable subset;
+WS1 implements the first executable skill bundle **from the
+already-defined registry**. The four technical skills are not "the
+product" — they are the first proof that ExpertMachina workbenches are
+governed bundles of exact agent skills.
+
+**THE ACTIVE-SET AMENDMENT (user-ratified at the gate):** the four
+abstract knowledge-quality skills are replaced as the v1.6 ACTIVE set
+by five customer-outcome skills built from the same D27-clean base
+patterns — "do not lead with abstract knowledge-quality skills; lead
+with customer-outcome skills built from the same safe patterns":
+
+| ACTIVE skill (v1.6) | Base pattern | Finding kind · evidence basis |
+|---|---|---|
+| `detect_customer_promise_conflict` | contradictory-guidance | CUSTOMER_PROMISE_CONFLICT · CONFLICT_BACKED |
+| `detect_missing_support_playbook` | coverage-gap | MISSING_SUPPORT_PLAYBOOK · REFUSAL_BACKED |
+| `detect_outdated_customer_guidance` | outdated-guidance | OUTDATED_CUSTOMER_GUIDANCE · REVISION_BACKED |
+| `detect_sla_obligation_gap` | extract-candidates + missing-evidence | SLA_OBLIGATION_GAP · REFUSAL_BACKED (obligation excerpt cited) |
+| `prepare_customer_policy_brief` | assist | [assist] — evidence-backed topic brief, never a finding |
+
+The four original skills become **named base patterns** in the
+registry; `detect_process_inconsistency` is deferred (drafted, not
+ACTIVE) until a corpus carries enough procedural material to prove it
+honestly. The real-model honest slot re-attaches to finding narration
+and the policy brief. The commercial wedge: *"ExpertMachina finds
+where customer promises, support procedures, SLA obligations, and
+customer-facing guidance do not line up — before customers are
+harmed."*
+
+**THE CATALOG NORMALIZATION (user-ratified at the gate):** the
+catalog is normalized 14 → **16 workbenches**: Customer Support and
+Customer Success / Retention are split, and Contract Intelligence is
+added as its own workbench (the shared contract-analysis engine
+beneath Procurement, Compliance, and Sales). The v1.6 milestone name
+"Customer Operations Workbench" corresponds to #5 (Customer Support)
+in the 16-list.
+
+WS1 may proceed: the customer-operations corpus with plants for the
+five ACTIVE skills, and the five skill contracts as the
+`workbench/customer_operations/` bundle.
