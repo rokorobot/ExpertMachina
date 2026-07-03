@@ -83,6 +83,9 @@ TIMEFRAME_STOPWORDS = frozenset((
     "within", "business", "days", "hours", "must", "shall", "every",
     "each", "during", "receive", "request", "requests", "target",
     "response", "working", "calendar", "month", "months", "year",
+    # Governance vocabulary is not subject matter: every governed
+    # statement is approved.
+    "approved", "approval",
 ))
 SAME_SUBJECT_MINIMUM = 2
 

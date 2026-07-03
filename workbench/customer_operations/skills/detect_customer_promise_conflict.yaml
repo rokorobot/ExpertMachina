@@ -22,7 +22,8 @@ evidence_rules: >
   promise excerpt. The two statements must share SUBJECT MATTER, not
   merely parallel timeframe structure - the declared same-subject rule
   (>= 2 shared subject tokens: alphabetic, length >= 4, excluding the
-  timeframe vocabulary); pairs without shared subject are deferred to
+  timeframe and governance vocabulary); pairs without shared subject
+  are deferred to
   the governance conflict review, declared, never silently dropped.
   evidence_basis: CONFLICT_BACKED. Clearance exclusions declared.
 allowed_finding_kinds: [CUSTOMER_PROMISE_CONFLICT]
