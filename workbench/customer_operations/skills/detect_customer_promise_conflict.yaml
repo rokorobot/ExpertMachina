@@ -19,8 +19,12 @@ evidence_rules: >
   A finding requires a governed CONFLICTS_WITH relationship
   (DIRECT_CONTRADICTION) between an approved customer-facing asset and
   an approved internal asset, cited with both asset ids and the
-  promise excerpt. evidence_basis: CONFLICT_BACKED. Clearance
-  exclusions declared.
+  promise excerpt. The two statements must share SUBJECT MATTER, not
+  merely parallel timeframe structure - the declared same-subject rule
+  (>= 2 shared subject tokens: alphabetic, length >= 4, excluding the
+  timeframe vocabulary); pairs without shared subject are deferred to
+  the governance conflict review, declared, never silently dropped.
+  evidence_basis: CONFLICT_BACKED. Clearance exclusions declared.
 allowed_finding_kinds: [CUSTOMER_PROMISE_CONFLICT]
 output_format: >
   One proposal document per finding to /08_proposals with the D30 +

@@ -272,7 +272,11 @@ def main():
         p1 = (find("24 hours").id, find("48 hours").id)
         p3 = (find("within 14 days").id,
               find("30 days", extra="refund policy allows").id)
-        for a_id, b_id in (p1, p3):
+        # The declared NOISE plant: a cross-topic timeframe pair (the
+        # NLI over-fire shape) - the same-subject rule must DEFER it.
+        noise = (find("complaint owner within 1 business day").id,
+                 find("30 days", extra="refund policy allows").id)
+        for a_id, b_id in (p1, p3, noise):
             session.add(db.AssetRelationship(
                 project_id=project.id, expert_model_id=model.id,
                 source_asset_id=a_id, target_asset_id=b_id,
@@ -365,6 +369,16 @@ def main():
     p4f = finding("SLA_OBLIGATION_GAP")
     assert any("monthly service performance report" in f["trigger_excerpt"]
                for f in p4f), "P4 must cite the explicit obligation excerpt"
+    if not REAL_NLI:
+        # The same-subject rule live: the planted cross-topic noise pair
+        # is deferred to the governance conflict review, declared.
+        assert any("no shared subject matter" in s["reason"]
+                   for s in first["skipped"]), \
+            "the noise contradiction must be deferred, declared"
+        assert not any("complaint owner" in f.get("excerpt_a", "")
+                       or "complaint owner" in f.get("excerpt_b", "")
+                       for f in p1f), \
+            "the cross-topic noise pair must not become a finding"
     print(f"Part 3 passed: {len(first['proposals'])} per-finding proposals "
           f"(kinds: {sorted(kinds)}), byte-identical across runs, confined to "
           "08_proposals + one workspace brief, skill claims conform to the "

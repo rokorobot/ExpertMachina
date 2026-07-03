@@ -70,6 +70,32 @@ def _overlap(a, b):
     return len(_tokens(a) & _tokens(b))
 
 
+# The declared same-subject rule (a ratified evidence-rule refinement,
+# recorded at the WS3 gate): a promise conflict requires the two
+# statements to share SUBJECT MATTER, not merely parallel timeframe
+# structure ("within N days/hours") - the NLI engine over-fires on
+# different-topic timeframe sentences. Subject tokens are alphabetic,
+# length >= 4, excluding the timeframe vocabulary. Pairs without shared
+# subject are DEFERRED to the governance conflict review (EM's own
+# surface already holds every detected conflict) - declared, never
+# silently dropped.
+TIMEFRAME_STOPWORDS = frozenset((
+    "within", "business", "days", "hours", "must", "shall", "every",
+    "each", "during", "receive", "request", "requests", "target",
+    "response", "working", "calendar", "month", "months", "year",
+))
+SAME_SUBJECT_MINIMUM = 2
+
+
+def _subject_tokens(text):
+    return {t for t in re.findall(r"[a-z]+", (text or "").lower())
+            if len(t) >= 4 and t not in TIMEFRAME_STOPWORDS}
+
+
+def _shared_subject(a, b):
+    return len(_subject_tokens(a) & _subject_tokens(b))
+
+
 def _excerpt(text, limit=200):
     text = " ".join((text or "").split())
     return text if len(text) <= limit else text[:limit].rstrip() + "..."
@@ -344,6 +370,15 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                                       f"evidence cannot be cited, no finding"})
             continue
         content_a, content_b = a.get("content") or "", b.get("content") or ""
+        shared = _shared_subject(content_a, content_b)
+        if shared < SAME_SUBJECT_MINIMUM:
+            skipped.append({
+                "skill": "detect_customer_promise_conflict",
+                "reason": f"conflict {rel['id']}: no shared subject matter "
+                          f"({shared} subject token(s)) - deferred to the "
+                          f"governance conflict review, which already holds "
+                          f"it; declared, never silently dropped"})
+            continue
         match_a = superseded_match(a_id, content_b)  # b tracks a's old rev?
         match_b = superseded_match(b_id, content_a)  # a tracks b's old rev?
         if match_a or match_b:
