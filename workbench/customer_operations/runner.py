@@ -370,6 +370,20 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                                       f"evidence cannot be cited, no finding"})
             continue
         content_a, content_b = a.get("content") or "", b.get("content") or ""
+        doc_a = (a.get("provenance") or {}).get("source_document")
+        doc_b = (b.get("provenance") or {}).get("source_document")
+        if doc_a and doc_a == doc_b:
+            # A promise conflict is customer-facing vs internal - by the
+            # contract, necessarily cross-document. Two statements from
+            # the SAME document are process ordering, not a promise
+            # conflict; the governance conflict review already holds it.
+            skipped.append({
+                "skill": "detect_customer_promise_conflict",
+                "reason": f"conflict {rel['id']}: both statements are from "
+                          f"the same document ({doc_a}) - intra-document "
+                          f"ordering, deferred to the governance conflict "
+                          f"review"})
+            continue
         shared = _shared_subject(content_a, content_b)
         if shared < SAME_SUBJECT_MINIMUM:
             skipped.append({
@@ -455,12 +469,15 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 reason_none = ("no governed document explicitly names the "
                                f"situation behind \"{question}\" - no finding")
             candidates = [e for e in candidates
-                          if _overlap(question, e.get("content") or "") >= 3]
+                          if _shared_subject(question,
+                                             e.get("content") or "")
+                          >= SAME_SUBJECT_MINIMUM]
             if not candidates:
                 skipped.append({"skill": skill, "reason": reason_none})
                 continue
             trigger = max(candidates,
-                          key=lambda e: (_overlap(question, e.get("content") or ""),
+                          key=lambda e: (_shared_subject(
+                              question, e.get("content") or ""),
                                          -e["asset_id"]))
             partial_ids = sorted({e["asset_id"] for e in evidence})
             finding = {
