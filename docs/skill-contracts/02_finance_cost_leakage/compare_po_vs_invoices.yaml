@@ -1,0 +1,41 @@
+# DRAFT skill contract - generated from the master subtask
+# inventory (docs/workbench-skill-registry.md) by
+# tools/generate_skill_contracts.py. Refined and ratified at the
+# workbench's own scoping session before entering
+# workbench/<name>/skills/ (registry rule 1).
+skill_id: compare_po_vs_invoices
+workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
+status: FUTURE
+boundary_tags: [OE]
+pattern: compare
+purpose: >
+  Compare po vs. invoices.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools
+  at the AGENT token's clearance); specifically: the two governed document sets under comparison, at binding
+    clearance.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional records (until [OE]); other skills' pending
+  (ungated) findings; rendered vault notes as authority (D31).
+evidence_rules: >
+  Doc-vs-doc: both governed documents cited with the compared
+  excerpts; differences stated, never characterized beyond evidence.
+  evidence_basis: CONFLICT_BACKED or METADATA_BACKED per finding.
+allowed_finding_kinds: [COMPARE_PO_VS_INVOICES]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = business statement,
+  evidence, proposed action, impact [synth-declared] if any.
+human_approval_requirement: >
+  The valve (D29): every finding is a held CANDIDATE until a human
+  accepts it as a DERIVED fact; no policy tier ever applies.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approvals quote verified provenance verbatim.
+refusal_conditions:
+  - evidence cannot be cited from governed records -> refuse to emit
+  - uncertain or ambiguous input -> NEEDS_REVIEW, never guess
+  - the Operational Evidence Realm decision is not minted - refuse
+    the task and name the gate

@@ -1,0 +1,39 @@
+# DRAFT skill contract - generated from the master subtask
+# inventory (docs/workbench-skill-registry.md) by
+# tools/generate_skill_contracts.py. Refined and ratified at the
+# workbench's own scoping session before entering
+# workbench/<name>/skills/ (registry rule 1).
+skill_id: detect_missing_data_access_approvals
+workbench: internal_it_saas   # 12. Internal IT / SaaS Workbench
+status: FUTURE
+boundary_tags: [now]
+pattern: missing_evidence
+purpose: >
+  Detect missing data access approvals.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools
+  at the AGENT token's clearance); specifically: accepted obligation/requirement facts and the approved evidence
+    assets that should satisfy them.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional records (until [OE]); other skills' pending
+  (ungated) findings; rendered vault notes as authority (D31).
+evidence_rules: >
+  Absence becomes a finding, never a fact: the requirement's source
+  excerpt is cited together with the declared absence of approved
+  covering evidence. evidence_basis: REFUSAL_BACKED (absence).
+allowed_finding_kinds: [DETECT_MISSING_DATA_ACCESS_APPROVALS]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = business statement,
+  evidence, proposed action, impact [synth-declared] if any.
+human_approval_requirement: >
+  The valve (D29): every finding is a held CANDIDATE until a human
+  accepts it as a DERIVED fact; no policy tier ever applies.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approvals quote verified provenance verbatim.
+refusal_conditions:
+  - evidence cannot be cited from governed records -> refuse to emit
+  - uncertain or ambiguous input -> NEEDS_REVIEW, never guess

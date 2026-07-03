@@ -751,6 +751,23 @@ a shared internal fact store.
 
 ---
 
+## The generated draft contracts — every skill has its contract file
+
+Every skill listed above has a full 13-field DRAFT contract file under
+**`docs/skill-contracts/<NN>_<workbench_id>/<skill_id>.yaml`** — 361
+contracts across the 16 workbenches, generated deterministically by
+**`tools/generate_skill_contracts.py`** (the master inventory lives as
+data inside the generator; edit it and rerun — output is stable
+byte-for-byte). Each draft composes the base contract with the skill's
+pattern (conflict / coverage / revision / extract / missing_evidence /
+deadline / compare / finding / assist / platform / stewardship) and
+its boundary tags; gated skills ([OE]/[PMD]/[ES]) carry their refusal
+condition naming the unminted decision. The five ratified ACTIVE
+Customer Operations contracts in `workbench/customer_operations/skills/`
+remain the binding versions; their drafts carry a `ratified_path`
+pointer. Promotion path: draft → refined + ratified at the workbench's
+scoping session → `workbench/<name>/skills/` → runner + tests.
+
 ## Registry rules
 
 1. **A skill enters `workbench/<name>/skills/` only at that

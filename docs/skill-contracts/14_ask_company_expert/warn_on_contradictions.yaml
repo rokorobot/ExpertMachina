@@ -1,0 +1,36 @@
+# DRAFT skill contract - generated from the master subtask
+# inventory (docs/workbench-skill-registry.md) by
+# tools/generate_skill_contracts.py. Refined and ratified at the
+# workbench's own scoping session before entering
+# workbench/<name>/skills/ (registry rule 1).
+skill_id: warn_on_contradictions
+workbench: ask_company_expert   # 14. Ask Company Expert Workbench
+status: PLATFORM
+boundary_tags: [now]
+pattern: platform
+purpose: >
+  Warn on contradictions.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools
+  at the AGENT token's clearance); specifically: the shipped platform surface this skill maps to (see the
+    registry's PLATFORM mapping).
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional records (until [OE]); other skills' pending
+  (ungated) findings; rendered vault notes as authority (D31).
+evidence_rules: >
+  Inherited from the shipped platform surface (provenance, verifier
+  fingerprints, ledger events) - this skill adds no evidence rules of
+  its own.
+allowed_finding_kinds: []   # platform output - never a finding
+output_format: >
+  The shipped platform surface's existing output; this skill is a
+  mapping, not new machinery.
+human_approval_requirement: >
+  Inherited from the platform surface's own governance.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approvals quote verified provenance verbatim.
+refusal_conditions:
+  - evidence cannot be cited from governed records -> refuse to emit
+  - uncertain or ambiguous input -> NEEDS_REVIEW, never guess

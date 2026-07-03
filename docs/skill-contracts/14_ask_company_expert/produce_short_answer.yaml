@@ -1,0 +1,38 @@
+# DRAFT skill contract - generated from the master subtask
+# inventory (docs/workbench-skill-registry.md) by
+# tools/generate_skill_contracts.py. Refined and ratified at the
+# workbench's own scoping session before entering
+# workbench/<name>/skills/ (registry rule 1).
+skill_id: produce_short_answer
+workbench: ask_company_expert   # 14. Ask Company Expert Workbench
+status: PLATFORM
+boundary_tags: [assist]
+pattern: assist
+purpose: >
+  Produce short answer.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools
+  at the AGENT token's clearance); specifically: approved knowledge in scope and ACCEPTED findings (DERIVED
+    facts) - never pending proposals.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional records (until [OE]); other skills' pending
+  (ungated) findings; rendered vault notes as authority (D31).
+evidence_rules: >
+  Every statement cited to governed assets; conflicts and gaps
+  referenced by their governed evidence; narrative framing declared
+  SYNTHESIS_INFERRED where tagged [synth].
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A cited brief/draft/pack for humans - never written to
+  /08_proposals, never enters knowledge.
+human_approval_requirement: >
+  None - the output never enters knowledge. Content meant to become
+  knowledge is authored by a human (PRIMARY) or proposed through
+  the valve.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approvals quote verified provenance verbatim.
+refusal_conditions:
+  - evidence cannot be cited from governed records -> refuse to emit
+  - uncertain or ambiguous input -> NEEDS_REVIEW, never guess

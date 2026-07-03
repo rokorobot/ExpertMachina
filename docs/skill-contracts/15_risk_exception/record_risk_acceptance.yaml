@@ -1,0 +1,41 @@
+# DRAFT skill contract - generated from the master subtask
+# inventory (docs/workbench-skill-registry.md) by
+# tools/generate_skill_contracts.py. Refined and ratified at the
+# workbench's own scoping session before entering
+# workbench/<name>/skills/ (registry rule 1).
+skill_id: record_risk_acceptance
+workbench: risk_exception   # 15. Risk & Exception Workbench
+status: FUTURE
+boundary_tags: [ES]
+pattern: stewardship
+purpose: >
+  Record risk acceptance.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools
+  at the AGENT token's clearance); specifically: the computed exception queue (existence recomputed from
+    governed facts at read time).
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional records (until [OE]); other skills' pending
+  (ungated) findings; rendered vault notes as authority (D31).
+evidence_rules: >
+  Exception existence is computed from governed facts; the human
+  decision (owner, acknowledgment, acceptance, dismissal reason,
+  escalation) persists as a governed identity-backed event keyed to
+  the exception's stable computed identity.
+allowed_finding_kinds: []   # stewardship output - never a finding
+output_format: >
+  A governed stewardship decision event (once [ES] is minted);
+  the queue remains the computed join.
+human_approval_requirement: >
+  The human decision IS the governed act - identity-backed,
+  audited, never automated.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approvals quote verified provenance verbatim.
+refusal_conditions:
+  - evidence cannot be cited from governed records -> refuse to emit
+  - uncertain or ambiguous input -> NEEDS_REVIEW, never guess
+  - the Exception Stewardship decision is not minted - refuse the
+    task and name the gate (the exception never becomes a row; the
+    human decisions about it do)
