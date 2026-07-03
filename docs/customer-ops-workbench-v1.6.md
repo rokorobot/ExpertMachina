@@ -741,3 +741,42 @@ throwaway DB (the Operations pipeline holding the findings, Accept as
 DERIVED live, the vault render) — runs before the final milestone
 ratification. **THE COMMERCIAL VERDICT (the user reads the diagnosis
 as the business reader) is now requested.**
+
+### WS3 — THE COMMERCIAL VERDICT: PASSED (2026-07-03, user-ratified)
+
+**"This is now a diagnosis a real Customer Operations manager would
+recognize as useful, bounded, and worth acting on. I accept the
+six-finding Customer Operations diagnosis as commercially credible."**
+
+The diagnosis identifies real management problems rather than abstract
+technical artifacts (the six findings, accepted individually); it is
+the right level of diagnosis for a Customer Operations manager — not
+overloaded with low-value contradictions, not pretending to solve what
+governance has not approved; it separates business action from
+canonical truth: the workbench proposes fixes, but the knowledge
+system remains governed.
+
+**The signal-to-noise refinement accepted:** "the fact that
+thresholding alone could not separate false-positive timeframe
+conflicts is an important commercial finding, not a failure." The
+same-subject, cross-document, and trigger-token rules are appropriate
+because they are declared, contract-backed, suite-proven, and leave
+deferred conflicts in ExpertMachina's broader review layer rather
+than hiding them.
+
+**The practical manager test (user-stated):** "Yes, these are real
+risks. Yes, I know who needs to act. Yes, the evidence is specific
+enough to verify. Yes, the system is not inventing fixes. Yes, I can
+trust that these are proposals, not silent rewrites of company truth."
+
+**The big win (user-stated):** the workbench is no longer just
+"detecting contradictions" — it is producing operationally usable
+governed diagnosis: what is wrong, why it matters, what evidence
+supports it, and where human approval must intervene.
+
+All gate evidence accepted (six commercial findings at deployment
+posture; governed citations; DERIVED-only re-entry; human acceptance
+required; non-canonical DERIVED vault notes; non-AGENT identity facts
+on approvals; D24 at 28/305; honest slots explicit). **Customer
+Operations v1.6 may proceed to the remaining in-browser before/after
+proof, then full WS3 ratification and the v1.6.0 release.**
