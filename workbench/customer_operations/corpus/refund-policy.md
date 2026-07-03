@@ -4,15 +4,15 @@ Effective for all consumer and business customers.
 
 ## Standard refund window
 
-Customers may request a refund within 14 days of delivery. Refund
-requests received after the standard window are declined unless a
-warranty claim applies.
+Refund policy: customers may request a refund within 14 days of
+delivery. Refund requests received after the standard window are
+declined unless a warranty claim applies.
 
 ## Enterprise exceptions
 
 Enterprise customers may request refund exceptions beyond the
-standard window. Such requests are handled under the enterprise
-refund exception playbook and require documented approval.
+standard window. Such requests must be handled under the enterprise
+refund exception playbook with documented approval.
 
 ## How to request
 

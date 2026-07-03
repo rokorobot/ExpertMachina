@@ -13,7 +13,7 @@ No tickets, no customer records, no transaction exports.
 
 | # | Plant | Documents | Detected by |
 |---|---|---|---|
-| P1 | The 24h/48h promise conflict: sales collateral promises enterprise response within 24 hours; the escalation SOP says 48 hours | `sales-enterprise-brochure.md` × `support-escalation-procedure.md` | `detect_customer_promise_conflict` (governed DIRECT_CONTRADICTION) |
+| P1 | The 24h/48h promise conflict: sales collateral guarantees enterprise first response within 24 hours; the escalation SOP sets a 48-hour first-response target | `sales-enterprise-brochure.md` × `support-escalation-procedure.md` | `detect_customer_promise_conflict` (governed DIRECT_CONTRADICTION; real NLI ~0.97) |
 | P2 | The missing enterprise refund-exception playbook: the refund policy names it; no such document exists | `refund-policy.md` (the reference); the playbook deliberately absent | `detect_missing_support_playbook` (consume() refusal) |
 | P3 | The outdated FAQ: still states the 30-day refund window; the approved refund policy is revision 2 (14 days) | `support-faq.md` × `refund-policy.md` (+ `corpus_seed/refund-policy.md` = revision 1) | `detect_outdated_customer_guidance` (revision chain + conflict) |
 | P4 | The unfulfillable reporting obligation: the MSA requires a monthly service performance report; no procedure or owner is documented | `enterprise-master-service-agreement.md`; the procedure deliberately absent | `detect_sla_obligation_gap` (obligation excerpt + refusal) |

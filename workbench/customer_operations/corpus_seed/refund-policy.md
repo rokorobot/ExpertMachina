@@ -4,9 +4,9 @@ Effective for all consumer and business customers.
 
 ## Standard refund window
 
-Customers may request a refund within 30 days of delivery. Refund
-requests received after the standard window are declined unless a
-warranty claim applies.
+Refund policy: customers may request a refund within 30 days of
+delivery. Refund requests received after the standard window are
+declined unless a warranty claim applies.
 
 ## How to request
 

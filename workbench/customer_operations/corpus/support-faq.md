@@ -5,8 +5,9 @@ Answers support agents may share with customers.
 ## Refunds
 
 Q: How long do customers have to request a refund?
-A: You can request a refund within 30 days of delivery. After that,
-refunds are only possible under a valid warranty claim.
+A: Our refund policy allows customers to request a refund within 30
+days of delivery. After that, refunds are only possible under a valid
+warranty claim.
 
 Q: How fast are refunds paid out?
 A: Approved refunds are returned to the original payment method

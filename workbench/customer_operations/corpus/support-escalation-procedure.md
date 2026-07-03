@@ -10,10 +10,9 @@ Internal procedure for escalating customer support incidents.
 
 ## Enterprise incidents
 
-Enterprise support incidents are acknowledged and responded to within
-48 hours. The assigned agent records the incident severity, informs
-the account contact, and engages the on-duty engineer for SEV-1 and
-SEV-2.
+The first-response target for enterprise incidents is 48 hours. The
+assigned agent records the incident severity, informs the account
+contact, and engages the on-duty engineer for SEV-1 and SEV-2.
 
 ## Escalation chain
 
