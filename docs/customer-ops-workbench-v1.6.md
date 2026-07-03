@@ -524,3 +524,29 @@ CORPUS.md is updated to match; the business meaning is unchanged.
 **WS1 is complete (parts 1 + 2). WS2 may proceed: the runner
 (`workbench/customer_operations/runner.py`) — doors only, honoring the
 five ratified skill contracts, emitting one proposal per finding.**
+
+### WS1 — FINAL VERDICT: PASSED (2026-07-03, user-ratified)
+
+Commits: part-1 record `38f2fff`, part-2 harness `ce7a270`. **"I ratify
+WS1 Customer Operations as complete."** All part-2 evidence accepted as
+recorded above (both execution modes green; P1 @ 0.972 and P3 @ 0.980;
+the supersession chain; both refusals before the covered control; the
+361-draft sweep with exactly 5 ACTIVE; the EXECUTIVE sentinel absent).
+
+**Accepted correction (user-ratified):** the P1 wording adjustment is
+valid — "within 24h" versus "within 48h" is not necessarily a logical
+contradiction, because a 24-hour response also satisfies a 48-hour
+window. The revised wording — "guaranteed within 24 hours" versus
+"first-response target is 48 hours" — is a better business
+contradiction and a better NLI plant.
+
+**Boundary conditions preserved (user-restated):** generated draft
+contract ≠ executable skill; ratified workbench contract ≠ global
+permission; corpus plant map ≠ runtime evidence; runner output ≠
+canonical knowledge; local real-NLI evidence is gate evidence while CI
+honest-skip mode is harness-shape and deterministic-flow evidence; the
+deterministic contract-follower at the D19 seam is acceptable for
+proving contract behavior, but the real-model refusal remains an
+explicit future evidence slot.
+
+**Customer Operations v1.6 may proceed to WS2 runner construction.**
