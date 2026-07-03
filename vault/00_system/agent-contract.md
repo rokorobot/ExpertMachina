@@ -1,4 +1,4 @@
-# The ExpertMachina Vault Contract (v1.4.0 — D29 / D30)
+# The ExpertMachina Vault Contract (v1.4.0 — D29 / D30 · v1.6 catalog convention)
 
 This vault is the working surface between the Knowledge Realm (governed
 facts) and the Operations Realm (diagnostic workbenches). It is **not a
@@ -74,6 +74,40 @@ AGENT. `cited_assets` names the governed evidence the finding drew from
 DERIVED evidence are visible as second-generation synthesis at the
 gate. Unverifiable provenance holds the proposal as a declared
 exception; it is reviewed by a human, never rejected by an engine.
+
+## The workbench catalog convention (v1.6)
+
+A catalog workbench is a **bundle of declared skills**, never one
+vague agent. Each workbench ships under the `workbench/` root as
+`workbench.yaml` (name, domain scope, binding expectations, skill
+list) plus one skill contract per subtask in `skills/*.yaml`, each
+with the same ten-field shape:
+
+> skill name · purpose · allowed inputs · forbidden inputs · governed
+> evidence rules · allowed finding kinds · output format · human
+> approval requirement · audit expectations · failure & refusal
+> conditions
+
+A catalog workbench writes **one proposal document per finding**, and
+its frontmatter carries the catalog claims alongside the required
+claims above:
+
+```
+workbench: <workbench name>
+skill: <skill name that produced this finding>
+skill_version: <declared version>
+finding_kind: <the skill's declared kind>
+evidence_basis: <CONFLICT_BACKED | REVISION_BACKED | REFUSAL_BACKED |
+                 METADATA_BACKED | SYNTHESIS_INFERRED>
+```
+
+These are claims, exactly like every other frontmatter field: recorded
+verbatim at the gate, verified where governed records permit, **never
+obeyed**. The channel still decides the class; the human still decides
+the fact; a skill contract governs how the workbench behaves, not what
+ExpertMachina trusts. No evidence, no finding: a skill that cannot
+cite governed asset ids, a conflict relationship, or a reproducible
+refusal for a finding must refuse to emit it.
 
 ## What agents must never do
 
