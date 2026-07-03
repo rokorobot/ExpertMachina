@@ -4,14 +4,11 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-03 · current version **v1.4.1** (v1.4.0 First
-Diagnostic Workbench Pilot — all five gates PASSED; the Operations Realm
-opens with the one-way valve intact: agents may diagnose and propose,
-but only governed human acceptance can turn a finding into DERIVED
-knowledge — plus the v1.4.1 Operations UI completion: a top-level
-Operations area earned by the D8 amendment "Operations-Realm surface
-plurality", operating the HUMAN side of the loop only) · branch `main` ·
-D29 + D30 ratified (register through D30)
+**Snapshot:** 2026-07-03 · current version **v1.5.0** (the Governed
+Projection Vault — all gates PASSED; "delete everything, lose nothing;
+re-submit anything, launder nothing": the projection engine's second
+renderer fills the vault beside the proposal lane with render authority
+dying at ingress) · branch `main` · D31 ratified (register through D31)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -57,6 +54,20 @@ configurable; the class is channel-decided, never content-claimed; primary
 prevails over derived as presentation and review priority, never automatic
 resolution; and the fifth permanent guard proves from the ledger alone that
 no agent principal can write canonical facts directly.
+v1.5.0 fills the vault (D31 Render Authority Dies at Ingress): the
+projection engine's second renderer produces the full human/agent-readable
+knowledge tree — plain Markdown, YAML frontmatter, wikilinks, full governed
+content after clearance filtering, every note visibly non-canonical —
+directly into managed folders (01–06) of the SAME tree that holds the
+proposal lane, with the untouchable floor (00_system / 07_agent_workspaces
+/ 08_proposals) constitutionally outside every render path. The sixth
+permanent guard proved the seam before the renderer existed: a rendered
+file re-entering through 08_proposals is ordinary proposal evidence behind
+the valve — held DERIVED, never PRIMARY, never replaying projection
+authority — and total deletion of the vault loses nothing, with re-renders
+byte-identical to ledger-recorded hashes. The top-level Projections area is
+earned by renderer plurality. Delete everything, lose nothing; re-submit
+anything, launder nothing.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -134,6 +145,13 @@ MCP Gateway (live channel)        v0.9     9 read-only tools (v1.3: +graph neigh
   |                                        verified against ExpertAgentBinding records and
   |                                        quoted verbatim in the approval event; primary
   |                                        prevails over derived in every conflict surface
+  ↓ the EM Vault (D31)            v1.5.0   the second renderer: the knowledge tree as a
+                                           deterministic Markdown vault (full content after
+                                           clearance, visibly non-canonical, wikilinked)
+                                           in managed folders 01–06 BESIDE the proposal
+                                           lane; untouchable floor 00/07/08; render
+                                           authority dies at ingress — delete everything,
+                                           lose nothing; re-submit anything, launder nothing
 ```
 
 The two consumption channels stay honest (D10): MCP = GOVERNED (live
@@ -253,10 +271,11 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `proposals.py` | **v1.4.0 WS1 (D29/D30): the proposal lane** — the ONE allowlisted writer of `source_class` (Guard 5 sweeps every other writer): idempotent channel-derivation at scan (PROPOSAL-lane documents → DERIVED assets, INGESTED and CHANGED alike); frontmatter parsing from the stored content-hashed document file (never flattened chunks; claims recorded verbatim, never obeyed); governed provenance verification (binding exists + belongs to the claimed principal + active AGENT + package hash matches; cited assets checked, misses declared, DERIVED citations flagged = derivation depth computable); `approval_provenance` recomputed and quoted verbatim in the ASSET_APPROVED event at the human gate |
 | `llm.py` | D19 resolver (DB config → OPENAI_MODEL env → gpt-4o-mini) + **v1.1 provider adapters** (OPENAI/ANTHROPIC) + `generate()` boundary; PACKAGE_CONSUMER function added |
 | `mcp_gateway.py` + `mcp_server.py` | MCP read-only tools (9 since v1.3: +get_graph_neighbors / get_lineage_path / get_domain_subgraph — the GOVERNED projection channel, composed live per call, never reading rendered files); EM_AGENT_TOKEN per-call resolution, registry clearance |
-| `projections/engine.py` | **v1.3.0 WS1 (D28): THE DECIDER** — compose() governed facts → clearance-filtered deterministic Projection (nodes/edges/domain groups, exclusions counted); render() writes + stamps + emits PROJECTION_RENDERED (the ONLY projection event emitter); is_stale() = recompose-and-compare (exact, no heuristics); render_history() ledger-projected. Content identity excludes stamps: rendered_at + audit_cursor live in manifest + event only |
+| `projections/engine.py` | **v1.3.0 WS1 (D28): THE DECIDER** — compose() governed facts → clearance-filtered deterministic Projection (nodes/edges/domain groups, exclusions counted); render() writes + stamps + emits PROJECTION_RENDERED (the ONLY projection event emitter); is_stale() = recompose-and-compare (exact, no heuristics); render_history() ledger-projected. Content identity excludes stamps: rendered_at + audit_cursor live in manifest + event only. **v1.5.0 WS0 (D31)**: ENGINE_VERSION v2 — the declared content mode (a renderer must declare FULL_CONTENT; the declaration travels in projection + manifest + event; content composed only onto already-included nodes); RENDERERS = spec registry (files/content_mode/output + managed_folders/governance_folder for VAULT); THE FLOOR — `UNTOUCHABLE_FOLDERS` (00_system/07_agent_workspaces/08_proposals, named ONLY here within app/), managed folders confined to the 01–06 window, refusals loud and pre-deletion, output paths refused at write time |
 | `projections/contract.py` | **v1.3.0 WS0**: the frozen-dataclass model renderers receive; stamp fields are guard-checked contract fields — an unstamped render structurally cannot exist |
 | `projections/renderers/graph.py` | **v1.3.0 WS2**: the graphify port (MIT) — graph.json node-link + self-contained graph.html (search/filter/inspect, conflict edges styled, aggregated fallback above node limit; graph.json never loses detail); imports stdlib + contract + renderer siblings ONLY |
 | `projections/renderers/vis_network_js.py` | **v1.3.0 WS2**: vis-network 9.1.6 vendored (gzip+base64 constant, sourceMappingURL stripped, sha256 pinned) — renderers are write-only, so the library lives in code, never in a file to read back |
+| `projections/renderers/vault.py` | **v1.5.0 WS1 (D31): the EM Vault renderer** — the second renderer, a CONTENT artifact by ratified amendment (declared FULL_CONTENT mode; clearance filters before content by construction). Six managed folders (01_overview / 02_knowledge / 03_domains / 04_indexes / 05_conflicts / 06_audit): domain-first notes with full governed content, YAML frontmatter (em_rendered/derived/canonical:false + provenance), wikilinks, the VISIBLE "This note is not canonical." line, D30-DERIVED marking; deterministic bytes (volatile stamps live in manifest.json + the ledger event, never in notes — notes link [[render_manifest]]). Deliberately not rendered: summaries/glossary (synthesis, D15), expert/package notes (D9) |
 | `operations_view.py` | **v1.4.1 (the D8 amendment)**: the Operations area's pure projection — bound agents + bindings + per-agent proposal stats, the proposal pipeline (provenance verdicts recomputed per read, never stored), PROPOSAL lanes + scan history; ONE endpoint `GET /api/projects/{id}/operations` (assets:read; MCP aggregates stay behind audit:read `/api/agents/activity`); reads write nothing |
 | `query_engine.py` | LIVE-channel retrieval + validation + generation + claim verification; `ACCESS_RANK`; v1.4.0: citations carry `source_class` (feeds ask_expert + MCP get_provenance) |
 
@@ -329,6 +348,13 @@ show the domain path with inline governed correction (ASSET_DOMAIN_CORRECTED,
 never a revision); the Governance Inbox ranks ingestion exceptions with
 provenance-derived "why held" (language: "held for review"/"exception",
 never "rejected by the engine"; "classified"/"corrected", never "moved").
+v1.5.0 WS3: the top-level **Projections** area (D8 executed — renderer
+plurality graph + vault earned it; the dashboard panel graduated):
+render controls built from the metadata-only registry endpoint
+(`GET /api/projections/renderers` — name/declared content mode/output
+species/managed folders, backend truth never hardcoded), FULL CONTENT
+chip on vault history rows, D31 stated in the area header, sidebar
+stale badge; language "regenerated", never "synced".
 v1.4.1: the top-level **Operations** area (assets:read; sidebar badge =
 held candidates) — Workbenches (bound agents: bindings, per-agent
 proposal stats, MCP activity merged only for audit:read viewers,
@@ -394,6 +420,11 @@ engine", or "agent wrote a fact".
 | WS3 | `0b83a21` | workbench/onboarding_diagnostic.py (reference consumer, doors only) + vault skeleton (00_system contract, 07 scratch, 08_proposals) |
 | **v1.4.0** | `3f048e3` | WS4 operator surface (DERIVED chip, Primary-prevails chip, proposal inbox kinds) + THE MILESTONE GATE (test_workbench_acceptance.py: the full loop once, closing on ledger-proves-no-agent-wrote-facts + D24 28/305) |
 | **v1.4.1** | `212a0fa` | the Operations area (D8 amendment: earned by Operations-Realm surface plurality; operate = the human gate only, D22 held) + lane selector/badge + audit synthesis-provenance trace; operations_view.py pure projection, ONE read endpoint, 37 CI suites |
+| — | `4a93058` | v1.5 scoping ratified — build contract + D31 Render Authority Dies at Ingress |
+| WS0 | `c50f99f` | Guard 6 (test_render_ingress_guard.py, the sixth permanent guard: THE LAUNDERING PLANT with real graph-render files, regeneration isolation, the untouchable floor, path discipline) + the declared content mode (ENGINE_VERSION v2) + the managed-folder floor |
+| WS1 | `4f87a36` | the vault renderer: six managed folders, domain-first full-content notes, visibly non-canonical, deterministic; WS2 collapsed into WS1 as delivered by ruling |
+| WS3 | `7310920` | the top-level Projections area (renderer plurality earned; registry-driven; dashboard panel graduated) |
+| **v1.5.0** | `b270994` | WS4 THE MILESTONE GATE (test_vault_acceptance.py: THE DISAPPEARANCE TEST + THE SEAM PROOF, closing at 28/305 — "delete everything, lose nothing; re-submit anything, launder nothing") |
 
 ## How to run
 
@@ -471,8 +502,22 @@ engine", or "agent wrote a fact".
   has a human review, D24 at 28/305), `test_operations_view.py`
   (v1.4.1: the Operations projection — correctness incl. forged
   attribution, purity as deterministic event-free reads, the governed
-  route with no write method).
-  CI enforces all 37 on every push. `test_support.governed_actor` is the
+  route with no write method). **v1.5.0 vault suites** (in CI):
+  `test_render_ingress_guard.py` (Guard 6, the SIXTH permanent guard —
+  THE LAUNDERING PLANT, regeneration isolation, the untouchable floor's
+  loud refusals, path discipline: EM_VAULT_DIR + the untouchable names
+  confined to projections/engine.py; adversarially self-proven),
+  `test_vault_renderer.py` (WS1: exact inventory,
+  clearance-on-note-bytes, marking/frontmatter/wikilinks, determinism
+  with manifest.json the one volatile file, the D27 proof both
+  directions, regeneration isolation, no-flow-back with a real note,
+  D25 sweep), `test_projections_area.py` (WS3: the metadata-only
+  registry, the governed render route, the staleness lifecycle on the
+  vault), `test_vault_acceptance.py` (THE v1.5 MILESTONE GATE: THE
+  DISAPPEARANCE TEST — byte-level 28-table fingerprint identical after
+  total deletion, re-render reproducing every ledger hash — + THE SEAM
+  PROOF live, closing at 28/305).
+  CI enforces all 41 on every push. `test_support.governed_actor` is the
   only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
@@ -557,25 +602,39 @@ no provider key in the release environment; the stdio MCP door and
 D19 synthesis path are code-complete in workbench/; append evidence
 to the WS4 gate record when a key is available).
 
-**NEXT: v1.5 — EM Vault.** Open a fresh scoping session per D16 from
-this file + DECISIONS.md (through D30) + roadmap.md + the
-diagnostic-workbench-v1.4.md gate records. The projection engine's
-second renderer: the full human-readable Obsidian-compatible workspace
-— domain-first folders rendering the D27 taxonomy into the vault the
-v1.4 skeleton reserved (folders 01–06); all orientation files
-generated; the D24 disappearance test as the gate; the top-level
-Projections UI area is earned HERE by renderer plurality (the v1.3
-scoping ruling). The D28/D29 seam question to hold at scoping: the
-vault renderer writes rendered knowledge INTO the same tree agents
-write proposals into — the guard boundaries (renders are write-only
-disposable lenses; /08 is the only governed ingress; rendered files
-re-enter only as ordinary documents) must be re-proven where the two
-trees meet. The acquisition-ladder narrative: v0.10 local acquisition,
-v0.11 provider abstraction, v1.0 identity, v1.1 consumption+binding,
-v1.2 credentialed enterprise acquisition, v1.2.1 review by exception,
-v1.3 renderable and agent-queryable without a second source of truth —
-**and v1.4 opens governed diagnostic RETURN: agents propose, humans
-decide, derivation stays visible forever.**
+**v1.5.0 DELIVERED (2026-07-03) — all gates PASSED** (build contract +
+gate records: docs/em-vault-v1.5.md; **D31 Render Authority Dies at
+Ingress** ratified). Delivered guard-before-the-door: WS0 Guard 6
+(`test_render_ingress_guard.py`, the sixth permanent guard family —
+THE LAUNDERING PLANT proven with real graph-render files before the
+vault renderer existed) + the declared content mode + the
+managed-folder floor; WS1 the vault renderer (WS2 collapsed into it as
+delivered, by ruling); WS3 the top-level Projections area (renderer
+plurality earned, exactly as the v1.3 scoping ruled); WS4 THE
+MILESTONE GATE — THE DISAPPEARANCE TEST + THE SEAM PROOF, closing on
+the user's verdict: *"delete everything, lose nothing; re-submit
+anything, launder nothing"* and the final line 28 tables / 305
+columns. **The planned arc (v1.2 → v1.5, the road to the Operations
+Realm) is COMPLETE.**
+
+**NEXT: to be scoped in a fresh strategy session (D16)** from this
+file + DECISIONS.md (through D31) + roadmap.md. Candidates, in no
+ruled order: **the workbench catalog** (the Operations Realm's
+commercial arc — finance leakage, procurement, customer operations,
+compliance workbenches over the now-complete substrate: packages +
+MCP graph + vault + the proposal lane); **the two honest slots**
+(the v1.2.0 live-SharePoint-tenant scan; the v1.4.0 real-model
+diagnostic run — both one action away when credentials/keys exist);
+the standing backlog (SSO/SAML/SCIM; OS keystore/KMS for the custody
+master key; Confluence/Drive providers; Gemini/open-model adapters;
+D23 binding lifecycle — deferred through five milestones; embedding
+index inside .empkg). The acquisition-ladder narrative, complete:
+v0.10 local acquisition, v0.11 provider abstraction, v1.0 identity,
+v1.1 consumption+binding, v1.2 credentialed enterprise acquisition,
+v1.2.1 review by exception, v1.3 renderable and agent-queryable
+without a second source of truth, v1.4 governed diagnostic RETURN —
+**and v1.5 makes the whole governed system a readable, navigable,
+disposable workspace that can never become a second source of truth.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
@@ -591,7 +650,7 @@ auto-approval, AI Governance Analyst, trust history, grouped conflict API,
 coverage heatmap, notifications, agent runtime/orchestration — the last is
 out of scope by D22, not by omission).
 
-Read `docs/DECISIONS.md` (now through **D30**) for the binding architectural
+Read `docs/DECISIONS.md` (now through **D31**) for the binding architectural
 rulings before changing anything. Any schema change must update the frozen
 snapshot in `test_workbench_projection.py` alongside its ratified decision.
 Any new automation module must be declared in the D26 guard's
@@ -604,6 +663,10 @@ by the D29/D30 guard the moment it exists under `workbench/` — doors only
 (stdlib + app.package_consumer + app.llm + mcp); the only writer of
 `source_class` is app/proposals.py; proposal-lane candidates are outside
 every policy tier, permanently ("trusted agent auto-accept" requires an
-explicit register supersession, never configuration). Five permanent guard
+explicit register supersession, never configuration). Any new VAULT
+renderer spec is confined by the D31 floor: managed folders only inside
+the 01–06 window, the untouchable folders (00_system / 07_agent_workspaces
+/ 08_proposals) outside every render path, EM_VAULT_DIR and the untouchable
+names confined to projections/engine.py within app/. Six permanent guard
 families now stand in CI: D24 schema, D25 custody, D26 automation, D28
-projection, D29/D30 authorship.
+projection, D29/D30 authorship, D31 render ingress.

@@ -465,3 +465,48 @@ on the vault renderer. In-browser verification against the seeded
 throwaway DB: the graduated area, registry-driven renderer options, a
 live UI vault render producing the full nine-folder tree with
 untouchables preserved, zero console errors.
+
+### WS4 — THE DISAPPEARANCE TEST + THE SEAM PROOF: ACCEPTED (2026-07-03, user-ratified) — THE MILESTONE GATE
+
+Commit: `b270994`. **Gate verdict: PASSED. Milestone verdict:
+ExpertMachina v1.5.0 is accepted as the Governed Projection Vault
+milestone.**
+
+**The final verdict (user-ratified):** Delete everything, lose
+nothing. Re-submit anything, launder nothing.
+
+**Accepted closing record (user-listed):**
+- The rendered vault is disposable.
+- Governed facts do not depend on rendered artifacts.
+- Regeneration is byte-identical against ledger-recorded hashes.
+- Untouchables remain inviolable through render, deletion, and
+  regeneration.
+- A rendered note entering through 08_proposals cannot regain
+  projection authority.
+- Human acceptance creates only an honest APPROVED DERIVED fact with
+  provenance_verified: false.
+- Clearance filtering holds end to end.
+- The D25 custody sweep holds.
+- D31 is now operational, not merely stated.
+- The WS2 collapse is accepted and recorded.
+- D24 remains intact: **28 tables / 305 columns. No schema drift.
+  Projections are disposable governed lenses.**
+
+The two honest open slots carry unchanged: the v1.2.0 live SharePoint
+tenant scan and the v1.4.0 real-model diagnostic run.
+
+Evidence: `backend/test_vault_acceptance.py` (THE MILESTONE GATE, in
+CI — 41 suites): corpus in through the real pipeline with an EXECUTIVE
+asset absent from every rendered byte; the vault render with every
+hash on the ledger; THE DISAPPEARANCE TEST (a byte-level fingerprint
+of all 28 governed tables identical after total deletion of every
+managed folder; the re-render reproducing all 14 ledger-recorded
+hashes exactly; untouchable plants byte-identical throughout); THE
+SEAM PROOF live (a real rendered 02_knowledge note through
+08_proposals under a global Tier-1 policy + a live approve-everything
+Tier-2 engine → held DERIVED only, zero projection events replayed;
+human acceptance → an APPROVED DERIVED fact recording
+provenance_verified: false honestly; the regenerated vault showing the
+accepted fact as a marked DERIVED note, still visibly non-canonical);
+the D25 sweep; THE CLOSING LINE at 28/305. Full regression: all 41 CI
+suites green.

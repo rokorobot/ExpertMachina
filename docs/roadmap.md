@@ -30,7 +30,7 @@
 | v1.3.0 | Projection Engine + Graph Lens (D28 — governed rendered lenses, agent graph queries) | ✅ Completed (July 2026, D28 ratified) — all five gates PASSED; ZERO schema change; 31 CI suites |
 | v1.4.0 | First Diagnostic Workbench Pilot (Operations Realm opens; D29 One-Way Valve + D30 Derived Source Class; Guard 5) | ✅ Completed (July 2026, D29 + D30 ratified) — all five gates PASSED; the full loop once end-to-end; real-model run honestly pending |
 | v1.4.1 | Operations UI Completion (the D8 amendment: a top-level Operations area — Workbenches, Proposal Pipeline, Lanes & Vault; operate = the human gate only) | ✅ Completed (July 2026) — pure projection, one read endpoint, zero schema; lane selector + provenance trace close the v1.4.0 UI gaps; 37 CI suites |
-| v1.5 | EM Vault (D31 Render Authority Dies at Ingress — the second renderer fills the vault beside the proposal lane, no laundering path) | 🔄 In Progress — scoping ratified July 2026; build contract [em-vault-v1.5.md](em-vault-v1.5.md) |
+| v1.5.0 | EM Vault — the Governed Projection Vault (D31 Render Authority Dies at Ingress; Guard 6; the second renderer beside the proposal lane) | ✅ Completed (July 2026, D31 ratified) — "delete everything, lose nothing; re-submit anything, launder nothing"; 41 CI suites; 28/305 held |
 
 ---
 
@@ -762,28 +762,36 @@ discipline; full rationale and dependency chain in
   wrote canonical facts directly, and D24 at 28/305.** Open honest
   slot: the ONE real-model diagnostic run (no provider key at release;
   the stdio MCP door + D19 synthesis path are code-complete).
-- **v1.5 — EM Vault (🔄 IN PROGRESS — scoping ratified July 2026; D31
-  Render Authority Dies at Ingress; build contract:
-  [em-vault-v1.5.md](em-vault-v1.5.md)).** The projection engine's
-  second renderer fills the vault: a full human-readable,
-  Obsidian-compatible (plain Markdown + YAML frontmatter + wikilinks,
-  deterministic bytes — no plugins, no git machinery), domain-first,
-  clearance-filtered workspace in managed folders 01–06 of the SAME
-  tree that holds the proposal lane. D31 governs the seam: render
-  authority dies at ingress — a rendered note dropped into
-  08_proposals becomes only a held DERIVED candidate behind the valve,
-  never PRIMARY, never auto-approved, never canonical by accident; and
-  the untouchable floor (00_system / 07_agent_workspaces /
-  08_proposals) is constitutionally outside every render path. The
-  sixth permanent guard (`test_render_ingress_guard.py`) lands at WS0
-  with the laundering plant proven against graph-render files before
-  the vault renderer exists. The vault is a content artifact (the
-  ratified amendment to the v1.3 excerpt ruling — declared content
-  mode in manifest + event; the graph stays the structure artifact).
-  The top-level Projections area is earned here by renderer plurality.
-  Zero schema. Gate: THE DISAPPEARANCE TEST (delete the entire vault →
-  lose nothing → re-render byte-identical) + THE SEAM PROOF, closing
-  on D24 at 28/305.
+- **v1.5.0 — EM Vault, the Governed Projection Vault (✅ COMPLETED
+  July 2026; D31 Render Authority Dies at Ingress ratified; build
+  contract + all gate records:
+  [em-vault-v1.5.md](em-vault-v1.5.md)).** *Delete everything, lose
+  nothing; re-submit anything, launder nothing* — delivered
+  guard-before-the-door. WS0 Guard 6 (`test_render_ingress_guard.py`,
+  the sixth permanent guard family, before the renderer existed: THE
+  LAUNDERING PLANT with real graph-render files, hostile manifests,
+  and forged frontmatter — all held DERIVED behind the valve;
+  regeneration structurally confined to declared managed folders; the
+  untouchable floor loud and pre-deletion; EM_VAULT_DIR + the
+  untouchable names confined to one module) + the declared content
+  mode (a mandatory identity-bearing stamp; clearance filters before
+  content; ENGINE_VERSION v2). WS1 the vault renderer (WS2 collapsed
+  in as delivered): six managed folders — domain-first knowledge
+  notes with full governed content, YAML frontmatter, wikilinks, the
+  visible "This note is not canonical." line, DERIVED marking; domain
+  pages, indexes, conflict notes with asymmetry, overview, and a
+  deterministic audit self-description; volatile stamps in
+  manifest.json + the ledger only. WS3 the top-level Projections area
+  (renderer plurality earned per the v1.3 ruling; registry-driven,
+  metadata-only; the dashboard panel graduated). WS4 THE MILESTONE
+  GATE: THE DISAPPEARANCE TEST (a byte-level fingerprint of all 28
+  governed tables identical after total deletion; re-renders
+  reproducing every ledger-recorded hash; untouchables intact
+  throughout) + THE SEAM PROOF live (a rendered note through
+  08_proposals → held DERIVED → human acceptance → an honest DERIVED
+  fact with provenance_verified: false — no laundering path exists),
+  closing at 28 tables / 305 columns. **The road to the Operations
+  Realm (v1.2 → v1.5) is complete.**
 
 ## Future Direction
 

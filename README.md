@@ -35,6 +35,10 @@ Diagnostic workbenches (agents over packages + graph queries)
 The proposal lane: agent findings → /08_proposals → held CANDIDATE
 → human gate → DERIVED facts (verified synthesis provenance;
 never auto-approved — the one-way valve closes the loop)
+        ↓
+The EM Vault: the knowledge tree as a readable Markdown workspace,
+rendered BESIDE the proposal lane — disposable, deterministic,
+visibly non-canonical; render authority dies at ingress
 ```
 
 ---
@@ -120,6 +124,12 @@ Expert Packages are evaluated per model over the portable channel — *"this pac
 
 A binding is **not** a runtime: ExpertMachina hands you a governed, evaluated, revocable binding; you bring your own execution.
 
+### The EM Vault — Governed Knowledge as a Readable Workspace
+
+The projection engine's second renderer turns governed knowledge into a **human- and agent-readable Markdown vault**: domain-first knowledge notes with full clearance-filtered content, YAML frontmatter, wikilinks, domain and conflict indexes — Obsidian-compatible by property (plain Markdown, deterministic bytes), never by dependency. Every note visibly says *"This note is not canonical"*: the vault is a disposable lens — delete all of it and nothing is lost; regenerate it and every file returns byte-identical to its ledger-recorded hash.
+
+The vault lives in the **same tree** as the proposal lane, and the boundary between them is law (D31): the renderer manages only its declared folders and can never touch the vault's inputs (the agent contract, agent workspaces, the proposal ingress) — and **render authority dies at ingress**: a rendered note dropped into the proposal folder becomes ordinary proposal evidence behind the valve, held DERIVED, never regaining projection authority.
+
 ### Diagnostic Workbenches & the One-Way Valve
 
 A workbench is a **reference consumer, never a privileged subsystem**: it lives outside the governed backend and reaches ExpertMachina only through the existing doors — the verified `.empkg`, the MCP gateway at a real agent token's clearance, and file writes into the vault's proposal folder. The first workbench (onboarding diagnostic) produces a deterministic, evidence-backed diagnosis in which every finding cites the governed assets it drew from — and what the agent *couldn't* see is declared, not hidden.
@@ -144,7 +154,7 @@ Every actor is a governed principal — **HUMAN, SERVICE, AGENT, DELEGATED** (au
 8. **Agents are governed consumers, not magical users.** Identities, permissions, lineage, audit — the architecture rejects "AI can access everything because it is trusted."
 9. **Model-agnostic by design.** The governance spine (NLI verdicts, deterministic gates, hashes) is LLM-independent; providers sit behind an adapter seam and the platform survives the loss or replacement of any single model.
 
-These principles are not aspirations — they are **binding architectural decisions** (D1–D30) recorded in the [decision register](docs/DECISIONS.md), enforced by **five permanent guard families in CI**: a frozen schema snapshot guard, a credential custody sweep, a single-approval-path guard, a projection guard proving rendered views can never write governed state, and an agent-authorship guard proving no agent principal, workbench result, or MCP return can write canonical facts except through the proposal lane and human gate.
+These principles are not aspirations — they are **binding architectural decisions** (D1–D31) recorded in the [decision register](docs/DECISIONS.md), enforced by **six permanent guard families in CI**: a frozen schema snapshot guard, a credential custody sweep, a single-approval-path guard, a projection guard proving rendered views can never write governed state, an agent-authorship guard proving no agent principal, workbench result, or MCP return can write canonical facts except through the proposal lane and human gate, and a render-ingress guard proving render authority dies at ingress — a rendered file re-entering the system is ordinary proposal evidence behind the valve, and no regeneration can touch the vault's input folders.
 
 ---
 
@@ -208,6 +218,7 @@ A role-aware single-page console (the interface hides what the backend would ref
 - **Evaluations** (benchmarks, scorecards, refusal tests as first-class results)
 - **Consumption** (Selection Workbench, Consumption Inbox, Binding Explorer with full lineage)
 - **Operations** (the Operations Realm surface: Workbenches — bound agents and their governed record; Proposal Pipeline — held proposals with recomputed provenance verdicts and the Accept-as-DERIVED human gate; Lanes & Vault — the proposal-lane connectors and the `08_proposals` return path. ExpertMachina never launches agents; execution stays outside the boundary)
+- **Projections** (the top-level render area, earned by renderer plurality: graph + vault with their declared content modes from the registry, ledger-projected history, computed staleness — regenerated, never synced)
 - **Agent Center** (MCP activity, clearances, denials) and **Audit Ledger Explorer** (including the structured synthesis-provenance trace for DERIVED acceptances)
 - **Settings** (LLM model-per-function selection, Users & Tokens)
 
@@ -259,7 +270,7 @@ backend/
     binding_lineage.py       # server-composed binding lineage
     mcp_gateway.py           # governed MCP tool surface (incl. graph queries)
     proposals.py             # the proposal lane (D29/D30): channel-decided class, verified provenance
-    projections/             # projection engine + graph renderer (D28: lenses, never sources)
+    projections/             # projection engine + graph & vault renderers (D28/D31: lenses, never sources)
   mcp_server.py              # stdio MCP server
   test_*.py                  # product, architectural, transport, identity + 5 guard suites (CI)
 frontend/                    # Next.js + Zustand operator console
@@ -279,7 +290,7 @@ docs/                        # decision register, build contracts, admin & gover
 | [Identity Boundary v1.0](docs/identity-boundary-v1.md) | Principals, credentials, identity facts, roles, recovery |
 | [User & Identity Administration](docs/user-management.md) | Admin guide: users, services, agents, tokens |
 | [Governance](docs/governance.md) · [Provenance](docs/provenance.md) · [Assurance](docs/assurance.md) | Core principles, chain of custody, verification scoring |
-| Build contracts | [Consumption Arc](docs/consumption-arc-v1.md) · [Workbench](docs/workbench-v1.1x.md) · [Credentials & Cloud Connector](docs/credentials-cloud-connector-v1.2.md) · [Ingestion Automation](docs/ingestion-automation-v1.2.1.md) · [Projection Engine](docs/projection-engine-v1.3.md) · [Diagnostic Workbench](docs/diagnostic-workbench-v1.4.md) |
+| Build contracts | [Consumption Arc](docs/consumption-arc-v1.md) · [Workbench](docs/workbench-v1.1x.md) · [Credentials & Cloud Connector](docs/credentials-cloud-connector-v1.2.md) · [Ingestion Automation](docs/ingestion-automation-v1.2.1.md) · [Projection Engine](docs/projection-engine-v1.3.md) · [Diagnostic Workbench](docs/diagnostic-workbench-v1.4.md) · [EM Vault](docs/em-vault-v1.5.md) |
 | [Walkthrough](docs/walkthrough.md) | End-to-end scenario: upload → evidence-backed answers |
 
 ## Technology Stack
@@ -321,9 +332,10 @@ ExpertMachina is under active development. Shipped and stable:
 - the governed credential store and the first credentialed cloud connector (SharePoint) — **v1.2.0**;
 - ingestion automation and domain classification (review by exception: source-authority and engine-verified approval tiers, governed taxonomy, the ranked exception inbox) — **v1.2.1**;
 - the projection engine and graph lens (clearance-filtered, cursor-stamped, deterministic rendered views; a self-contained air-gapped interactive graph; agent graph queries with lineage as a path query — delivered with **zero schema change**: a projection is a governed lens over the knowledge system, never another knowledge system) — **v1.3.0**;
-- the first diagnostic workbench pilot — **the Operations Realm opens** with the one-way valve and derived source class (D29/D30): a reference workbench outside the backend diagnoses through the existing doors, its findings re-enter only through the proposal lane and human gate as DERIVED facts with verified synthesis provenance, primary prevails over derived in every conflict surface, and the fifth permanent CI guard proves from the ledger alone that no agent can write canonical facts directly — **v1.4.0**; plus the **Operations area** (Workbenches, Proposal Pipeline, Lanes & Vault — a pure computed operator surface where humans work the gate; ExpertMachina never launches agents) — **v1.4.1**.
+- the first diagnostic workbench pilot — **the Operations Realm opens** with the one-way valve and derived source class (D29/D30): a reference workbench outside the backend diagnoses through the existing doors, its findings re-enter only through the proposal lane and human gate as DERIVED facts with verified synthesis provenance, primary prevails over derived in every conflict surface, and the fifth permanent CI guard proves from the ledger alone that no agent can write canonical facts directly — **v1.4.0**; plus the **Operations area** (Workbenches, Proposal Pipeline, Lanes & Vault — a pure computed operator surface where humans work the gate; ExpertMachina never launches agents) — **v1.4.1**;
+- the EM Vault — **the Governed Projection Vault** (D31): governed knowledge rendered as a readable, navigable, deterministic Markdown workspace beside the proposal lane, with render authority dying at ingress and the sixth permanent CI guard proving it — *delete everything, lose nothing; re-submit anything, launder nothing* — **v1.5.0**.
 
-**The road ahead** (directional): the EM Vault — a full human-readable, Obsidian-compatible rendered workspace as the projection engine's second renderer, filling the vault folders v1.4 reserved (v1.5).
+**The road ahead** (directional): the workbench catalog — operational workbenches (finance, procurement, customer operations, compliance) over the now-complete substrate: governed packages, the MCP graph, the vault, and the proposal lane.
 
 ## Guiding Rule
 
