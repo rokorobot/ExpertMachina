@@ -550,3 +550,63 @@ proving contract behavior, but the real-model refusal remains an
 explicit future evidence slot.
 
 **Customer Operations v1.6 may proceed to WS2 runner construction.**
+
+### WS2 — The Runner (the diagnosis proof): evidence recorded, gate pending ratification
+
+Deliverables: `workbench/customer_operations/runner.py` (the reference
+consumer — doors only, Guard 5-swept the moment it landed with zero
+guard edits) + `backend/test_customer_ops_workbench.py` (added to CI —
+now 43 suites). Two ratified-contract frame questions were tuned to be
+refusal-clean against the answering threshold (business meaning
+unchanged; recorded here as the WS2 contract edit).
+
+**The runner honors the contracts, not just carries them:**
+- question frames are READ FROM `skills/*.yaml` at run time, never
+  hardcoded;
+- a skill whose contract is not `status: ACTIVE` is refused at run
+  time — tags are gates, proven live (a SEQUENCED-flipped contract
+  aborted the run);
+- refusal-first: a covered question produces NO finding (proven live
+  with a control question injected into a copy of the contract frame —
+  skipped with the reason "the corpus answers it");
+- kinding is evidence-driven: a DIRECT_CONTRADICTION pair becomes
+  OUTDATED_CUSTOMER_GUIDANCE only when one side's ARCHIVED revision
+  content matches the opposing guidance more closely than its current
+  revision (the REVISION_BACKED rule over `get_revision_history`,
+  which exposes revision content); otherwise CUSTOMER_PROMISE_CONFLICT.
+
+**The diagnosis proof (deterministic CI mode — fixture conflicts
+declared, the real-NLI detection being WS1 gate evidence):** 6
+per-finding proposals; all four finding kinds present and correctly
+kinded (P1 pairs the 24h promise with the 48h target; P3 shows the
+30-day guidance against the current 14-day revision with the chain
+cited; P2 cites the playbook-naming excerpt; P4 cites the explicit
+`shall` obligation); every proposal parses with valid D30 claims +
+catalog claims (workbench / skill / finding_kind / evidence_basis)
+conforming to the ratified contracts; every citation names a packaged
+INTERNAL asset the agent consumed; byte-identical across runs; writes
+confined to `08_proposals` + exactly one assist brief in
+`07_agent_workspaces` (the brief declares it never enters knowledge);
+the EXECUTIVE sentinel absent from every written byte; gateway
+exclusions declared inside every proposal.
+
+**The real-NLI mode (`EM_CORPUS_PROOF_NLI=1`) also passes end-to-end:**
+32 per-finding proposals (28 real-NLI conflict findings + 4 coverage
+findings), byte-identical, all 172 extracted candidates held DERIVED
+under a live permissive policy, provenance verified against the
+governed binding.
+
+**The return path holds:** every per-finding proposal ingested through
+the PROPOSAL lane under a global permissive policy; every candidate
+CANDIDATE + DERIVED; `verify_provenance` confirms the claimed binding,
+principal, package hash, and cited assets against governed records.
+
+**Known consideration carried to WS3 (recorded openly):** at the
+default conflict threshold (0.90) the real-NLI scan over 35
+single-sentence assets surfaces 28 contradictions — the two plants at
+0.972/0.980 plus long-tail noise. A business-reader diagnosis should
+run at a stricter deployment threshold (`EM_CONFLICT_CONTRADICTION_THRESHOLD`,
+e.g. 0.95+) — a configuration posture per the v1.5 WS0 commercial
+note, never a governance change; the plants survive any threshold up
+to 0.97. The WS3 commercial verdict will rule on the rendered
+diagnosis's signal-to-noise.

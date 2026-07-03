@@ -12,8 +12,8 @@ allowed_inputs:
     recurrence; the extract_obligations discipline)
   - the derived fulfillment questions, run through package consume()
 question_frame:
-  - "What is the approved procedure for producing the monthly customer
-     service performance report?"
+  - "What is the approved procedure for producing the monthly service
+     performance report?"
   - "Who is responsible for delivering the monthly service performance
      report, and by when?"
 forbidden_inputs:
