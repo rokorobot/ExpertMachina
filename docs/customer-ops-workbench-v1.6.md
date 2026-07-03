@@ -407,3 +407,61 @@ in the 16-list.
 WS1 may proceed: the customer-operations corpus with plants for the
 five ACTIVE skills, and the five skill contracts as the
 `workbench/customer_operations/` bundle.
+
+### WS1 (part 1) — Business-Reader Ratification: PASSED (2026-07-03, user-ratified)
+
+Commits: bundle + corpus `fcfa1d3`; the generated draft-contract tree
+`f928ebd`. **Verdict: PASSED. WS1 may proceed to the corpus-proof
+harness, then WS2 runner.**
+
+**Gate wording (user-ratified at acceptance):**
+
+The Customer Operations corpus and the five ACTIVE Customer
+Operations skill contracts are ratified as suitable for WS1 proof
+construction.
+
+The corpus is accepted as a realistic controlled test bundle: ordinary
+healthy documents, known contradiction plants, outdated guidance, and
+revision-chain evidence sufficient to prove governed behavior. The
+plant map in CORPUS.md is accepted as the **non-runtime oracle** for
+test expectations.
+
+The five ratified Customer Operations contracts are accepted as
+**binding for v1.6 execution work**. Their behavior must remain
+refusal-first, evidence-bound, provenance-aware, and unable to invent
+missing facts. They may extract, compare, flag, summarize, or refuse —
+but they must not silently repair source truth, overwrite canonical
+records, or treat generated drafts as approved knowledge.
+
+**The generated 361-contract tree is accepted as draft inventory
+scaffolding only — not a runtime permission grant.** The YAML files in
+docs/skill-contracts/ are valid catalog-level draft contracts, not
+execution-authoritative contracts: deterministic generated scaffolding
+allowed to exist, while each workbench still needs its own scoping
+gate before any skill becomes binding runtime behavior. Each
+non-Customer-Ops contract remains draft until promoted during its own
+workbench scoping session.
+
+**The protected boundary (user-stated, standing for the whole
+catalog):**
+
+> generated draft contract ≠ executable skill
+> ratified workbench contract ≠ global permission
+> corpus plant map ≠ runtime evidence
+> runner output ≠ canonical knowledge
+
+**Required WS1 proof (part 2 — the corpus-proof harness):**
+
+1. The conflict scan must detect the promise conflict.
+2. The scan must detect the outdated FAQ condition.
+3. The revision choreography must produce the superseded chain.
+4. `consume()` must reproducibly refuse the playbook question when
+   evidence is not approved or safe.
+5. `consume()` must reproducibly refuse the reporting question when
+   required evidence is missing, conflicting, or not promotable.
+6. No generated draft contract may be treated as ratified unless it
+   has an explicit `ratified_path` or a workbench-scoped promotion
+   record.
+
+The next implementation must prove that Customer Operations can
+**refuse correctly before it answers correctly**.
