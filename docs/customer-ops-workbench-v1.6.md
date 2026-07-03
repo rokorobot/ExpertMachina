@@ -1,0 +1,334 @@
+# v1.6.0 — Workbench Catalog v1: the Customer Operations Workbench — Build Contract
+
+> Scoped and ratified 2026-07-03. Input briefs: PROJECT_STATE.md,
+> docs/DECISIONS.md (through D31), docs/roadmap.md, and the gate
+> records in docs/em-vault-v1.5.md and docs/diagnostic-workbench-v1.4.md
+> — including the user-ratified v1.6 opening carried from the v1.5
+> closeout: "Workbench Catalog v1: choose the first commercial
+> Operations Workbench without breaking the knowledge/transaction
+> boundary." Companion artifact ratified at the same session:
+> **docs/workbench-catalog.md** (the catalog structure, the commercial
+> sequence, the boundary audit, and the three named-but-not-minted
+> future decisions). This is the build contract: workstreams, gates,
+> and the boundaries that hold. Gate records are appended here as each
+> workstream is accepted.
+
+## The milestone in one sentence
+
+The first commercial Operations Workbench diagnoses a company's
+customer-operations knowledge — contradictory support policies,
+outdated guidance, SLA coverage gaps, process inconsistencies — with
+every finding evidence-backed from governed records through the four
+existing doors, re-entering knowledge only through the valve, and
+producing a diagnosis a customer-operations manager would recognize as
+worth acting on.
+
+## The product argument this milestone proves
+
+> ExpertMachina can now turn enterprise knowledge into agent-readable
+> operational views without ever letting those views become truth —
+> because ExpertMachina improves operations by reasoning over what the
+> company officially knows, not by pretending every business record is
+> already governed knowledge.
+
+v1.4 proved the loop's mechanics once. v1.6 must prove **commercial
+value**: a realistic corpus, a diagnosis a business reader recognizes,
+findings a human accepts, and the before/after visible in the vault
+and the Operations area.
+
+## The opening question (evidence-first, per tradition)
+
+> A customer-operations manager reads the diagnosis and must be able
+> to act on every finding without trusting the agent: which governed
+> assets contradict each other, which guidance tracks a superseded
+> revision, which declared question the corpus cannot answer, and
+> which procedure steps disagree — each answerable from cited governed
+> records alone. If any finding rests on "the agent said so," it is
+> not a finding.
+
+## Scoping rulings (settled at the session, user-ratified)
+
+1. **No D32.** The catalog is convention, not constitution. Every
+   erosion path a catalog opens is already walled: per-workbench
+   auto-accept → D29's lane-sentinel clause (register supersession
+   only, never configuration); a WorkbenchRegistry table → D1/D24
+   (28/305 asserted at every gate); backend imports → Guard 5 Part 5
+   (auto-sweeps every module under `workbench/`); laundering →
+   D29/D30/D31. A workbench-species ruling would be the register's
+   first law over code outside EM's boundary — unenforceable beyond
+   what Guard 5 already sweeps, the false assurance D14 forbids.
+   **What would earn a D32, named now:** the moment any governed
+   surface must DECIDE differently based on workbench or skill
+   identity — per-workbench acceptance policies, workbench-scoped
+   clearances, a governed workbench registry, or **skill-aware
+   acceptance** (the gate validating a proposal against its claimed
+   skill contract). None is built or wanted.
+2. **No seventh guard family.** A catalog workbench adds no new seam:
+   it consumes the same four doors and returns through the same
+   valve. The seam map — workbench imports: Guard 5 Part 5; agent
+   output entering knowledge: the lane sentinel (D29); the class of
+   what is accepted: the source_class writer allowlist (D30);
+   rendered material re-submitted: Guard 6 (D31); schema: the D24
+   snapshot; secrets: the D25 sweep. WS0's evidence for this ruling:
+   the new workbench module is swept by Guard 5 **with zero guard
+   edits** the moment it lands.
+3. **A workbench is a bundle of declared skills — the skill-contract
+   convention** (recorded in `vault/00_system/agent-contract.md` and
+   docs/workbench-catalog.md): each catalog workbench ships as
+   `workbench/<name>/workbench.yaml` (name, domain scope as a D27
+   prefix, binding expectations, skill list) plus `skills/*.yaml` —
+   one skill contract per subtask, each with the ten-field shape
+   (name, purpose, allowed inputs, forbidden inputs, governed
+   evidence rules, allowed finding kinds, output format, human
+   approval requirement, audit expectations, failure/refusal
+   conditions). ONE root, deliberately: `workbench/` is the
+   Guard 5-swept root; a second `/workbenches/` root would sit
+   outside the sweep until a guard amendment. Proposal frontmatter
+   carries the workbench + skill (+ version) claims alongside the
+   D30 claims (agent principal, binding, package hash, cited
+   assets) — recorded verbatim, verified where governed records
+   permit, **never obeyed** (the v1.4 WS1 unrecognized-claims
+   behavior). Zero backend change. Skill contracts are convention,
+   not constitution: EM cannot enforce behavior on code it does not
+   execute (D22); the contracts govern the reference runner and
+   travel as claims the human gate can always see.
+4. **Four finding kinds, one refused.** Every finding carries a
+   declared kind, a business statement, a proposed action, and a
+   declared evidence basis — cited governed asset ids/hashes,
+   conflict relationship ids, or a reproducible refusal. No evidence,
+   no finding.
+
+   | Kind | Evidence basis (declared per finding) |
+   |---|---|
+   | `CONTRADICTORY_GUIDANCE` | CONFLICT_BACKED — a governed CONFLICTS_WITH relationship (DIRECT_CONTRADICTION) + both asset ids |
+   | `OUTDATED_GUIDANCE` | REVISION_BACKED — TEMPORAL_SUPERSESSION classification + the revision chain |
+   | `COVERAGE_GAP` | REFUSAL_BACKED — a declared frame question + the packaged answering contract's INSUFFICIENT EVIDENCE refusal + nearest partial evidence |
+   | `PROCESS_INCONSISTENCY` | SYNTHESIS_INFERRED — cited asset ids + quoted passages, honestly declared as model-inferred |
+
+   The four kinds map 1:1 onto the workbench's four skills:
+   `detect_contradictory_guidance`, `detect_outdated_guidance`,
+   `detect_coverage_gap`, `detect_process_inconsistency` — every
+   finding names the skill that produced it.
+
+   **Refused fifth kind**: unclassified/uncovered-knowledge findings —
+   UNCLASSIFIED and NOT_COVERED are EM's own computed inbox exception
+   kinds (D26); a workbench re-reporting EM's governance hygiene
+   blurs the realms. Also refused: any kind requiring
+   transactional/ticket evidence (ruling 7).
+5. **The detection architecture is the honesty core.** The workbench
+   splits into a **deterministic evidence walk** (detect and collect:
+   domain subgraph → conflicts + classifications → revision histories
+   → frame questions through package `consume()`) and the
+   **injectable synthesis seam** (narrate findings, propose actions,
+   infer PROCESS_INCONSISTENCY). In CI the seam is a deterministic
+   narrator — the CI gate finds the planted issues because the
+   EVIDENCE is deterministic, not because a fake was rigged to know
+   the answers. PROCESS_INCONSISTENCY is the one kind that genuinely
+   requires a model: CI exercises its plumbing through the seam; its
+   real proof belongs to the real-model slot — declared honestly,
+   never simulated as proven.
+6. **One proposal document per finding** (a change from the pilot's
+   single document): 1:1 candidate mapping at the human gate,
+   per-finding `cited_assets` frontmatter, and per-finding acceptance
+   granularity. If per-finding shape still extracts poorly, backend
+   proposal-aware extraction tuning is an **explicit escalated
+   decision point** (the v1.4 WS3 deferral), never a silent tweak.
+7. **The corpus is knowledge-only by design** (D27 held): support
+   policies, refund rules, SLA documents, escalation procedures,
+   macros, training docs, customer-facing guidance. **No tickets, no
+   customer records, no transaction exports.** "Review this week's
+   tickets and cluster complaints" is a refused demo question in
+   v1.6, deliberately; ticket-stream intelligence is Customer Ops v2,
+   behind the Operational Evidence decision (workbench-catalog.md).
+8. **The commercial verdict is user-ratified, not automated.** CI
+   proves what CI can honestly prove (plants found, citations
+   resolving, zero fabricated evidence, determinism, clearance). The
+   claim "a customer-operations manager would recognize this as worth
+   acting on" is ratified by the user reading the rendered diagnosis
+   as the business reader at the milestone gate — the milestone
+   closes on that verdict or it does not close.
+9. **The catalog enters the record** (docs/workbench-catalog.md):
+   Layer 1 as already-shipped platform primitives; the commercial
+   sequence **Customer Operations → Compliance & Obligation →
+   Procurement Document Intelligence** (superseding the v1.5-closeout
+   ordering, by user ruling); the per-workbench D27 boundary audit;
+   the three named-but-not-minted decisions — the Operational
+   Evidence Realm, Exception Stewardship ("the exception never
+   becomes a row; the human decisions about it do"), and the Pipeline
+   Metadata Door (Executive Briefing two-stage).
+10. **Impact estimates are synthesis content**: declared
+    SYNTHESIS_INFERRED inside the finding, never a governed number.
+    Drafted replies/emails are consumption outputs, not proposals —
+    out of v1.6's claim.
+11. **The real-model honest slot closes here if a key exists**: one
+    real-model run of this workbench on this corpus, evidence
+    appended to this milestone's gate record AND the open v1.4.0 WS4
+    slot. Pending honestly otherwise. The SharePoint slot carries
+    unchanged.
+12. **Language rulings**: "finding", "diagnosis", "evidence basis",
+    "declared kind", "proposed action", "held for the human gate",
+    "accepted as DERIVED" — never "the agent found a violation", "the
+    workbench fixed", "auto-detected fact", "the agent's knowledge",
+    or any phrase implying a finding is true before a human rules.
+
+## Key discovered facts (grounding, pre-contract)
+
+- **Three of the four kinds are deterministically detectable from
+  door evidence**: conflict edges and classifications
+  (`get_conflicts`, `get_domain_subgraph`), revision chains
+  (`get_revision_history`), and refusals (`consume()` under the
+  packaged answering contract) are all deterministic reads at AGENT
+  clearance. The conflict classifier already distinguishes
+  DIRECT_CONTRADICTION from TEMPORAL_SUPERSESSION — the
+  CONTRADICTORY/OUTDATED split maps onto existing governed
+  classifications.
+- **The manifest convention costs zero backend surface**:
+  proposals.py already records unrecognized frontmatter claims
+  verbatim and never obeys them (v1.4 WS1 gate evidence).
+- **Guard 5 Part 5 auto-activates per module** under `workbench/`
+  (proven at v1.4 WS3: 2 modules swept unprompted) — the no-new-guard
+  ruling's structural basis.
+- **The v1.4 observed extraction behavior** (shaped multi-finding
+  text shredding into ~10 candidates) motivates per-finding proposal
+  documents; the deferral of proposal-aware extraction tuning stands
+  unless escalated (ruling 6).
+- **Accepted findings flow to agents automatically** (D30
+  class-travels) — no door growth is needed for anything this
+  milestone ships; the Pipeline Metadata Door is the Executive
+  Briefing's future need, not this one.
+
+## Schema changes
+
+**None.** The milestone adds behavior and fixture data only. The D24
+snapshot holds at **28 tables / 305 columns**, asserted at the
+milestone gate.
+
+## Module map (planned)
+
+| Location | Role |
+|---|---|
+| `workbench/customer_operations/workbench.yaml` | the workbench manifest: name, domain scope (`customer_operations`), binding expectations, skill list |
+| `workbench/customer_operations/skills/*.yaml` | the four skill contracts (one per finding kind), each in the ten-field shape |
+| `workbench/customer_operations/runner.py` | the reference consumer — sibling of the pilot, doors only (Guard 5-swept): the deterministic evidence walk + the injectable narrator seam, honoring the skill contracts; writes one content-hash-named proposal per finding to `/08_proposals` |
+| `workbench/customer_operations/corpus/` | the realistic knowledge-only corpus (~15 documents) with its plants, committed as fixture data; consumed by suites, demos, and the real-model run alike |
+| `vault/00_system/agent-contract.md` | grows the workbench catalog manifest convention (WS0) — declared name, domain scope, finding kind, evidence basis; claims recorded verbatim, never obeyed |
+| `docs/workbench-catalog.md` | the catalog artifact (ratified at scoping) |
+| `backend/test_customer_ops_workbench.py` (WS2) | the diagnosis proof |
+| `backend/test_customer_ops_acceptance.py` (WS3) | THE MILESTONE GATE |
+
+No changes under `backend/app/`. Zero new endpoints, zero new MCP
+tools, zero UI area changes (the Operations area already carries the
+catalog: bound agents and proposals appear there with zero new
+surface).
+
+## Workstreams
+
+### WS0 — The rulings + the no-new-seam proof
+
+The two refusals recorded (rulings 1–2), the catalog artifact in the
+record (ruling 9), the manifest convention added to
+`vault/00_system/agent-contract.md` (ruling 3), zero schema.
+
+**Gate:** the convention text ratified; all 41 pre-existing suites
+green with zero assertion edits; D24 at 28/305; the no-new-guard
+ruling's basis re-affirmed (Guard 5's workbench door sweep and
+adversarial self-proofs standing).
+
+### WS1 — The corpus + the skill contracts
+
+`workbench/customer_operations/corpus/`: ~15 realistic documents —
+refund policy with a genuine revision history (v1: 30 days → approved
+v2: 14 days), a support FAQ still stating 30 days (the contradiction
+plant), Tier-1 SLA present with the Tier-2 SLA genuinely absent (the
+coverage-gap plant), an escalation procedure and an incident-handling
+guide with misaligned steps (the process plant, real-model territory),
+an EXECUTIVE-clearance refund-authority document (the clearance
+sentinel), and healthy documents around them. Plus the workbench
+bundle declared: `workbench.yaml` (name, domain scope, binding
+expectations, skill list) and the four skill contracts in
+`skills/*.yaml` — each in the ten-field shape, carrying the kind's
+evidence basis, the coverage question set (for `detect_coverage_gap`),
+output format, and failure/refusal conditions (no evidence → no
+finding, structurally per contract).
+
+**Gate (the corpus + contracts proof):** the plants are independently
+verifiable through EM's own machinery before any workbench code reads
+them — the conflict scan sees the contradiction, the temporal
+classification fires, `consume()` reproducibly refuses the Tier-2 SLA
+question; the user ratifies the corpus as realistic (the
+business-reader check applied to the input first) and the four skill
+contracts as the declared product.
+
+### WS2 — The Customer Operations Workbench
+
+`workbench/customer_operations/runner.py`: doors only; the
+deterministic evidence walk; the injectable narrator seam; the runner
+honors the WS1 skill contracts (allowed inputs, evidence rules,
+refusal conditions, output format); per-finding proposals carrying the
+workbench + skill (+ version) claims in frontmatter; writes confined
+to `/08_proposals`.
+
+**Gate (the diagnosis proof, `test_customer_ops_workbench.py`):**
+every deterministically-detectable plant found and correctly kinded;
+every finding names the skill that produced it and conforms to that
+skill's declared output format and evidence basis; a skill's refusal
+condition proven live (a coverage question the corpus CAN answer
+produces no COVERAGE_GAP finding); every citation verified against
+what the agent actually consumed; zero fabricated evidence;
+byte-identical re-runs; the EXECUTIVE sentinel absent from every
+proposal byte with the exclusion declared; Guard 5 sweeps the module
+with zero guard edits.
+
+### WS3 — THE MILESTONE GATE
+
+`test_customer_ops_acceptance.py`: the full commercial loop — corpus
+in through the real pipeline (classification into
+`customer_operations`, human approval) → package compiled and bound to
+a real AGENT principal → the workbench diagnoses through the doors →
+per-finding proposals held under a global permissive policy + a live
+approve-everything Tier-2 engine (the valve live) → a human accepts
+findings → DERIVED facts with verified provenance → the vault
+re-render shows the marked DERIVED notes → in-browser before/after on
+a seeded throwaway DB → closing lines: the ledger alone proves no
+agent wrote canonical facts; D24 at 28/305; all six guard families
+green; the D25 sweep clean.
+
+**Plus THE COMMERCIAL VERDICT (ruling 8):** the user reads the
+rendered diagnosis as the business reader and rules whether a
+customer-operations manager would recognize it as worth acting on.
+
+**Plus the honest slots:** the real-model run attempted (ruling 11) —
+recorded here and closing the v1.4.0 WS4 slot if a key exists, pending
+honestly otherwise.
+
+## Explicitly out of scope (refused deliberately, not omitted)
+
+- **Ticket-stream intelligence** (recurring complaints, SLA breach
+  detection from cases, customer-risk scoring, reply drafting over
+  live tickets) — Customer Ops v2, behind the Operational Evidence
+  decision.
+- **The Compliance and Procurement workbenches** — second and third
+  in the ratified sequence, each its own scoping session.
+- **The Executive Briefing** — two-stage per the catalog; its
+  decision-queue stage requires the Pipeline Metadata Door ruling.
+- **Exception Stewardship** — named future decision; existence
+  computed, human decisions persisted; not needed for this loop (the
+  proposal lane already carries acceptance workflow).
+- **Any MCP surface growth** — the 9-tool surface stays frozen.
+- **Proposal-aware extraction tuning** — unless escalated per ruling 6.
+- **D23** (binding lifecycle) — deferred a sixth time.
+
+## Standing boundaries
+
+The three disciplines hold (no orchestration creep, no leaderboard
+disease, no rewriting history). Every gate re-runs the D25 custody
+sweep (the corpus and diagnosis are new surfaces) and closes on the
+D24 snapshot. Guard 5 sweeps the new workbench module and Guard 6
+holds the vault seam it writes into. EM never launches the workbench
+(D22): the runner is a reference consumer executed outside the
+boundary. Language rulings per ruling 12 and the standing D29/D30
+vocabulary.
+
+## Gate records
+
+*(appended as each workstream is accepted)*
