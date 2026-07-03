@@ -610,3 +610,34 @@ e.g. 0.95+) — a configuration posture per the v1.5 WS0 commercial
 note, never a governance change; the plants survive any threshold up
 to 0.97. The WS3 commercial verdict will rule on the rendered
 diagnosis's signal-to-noise.
+
+### WS2 — FINAL VERDICT: PASSED (2026-07-03, user-ratified)
+
+Commit: `c5d08f6`. **"I ratify WS2 as the accepted Customer Operations
+runner."** All evidence above accepted: contracts drive the runner at
+runtime (frames read from the ratified contracts; a non-executable
+contract refused); skill tags act as real gates (SEQUENCED → refusal);
+refusal-first proven (a covered question produces no finding);
+evidence-driven kinding (the archived-revision rule; P1 and P3 kind
+correctly); output discipline preserved (one proposal per finding, D30
++ catalog claims, INTERNAL-only citations, exclusions declared, the
+assist brief workspace-local and never-knowledge, sentinel absent,
+byte-identical); the return path holds (held DERIVED candidates under
+a live permissive policy, provenance resolving to the governed
+binding).
+
+**Accepted honest notes:** the two frame-question tunings (business
+meaning unchanged, recorded as the WS2 contract edit); the real-NLI
+long tail is a WS3 signal-to-noise concern, not a WS2 failure — the
+stricter deployment threshold belongs to the commercial/business-reader
+posture, not to governance semantics.
+
+**Boundary conditions preserved (user-restated):** the runner is not a
+free agent; not a global skill executor; does not promote draft
+contracts; runner output is not canonical knowledge; proposals
+re-enter only through the governed valve; assist material remains
+workspace-local; real-NLI evidence is gate evidence while
+deterministic CI proves reproducibility and structural behavior.
+
+**Customer Operations v1.6 may proceed to WS3: THE MILESTONE GATE and
+THE COMMERCIAL VERDICT.**
