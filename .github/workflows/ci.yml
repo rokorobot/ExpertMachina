@@ -1,9 +1,20 @@
 # CI (audit M0.1): the machine-enforced arm of the regression contract.
-# Runs the verified-green suites - the HTTP smoke layer, the product
-# regression suites, and the architectural seam suite (D18 boundary) -
-# plus frontend type-check and lint. Suites not yet listed here are the
-# triage backlog (notably test_conflict_engine.py, which downloads the
-# ~1GB NLI model - candidate for a cached nightly job, not per-push CI).
+#
+# Suite discovery replaced hand-enumeration on 2026-07-07 (audit finding
+# H-TEST-1, docs/audit-2026-07-07.md): the old per-suite list had silently
+# orphaned 18 of 64 suites. The harness (backend/harness/test_suites.py)
+# now runs EVERY backend/test_*.py as an isolated subprocess - a new suite
+# is in CI the moment the file exists; keeping one out requires an
+# explicit, commented NOT_SUITES entry in the harness, never a forgotten
+# YAML line. Model-dependent verification (the ~1GB NLI cross-encoder)
+# still runs in keyword-fallback mode here (EM_NLI_VERIFICATION=off); a
+# cached nightly job for full-model runs is audit task T0.3.
+#
+# The named guard steps below are deliberately NOT folded into the
+# harness sweep (which runs them too): each is a permanent, constitutional
+# invariant (D18/D24/D25/D26/D28/D29-D30/D31), and its named presence in
+# this file is part of the record. The duplicate execution is cheap; the
+# visibility is not.
 
 name: CI
 
@@ -27,49 +38,9 @@ jobs:
           cache-dependency-path: backend/requirements.txt
       - name: Install backend dependencies
         run: pip install -r backend/requirements.txt
-      - name: HTTP smoke layer
+      - name: All suites (auto-discovered harness - every backend/test_*.py)
         working-directory: backend
-        run: python test_http_api.py
-      - name: Product regression suites
-        working-directory: backend
-        run: |
-          python test_local_connector.py
-          python test_sharepoint_provider.py
-          python test_auto_approval.py
-          python test_proposal_lane.py
-          python test_derived_conflict_discipline.py
-          python test_workbench_pilot.py
-          python test_workbench_acceptance.py
-          python test_operations_view.py
-          python test_domain_classification.py
-          python test_tier0_source_authority.py
-          python test_tier2_engine_verification.py
-          python test_automation_corpus.py
-          python test_projection_engine.py
-          python test_graph_renderer.py
-          python test_vault_renderer.py
-          python test_projections_area.py
-          python test_vault_acceptance.py
-          python test_customer_ops_corpus.py
-          python test_customer_ops_workbench.py
-          python test_customer_ops_acceptance.py
-          python test_compliance_corpus.py
-          python test_mcp_graph_tools.py
-          python test_projection_acceptance.py
-          python test_revision_workflow.py
-          python test_governance_inbox.py
-          python test_llm_settings.py
-          python test_package_consumer.py
-          python test_package_evaluation.py
-          python test_package_selection.py
-          python test_expert_agent_binding.py
-          python test_consumption_inbox.py
-          python test_binding_lineage.py
-          python test_identity_boundary.py
-          python test_identity_tokens.py
-          python test_mcp_gateway.py
-          python test_authorization.py
-          python test_migration.py
+        run: python -m pytest -q
       - name: Architectural seam suite (D18 boundary)
         working-directory: backend
         run: python test_connector_seam.py
