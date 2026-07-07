@@ -73,9 +73,7 @@ def _decompose_llm(text: str) -> list:
     if not api_key or api_key.startswith("mock-"):
         return None
     try:
-        from llama_index.llms.openai import OpenAI
         from app import llm as llm_settings
-        llm = OpenAI(model=llm_settings.model_for("CLAIM_DECOMPOSITION"), api_key=api_key)
         prompt = (
             "Decompose the following text into atomic factual claims. Each claim must be "
             "a single self-contained assertion, preserving any conditions (e.g. 'unless "
@@ -83,7 +81,8 @@ def _decompose_llm(text: str) -> list:
             f"TEXT:\n{text}\n\n"
             "Output ONLY a JSON array of claim strings."
         )
-        response = str(llm.complete(prompt).text).strip()
+        # T2.6 shed: native openai SDK (was llama_index.llms.openai OpenAI.complete)
+        response = llm_settings.openai_complete(llm_settings.model_for("CLAIM_DECOMPOSITION"), prompt)
         match = re.search(r"\[.*\]", response, re.DOTALL)
         if not match:
             return None

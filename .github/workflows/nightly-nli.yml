@@ -42,21 +42,16 @@ jobs:
       - name: Install backend + NLI dependencies (locked, hash-verified)
         run: pip install --require-hashes -r backend/requirements-nli.lock
       # The NLI lock's own audit gate: it carries the torch finding the base
-      # surface shed at T2.5, so torch stays gated (not lost). Same
-      # documented, time-bounded ignores as base, plus torch.
+      # After T2.6 the NLI lock's ONLY finding is torch (the llama-index
+      # CVEs + nltk are gone from both locks). One documented, time-bounded
+      # ignore remains.
       - name: Dependency audit (pip-audit, NLI lock)
         run: |
           pip install pip-audit
           pip-audit -r backend/requirements-nli.lock --disable-pip \
-            --ignore-vuln CVE-2025-5472 \
-            --ignore-vuln CVE-2025-5302 \
-            --ignore-vuln CVE-2025-7647 \
-            --ignore-vuln CVE-2025-6208 \
-            --ignore-vuln CVE-2024-12704 \
-            --ignore-vuln PYSEC-2026-597 \
             --ignore-vuln CVE-2025-3000
           # torch 2.12.0 (CVE-2025-3000): no fixed release listed; NLI-only,
-          # review by 2026-08-31. All others as documented in ci.yml.
+          # review by 2026-08-31.
       - name: Restore the NLI model cache
         uses: actions/cache@v4
         with:

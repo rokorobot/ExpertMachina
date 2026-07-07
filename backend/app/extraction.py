@@ -60,70 +60,59 @@ def extract_knowledge_assets_from_project(session: Session, project_id: int):
 
 def extract_via_llm(session: Session, project_id: int, doc: db.Document, chunk: db.DocumentChunk, api_key: str) -> bool:
     try:
-        from llama_index.llms.openai import OpenAI
-        from llama_index.core.program import LLMTextCompletionProgram
-        from pydantic import BaseModel, Field
-        from typing import List, Optional
-        
-        class ExtractedAsset(BaseModel):
-            type: str = Field(description="Must be PROCEDURE, POLICY, ROLE, SYSTEM, WORKFLOW, PRODUCT, or DEPARTMENT")
-            name: str = Field(description="Name of the asset")
-            owner: str = Field(description="Responsible department or role")
-            condition: str = Field(description="Trigger or condition for this asset")
-            source_citation: str = Field(description="Citation page or line number")
-            content: str = Field(description="Detailed text of the policy/procedure/role/system")
-            source_section: Optional[str] = Field(description="Name of the document section")
-
-        class AssetList(BaseModel):
-            assets: List[ExtractedAsset]
-
+        import json
+        import re
         from app import llm as llm_settings
-        llm = OpenAI(model=llm_settings.model_for("EXTRACTION", session), api_key=api_key)
-        
-        prompt_tmpl = (
-            "Analyze the following document chunk and extract distinct organizational knowledge assets.\n"
-            "Chunk text:\n{chunk_text}\n\n"
-            "Format the output strictly according to the schema."
+
+        # T2.6 shed: native openai SDK + JSON parse, replacing the legacy
+        # llama_index.core.program.LLMTextCompletionProgram structured-output
+        # wrapper. Model-agnostic (works on any chat model, unlike the native
+        # structured-output API), and consistent with the JSON idiom already
+        # used in claims._decompose_llm.
+        prompt = (
+            "Analyze the following document chunk and extract distinct organizational "
+            "knowledge assets.\n"
+            f"Chunk text:\n{chunk.text}\n\n"
+            'Output ONLY a JSON object of the form {"assets": [{"type": "...", '
+            '"name": "...", "owner": "...", "condition": "...", "source_citation": "...", '
+            '"content": "...", "source_section": "..."}]}. '
+            "type must be one of PROCEDURE, POLICY, ROLE, SYSTEM, WORKFLOW, PRODUCT, DEPARTMENT."
         )
-        
-        program = LLMTextCompletionProgram.from_defaults(
-            output_cls=AssetList,
-            prompt_template_str=prompt_tmpl,
-            llm=llm
-        )
-        
-        result = program(chunk_text=chunk.text)
-        
-        if not result or not result.assets:
+        raw = llm_settings.openai_complete(llm_settings.model_for("EXTRACTION", session), prompt)
+        match = re.search(r"\{.*\}", raw, re.DOTALL)
+        if not match:
             return False
-            
-        for asset in result.assets:
-            # Create knowledge asset
+        parsed = json.loads(match.group(0))
+        extracted = parsed.get("assets", []) if isinstance(parsed, dict) else []
+        if not extracted:
+            return False
+
+        for asset in extracted:
             source_hash = hashlib.sha256(chunk.text.encode()).hexdigest()
-            
+
             # Map type to allowed values
-            asset_type = asset.type.upper()
+            asset_type = str(asset.get("type", "")).upper()
             if asset_type not in ["PROCEDURE", "POLICY", "ROLE", "SYSTEM", "WORKFLOW", "PRODUCT", "DEPARTMENT"]:
                 asset_type = "POLICY"
-                
+
             db_asset = schemas.KnowledgeAssetCreate(
                 project_id=project_id,
                 type=asset_type,
-                name=asset.name,
-                owner=asset.owner or doc.department or "QA",
-                condition=asset.condition or "Always",
-                source_citation=asset.source_citation or f"{doc.filename} Chunk {chunk.chunk_index}",
-                content=asset.content,
+                name=asset.get("name") or "Unnamed Asset",
+                owner=asset.get("owner") or doc.department or "QA",
+                condition=asset.get("condition") or "Always",
+                source_citation=asset.get("source_citation") or f"{doc.filename} Chunk {chunk.chunk_index}",
+                content=asset.get("content") or "",
                 document_id=doc.id,
                 chunk_id=chunk.id,
                 source_page=1, # Default mock page
-                source_section=asset.source_section or "Intro",
+                source_section=asset.get("source_section") or "Intro",
                 source_hash=source_hash,
                 extraction_method="LLM_ASSISTED"
             )
             created = crud.create_knowledge_asset(session, db_asset)
             evaluate_and_save_quality_score(session, created.id, created)
-            
+
         return True
     except Exception as e:
         logger.warning("LLM Extraction failed: %s. Falling back to Rule Extraction.", e)

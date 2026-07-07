@@ -41,9 +41,9 @@ def get_embedding(text: str) -> list:
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key and not api_key.startswith("mock-"):
         try:
-            from llama_index.embeddings.openai import OpenAIEmbedding
-            embedder = OpenAIEmbedding(api_key=api_key)
-            return embedder.get_text_embedding(text)
+            # T2.6 shed: native openai SDK (was llama_index OpenAIEmbedding)
+            from app import llm as llm_settings
+            return llm_settings.openai_embedding(text)
         except Exception as e:
             logger.warning("Error calling OpenAI Embeddings: %s. Falling back to mock embeddings.", e)
             

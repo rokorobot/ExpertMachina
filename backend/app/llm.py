@@ -63,6 +63,37 @@ def _anthropic_adapter(model: str, system: str, user: str, max_tokens: int) -> s
     ).strip()
 
 
+# --------------------------------------------------------------------------
+# Native single-prompt OpenAI helpers (T2.6 shed - docs/t26-llama-index-
+# inventory.md). These replace the legacy llama_index.llms.openai /
+# embeddings.openai wrappers with direct openai-SDK calls, matching the
+# behavior the llama-index sites had EXACTLY: OpenAI-only, env-keyed
+# (OPENAI_API_KEY, D19), single-prompt, no system message, model default
+# max tokens. They deliberately do NOT route through the D19 provider
+# resolver - the old sites were OpenAI-hardcoded, and re-provider-routing
+# them is out of T2.6's scope (a dependency shed, not a behavior change).
+
+def openai_complete(model: str, prompt: str) -> str:
+    """Native replacement for llama_index OpenAI(model).complete(prompt).text."""
+    from openai import OpenAI
+    client = OpenAI()  # OPENAI_API_KEY from env (D19)
+    response = client.chat.completions.create(
+        model=model,
+        messages=[{"role": "user", "content": prompt}],
+    )
+    return (response.choices[0].message.content or "").strip()
+
+
+def openai_embedding(text: str, model: str = "text-embedding-ada-002") -> list:
+    """Native replacement for llama_index OpenAIEmbedding().get_text_embedding().
+    Default model is ada-002 (1536-dim), matching the llama-index default and
+    the deterministic mock fallback's dimensionality in ingestion.py."""
+    from openai import OpenAI
+    client = OpenAI()  # OPENAI_API_KEY from env (D19)
+    response = client.embeddings.create(model=model, input=text)
+    return response.data[0].embedding
+
+
 ADAPTERS = {
     "OPENAI": _openai_adapter,
     "ANTHROPIC": _anthropic_adapter,

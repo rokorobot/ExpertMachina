@@ -159,8 +159,7 @@ def verify_answer_claims(
         
         if has_api_key:
             try:
-                from llama_index.llms.openai import OpenAI
-                llm = OpenAI(model=judge_model, api_key=api_key)
+                from app import llm as llm_settings
 
                 evidence_items = []
                 for cite in validated_citations:
@@ -175,7 +174,8 @@ def verify_answer_claims(
                     "Output only Asset IDs (e.g. '12, 14') or 'NONE':"
                 )
                 
-                res = str(llm.complete(prompt).text).strip().upper()
+                # T2.6 shed: native openai SDK (was llama_index OpenAI.complete)
+                res = llm_settings.openai_complete(judge_model, prompt).upper()
                 if res != "NONE" and "NONE" not in res:
                     parts = [p.strip() for p in res.replace("ASSET ID:", "").replace("ASSET ID", "").split(",") if p.strip()]
                     for part in parts:
@@ -303,9 +303,7 @@ def generate_evidence_answer(
     api_key = os.environ.get("OPENAI_API_KEY")
     if api_key and not api_key.startswith("mock-"):
         try:
-            from llama_index.llms.openai import OpenAI
             from app import llm as llm_settings
-            llm = OpenAI(model=llm_settings.model_for("ANSWER_GENERATION"), api_key=api_key)
 
             prompt = (
                 "You are a strict compliance QA system. Answer the user's question based ONLY on the validated evidence below.\n"
@@ -321,9 +319,10 @@ def generate_evidence_answer(
                 f"'{fallback_text}'\n"
             )
             
-            response = llm.complete(prompt)
-            answer_text = str(response.text).strip()
-            
+            # T2.6 shed: native openai SDK (was llama_index OpenAI.complete)
+            answer_text = llm_settings.openai_complete(
+                llm_settings.model_for("ANSWER_GENERATION"), prompt)
+
             if not answer_text or "cannot answer" in answer_text.lower() or "i do not have" in answer_text.lower():
                 answer_text = fallback_text
 
