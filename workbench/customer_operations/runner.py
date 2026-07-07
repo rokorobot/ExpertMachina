@@ -26,11 +26,25 @@ resolver; CI = a deterministic contract-follower) and `narrator`
 the open honest slot). Whatever narrates, every finding cites the
 governed evidence it rests on: no evidence, no finding.
 """
-import hashlib
-import json
 import os
 import re
-import sys
+
+# v1.7 WS2 (ruling 6): the shared runner plumbing lives in workbench/common.py.
+# Relative import so Guard 5 keeps it inside the workbench root - the guard
+# skips relative imports; an absolute `from workbench.common import ...` would
+# trip the doors-only sweep. Names are aliased to keep the runner body
+# byte-identical (and re-exported as runner attributes for any caller).
+from ..common import (
+    import_package_consumer as _import_package_consumer,
+    overlap as _overlap,
+    excerpt as _excerpt,
+    shared_subject as _shared_subject,
+    load_skill_contract,
+    load_active_contracts,
+    StdioMcpGraphClient,
+    write_hashed as _write,
+    SAME_SUBJECT_MINIMUM,
+)
 
 ACTIVE_SKILLS = (
     "detect_customer_promise_conflict",
@@ -48,141 +62,6 @@ FINDING_KINDS = {
 }
 
 REFUSAL_MARKER = "INSUFFICIENT EVIDENCE"
-
-
-def _import_package_consumer(backend_dir=None):
-    backend_dir = backend_dir or os.environ.get("EM_BACKEND_DIR")
-    if backend_dir and backend_dir not in sys.path:
-        sys.path.append(backend_dir)
-    from app import package_consumer
-    return package_consumer
-
-
-def _tokens(text):
-    # Deliberately keeps 2-char tokens: the corpus lesson - numbers
-    # ("30", "14", "24", "48") often carry the whole difference between
-    # two policy statements.
-    return {t for t in re.findall(r"[a-z0-9]+", (text or "").lower())
-            if len(t) >= 2}
-
-
-def _overlap(a, b):
-    return len(_tokens(a) & _tokens(b))
-
-
-# The declared same-subject rule (a ratified evidence-rule refinement,
-# recorded at the WS3 gate): a promise conflict requires the two
-# statements to share SUBJECT MATTER, not merely parallel timeframe
-# structure ("within N days/hours") - the NLI engine over-fires on
-# different-topic timeframe sentences. Subject tokens are alphabetic,
-# length >= 4, excluding the timeframe vocabulary. Pairs without shared
-# subject are DEFERRED to the governance conflict review (EM's own
-# surface already holds every detected conflict) - declared, never
-# silently dropped.
-TIMEFRAME_STOPWORDS = frozenset((
-    "within", "business", "days", "hours", "must", "shall", "every",
-    "each", "during", "receive", "request", "requests", "target",
-    "response", "working", "calendar", "month", "months", "year",
-    # Governance vocabulary is not subject matter: every governed
-    # statement is approved.
-    "approved", "approval",
-))
-SAME_SUBJECT_MINIMUM = 2
-
-
-def _subject_tokens(text):
-    return {t for t in re.findall(r"[a-z]+", (text or "").lower())
-            if len(t) >= 4 and t not in TIMEFRAME_STOPWORDS}
-
-
-def _shared_subject(a, b):
-    return len(_subject_tokens(a) & _subject_tokens(b))
-
-
-def _excerpt(text, limit=200):
-    text = " ".join((text or "").split())
-    return text if len(text) <= limit else text[:limit].rstrip() + "..."
-
-
-def load_skill_contract(skills_dir, skill_id):
-    """Minimal line-based read of one ratified contract (stdlib only -
-    the doors allow no YAML library): skill_id, status, boundary tags,
-    and the question_frame entries (with wrapped-line joining)."""
-    path = os.path.join(skills_dir, f"{skill_id}.yaml")
-    if not os.path.isfile(path):
-        raise RuntimeError(f"Skill contract missing: {path}")
-    contract = {"skill_id": None, "status": None, "boundary_tags": None,
-                "questions": [], "path": path}
-    with open(path, "r", encoding="utf-8") as f:
-        lines = f.read().splitlines()
-    in_frame = False
-    current = None
-    for line in lines:
-        if line.startswith("skill_id:"):
-            contract["skill_id"] = line.split(":", 1)[1].strip()
-        elif line.startswith("status:"):
-            contract["status"] = line.split(":", 1)[1].strip()
-        elif line.startswith("boundary_tags:"):
-            contract["boundary_tags"] = line.split(":", 1)[1].strip()
-        elif line.startswith("question_frame:"):
-            in_frame = True
-        elif in_frame:
-            stripped = line.strip()
-            if stripped.startswith("#"):
-                continue
-            if stripped.startswith("- "):
-                if current is not None:
-                    contract["questions"].append(current)
-                current = stripped[2:].strip().strip('"')
-            elif line.startswith("    ") and current is not None:
-                current = current.rstrip('"') + " " + stripped.rstrip('"')
-            else:
-                if current is not None:
-                    contract["questions"].append(current)
-                    current = None
-                in_frame = False
-    if current is not None:
-        contract["questions"].append(current)
-    contract["questions"] = [" ".join(q.split()) for q in contract["questions"]]
-    if contract["skill_id"] != skill_id:
-        raise RuntimeError(f"{path}: skill_id mismatch ({contract['skill_id']})")
-    return contract
-
-
-class StdioMcpGraphClient:
-    """The real MCP door: a stdio client session against
-    backend/mcp_server.py authenticated by EM_AGENT_TOKEN in the
-    server's environment. The CI gate injects an in-process substitute
-    that resolves the same token through the same gateway functions."""
-
-    def __init__(self, python_exe, server_path, env=None, cwd=None):
-        self._params = dict(command=python_exe, args=[server_path],
-                            env=env, cwd=cwd)
-
-    def _call(self, tool, arguments):
-        import asyncio
-        from mcp import ClientSession, StdioServerParameters
-        from mcp.client.stdio import stdio_client
-
-        async def _run():
-            server = StdioServerParameters(**self._params)
-            async with stdio_client(server) as (read, write):
-                async with ClientSession(read, write) as session:
-                    await session.initialize()
-                    result = await session.call_tool(tool, arguments)
-                    return json.loads(result.content[0].text)
-        return asyncio.run(_run())
-
-    def get_conflicts(self, expert_model_id):
-        return self._call("get_conflicts", {"expert_model_id": expert_model_id})
-
-    def get_revision_history(self, asset_id):
-        return self._call("get_revision_history", {"asset_id": asset_id})
-
-    def get_domain_subgraph(self, project_id, domain_prefix):
-        return self._call("get_domain_subgraph",
-                          {"project_id": project_id,
-                           "domain_prefix": domain_prefix})
 
 
 def default_narrator(finding):
@@ -279,14 +158,6 @@ def _proposal_document(finding, agent_principal, binding_id, package_hash,
     return "\n".join(lines)
 
 
-def _write(path_dir, name_stub, content):
-    digest = hashlib.sha256(content.encode("utf-8")).hexdigest()[:12]
-    path = os.path.join(path_dir, f"{name_stub}-{digest}.md")
-    with open(path, "w", encoding="utf-8", newline="\n") as f:
-        f.write(content)
-    return path
-
-
 def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                    binding_id, graph_client, domain_prefix="customer_operations",
                    answerer=None, narrator=None, backend_dir=None,
@@ -307,14 +178,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     skills_dir = skills_dir or os.path.join(os.path.dirname(
         os.path.abspath(__file__)), "skills")
-    contracts = {}
-    for skill_id in ACTIVE_SKILLS:
-        contract = load_skill_contract(skills_dir, skill_id)
-        if contract["status"] != "ACTIVE":
-            raise RuntimeError(
-                f"Skill {skill_id} is {contract['status']}, not ACTIVE - "
-                f"tags are gates, not preferences; the runner refuses.")
-        contracts[skill_id] = contract
+    contracts = load_active_contracts(skills_dir, ACTIVE_SKILLS)
 
     proposals_dir = os.path.join(vault_dir, "08_proposals")
     workspace_dir = os.path.join(vault_dir, "07_agent_workspaces")
