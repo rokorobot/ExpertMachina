@@ -6,6 +6,11 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
 from app import identity
+# T3.1: log_audit_event moved to the neutral app/audit.py to break the
+# crud<->identity import cycle (identity needed this one function, and crud
+# imports identity at load). Re-exported here so crud.log_audit_event and the
+# bare in-module calls below are unchanged for all ~18 callers.
+from app.audit import log_audit_event  # noqa: F401
 
 # Customer helpers
 def get_or_create_default_customer(session: Session) -> db.Customer:
@@ -18,23 +23,8 @@ def get_or_create_default_customer(session: Session) -> db.Customer:
         log_audit_event(session, actor="system", event_type="CUSTOMER_CREATED", target_id=str(cust.id), details="Default customer initialized automatically")
     return cust
 
-# Audit Ledger Helper
-def log_audit_event(session: Session, actor: str, event_type: str, target_id: str = None, details: str = None,
-                    identity_fact_id: int = None):
-    # identity_fact_id (Identity Boundary v1.0): the immutable evidence of
-    # WHO acted. NULL = pre-boundary legacy; actor remains the readable
-    # display string either way.
-    event = db.AuditEvent(
-        timestamp=datetime.datetime.utcnow(),
-        actor=actor,
-        event_type=event_type,
-        target_id=target_id,
-        details=details,
-        identity_fact_id=identity_fact_id
-    )
-    session.add(event)
-    session.commit()
-    return event
+# Audit Ledger Helper: log_audit_event is defined in app/audit.py and
+# re-exported above (T3.1). It is called bare throughout this module.
 
 # Project Operations
 def get_projects(session: Session, customer_id: int):
