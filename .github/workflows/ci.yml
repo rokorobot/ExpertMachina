@@ -7,8 +7,8 @@
 # is in CI the moment the file exists; keeping one out requires an
 # explicit, commented NOT_SUITES entry in the harness, never a forgotten
 # YAML line. Model-dependent verification (the ~1GB NLI cross-encoder)
-# still runs in keyword-fallback mode here (EM_NLI_VERIFICATION=off); a
-# cached nightly job for full-model runs is audit task T0.3.
+# runs in keyword-fallback mode here (EM_NLI_VERIFICATION=off); the
+# full-model runs live in nightly-nli.yml (audit task T0.3, cached model).
 #
 # The named guard steps below are deliberately NOT folded into the
 # harness sweep (which runs them too): each is a permanent, constitutional

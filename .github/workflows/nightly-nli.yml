@@ -1,0 +1,77 @@
+# Nightly full-model verification (audit task T0.3 -
+# docs/audit-2026-07-07.md, finding M-TEST-4).
+#
+# Per-push CI runs every suite in keyword-fallback mode
+# (EM_NLI_VERIFICATION=off): fast, hermetic, model-free. That leaves the
+# semantic layer itself - the NLI cross-encoder behind three-way claim
+# verification and conflict detection - with no automated regression
+# guard, because its two suites need the ~1GB model and self-skip
+# (exit 0!) when it is absent from the local HuggingFace cache.
+#
+# This job closes that gap: it restores the model from the Actions
+# cache (downloading only on a cache miss), runs the two model suites
+# for real, and FAILS if either reports SKIPPED - a silent skip must
+# never read as green. workflow_dispatch is kept for on-demand proof
+# runs (e.g. after bumping transformers or the model id).
+
+name: Nightly NLI verification
+
+on:
+  schedule:
+    - cron: "0 3 * * *"  # 03:00 UTC daily
+  workflow_dispatch:
+
+jobs:
+  nli-model-suites:
+    runs-on: ubuntu-latest
+    env:
+      OPENAI_API_KEY: "mock-key"
+      # EM_NLI_VERIFICATION deliberately NOT set to off: these suites
+      # exercise the real engine. test_nli_verification.py manages its
+      # own off->auto transition internally.
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+      - name: Install backend dependencies
+        run: pip install -r backend/requirements.txt
+      - name: Restore the NLI model cache
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/huggingface
+          # The key pins the default model id from
+          # app/verification_engine.py; bump it there and here together.
+          key: nli-model-MoritzLaurer-mDeBERTa-v3-base-xnli-multilingual-nli-2mil7
+      - name: Fetch the NLI model (no-op on cache hit)
+        run: |
+          python - <<'EOF'
+          from huggingface_hub import snapshot_download
+          # Same id as app/verification_engine.py NLI_MODEL_ID default.
+          # Unlike the engine (local_files_only=True - it never downloads),
+          # this step IS the sanctioned download path.
+          path = snapshot_download("MoritzLaurer/mDeBERTa-v3-base-xnli-multilingual-nli-2mil7")
+          print(f"Model present at {path}")
+          EOF
+      - name: Conflict engine suite (full NLI model)
+        working-directory: backend
+        # shell: bash (explicit) turns on pipefail - without it, a suite
+        # failure would be masked by tee's exit 0.
+        shell: bash
+        run: |
+          python test_conflict_engine.py 2>&1 | tee /tmp/conflict.log
+          if grep -q "SKIPPED" /tmp/conflict.log; then
+            echo "::error::test_conflict_engine.py skipped - the model cache is broken; a skip must never read as green."
+            exit 1
+          fi
+      - name: NLI verification suite (full NLI model)
+        working-directory: backend
+        shell: bash
+        run: |
+          python test_nli_verification.py 2>&1 | tee /tmp/nli.log
+          if grep -q "SKIPPED" /tmp/nli.log; then
+            echo "::error::test_nli_verification.py skipped - the model cache is broken; a skip must never read as green."
+            exit 1
+          fi
