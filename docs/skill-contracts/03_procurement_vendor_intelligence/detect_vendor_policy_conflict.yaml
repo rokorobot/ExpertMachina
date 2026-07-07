@@ -1,0 +1,13 @@
+# DRAFT skill contract - added at the v1.8 WS0 consolidation ruling
+# (docs/procurement-workbench-v1.8.md): this skill_id is the ratified
+# CONSOLIDATION TARGET; the absorbed drafts carry consolidated_into
+# pointing here. Refined and ratified at the v1.8 scoping session.
+skill_id: detect_vendor_policy_conflict
+workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/procurement_intelligence/skills/detect_vendor_policy_conflict.yaml
+boundary_tags: [now]
+pattern: consolidation-target
+purpose: >
+  See the ratified contract at ratified_path (the binding v1.8
+  execution contract; this draft records the consolidation).

@@ -1,0 +1,72 @@
+skill_id: extract_vendor_terms
+workbench: procurement_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: extract-candidates
+consolidates:
+  # the v1.8 consolidation ruling (WS0 gate): term extraction differs
+  # only by term class - ONE contract with declared term_classes; the
+  # absorbed drafts carry consolidated_into + ratified_path here.
+  - extract_sla_obligations
+  - identify_vendor_data_access_obligations
+purpose: >
+  Extract explicit vendor term statements from approved governed vendor
+  documents as term candidates for the human gate. Every candidate
+  quotes its excerpt verbatim and declares its term class. Extraction
+  states what the contract SAYS the parties are bound to; it never
+  states that either party performs it.
+explicit_markers:
+  # a sentence is a term candidate ONLY when it carries an explicit
+  # commitment marker - never "should", "may", or implied duty
+  - "must"
+  - "shall"
+  - "is required to"
+  - "will provide"
+term_class_rules:
+  # deterministic first-match keyword rules over the excerpt; a class
+  # is assigned only when the excerpt itself names it - otherwise
+  # UNCLASSIFIED, honestly
+  - "availability", "uptime", or "service level" -> sla
+  - "data access", "subprocessor", or "personal data" -> data_access
+  - "notice" or "notify" -> notice
+  - "invoice", "payable", or "payment" -> payment
+  - "terminate" or "termination" -> termination
+  - "certificate" or "certification" -> certification
+  - otherwise -> UNCLASSIFIED
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved vendor
+    document content only)
+  - MCP get_domain_subgraph(procurement) at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - implied, inferred, or paraphrased terms
+  - other skills' pending (ungated) findings
+  - rendered vault notes as authority
+evidence_rules: >
+  Explicit statements only - never invented, never inferred, never
+  paraphrased: every term candidate cites its source asset id and
+  quotes the term excerpt VERBATIM, with the declared term_class (from
+  the excerpt keyword rules; UNCLASSIFIED when the excerpt does not
+  support classification). Numbers inside a quoted term travel only as
+  part of the verbatim excerpt (THE INVENTED NUMBER posture).
+  evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: [VENDOR_TERM]
+output_format: >
+  One proposal document per extracted term to /08_proposals with the
+  D30 + catalog frontmatter claims; body = the verbatim term excerpt,
+  source asset id, declared term_class, and the business statement of
+  what the contract binds - stated as documentation, never as
+  performance.
+human_approval_requirement: >
+  The valve (D29): every term candidate is a held CANDIDATE until a
+  human accepts it as a DERIVED fact; no policy tier ever applies.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the ledger
+  trail; approval quotes verified provenance verbatim.
+refusal_conditions:
+  - the statement carries no explicit marker -> not a term, never
+    extracted
+  - the excerpt cannot be cited verbatim from a governed asset ->
+    refuse to emit
+  - classification not supported by the excerpt -> UNCLASSIFIED,
+    never guessed

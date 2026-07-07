@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_renegotiation_brief
 workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
-status: SEQUENCED
+status: ACTIVE
+ratified_path: workbench/procurement_intelligence/skills/prepare_renegotiation_brief.yaml
 boundary_tags: [assist, synth]
 pattern: assist
 purpose: >

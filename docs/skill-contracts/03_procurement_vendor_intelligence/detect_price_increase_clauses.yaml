@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_price_increase_clauses
 workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
-status: SEQUENCED
+status: ACTIVE
+ratified_path: workbench/procurement_intelligence/skills/detect_price_increase_clauses.yaml
 boundary_tags: [now]
 pattern: finding
 purpose: >

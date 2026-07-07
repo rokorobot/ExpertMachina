@@ -1,0 +1,57 @@
+skill_id: detect_vendor_policy_conflict
+workbench: procurement_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: contradictory-guidance (doc-vs-named-policy axis)
+consolidates:
+  # the v1.8 consolidation ruling (WS0 gate): both drafts compare
+  # vendor terms against the procurement policy - ONE contract carrying
+  # both evidence routes.
+  - compare_vendor_terms_vs_procurement_policy
+  - detect_vendor_contract_vs_policy_conflict
+purpose: >
+  Detect contradictions between a governed vendor contract term and the
+  named procurement policy. The finding states that two approved
+  documents disagree; it never rules which side is correct and never
+  implies anything about practice.
+named_policy: "Procurement Policy"
+allowed_inputs:
+  - the compiled expert package at binding clearance
+  - MCP get_domain_subgraph(procurement) and get_conflicts at the
+    AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - other skills' pending (ungated) findings
+  - rendered vault notes as authority
+evidence_rules: >
+  TWO routes, both cross-document with both excerpts verbatim: (a) a
+  governed CONFLICTS_WITH relationship (DIRECT_CONTRADICTION) between a
+  vendor-contract asset and a named-policy asset - the v1.6 evidence
+  rules inherited WHOLESALE (same-subject >= 2 shared subject tokens,
+  alphabetic length >= 4, timeframe + governance vocabulary excluded;
+  cross-document; pairs failing the rules deferred to the governance
+  conflict review, declared); or (b) the declared doc-vs-named-policy
+  route (the v1.8 WS0 ruling 6): one side is an asset of the named
+  procurement policy, cited explicitly as the policy side. Numbers in
+  either excerpt travel only verbatim. evidence_basis: CONFLICT_BACKED.
+  Clearance exclusions declared.
+allowed_finding_kinds: [VENDOR_POLICY_CONFLICT]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims; body = business statement, the contract
+  excerpt and the policy excerpt (both verbatim, policy side named),
+  the governed conflict reference where route (a) applies, proposed
+  action (a human reconciles - renegotiate the term or amend the
+  policy; the workbench never picks the surviving side).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+  Never auto-approved.
+audit_event: >
+  MCP calls audited per call; scan/hold/gate events are the trail;
+  approval quotes verified provenance verbatim.
+refusal_conditions:
+  - no governed conflict relationship and no named-policy pairing ->
+    a suspected inconsistency alone is not a finding
+  - the pair fails the same-subject or cross-document rule -> deferred
+    to the governance conflict review, declared
+  - evidence cannot be cited with governed asset ids

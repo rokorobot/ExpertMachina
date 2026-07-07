@@ -270,3 +270,66 @@ ratification: main 84c7207, tags v1.7.0 = post-audit-hardening =
 c2179c2, harness 68/68.
 
 **Verdict: v1.8.0 WS0 PASSED.** WS1 may proceed.
+
+### WS1 — The Contracts, the Corpus, and THE CORPUS PROOF: evidence recorded, gate pending ratification (2026-07-07)
+
+Delivered: the SIX ratified 13-field contracts in
+`workbench/procurement_intelligence/skills/` (consolidations per
+ruling 1, never silent: extract_vendor_terms absorbs the SLA +
+data-access drafts as declared term_classes; detect_renewal_window
+absorbs expiring + auto-renewal + next-period as declared window
+facets at the declared as_of; detect_vendor_policy_conflict absorbs
+both policy-comparison drafts with the dual evidence routes); the
+manifest (`workbench.yaml`: canonical #3, THE INVENTED NUMBER posture,
+the numeric-overclaim forbidden_vocabulary, the declared clock, the
+gated/SEQUENCED lists); the 12-document corpus with `CORPUS.md`
+outside the scanned folder; the registry promotion (17 ACTIVE / 13
+CONSOLIDATED globally, every ratified_path resolving; two
+consolidation-target drafts added; the deferred deadline family
+untouched).
+
+**THE CORPUS PROOF** (`backend/test_procurement_corpus.py`, the 69th
+suite — all seven parts green, before any runner exists):
+1. 12 documents through the real pipeline; every plant sentence in
+   governed content.
+2. THE CLAUSE ARITHMETIC preconditions: the declared date marker
+   extracts exactly the two dated termination clauses; window
+   arithmetic at the pinned as_of 2026-06-01 (+90d) verdicts P1 IN
+   (2026-08-15) and P1c OUT (2027-09-30); the P6 renewal-context
+   sentence has no parseable date (the refusal precondition); the
+   paraphrase-trap sentence carries no digit and no percent token and
+   "20%" appears nowhere in governed content; the noisy-number
+   sentences match no extraction marker.
+3. The declared term classes (sla / data_access) and the verbatim P3
+   percentage reproduce the plant-map expectations.
+4. The P5 payment-terms pair passes the inherited same-subject +
+   cross-document rules (real-NLI detection = the gate-evidence run
+   under EM_CORPUS_PROOF_NLI=1; declared fixture in bare CI); the
+   compile gate blocks then opens by governed human review; the
+   INTERNAL package excludes the EXECUTIVE sentinel
+   (EM-EXEC-SENTINEL-4V8P).
+5. consume() reproducibly REFUSES the DataFlow certificate question
+   and ANSWERS the SecureStore one with supplier-named cited evidence
+   — SUPPLIER-NAMED COVERAGE recorded in the ratified contract during
+   this workstream (an evidence-rule refinement, the v1.6 precedent:
+   another supplier's certificate is never evidence).
+6. Six 13-field contracts match the manifest; the declared conventions
+   live in the contract bytes; the draft≠ratified sweep holds at 17
+   ACTIVE / 13 CONSOLIDATED with consolidation never silent.
+7. Zero schema: D24 at exactly 28 tables / 305 columns.
+
+**One recorded assertion edit** (the v1.7 precedent, driven by the
+ratified promotion): `test_compliance_corpus.py`'s global sweep
+constants moved 11→17 ACTIVE and 8→13 CONSOLIDATED. Both prior corpus
+proofs re-run green. **One corpus-authoring note**: plant sentences
+carry honest extraction-trigger vocabulary (must/required/agreement/
+policy) so the rule-based extractor lifts them into governed content —
+phrasing only; every plant's meaning unchanged.
+
+**Regression at the gate**: full harness 69/69 green (~4m55s);
+Guard 5 unchanged (no new .py under workbench/ this workstream); the
+v1.6 and v1.7 corpus proofs green.
+
+**THE GATE (per WS0): user ratification of the corpus as realistic and
+the six contracts as the declared product is now requested. WS2 (the
+runner, on Opus per the recorded routing) starts only on ratification.**

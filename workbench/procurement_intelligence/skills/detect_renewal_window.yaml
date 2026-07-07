@@ -1,0 +1,77 @@
+skill_id: detect_renewal_window
+workbench: procurement_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: declared-clock-window
+consolidates:
+  # the v1.8 consolidation ruling (WS0 gate): all three drafts are
+  # point-in-time window questions over explicit contract dates - ONE
+  # contract with declared window facets at the declared as_of.
+  - detect_expiring_contracts
+  - detect_auto_renewal_clauses
+  - identify_vendor_obligations_next_period
+purpose: >
+  Detect governed vendor contracts whose explicit termination/renewal
+  date falls inside the declared window of the declared as_of, and
+  whether an auto-renewal clause (with its verbatim notice period)
+  applies. Point-in-time detection ONLY: a re-run at a different
+  declared as_of is a new diagnosis, never an update. No persistent
+  calendar, no recurrence tracking (the WS0 ruling 4 refusal).
+date_convention:
+  # the declared markers and format this skill reads from governed
+  # content; a renewal-marker sentence without a parseable date is
+  # REFUSED, declared - never guessed.
+  marker_pattern: "(terminates on|expires on|renews on|termination date of) (\d{4}-\d{2}-\d{2})"
+  auto_renewal_markers:
+    - "renews automatically"
+    - "automatic renewal"
+  renewal_context_markers:
+    # sentences carrying these words are renewal-relevant; one with no
+    # parseable date under marker_pattern is the unparseable refusal
+    - "renews"
+    - "renewal"
+    - "expires"
+    - "terminates"
+  window_rule: >
+    in-window if and only if as_of <= date <= (as_of + window_days).
+    as_of and window_days are DECLARED run parameters recorded verbatim
+    in every finding - never wall-clock, never defaulted.
+allowed_inputs:
+  - the compiled expert package at binding clearance (explicit dated
+    renewal/termination statements and auto-renewal clauses)
+  - MCP get_domain_subgraph(procurement) at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - wall-clock time (as_of is declared, never sampled)
+  - inferred, fiscal-relative, or guessed dates
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires the verbatim dated excerpt (asset id + quote), the
+  declared as_of and window_days recorded verbatim, and the computed
+  window verdict - the ONLY computed values are deterministic date
+  arithmetic over the verbatim-extracted date (THE CLAUSE ARITHMETIC
+  discipline). An auto-renewal facet quotes its clause and notice
+  period verbatim. A date outside the window produces NO finding
+  (declared). A renewal-context sentence with no parseable date is
+  REFUSED, declared - never guessed. evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: [RENEWAL_WINDOW]
+output_format: >
+  One proposal document per in-window contract to /08_proposals with
+  the D30 + catalog frontmatter claims; body = the verbatim dated
+  excerpt, the declared as_of + window_days, the computed days-until
+  figure (date arithmetic only), the auto-renewal clause verbatim where
+  present, proposed action (schedule the renewal decision through the
+  human workflow - the workbench never renews, cancels, or notifies).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - no as_of or window_days declared for the run -> refuse (never
+    sample the clock, never default the window)
+  - a renewal-context sentence with no parseable date -> refuse that
+    document's window question, declared (never guess)
+  - the date is outside the declared window (no finding - a covered
+    control)
+  - recurrence tracking or a persistent calendar is requested -> refuse
