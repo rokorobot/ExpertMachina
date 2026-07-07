@@ -89,3 +89,33 @@ defers) the CVEs while removing a heavy dependency:
 
 If the priority is *clearing the base CVE surface today with zero behavioral risk*, **Isolate**
 is the pragmatic interim and Shed can follow — but Shed is the correct end state.
+
+---
+
+## Outcome — SHED applied (2026-07-07)
+
+Decision: **Shed** (ratified). Executed:
+
+- Six call sites rewritten to the native `openai` SDK via two new helpers in
+  `app/llm.py` (`openai_complete`, `openai_embedding`); the structured extraction
+  (`LLMTextCompletionProgram`) became a native completion + JSON parse, consistent with
+  the existing `claims._decompose_llm` idiom. Behavior held: OpenAI-only, env-keyed,
+  single-prompt — no re-provider-routing (out of scope).
+- All four `llama-index-*` pins removed; both locks regenerated. **Base lock 2650 → 1289
+  locked lines** (llama-index pulled a large transitive tree).
+- **Base pip-audit: `No known vulnerabilities found` — zero ignores.** The five
+  llama-index-core CVEs are gone, and `nltk` (PYSEC-2026-597, a llama-index transitive)
+  left with it. The NLI lock's only remaining finding is `torch` (CVE-2025-3000).
+- CI + nightly pip-audit ignore lists updated accordingly (base: none; nightly: torch only).
+
+**Verification (no live key — the standing open slot):**
+- `test_llm_shed.py`: mocks the provider seam and asserts the two helpers' request shape +
+  parsing and both rewritten parsers (claim decomposition, asset extraction). Green.
+- Fresh base-only venv installs `requirements.lock` `--require-hashes`; `import llama_index`
+  fails (gone); full harness green with llama-index absent — the fallback paths (mock-key)
+  and every governed suite unaffected.
+- Live-key behavioral verification of the real OpenAI calls remains the standing open slot
+  (unchanged by this task).
+
+This **closes** the five llama-index CVEs from the audit rather than deferring them (T2.6
+resolved; the T2.2/T2.5 llama-index ignores retired).

@@ -35,10 +35,13 @@ qdrant-client==1.9.1
 python-docx==1.2.0
 # 6.13.2 -> 6.13.3 (T2.2 security bump): GHSA-jm82-fx9c-mx94, patch release.
 pypdf==6.13.3
-llama-index-core==0.10.44
-llama-index-vector-stores-qdrant==0.2.0
-llama-index-embeddings-openai==0.1.9
-llama-index-llms-openai==0.1.22
+
+# llama-index (core + vector-stores-qdrant + embeddings-openai + llms-openai)
+# SHED at T2.6 (docs/t26-llama-index-inventory.md): it was thin legacy
+# scaffolding over OpenAI - vector-stores-qdrant was dead (qdrant-client is
+# used directly), and the LLM/embedding sites now call the native openai SDK
+# via app/llm.py (the D19 native-provider path). Removing it eliminates the
+# five accepted llama-index-core CVEs and a heavy transitive tree.
 
 # NLI answer verification (torch/transformers/sentencepiece) moved to
 # requirements-nli.txt at T2.5 - opt-in model runtime, not base.

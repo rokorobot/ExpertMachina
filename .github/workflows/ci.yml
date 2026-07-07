@@ -47,26 +47,17 @@ jobs:
       - name: Install backend dependencies (locked, hash-verified)
         run: pip install --require-hashes -r backend/requirements.lock
       # The audit gate: every push is scanned against the advisory DBs.
-      # Accepted findings are listed HERE, each with a reason and a
-      # review-by date - never silent, never open-ended (T2.2 rule).
+      # As of T2.6 the base lock has ZERO known vulnerabilities and NO
+      # ignores: shedding llama-index removed its five llama-index-core CVEs
+      # and took nltk (PYSEC-2026-597, a llama-index transitive) with it. If
+      # this step ever finds something, it fails - add an ignore here only
+      # with a reason and a review-by date (T2.2 custody rule).
+      # (torch CVE-2025-3000 is NLI-only - gated in the nightly's own
+      # pip-audit over requirements-nli.lock, not here.)
       - name: Dependency audit (pip-audit)
         run: |
           pip install pip-audit
-          pip-audit -r backend/requirements.lock --disable-pip \
-            --ignore-vuln CVE-2025-5472 \
-            --ignore-vuln CVE-2025-5302 \
-            --ignore-vuln CVE-2025-7647 \
-            --ignore-vuln CVE-2025-6208 \
-            --ignore-vuln CVE-2024-12704 \
-            --ignore-vuln PYSEC-2026-597
-          # Accepted findings (review by 2026-08-31 or at the next release):
-          # - llama-index-core 0.10.44 (5 CVEs): fixes require 0.12/0.13, a
-          #   major framework jump the ingestion pipeline depends on - NOT a
-          #   low-risk bump. Follow-up: audit task T2.6 (upgrade or shed).
-          # - nltk 3.9.4 (PYSEC-2026-597): transitive via llama-index; no
-          #   fixed release exists yet - nothing to upgrade to.
-          # (torch CVE-2025-3000 left the BASE surface at T2.5 - it is now
-          # gated in the nightly's own pip-audit over requirements-nli.lock.)
+          pip-audit -r backend/requirements.lock --disable-pip
       - name: All suites (auto-discovered harness - every backend/test_*.py)
         working-directory: backend
         run: python -m pytest -q
