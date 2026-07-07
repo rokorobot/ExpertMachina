@@ -4,13 +4,25 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-03 · current version **v1.6.0** (Workbench
-Catalog v1 — the Customer Operations Workbench: the first commercial
-Operations Workbench, a governed bundle of five ratified skill
-contracts producing a business-reader-ratified diagnosis; all gates
-PASSED incl. THE COMMERCIAL VERDICT) · branch `main` · register
-through D31 (**no D32, deliberately** — the catalog is convention
-over standing law)
+**Snapshot:** 2026-07-07 · current version **v1.7.0** (the Compliance
+& Obligation Workbench — the SECOND commercial workbench, canonical
+catalog #9: six ratified skill contracts driving the runner at
+runtime, THE COMPOSITION PROOF executed live for the first time,
+THE COMMERCIAL VERDICT passed by the audit-facing reader; all gates
+user-ratified) · branch `main` · tags `v1.7.0` = `post-audit-hardening`
+= c2179c2 · register through D31 (**still no D32, deliberately**) ·
+**the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
++ the release log below): pytest harness auto-discovery over every
+backend/test_*.py, the nightly full-model NLI workflow, structured
+logging with request correlation, hash-locked dependency custody with
+pip-audit at ZERO-vuln/ZERO-ignore on base, the llama-index shed
+(native openai/anthropic SDKs only), **the Alembic migration spine**
+(baseline fc4ba7fed054, adopt-by-stamp, `_ensure_columns` retired,
+loud refusal on deficient pre-Alembic DBs), **the main.py router
+split** (1805→274 lines, 12 APIRouter modules + app/deps.py, proven
+by the route-manifest byte-identity guard: 87 routes, frozen digest),
+and **the crud↔identity cycle break** (log_audit_event → neutral
+app/audit.py, AST import-cycle guard)
 **Repo:** https://github.com/rokorobot/ExpertMachina
 
 ## What ExpertMachina is
@@ -89,6 +101,28 @@ VERDICT closed the milestone: a six-finding diagnosis a Customer
 Operations manager accepts as useful, bounded, and worth acting on —
 agents diagnose and propose; humans accept; the knowledge system
 remains governed.
+v1.7.0 delivers the second commercial workbench (Compliance &
+Obligation, catalog #9): six ratified contracts DRIVE the runner at
+runtime (explicit obligation markers, classification rules,
+requirement classes, owner frames, and the review-interval marker
+pattern are parsed from the contract YAMLs, never hardcoded); the
+clock is DECLARED (as_of recorded verbatim, wall-clock never
+sampled); the gated [OE]/[PMD]/[ES] list is refused live naming the
+unminted decision; the sensitivity posture is enforced at the source
+(the manifest's forbidden vocabulary refused on every finding
+statement — compliance overclaiming is the cardinal sin, and every
+finding states documentation, never practice). The runner is built on
+`workbench/common.py` — the catalog's first reuse moment (the v1.6
+runner refactored onto it with zero assertion edits). THE COMPOSITION
+PROOF executed registry rule 6 live for the first time: a
+human-accepted obligation becomes a DERIVED fact, travels into a
+recompiled package with its class visible, and supports a
+second-generation `detect_missing_evidence` finding that cites
+DERIVED evidence — derivation depth visible at the human gate. THE
+COMMERCIAL VERDICT (the user as the audit-facing reader) closed the
+milestone; the in-browser before/after (seeded throwaway DB, live
+Accept-as-DERIVED 0→1, zero console errors) is the recorded release
+evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -264,7 +298,11 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 
 | Module | Role |
 |---|---|
-| `main.py` | FastAPI monolith: routes + require_actor/require_perm guards, auth endpoints, identity administration, startup bootstrap/migration/validation; v1.1: package model-comparison/-selection/bindings routes |
+| `main.py` | **since T2.4 (2026-07-07): 274 lines** — app + CORS + request-id middleware + `startup_event` + `include_router` over the 12 domain routers + the backward-compatible re-export surface (suites import handlers and deps from `app.main` unchanged). The 87 routes' contract is frozen by the route-manifest guard |
+| `routers/` | **T2.4: the 12 APIRouter modules** (system, identity_admin, projects, sources, policies, projections, settings, assets, experts, packages, evaluations, insights) — the former inline routes relocated VERBATIM (pure relocation, byte-identical route manifest) |
+| `deps.py` | **T2.4: the shared FastAPI dependencies** — `get_db` / `require_actor` / `require_perm` / `_authorize_or_403`, ONE object identity shared by main and every router (suites override `app.dependency_overrides[get_db]`) |
+| `audit.py` | **T3.1: the neutral audit-write module** — `log_audit_event` (depends only on database + datetime); crud re-exports it; identity imports it top-level (the crud↔identity cycle removed; `test_import_cycle.py` guards it) |
+| `../alembic/` + `alembic.ini` | **T2.3: the migration spine** — baseline `fc4ba7fed054` (frozen; byte-identical to create_all at 28t/305c); `init_db()` = upgrade/stamp/refuse (adopt-by-stamp, ratified); env.py binds to app.database metadata AND the live engine (no second DATABASE_URL) |
 | `identity.py` | THE BOUNDARY: principals, credentials, facts, Actor, authorize(), role matrix, legacy migration, validate_boundary |
 | `database.py` | SQLAlchemy models + `_ensure_columns()` additive SQLite migrations |
 | `crud.py` | CRUD + `log_audit_event(identity_fact_id=...)` + agent package creation (gate-checked) + v1.1 set_package_model_selection / create_expert_agent_binding; governed writes take identity.Actor |
@@ -306,6 +344,8 @@ Outside `backend/app/` (deliberately — D29/D22):
 |---|---|
 | `workbench/onboarding_diagnostic.py` | **v1.4.0 WS3: the reference consumer**, never a subsystem — doors ONLY (Guard 5 Part 5 sweeps them in CI permanently): stdlib + `app.package_consumer` + `app.llm` + `mcp`. Verifies the .empkg chain, queries `get_domain_subgraph` (StdioMcpGraphClient = the real stdio door; a graph-client seam lets suites inject an in-process substitute resolving the same token), synthesizes behind an injectable seam (real = `consume()` via D19; CI = deterministic), writes ONE content-hash-named timestamp-free proposal to `/08_proposals` |
 | `workbench/customer_operations/` | **v1.6.0: the first commercial workbench bundle** — `workbench.yaml` (manifest: canonical #5, domain scope, binding expectations) + `skills/*.yaml` (the five ratified 13-field contracts) + `runner.py` (doors only, Guard 5-swept: contracts drive runtime behavior — frames read from the YAMLs, non-ACTIVE refused, refusal-first, evidence-driven kinding via `get_revision_history` content, the declared same-subject / cross-document / subject-token evidence rules; ONE proposal per finding to `/08_proposals`, the assist brief to `/07_agent_workspaces`) + `corpus/` (the 12-document plant corpus; `corpus_seed/` = revision-1 content; `CORPUS.md` = the plant map, outside the scanned folder) |
+| `workbench/common.py` | **v1.7.0 WS2 (ruling 6): the shared runner plumbing** — the catalog's first reuse moment: door setup, contract loading + ACTIVE gating, the inherited same-subject evidence helpers, the MCP stdio door, content-hashed proposal writing. Stdlib-only, Guard 5-swept. Reuse is by RELATIVE import (`from ..common import …`) — Guard 5 skips relative imports; an absolute `from workbench.common import` trips the doors-only sweep |
+| `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list) + `skills/*.yaml` (six ratified 13-field contracts) + `runner.py` (on common.py; contracts drive runtime — markers/rules/frames/marker_pattern PARSED from the YAMLs; declared as_of clock, refused if absent; gated skills refused live naming the unminted decision; posture enforced pre-write; DERIVED cited as DERIVED) + `corpus/` (12 documents; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `tools/generate_skill_contracts.py` | **v1.6.0: the skill-contract generator** — the master inventory as data (16 workbenches, ~360 subtasks) deterministically emitting one 13-field draft YAML per skill into `docs/skill-contracts/`; drafts are scaffolding, never runtime permission (promotion happens at each workbench's scoping session) |
 | `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
@@ -454,6 +494,14 @@ engine", or "agent wrote a fact".
 | WS2 | `c5d08f6` | the runner — a governed skill bundle, not a vague agent (contracts drive runtime, tags are gates, refusal-first, evidence-driven kinding; both modes green) |
 | WS3 | `8ecab87`+`9b22926`..`9d56e19` | THE MILESTONE GATE (44th suite, passed first run) + the three declared evidence rules (29→6 findings: same-subject, cross-document, subject-token triggers) |
 | **v1.6.0** | `0a8354b`+release | THE COMMERCIAL VERDICT PASSED ("useful, bounded, worth acting on") + the in-browser before/after (Accept-as-DERIVED live, 0→1) + FINAL RATIFICATION at 28/305 |
+| — | `a5a6bf3`+`f08445c` | v1.7 scoping ratified (WS0) + WS1: the Compliance & Obligation bundle (6 ratified contracts), the 12-document corpus, THE CORPUS PROOF (45th suite) |
+| audit | PRs #1–#9 | the 2026-07-07 audit-hardening block (docs/audit-2026-07-07.md): golden-path e2e restored, H-SEC-1 clearance fix + ROLE_CLEARANCE, pytest harness auto-discovery (H-TEST-1), nightly NLI workflow, quick wins (CORS guard, fail-closed access_level), structured logging (T2.1), hash-locked dependency custody + pip-audit gate (T2.2), NLI/torch split out of base (T2.5), llama-index SHED (T2.6 — base pip-audit ZERO-vuln/ZERO-ignore) |
+| T2.3 | PR #10 `f90bb25` | the Alembic migration spine: baseline `fc4ba7fed054` byte-identical to create_all (28t/305c), adopt-by-stamp (ratified), `_ensure_columns` retired, deficient pre-Alembic DBs refused loudly; `test_alembic_migration.py` |
+| T2.4 | PR #11 `b55f41f` | main.py router split (pure relocation, ratified): 1805→274 lines, 12 `app/routers/*` + `app/deps.py`; route-manifest BYTE-IDENTITY proven and frozen as a named CI guard (`test_route_manifest.py`, 87 routes) |
+| T3.1 | PR #12 `131996c` | the crud↔identity cycle break: `log_audit_event` → neutral `app/audit.py` (crud re-exports; identity's lazy crud import deleted); permanent AST guard `test_import_cycle.py` |
+| WS2p1 | PR #13 `2adf29a` | `workbench/common.py` extracted (ruling 6, the catalog's first reuse moment); customer-ops runner refactored onto it, zero assertion edits, zero guard edits |
+| WS2 | PR #14 `b00877c` | the Compliance & Obligation runner (contracts drive runtime; declared as_of clock; gated list refused live; posture enforced at source) + THE DIAGNOSIS PROOF (47th suite, first run) + the WS2 gate record (user-ratified; closes the WS1 corpus gate explicitly) |
+| **v1.7.0** | PR #15 `c2179c2` (tag v1.7.0) | WS3 THE MILESTONE GATE (48th suite, first run) + THE COMPOSITION PROOF (second-generation DERIVED citations, derivation visible at the gate) + THE COMMERCIAL VERDICT PASSED (the audit-facing reader) + the in-browser before/after (123→122 held, 0→1 accepted DERIVED, zero console errors) |
 
 ## How to run
 
@@ -564,7 +612,31 @@ engine", or "agent wrote a fact".
   stages closing on ledger-proves-no-agent-wrote-facts + 28/305;
   `EM_COMMERCIAL_ARTIFACT_DIR` exports the diagnosis for the business
   reader).
-  CI enforces all 44 on every push. `test_support.governed_actor` is the
+  **Audit-hardening suites (2026-07-07, in CI):** `test_llm_shed.py`
+  (T2.6: the mocked native-SDK seam), `test_alembic_migration.py`
+  (T2.3: FRESH/CONVERGENCE/ADOPT/REFUSE/IDEMPOTENT — the migration
+  spine's dual-path gate), `test_route_manifest.py` (T2.4: the
+  route-manifest byte-identity guard, 87 routes, frozen digest —
+  update ONLY with a documented contract change, like D24),
+  `test_import_cycle.py` (T3.1: identity imports crud by NO means,
+  audit stays neutral — AST-based, permanent), plus the restored
+  `test_golden_path_e2e.py`. **v1.7.0 compliance suites (in CI):**
+  `test_compliance_corpus.py` (WS1 THE CORPUS PROOF — real-NLI P5
+  detection under EM_CORPUS_PROOF_NLI=1, the review-interval clock,
+  consume() refusing AND answering, the draft≠ratified sweep),
+  `test_compliance_workbench.py` (WS2 THE DIAGNOSIS PROOF — contracts
+  drive runtime, every plant found/kinded, covered controls silent,
+  gated [OE] skill refused live naming the unminted decision, the
+  posture sweep over every written byte, byte-identical at pinned
+  as_of), `test_compliance_acceptance.py` (WS3 THE MILESTONE GATE +
+  THE COMPOSITION PROOF: second-generation DERIVED citations visible
+  at the gate; `EM_COMMERCIAL_ARTIFACT_DIR` exports the diagnosis for
+  the audit-facing reader).
+  **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
+  (68 suites as of v1.7.0; keeping one out requires an explicit
+  NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
+  plus the named constitutional guard steps (D18/D24/route-manifest/
+  D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
   only way suites obtain actors.
 - Env knobs: `EM_GATE_*`, `EM_NLI_*` / `EM_CONFLICT_*`, `EM_PACKAGE_DIR`,
   `OPENAI_API_KEY` (+`OPENAI_MODEL`), **`ANTHROPIC_API_KEY`** (the v1.1
@@ -682,20 +754,43 @@ recorded commercial finding: NLI thresholds cannot separate
 parallel-timeframe different-subject false positives; three declared,
 contract-backed evidence rules took the diagnosis 29→6 findings.
 
-**NEXT: the ratified catalog sequence — the Compliance & Obligation
-Workbench (second), then Procurement Document Intelligence (third)**,
-each at its own scoping session promoting its drafted contracts from
-the registry. Also on the table: the Executive Briefing v1 (accepted
-facts + governance health, zero door growth), the three named
-decisions when their pressure arrives, **the two honest slots** (the
-v1.2.0 live-SharePoint-tenant scan; the v1.4.0/v1.6.0 real-model
-diagnostic run — the customer-ops corpus is the natural vehicle when
-a key exists), and the standing backlog (SSO/SAML/SCIM; OS
+**v1.7.0 DELIVERED (2026-07-07) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/compliance-workbench-v1.7.md). The second commercial workbench,
+in four user-ratified gates: WS0 the rulings (the ACTIVE SIX, the
+split ruling, the gated list, the deadline deferral, the sensitivity
+posture); WS1 the contracts + the 12-document corpus + THE CORPUS
+PROOF (real-NLI P5 detection, the review-interval clock, consume()
+refusing AND answering — before any runner existed); WS2
+`workbench/common.py` (the catalog's first reuse moment) + the runner
+(contracts drive runtime; declared as_of; gated list refused live;
+posture enforced at source) + THE DIAGNOSIS PROOF; WS3 THE MILESTONE
+GATE + **THE COMPOSITION PROOF** (registry rule 6 live for the first
+time: accepted obligation → DERIVED in the recompiled package →
+second-generation finding citing DERIVED evidence, derivation visible
+at the gate) + THE COMMERCIAL VERDICT (the audit-facing reader) + the
+in-browser before/after. **No new law, again: no D32, no seventh
+guard family** — Guard 5 swept common.py and the new runner with zero
+edits. The honest slots carried: the real-model diagnostic run
+(PENDING, no key — the compliance audit-readiness pack is this
+workbench's vehicle) and the v1.2.0 live-SharePoint scan.
+
+**NEXT: Procurement Document Intelligence (third), per the ratified
+catalog sequence**, at its own scoping session promoting its drafted
+contracts from the registry. Also on the table: the Executive
+Briefing v1 (accepted facts + governance health, zero door growth),
+the three named decisions when their pressure arrives (the
+Operational Evidence Realm, Exception Stewardship, the Pipeline
+Metadata Door — the deferred deadline family unlocks after [ES]), the
+two honest slots above, and the standing backlog (SSO/SAML/SCIM; OS
 keystore/KMS; Confluence/Drive providers; Gemini/open-model adapters;
-**D23 — deferred through six milestones**; embedding index inside
-.empkg). The narrative, complete: v1.2→v1.5 built the substrate;
-**v1.6 proves a business reader will pay attention to what a governed
-workbench finds.**
+**D23 — deferred through seven milestones**; embedding index inside
+.empkg; the remaining T3.x polish — main.py unused-import prune,
+Pydantic model_config, _iso dedup, N+1 citation batching; ruff/
+Dockerfile/pytest-cov/frontend tests). The narrative: v1.2→v1.5 built
+the substrate; v1.6 proved a business reader pays attention; **v1.7
+proves the pattern REPEATS — a second workbench, a reused foundation,
+and composition across the valve with derivation visible.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
