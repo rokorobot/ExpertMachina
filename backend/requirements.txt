@@ -1,5 +1,5 @@
-# The human-readable dependency manifest (audit T2.2, dependency custody -
-# docs/audit-2026-07-07.md, finding H-DEP-1).
+# The BASE human-readable dependency manifest (audit T2.2 dependency
+# custody + T2.5 NLI split - docs/audit-2026-07-07.md, H-DEP-1/M-DEP-2).
 #
 #   THE CUSTODY RULE: dependency drift must be explicit and reviewable.
 #   Edit THIS file (direct pins only), then regenerate the lock:
@@ -12,6 +12,14 @@
 #   matching lock regeneration fails CI at install. pip-audit gates every
 #   push; accepted findings are documented at the CI step, each with a
 #   reason and a review-by date - never silent.
+#
+#   T2.5 boundary: the NLI/model runtime (torch/transformers/sentencepiece,
+#   ~GB) is NOT here. It lives in requirements-nli.txt / requirements-nli.lock
+#   and is an opt-in for the proof lane only. The normal ExpertMachina
+#   backend does not carry model weight; verification_engine imports the
+#   NLI stack lazily and falls back to keyword overlap when it is absent
+#   (EM_NLI_VERIFICATION=off, the default-safe path). Governance boundary
+#   made obvious in the packaging: model runtime is a deliberate opt-in.
 
 fastapi==0.136.3
 uvicorn==0.49.0
@@ -32,10 +40,8 @@ llama-index-vector-stores-qdrant==0.2.0
 llama-index-embeddings-openai==0.1.9
 llama-index-llms-openai==0.1.22
 
-# NLI answer verification (Phase 3 verifier - optional; engine falls back to keyword overlap without these)
-torch==2.12.0
-transformers==5.11.0
-sentencepiece==0.2.1
+# NLI answer verification (torch/transformers/sentencepiece) moved to
+# requirements-nli.txt at T2.5 - opt-in model runtime, not base.
 
 # MCP Agent Gateway (MVP 0.9 - read-only transport over Governance Contract v1)
 mcp==1.27.2
