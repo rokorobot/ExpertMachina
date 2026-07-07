@@ -487,3 +487,61 @@ exactly 28 tables / 305 columns.
 
 **THE GATE (per WS0): user ratification of the corpus as realistic
 and the six contracts as the declared product is now requested.**
+
+### WS2 — `common.py` + the Runner + THE DIAGNOSIS PROOF: RATIFIED (2026-07-07, user-ratified)
+
+Commits: part 1 `ab4bfae` (merged as main `2adf29a`, PR #13 — the
+`workbench/common.py` extraction, the catalog's first reuse moment:
+customer-ops runner refactored onto it, its suites green with zero
+assertion edits, Guard 5 sweeping the shared module with zero guard
+edits; the reuse mechanic recorded: relative imports keep intra-
+workbench reuse inside the swept root); part 2 (PR #14 — the
+compliance runner + `backend/test_compliance_workbench.py`, the 47th
+suite, passed first run; full harness 67/67).
+
+**The gate ruling (user, verbatim):**
+
+> v1.7 WS2 Part 2 — Compliance & Obligation Runner: RATIFIED
+>
+> The diagnosis-proof evidence is accepted.
+>
+> The Compliance & Obligation runner is ratified as the accepted WS2
+> workbench because it:
+>
+> - reads and honors the six skill contracts at runtime rather than
+>   hardcoding mirrored rules;
+> - requires a declared as_of clock and refuses undeclared time
+>   sampling;
+> - extracts only explicit obligation markers and correctly ignores
+>   implied/non-marker text;
+> - produces deterministic, byte-identical diagnosis output;
+> - keeps all generated proposals DERIVED under the live permissive
+>   policy;
+> - refuses gated operational evidence comparison as required;
+> - preserves forbidden-vocabulary and sentinel safety;
+> - passes THE DIAGNOSIS PROOF and the full harness.
+>
+> Gate ruling: WS2 Part 2 is accepted.
+
+The recorded evidence: 5 workbench modules inside the Guard 5 doors
+(zero guard edits); 20 per-finding proposals across all five kinds,
+byte-identical re-runs at the pinned `as_of 2026-06-01`; P1 ×6
+obligations extracted verbatim and typed by the declared rules across
+all four source types; P7 never extracted; P2/P3 (due 2025-05-02)/
+P4/P5 found and correctly kinded; P2c/P3c/P4c covered controls silent
+with declared reasons; the cross-topic noise pair deferred by the
+inherited same-subject rule; no-as_of, gated-[OE] (naming the
+Operational Evidence Realm), and SEQUENCED-contract refusals proven
+live; the EXECUTIVE sentinel and the manifest's forbidden vocabulary
+absent from every written byte; writes confined to /08_proposals +
+the four-section audit-readiness pack in /07_agent_workspaces; the
+return path holding all 20 proposals as DERIVED candidates with
+provenance verified against the governed binding.
+
+*(This ruling necessarily accepts the WS1 corpus as the declared
+product — the ratified diagnosis runs over it; the WS1 gate's
+requested corpus ratification closes with this record rather than
+silently.)*
+
+**Verdict: v1.7.0 WS2 PASSED.** WS3 may proceed: THE MILESTONE GATE +
+THE COMPOSITION PROOF + THE COMMERCIAL VERDICT.
