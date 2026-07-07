@@ -15,6 +15,31 @@ purpose: >
   documents disagree; it never rules which side is correct and never
   implies anything about practice.
 named_policy: "Procurement Policy"
+subject_boilerplate_stopwords:
+  # a DECLARED evidence-rule refinement (the v1.6 precedent that added
+  # "approved"/"approval"): vendor contracts share generic legal
+  # boilerplate ("agreement", "clause", "party", "this") across every
+  # document, which inflates the same-subject count and lets a
+  # cross-topic pair (a renewal date vs a price clause) slip the rule.
+  # These tokens are excluded from subject matter, IN ADDITION to the
+  # inherited timeframe + governance vocabulary. Recorded, never silent.
+  - "agreement"
+  - "agreements"
+  - "contract"
+  - "contracts"
+  - "clause"
+  - "clauses"
+  - "party"
+  - "parties"
+  - "schedule"
+  - "effective"
+  - "this"
+  - "that"
+  - "under"
+  - "successive"
+  - "mutual"
+  - "provisions"
+  - "statutory"
 allowed_inputs:
   - the compiled expert package at binding clearance
   - MCP get_domain_subgraph(procurement) and get_conflicts at the

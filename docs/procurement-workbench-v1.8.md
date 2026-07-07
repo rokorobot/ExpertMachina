@@ -333,3 +333,63 @@ v1.6 and v1.7 corpus proofs green.
 **THE GATE (per WS0): user ratification of the corpus as realistic and
 the six contracts as the declared product is now requested. WS2 (the
 runner, on Opus per the recorded routing) starts only on ratification.**
+
+### WS2 — The Runner + THE DIAGNOSIS PROOF: evidence recorded, gate pending ratification (2026-07-07)
+
+Delivered: `workbench/procurement_intelligence/runner.py` on
+`workbench/common.py` (relative import; **zero shared-module edits** —
+common.py untouched this milestone, the industrialization evidence).
+The six contracts DRIVE runtime: explicit markers + term_class_rules,
+the date_convention marker_pattern + auto_renewal + renewal_context
+markers, the increase markers, the certification requirement + question
+template, the named policy, and the forbidden vocabulary are all PARSED
+from the ratified YAMLs. Refusal-first both ways; the declared clock
+(as_of + window_days required, else refuse); the gated list refused
+live naming the decision; the persistent-calendar refusal (ruling 4);
+the numeric posture enforced at the source.
+
+**THE DIAGNOSIS PROOF** (`backend/test_procurement_workbench.py`, the
+70th suite — six parts green; full harness 70/70):
+1. Guard 5 sweeps 6 workbench modules, zero guard edits.
+2. 11 per-finding proposals across all five finding kinds,
+   byte-identical re-runs at the pinned as_of 2026-06-01 / +90d;
+   writes confined to /08_proposals + one renegotiation brief; the
+   EXECUTIVE sentinel, the manifest's forbidden vocabulary, the string
+   "20%", and every noisy irrelevant number (address / phone /
+   clause-index / PO range) absent from every written byte.
+3. THE CLAUSE ARITHMETIC held: P1 renewal window (days-until 75, the
+   sole computed value) with the P2 auto-renewal 60-day facet; P1c
+   out-of-window and P6 unparseable-date both silent/declared; P3
+   explicit 7% numeric vs P3t "one fifth" flagged non_numeric with no
+   digit in the excerpt; P4 DataFlow missing vs P4c SecureStore covered
+   (SUPPLIER-NAMED coverage); P5 conflict named against the Procurement
+   Policy; vendor terms carry declared classes.
+4. Contracts drive behavior: no-as_of / no-window /
+   persistent-calendar / [OE] / [ES] / SEQUENCED / non-ACTIVE all
+   refused live.
+5. The return path holds all 11 proposals as DERIVED candidates under
+   a live permissive policy, provenance verified against the binding.
+
+**ONE RECORDED EVIDENCE-RULE REFINEMENT (surfaced by the noise plant,
+the v1.6 signal-to-noise precedent — flagged for the gate):** the
+inherited v1.6 same-subject rule excludes timeframe + governance
+vocabulary but NOT generic legal boilerplate ("agreement", "clause",
+"party", "this", "date"), which is shared across ALL vendor contracts
+and let a cross-topic pair (a renewal date vs a price clause) share 3
+tokens and slip the rule. Fix: a DECLARED `subject_boilerplate_stopwords`
+list in `detect_vendor_policy_conflict.yaml`, applied in the conflict
+walk IN ADDITION to the inherited exclusions — recorded in the contract,
+never silent. Proof it separates signal from noise: the real P5 payment
+conflict keeps 3 real shared tokens (date/invoice/payment) and fires;
+the noise pair drops to 1 (date) and is deferred, declared. This is the
+procurement analog of the v1.6 "an important commercial finding, not a
+failure" recorded refinement.
+
+**Regression at the gate**: full harness 70/70 green; Guard 5 green
+(swept the runner with zero edits); D24 held at 28/305 (asserted in the
+WS1 corpus proof; unchanged).
+
+**THE GATE (per WS0): user ratification of the runner as the accepted
+Procurement workbench is now requested. WS3 (the milestone gate + THE
+CLAUSE ARITHMETIC PROOF stage + the commercial verdict) starts only on
+ratification.**
