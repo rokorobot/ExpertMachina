@@ -545,3 +545,87 @@ silently.)*
 
 **Verdict: v1.7.0 WS2 PASSED.** WS3 may proceed: THE MILESTONE GATE +
 THE COMPOSITION PROOF + THE COMMERCIAL VERDICT.
+
+### WS3 — THE MILESTONE GATE + THE COMPOSITION PROOF + THE COMMERCIAL VERDICT: PASSED (2026-07-07, user-ratified)
+
+Commit: `backend/test_compliance_acceptance.py` (the 48th suite, PR #15
+— passed first run; full harness 68/68). Eight stages: the 12-document
+corpus through the real pipeline (50 PRIMARY facts human-approved into
+the `compliance` domain); INTERNAL package + real AGENT binding
+(EXECUTIVE memo excluded); the diagnosis through the doors at the
+declared as_of (20 proposals, all five kinds); the valve holding 123
+candidates DERIVED under a global permissive Tier-1 policy AND a live
+approve-everything Tier-2 engine; a human accepting one finding per
+kind with verified synthesis provenance; **THE COMPOSITION PROOF**
+(registry rule 6, executed live for the first time): the accepted
+obligation traveled into the recompiled package as a DERIVED entry
+(pending proposals structurally absent), the second
+`detect_missing_evidence` run consumed it as a requirement source, and
+the second-generation finding cites DERIVED evidence — `[DERIVED]` in
+the proposal bytes, `derived_evidence` in the gate's provenance
+verdict — derivation depth visible at the human gate; the vault
+before/after (all 5 accepted findings as marked DERIVED notes, visibly
+non-canonical; the untouchable floor held); THE CLOSING LINES (every
+approval event carries a non-AGENT identity fact; every APPROVED
+DERIVED fact has a human review; 113 files swept clean of the
+EXECUTIVE sentinel; the D24 snapshot at exactly 28 tables / 305
+columns).
+
+**THE COMMERCIAL VERDICT (user, verbatim):**
+
+> v1.7 WS3 — THE COMMERCIAL VERDICT: PASSED
+>
+> As the audit-facing reader, I accept the WS3 diagnosis.
+>
+> Every presented finding is useful, bounded, document-grounded, and
+> free of practice overclaim.
+>
+> The findings correctly distinguish documented requirements from
+> real-world execution. They identify missing evidence, overdue
+> documentation review, undocumented ownership, conflicting document
+> statements, and explicit obligations without claiming that the
+> company is operationally compliant or non-compliant in practice.
+>
+> The audit-readiness pack is commercially credible because it gives
+> an executive/audit reader the right posture:
+>
+> - Known: cited and governed.
+> - Missing: declared as evidence gaps, not operational failures.
+> - Contradictory: surfaced as document conflicts requiring
+>   reconciliation.
+> - Unverified: explicitly separated from practice execution.
+> - Obligations: extracted as documentation facts, never practice
+>   facts.
+> - Derived outputs: held as DERIVED and non-canonical.
+> - Gateway exclusions: declared.
+>
+> THE COMPOSITION PROOF is accepted as the distinctive v1.7 milestone:
+> a human-accepted obligation can become DERIVED evidence, be
+> recompiled into a package, and support a second-generation finding
+> while preserving provenance, derivation marking, and the
+> no-agent-wrote-facts invariant.
+>
+> Gate ruling: THE COMMERCIAL VERDICT passes.
+
+**The in-browser before/after (final release evidence, recorded
+2026-07-07): PASSED.** Seeded throwaway DB (`backend/.ui-gate-db`
+pattern, current main code): login as a governed GOVERNANCE_REVIEWER;
+the Operations area BEFORE — 20 proposals, 123 held DERIVED
+candidates, 0 accepted DERIVED, PROVENANCE VERIFIED chip live on the
+pipeline; ONE live **Accept as DERIVED** (the pre-existing review
+PATCH, the area's only write) → AFTER — 122 held, **1 accepted
+DERIVED**; zero console errors, zero console warnings, zero failed
+requests.
+
+**The honest slots (ruling 13), reported honestly:** the ONE
+real-model diagnostic run remains PENDING (no provider key in this
+environment; the runner's stdio MCP door and D19 synthesis path are
+code-complete — the compliance audit-readiness pack is this
+workbench's natural vehicle when a key exists). The v1.2.0
+live-SharePoint-tenant scan carries unchanged.
+
+**Verdict: v1.7.0 WS3 PASSED — the milestone closes.** The Compliance
+& Obligation Workbench is the second commercial workbench: extracted,
+tracked, evidenced, and answered obligations — document-grounded or
+refused, composed across the valve with derivation visible, and never
+a practice overclaim.
