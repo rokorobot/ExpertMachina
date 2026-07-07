@@ -13,6 +13,13 @@ as before. This module carries only the runtime story: errors, warnings,
 fallback activations, failed parses, startup diagnostics. Nothing here
 is provenance; deleting every log line loses no governed fact.
 
+Citable-evidence rule (ratified 2026-07-07): operational logs must NEVER
+be used as evidence for governed findings. Only audit ledger events,
+approved assets, package hashes, revision chains, conflict relationships,
+and approved DERIVED facts are citable evidence. A log line is a
+diagnostic, not a fact - no workbench, projection, proposal, or human
+gate may cite one.
+
 Secrets discipline (D25, unchanged): no logger call may include bearer
 tokens, passwords, outbound credential plaintext, or wrapped keys. The
 one-time admin bootstrap credential is deliberately print()ed to the
