@@ -1212,11 +1212,18 @@ def execute_query(project_id: int, query_in: schemas.QueryInput, db_session: Ses
     # Single shared pipeline (Verified Answer v1) - also used by the MCP gateway.
     # The boundary-decided display replaces the old hardcoded operator string;
     # query_engine's internal audit trail keeps its own event shapes.
+    #
+    # Clearance is decided by the boundary from the authenticated principal
+    # (audit fix H-SEC-1, 2026-07-07) - the same law the MCP gateway enforces.
+    # The request-body access_level may only NARROW the tier, never widen it:
+    # a READ_ONLY caller can no longer read EXECUTIVE assets by asking for them.
+    effective_clearance = identity.effective_query_clearance(
+        actor.principal, query_in.access_level)
     result = query_engine.execute_expert_query(
         db_session,
         expert_model_id=query_in.expert_model_id,
         question=query_in.question,
-        caller_access_level=query_in.access_level,
+        caller_access_level=effective_clearance,
         actor=actor.display
     )
     return schemas.QueryResponse(**result)

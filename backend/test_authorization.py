@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import hashlib
 import tempfile
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
@@ -221,6 +222,61 @@ def main_test():
         os.environ.pop("EM_READ_AUDIT_MODE", None)
         print("Part 6 passed: OFF default preserves behavior; FULL and SAMPLED audit read")
         print("               grants with the mode declared on each event.")
+
+        # Part 7: query clearance is boundary-decided, not caller-asserted
+        # (audit fix H-SEC-1). A lower-clearance caller must not read
+        # above-tier assets by asking for them; the request-body access_level
+        # may only NARROW the effective tier, never widen it. This mirrors the
+        # law the MCP gateway already enforces for agents.
+        print("\n--- Part 7: Query clearance is server-decided (H-SEC-1) ---")
+        # Seed an EXECUTIVE-tier APPROVED asset and an expert model over it.
+        with db.SessionLocal() as seed:
+            doc = seed.query(db.Document).filter_by(project_id=project_id).first()
+            exec_text = "Executive bonus pool is 4 percent of net profit."
+            exec_chunk = db.DocumentChunk(document_id=doc.id, text=exec_text, chunk_index=500)
+            seed.add(exec_chunk)
+            seed.commit()
+            seed.refresh(exec_chunk)
+            exec_asset = db.KnowledgeAsset(
+                project_id=project_id, type="POLICY", name="Exec Comp Policy",
+                content=exec_text, status="APPROVED", access_level="EXECUTIVE",
+                document_id=doc.id, chunk_id=exec_chunk.id, source_page=1,
+                source_section="Sec X",
+                source_hash=hashlib.sha256(exec_text.encode("utf-8")).hexdigest())
+            seed.add(exec_asset)
+            seed.commit()
+            seed.refresh(exec_asset)
+            exec_asset_id = exec_asset.id
+        # ADMIN builds an expert model containing the EXECUTIVE asset.
+        r = client.post(f"/api/projects/{project_id}/experts",
+                        json={"name": "Clearance Expert", "description": "",
+                              "project_id": project_id, "asset_ids": [exec_asset_id]},
+                        headers=ADMIN)
+        assert r.status_code == 200, r.text
+        model_id = r.json()["id"]
+
+        def exec_visible(headers, requested):
+            body = {"expert_model_id": model_id, "question": "What is the bonus pool?"}
+            if requested is not None:
+                body["access_level"] = requested
+            resp = client.post(f"/api/projects/{project_id}/query", json=body, headers=headers)
+            assert resp.status_code == 200, resp.text
+            return exec_asset_id in [c["asset_id"] for c in resp.json()["citations"]]
+
+        # ADMIN (EXECUTIVE clearance) sees EXECUTIVE evidence.
+        assert exec_visible(ADMIN, "EXECUTIVE"), "ADMIN must see EXECUTIVE-tier evidence"
+        # THE BUG THIS GUARDS: a KNOWLEDGE_OPERATOR (INTERNAL clearance) asking
+        # for EXECUTIVE must NOT receive the EXECUTIVE asset - the body value no
+        # longer widens the caller's tier.
+        assert not exec_visible(OPERATOR, "EXECUTIVE"), \
+            "H-SEC-1: a lower-clearance caller must not read EXECUTIVE assets by asking"
+        assert not exec_visible(OPERATOR, None), \
+            "INTERNAL-clearance caller sees no EXECUTIVE evidence by default"
+        # Narrowing still works: ADMIN scoping down to PUBLIC drops the asset.
+        assert not exec_visible(ADMIN, "PUBLIC"), \
+            "access_level may voluntarily narrow the caller's own view"
+        print("Part 7 passed: clearance derives from the principal; access_level narrows,")
+        print("               never widens - the H-SEC-1 bypass is closed.")
 
     print("\nAll WS3 authorization checks passed.")
 
