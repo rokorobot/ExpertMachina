@@ -438,7 +438,10 @@ class AssetBulkUpdate(BaseModel):
 class QueryInput(BaseModel):
     expert_model_id: int
     question: str
-    access_level: Optional[str] = "INTERNAL" # caller clearance: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+    # A caller may NARROW its query to a lower tier, never widen it: the
+    # effective clearance is decided by the boundary from the authenticated
+    # principal (identity.effective_query_clearance, H-SEC-1 fix 2026-07-07).
+    access_level: Optional[str] = None # optional self-imposed ceiling: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
 
 class CitationModel(BaseModel):
     asset_id: int

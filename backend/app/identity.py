@@ -70,6 +70,53 @@ ROLE_PERMISSIONS = {
 }
 ROLES = set(ROLE_PERMISSIONS)
 
+# Access-tier clearance for HUMAN/SERVICE principals (audit fix 2026-07-07,
+# H-SEC-1). The clearance BOUNDARY must be decided by the server from the
+# principal, never asserted by the caller - the same law the MCP gateway
+# already enforces for agents (mcp_gateway.agent_clearance derives clearance
+# from the Principal registry, never from the env or the request). The REST
+# query path previously trusted a request-body access_level, letting a
+# READ_ONLY caller read EXECUTIVE-tier assets by asking for them.
+#
+# Precedence: an explicit Principal.clearance (already used for AGENT kind)
+# wins; otherwise this code-resident role map decides. A caller-supplied
+# access_level may only NARROW the effective tier (min), never widen it.
+#
+# Mapping rationale (RATIFIED 2026-07-07, docs/audit-2026-07-07.md open
+# question 2): governance needs to see every tier it governs; ingest and
+# read-only roles default to INTERNAL. Fail-closed on unknown roles.
+ACCESS_TIERS = ("PUBLIC", "INTERNAL", "RESTRICTED", "EXECUTIVE")
+_ACCESS_TIER_RANK = {tier: rank for rank, tier in enumerate(ACCESS_TIERS)}
+ROLE_CLEARANCE = {
+    "ADMIN": "EXECUTIVE",
+    "GOVERNANCE_REVIEWER": "EXECUTIVE",
+    "KNOWLEDGE_OPERATOR": "INTERNAL",
+    "READ_ONLY": "INTERNAL",
+    "AGENT_CONSUMER": "PUBLIC",  # agents route through the gateway, not here
+}
+DEFAULT_CLEARANCE = "PUBLIC"
+
+
+def principal_clearance(principal: "db.Principal") -> str:
+    """The server-decided access tier for a principal. Explicit
+    Principal.clearance (set for AGENT kind) wins; otherwise the tier
+    follows the principal's role. Unknown roles fail closed to PUBLIC."""
+    explicit = (principal.clearance or "").upper()
+    if explicit in _ACCESS_TIER_RANK:
+        return explicit
+    return ROLE_CLEARANCE.get(principal.role or "", DEFAULT_CLEARANCE)
+
+
+def effective_query_clearance(principal: "db.Principal", requested: str = None) -> str:
+    """Clearance for an evidence query: the principal's server-decided tier,
+    optionally NARROWED (never widened) by a caller-supplied access_level.
+    A request can voluntarily scope itself down; it can never claim up."""
+    ceiling = principal_clearance(principal)
+    req = (requested or "").upper()
+    if req not in _ACCESS_TIER_RANK:
+        return ceiling
+    return req if _ACCESS_TIER_RANK[req] < _ACCESS_TIER_RANK[ceiling] else ceiling
+
 # Kind-role discipline: a service must never become a quiet super-user,
 # and an agent's REST powerlessness is structural, not configured.
 ALLOWED_ROLES_BY_KIND = {
