@@ -374,7 +374,13 @@ def main():
                 assert rp, f"{name}: ACTIVE draft without ratified_path"
                 assert os.path.isfile(os.path.join(REPO_ROOT, rp.group(1))), \
                     f"{name}: ratified_path does not resolve"
-    assert len(active) == 5, f"expected exactly 5 ACTIVE drafts, got {active}"
+    # v1.7 WS1 (recorded edit, ratified consolidation ruling): later
+    # workbench promotions add their own ACTIVE drafts; THIS suite
+    # asserts the customer-ops set stays exactly five.
+    cusops_active = [n for n in active if os.path.isfile(
+        os.path.join(DRAFTS_DIR, "05_customer_operations", n))]
+    assert len(cusops_active) == 5, \
+        f"expected exactly 5 customer-ops ACTIVE drafts, got {cusops_active}"
     skills_dir = os.path.join(WB_DIR, "skills")
     ratified = sorted(n[:-5] for n in os.listdir(skills_dir) if n.endswith(".yaml"))
     with open(os.path.join(WB_DIR, "workbench.yaml"), "r", encoding="utf-8") as f:
@@ -383,9 +389,10 @@ def main():
                           .split("refused_until_minted:")[0], re.MULTILINE)
     assert sorted(declared) == ratified, \
         f"manifest skills {sorted(declared)} != ratified files {ratified}"
-    print(f"Part 7 passed: {total} draft contracts swept; exactly 5 ACTIVE, "
-          "each with a resolving ratified_path; the manifest and the ratified "
-          "skill files agree.")
+    print(f"Part 7 passed: {total} draft contracts swept; exactly 5 "
+          "customer-ops ACTIVE (later promotions carry their own suites), "
+          "each with a resolving ratified_path; the manifest and the "
+          "ratified skill files agree.")
 
     session.close()
     print("\n=== All customer-ops corpus-proof checks passed: the corpus "

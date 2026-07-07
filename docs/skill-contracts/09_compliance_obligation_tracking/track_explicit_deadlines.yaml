@@ -5,7 +5,7 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: track_explicit_deadlines
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED
+status: SEQUENCED (deliberately deferred to after the [ES] scoping - the v1.7 deadline deferral)
 boundary_tags: [now]
 pattern: deadline
 purpose: >

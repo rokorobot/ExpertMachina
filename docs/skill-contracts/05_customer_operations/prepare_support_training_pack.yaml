@@ -5,7 +5,7 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_support_training_pack
 workbench: customer_operations   # 5. Customer Support Workbench (= Customer Operations, v1.6)
-status: DRAFT (workbench ACTIVE; this skill not in the v1.6 set)
+status: DRAFT (workbench ACTIVE; this skill not in the ratified ACTIVE set)
 boundary_tags: [assist]
 pattern: assist
 purpose: >

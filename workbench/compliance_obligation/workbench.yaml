@@ -1,0 +1,74 @@
+# The Compliance & Obligation Workbench manifest (v1.7.0)
+# Canonical workbench #9 (Compliance / Obligation Tracking) in the
+# 16-workbench catalog - the SECOND commercial workbench in the
+# ratified sequence. Convention, not constitution: this manifest
+# governs the reference runner; its claims travel in proposal
+# frontmatter, recorded verbatim at the gate, verified where governed
+# records permit, never obeyed.
+workbench: compliance_obligation
+canonical_number: 9
+status: ACTIVE
+version: 1
+purpose: >
+  Extract, track, evidence, and answer obligations from governed
+  documents: explicit obligations, missing evidence, outdated
+  policies, undocumented owners, conflicting compliance statements.
+  Document-governed slice only (D27): no operational records, no
+  logs, no tickets, no payments, no filings, no external systems.
+sensitivity_posture: >
+  Compliance overclaiming is the cardinal sin. The workbench may say
+  what approved documents state, omit, contradict, supersede, or
+  cannot answer. It may not imply that ExpertMachina verified company
+  practice, operational execution, logs, tickets, payments, filings,
+  pipelines, calendars, or external systems. Document-grounded, or
+  refused. No finding statement may use audit-conclusion vocabulary.
+forbidden_vocabulary:
+  # swept over every finding statement byte at the WS2 gate
+  - "non-compliant"
+  - "noncompliant"
+  - "is compliant"
+  - "complies with"
+  - "fails to comply"
+  - "in violation"
+  - "violates"
+  - "confirms compliance"
+  - "verified practice"
+  - "verified that the company"
+domain_scope: compliance
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+skills:
+  - extract_compliance_obligations
+  - detect_missing_evidence
+  - identify_outdated_policies
+  - detect_undocumented_obligation_owner
+  - detect_conflicting_compliance_statements
+  - prepare_audit_readiness_pack
+composition_across_the_valve: >
+  Registry rule 6, executed here for the first time (the v1.7
+  COMPOSITION PROOF): detect_missing_evidence may consume ACCEPTED
+  obligation facts (DERIVED, class visible per D30) as requirement
+  sources - never pending proposals. Second-generation findings cite
+  DERIVED evidence; derivation depth stays visible at the gate.
+refused_until_minted:
+  operational_evidence: policy-vs-practice comparison, obligation
+    verification against operational records, missed-reporting-event
+    detection, practice evidence from logs/tickets/payments
+  pipeline_metadata_door: unapproved-compliance-guidance detection,
+    agent-side approval-queue visibility
+  exception_stewardship: obligation owner assignment, routing, and
+    stewardship workflows (detection of an UNDOCUMENTED owner is
+    ratified here; deciding who the owner should be is human work)
+deferred_deliberately:
+  deadline_family: track_explicit_deadlines, track_recurrence_rules,
+    identify_upcoming_obligations_30_60_90,
+    detect_certification_expiry_risk - document-side in theory, but
+    persistent deadline stewardship risks a second operational state
+    machine before [ES] is scoped (the v1.7 WS0 ruling)

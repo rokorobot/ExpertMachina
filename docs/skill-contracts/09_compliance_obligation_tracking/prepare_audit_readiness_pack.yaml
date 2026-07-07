@@ -3,13 +3,14 @@
 # tools/generate_skill_contracts.py. Refined and ratified at the
 # workbench's own scoping session before entering
 # workbench/<name>/skills/ (registry rule 1).
-skill_id: prepare_audit_readiness_package
+skill_id: prepare_audit_readiness_pack
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED
+status: ACTIVE
+ratified_path: workbench/compliance_obligation/skills/prepare_audit_readiness_pack.yaml
 boundary_tags: [assist]
 pattern: assist
 purpose: >
-  Prepare audit readiness package.
+  Prepare audit readiness pack.
 allowed_inputs: >
   The four doors (.empkg at binding clearance; the MCP read tools
   at the AGENT token's clearance); specifically: approved knowledge in scope and ACCEPTED findings (DERIVED

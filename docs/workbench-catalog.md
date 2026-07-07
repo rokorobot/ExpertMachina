@@ -67,7 +67,7 @@ contract-analysis engine):
 | 6 | Customer Success / Retention | Layer 3 — FUTURE |
 | 7 | HR / People Operations | Layer 3 — FUTURE (positioning-sensitive) |
 | 8 | Operations / Process Improvement | Layer 3 — FUTURE (document-first) |
-| 9 | Compliance / Obligation Tracking | Layer 2 — SEQUENCED second |
+| 9 | Compliance / Obligation Tracking | Layer 2 — **ACTIVE, second (v1.7)** |
 | 10 | Document / Knowledge Quality | Layer 1 — PLATFORM |
 | 11 | Project / Delivery | Layer 3 — FUTURE |
 | 12 | Internal IT / SaaS | Layer 3 — FUTURE |

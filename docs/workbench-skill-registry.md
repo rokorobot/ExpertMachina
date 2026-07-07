@@ -468,49 +468,86 @@ Future [OE]: `compare_sop_vs_execution_logs` ·
 
 ---
 
-## 9. Compliance / Obligation Tracking Workbench — SEQUENCED (second)
+## 9. Compliance / Obligation Tracking Workbench — ACTIVE (v1.7, second)
 
 Purpose: extract, track, evidence, and answer obligations from
 governed documents. The most defensible EM-native workbench — the
-"no evidence = no answer" founding story, productized.
+"no evidence = no answer" founding story, productized. Build
+contract: docs/compliance-workbench-v1.7.md. **The sensitivity
+posture (v1.7 WS0, ratified): compliance overclaiming is the cardinal
+sin — the workbench says what approved documents state, omit,
+contradict, supersede, or cannot answer, never what the company does.
+Document-grounded, or refused.**
 
-1. `extract_obligations_from_contracts` [now]
-2. `extract_obligations_from_policies` [now]
-3. `extract_obligations_from_certifications` [now]
-4. `extract_obligations_from_regulatory_documents` [now]
-5. `classify_obligation_type` [now — reporting, renewal, certification, notification, SLA, audit, approval, training, retention, security, payment, delivery]
-6. `track_explicit_deadlines` [now]
-7. `track_recurrence_rules` [now — ambiguity flagged, never assumed]
-8. `detect_missing_evidence` [now — absence is a finding, never a fact]
-9. `identify_outdated_policies` [now — never age alone]
+**THE ACTIVE SIX (v1.7, ratified — bundle:
+`workbench/compliance_obligation/`):**
+
+| ACTIVE skill (v1.7) | Base pattern | Finding kind · evidence basis |
+|---|---|---|
+| `extract_compliance_obligations` | extract-candidates | COMPLIANCE_OBLIGATION · EXCERPT_BACKED (verbatim must/shall excerpt + declared source_type + obligation_type, UNCLASSIFIED when unsupported) |
+| `detect_missing_evidence` | missing-evidence | MISSING_COMPLIANCE_EVIDENCE · REFUSAL_BACKED (declared requirement classes; covered controls produce NO finding) |
+| `identify_outdated_policies` | outdated-guidance | OUTDATED_POLICY · REVISION_BACKED (supersession OR the document's OWN declared review interval overdue at a declared as_of — never age alone) |
+| `detect_undocumented_obligation_owner` | missing-evidence (owner axis) | UNDOCUMENTED_OBLIGATION_OWNER · REFUSAL_BACKED (THE SPLIT RULING: detection [now]; assignment/routing stays [ES]) |
+| `detect_conflicting_compliance_statements` | contradictory-guidance | CONFLICTING_COMPLIANCE_STATEMENTS · CONFLICT_BACKED (the v1.6 evidence rules inherited wholesale) |
+| `prepare_audit_readiness_pack` | assist | [assist] — known/missing/contradictory/unverified clearly separated; never a finding |
+
+**The consolidation ruling (v1.7 WS0):** subtasks 1–5 below
+consolidate into `extract_compliance_obligations` (declared
+`source_type`; `classify_obligation_type` folded in as
+`obligation_type`); subtasks 19–21 consolidate into
+`detect_missing_evidence` (declared requirement classes). Their
+drafts carry `status: CONSOLIDATED` + `consolidated_into` + a
+resolving `ratified_path` — consolidation is never silent promotion.
+**The deadline deferral (v1.7 WS0):** subtasks 6, 7, 17, 18 stay
+SEQUENCED, deliberately — persistent deadline stewardship risks a
+second operational state machine before [ES] is scoped.
+
+1. `extract_obligations_from_contracts` [now — CONSOLIDATED → extract_compliance_obligations]
+2. `extract_obligations_from_policies` [now — CONSOLIDATED → extract_compliance_obligations]
+3. `extract_obligations_from_certifications` [now — CONSOLIDATED → extract_compliance_obligations]
+4. `extract_obligations_from_regulatory_documents` [now — CONSOLIDATED → extract_compliance_obligations]
+5. `classify_obligation_type` [now — CONSOLIDATED → extract_compliance_obligations (the obligation_type field)]
+6. `track_explicit_deadlines` [now — DEFERRED to after the [ES] scoping]
+7. `track_recurrence_rules` [now — DEFERRED; ambiguity flagged, never assumed]
+8. `detect_missing_evidence` [now — **ACTIVE (v1.7)**; absence is a finding, never a fact]
+9. `identify_outdated_policies` [now — **ACTIVE (v1.7)**; never age alone]
 10. `compare_policy_vs_policy` [now]
 11. `compare_contract_obligation_vs_procedure` [now]
-12. `prepare_audit_readiness_package` [assist — approved evidence only; known/missing/contradictory/unverified clearly separated]
+12. `prepare_audit_readiness_pack` [assist — **ACTIVE (v1.7)**; approved evidence only; known/missing/contradictory/unverified clearly separated]
 13. `detect_unapproved_compliance_guidance` [PMD]
 14. `generate_compliance_evidence_binder` [assist — every section links to governed facts; no generated legal conclusion]
 15. `answer_auditor_questions` [assist — approved evidence only, refusals first-class]
-16. `identify_obligation_owner_gaps` [ES]
-17. `identify_upcoming_obligations_30_60_90` [now — deadline pattern]
-18. `detect_certification_expiry_risk` [now]
-19. `detect_reporting_obligation_gaps` [now]
-20. `detect_notification_obligation_gaps` [now]
-21. `detect_sla_evidence_gaps` [now]
+16. `identify_obligation_owner_gaps` [ES — THE SPLIT RULING: detection ratified as `detect_undocumented_obligation_owner` (**ACTIVE, v1.7**); assignment/routing/stewardship stays gated here]
+17. `identify_upcoming_obligations_30_60_90` [now — DEFERRED; deadline pattern]
+18. `detect_certification_expiry_risk` [now — DEFERRED]
+19. `detect_reporting_obligation_gaps` [now — CONSOLIDATED → detect_missing_evidence]
+20. `detect_notification_obligation_gaps` [now — CONSOLIDATED → detect_missing_evidence]
+21. `detect_sla_evidence_gaps` [now — CONSOLIDATED → detect_missing_evidence]
 22. `prepare_compliance_risk_register` [now, synth; owners ES]
 23. `generate_obligation_approval_queue` [now — the human gate surface; agent-side visibility PMD]
 24. `refuse_unsupported_compliance_claims` [now — a refusal discipline, contract-mandatory]
 
+Plus the two v1.7-minted skills: **`extract_compliance_obligations`
+[now] — ACTIVE** (the consolidating extraction contract) and
+**`detect_undocumented_obligation_owner` [now] — ACTIVE** (the
+detection half of the owner split); and
+**`detect_conflicting_compliance_statements` [now] — ACTIVE** (the
+compliance specialization of the conflict pattern).
+
 Future [OE]: `compare_policy_vs_practice` ·
 `verify_obligations_against_operational_records` ·
 `detect_missed_operational_reporting_events` ·
-`detect_practice_evidence_from_logs_tickets_payments`.
+`detect_practice_evidence_from_logs_tickets_payments` — exactly the
+practice claims the sensitivity posture refuses today.
 
 (The nine originally worked contract examples — extract_obligations,
 track_deadlines, detect_missing_evidence, identify_outdated_policies,
 compare_policy_vs_practice, prepare_audit_pack,
 detect_unapproved_changes, generate_evidence_binder,
-answer_auditor_questions — stand as the reference decomposition; their
-disciplines are distributed across the inventory above and are
-ratified in full at this workbench's own scoping session.)
+answer_auditor_questions — stand as the reference decomposition;
+their disciplines were distributed across the inventory above and
+ratified at the v1.7 scoping session exactly as registry rule 1
+prescribes.)
 
 ---
 
@@ -754,18 +791,26 @@ a shared internal fact store.
 ## The generated draft contracts — every skill has its contract file
 
 Every skill listed above has a full 13-field DRAFT contract file under
-**`docs/skill-contracts/<NN>_<workbench_id>/<skill_id>.yaml`** — 361
-contracts across the 16 workbenches, generated deterministically by
+**`docs/skill-contracts/<NN>_<workbench_id>/<skill_id>.yaml`** — 364
+contracts across the 16 workbenches (361 at v1.6; +3 at the v1.7
+scoping: the consolidating `extract_compliance_obligations`, the
+split-ruling `detect_undocumented_obligation_owner`, and
+`detect_conflicting_compliance_statements`), generated deterministically by
 **`tools/generate_skill_contracts.py`** (the master inventory lives as
 data inside the generator; edit it and rerun — output is stable
 byte-for-byte). Each draft composes the base contract with the skill's
 pattern (conflict / coverage / revision / extract / missing_evidence /
 deadline / compare / finding / assist / platform / stewardship) and
 its boundary tags; gated skills ([OE]/[PMD]/[ES]) carry their refusal
-condition naming the unminted decision. The five ratified ACTIVE
-Customer Operations contracts in `workbench/customer_operations/skills/`
-remain the binding versions; their drafts carry a `ratified_path`
-pointer. Promotion path: draft → refined + ratified at the workbench's
+condition naming the unminted decision. The ratified ACTIVE contracts
+— the five Customer Operations contracts in
+`workbench/customer_operations/skills/` (v1.6) and the six Compliance
+& Obligation contracts in `workbench/compliance_obligation/skills/`
+(v1.7) — remain the binding versions; their drafts carry a
+`ratified_path` pointer. CONSOLIDATED drafts (the v1.7 consolidation
+ruling) carry `consolidated_into` AND a `ratified_path` to the
+consolidating contract — consolidation is never silent promotion.
+Promotion path: draft → refined + ratified at the workbench's
 scoping session → `workbench/<name>/skills/` → runner + tests.
 
 ## Registry rules

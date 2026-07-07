@@ -1,0 +1,54 @@
+skill_id: prepare_audit_readiness_pack
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+purpose: >
+  Produce an evidence-backed audit-readiness pack for a named
+  compliance topic: what the governed corpus documents, with
+  known / missing / contradictory / unverified clearly separated.
+  The pack is preparation material for humans facing an audit - it
+  is never an audit conclusion and never enters knowledge.
+sections:
+  # the four mandatory sections - the sensitivity posture made
+  # structural. Nothing may move between buckets without governed
+  # evidence for the move.
+  - known: approved statements with citations (asset ids + excerpts)
+  - missing: requirements whose evidence questions the corpus
+      reproducibly refuses (cited by requirement excerpt)
+  - contradictory: governed CONFLICTS_WITH pairs in scope (cited by
+      relationship + both assets)
+  - unverified: what the documents CLAIM but the doors cannot
+      evidence - declared as unverified, never asserted; this bucket
+      IS the overclaiming guard
+allowed_inputs:
+  - approved knowledge in the compliance scope
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - other skills' pending (ungated) findings
+  - any operational-records "verification" of practice ([OE] refused)
+evidence_rules: >
+  Every statement cited to governed assets; conflicts and gaps
+  referenced by their governed evidence; DERIVED facts cited as
+  DERIVED; narrative framing declared SYNTHESIS_INFERRED. No
+  generated legal conclusion, no compliance verdict, no
+  audit-conclusion vocabulary.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A pack for humans (written to 07_agent_workspaces or handed to the
+  caller) - NOT a proposal, never written to /08_proposals, never
+  enters knowledge. The four sections always present, even when
+  empty (an empty "missing" section is itself information).
+human_approval_requirement: >
+  None required - the output never enters knowledge. If a human wants
+  pack content to become knowledge, they author it as an ordinary
+  document (PRIMARY) or an agent proposes it through the valve.
+audit_event: >
+  MCP calls audited per call; package consumption is locally
+  verifiable.
+refusal_conditions:
+  - the topic has no approved coverage at all - the pack says so
+    rather than composing an unsupported narrative
+  - a compliance verdict or practice attestation is requested ->
+    refuse; the pack prepares humans, it never concludes for them
