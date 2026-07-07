@@ -35,9 +35,37 @@ jobs:
         with:
           python-version: "3.11"
           cache: pip
-          cache-dependency-path: backend/requirements.txt
-      - name: Install backend dependencies
-        run: pip install -r backend/requirements.txt
+          cache-dependency-path: backend/requirements.lock
+      # Dependency custody (audit T2.2, H-DEP-1): the LOCK is what installs -
+      # the full transitive tree, hash-verified. requirements.txt stays the
+      # human-readable manifest; editing it without regenerating the lock
+      # fails here. Regenerate with:
+      #   uv pip compile requirements.txt --universal --generate-hashes \
+      #       --python-version 3.11 -o requirements.lock
+      - name: Install backend dependencies (locked, hash-verified)
+        run: pip install --require-hashes -r backend/requirements.lock
+      # The audit gate: every push is scanned against the advisory DBs.
+      # Accepted findings are listed HERE, each with a reason and a
+      # review-by date - never silent, never open-ended (T2.2 rule).
+      - name: Dependency audit (pip-audit)
+        run: |
+          pip install pip-audit
+          pip-audit -r backend/requirements.lock --disable-pip \
+            --ignore-vuln CVE-2025-5472 \
+            --ignore-vuln CVE-2025-5302 \
+            --ignore-vuln CVE-2025-7647 \
+            --ignore-vuln CVE-2025-6208 \
+            --ignore-vuln CVE-2024-12704 \
+            --ignore-vuln PYSEC-2026-597 \
+            --ignore-vuln CVE-2025-3000
+          # Accepted findings (review by 2026-08-31 or at the next release):
+          # - llama-index-core 0.10.44 (5 CVEs): fixes require 0.12/0.13, a
+          #   major framework jump the ingestion pipeline depends on - NOT a
+          #   low-risk bump. Follow-up: audit task T2.6 (upgrade or shed).
+          # - nltk 3.9.4 (PYSEC-2026-597): transitive via llama-index; no
+          #   fixed release exists yet - nothing to upgrade to.
+          # - torch 2.12.0 (CVE-2025-3000): no fixed release listed; NLI-only
+          #   dependency - exposure shrinks at T2.5 (optional requirements-nli).
       - name: All suites (auto-discovered harness - every backend/test_*.py)
         working-directory: backend
         run: python -m pytest -q
