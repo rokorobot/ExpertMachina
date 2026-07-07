@@ -1,4 +1,5 @@
 import datetime
+import os
 from sqlalchemy import create_engine, Column, Integer, String, Text, DateTime, ForeignKey, Float, Boolean
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker, relationship
@@ -733,89 +734,84 @@ class ClaimVerdict(Base):
         import json
         return json.loads(self.verifier_json) if self.verifier_json else None
 
+# backend/ directory - alembic.ini and alembic/ live here, next to app/.
+_BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _alembic_config(connection):
+    """An Alembic Config bound to the LIVE connection. env.py reads the
+    connection from config.attributes, so migrations run against exactly the
+    engine in use - including the temp/in-memory engines the test harness
+    rebinds onto db.engine per suite. Absolute paths so the working
+    directory never matters."""
+    from alembic.config import Config
+    cfg = Config(os.path.join(_BACKEND_DIR, "alembic.ini"))
+    cfg.set_main_option("script_location", os.path.join(_BACKEND_DIR, "alembic"))
+    cfg.attributes["connection"] = connection
+    return cfg
+
+
+def _assert_at_head_shape(connection):
+    """Adopt-by-stamp only accepts a pre-Alembic DB that is already at head
+    shape (every model table and column present). Refusing here converts a
+    silent-corruption footgun - stamping a column-deficient DB would declare
+    a false version - into a loud, honest failure (the project's standing
+    rule: loud refusals, never silent). The cost of choice A over a
+    reconciliation path: an intermediate-shape pre-Alembic DB is NOT
+    auto-upgraded; it must be migrated to head or re-created first."""
+    from sqlalchemy import inspect
+    insp = inspect(connection)
+    live = {t: {c["name"] for c in insp.get_columns(t)} for t in insp.get_table_names()}
+    missing = []
+    for table in Base.metadata.sorted_tables:
+        if table.name not in live:
+            missing.append(table.name)
+            continue
+        for col in table.columns:
+            if col.name not in live[table.name]:
+                missing.append(f"{table.name}.{col.name}")
+    if missing:
+        raise RuntimeError(
+            "T2.3 adopt-by-stamp refused: this pre-Alembic database is not at "
+            "head shape (missing " + ", ".join(sorted(missing)[:8])
+            + (" ..." if len(missing) > 8 else "") + "). A database predating "
+            "the Alembic spine must already carry every current table and "
+            "column (real deployments do). Migrate it to head or re-create it "
+            "before startup; the retired _ensure_columns engine no longer "
+            "back-fills columns silently. See docs/t23-alembic-inventory.md.")
+
+
 def init_db():
-    Base.metadata.create_all(bind=engine)
-    _ensure_columns()
+    """Governed schema management via Alembic (audit T2.3, the migration
+    spine - docs/t23-alembic-inventory.md). This RETIRED the hand-rolled
+    _ensure_columns additive engine: schema history is now an explicit,
+    versioned, reviewable Alembic path, and startup no longer silently
+    ALTERs tables.
 
+    Adoption (choice A, ratified 2026-07-07): a database that predates
+    Alembic carries no alembic_version table. Real deployments already sit
+    at head shape (they ran _ensure_columns many times), so they are
+    adopted in place by stamping, never re-created.
 
-def _ensure_columns():
-    """Additive SQLite migrations: create_all never adds columns to existing
-    tables, so columns introduced after a table shipped are ALTERed in here."""
-    from sqlalchemy import text
-    additions = {
-        "agent_packages": {
-            "clearance_level": "TEXT DEFAULT 'INTERNAL'",
-            "file_path": "TEXT",
-            "package_hash": "TEXT",
-            "manifest_json": "TEXT",
-        },
-        "documents": {
-            "content_hash": "TEXT",
-        },
-        "ingestion_jobs": {
-            "files_changed": "INTEGER DEFAULT 0",
-        },
-        # v1.1 WS2: the evaluation channel is a property of the run. Legacy
-        # rows are honestly LIVE (that is what they were); package
-        # coordinates stay NULL on them - never backfilled (D12).
-        "evaluation_runs": {
-            "run_type": "TEXT DEFAULT 'LIVE'",
-            "package_version": "TEXT",
-            "package_hash": "TEXT",
-            "consumer_model_provider": "TEXT",
-            "consumer_model_name": "TEXT",
-        },
-        "source_documents": {
-            "details_json": "TEXT",
-            # v1.2.1 WS0 (D26): Tier-0 source-authority evidence. NULL on
-            # pre-v1.2.1 scan rows = "we did not record it" (D12).
-            "source_metadata_json": "TEXT",
-        },
-        # v1.2.1 WS0 (D27): governed domain path; NULL = honestly
-        # unclassified, never backfilled.
-        # v1.4.0 WS0 (D30): source class - existing rows are PRIMARY by
-        # construction (no agent-writable ingress existed before v1.4),
-        # a derivable truth, never a backfilled guess.
-        "knowledge_assets": {
-            "domain": "TEXT",
-            "source_class": "TEXT NOT NULL DEFAULT 'PRIMARY'",
-        },
-        # v1.2.1 WS0 (D26): policy-tier condition columns; NULL preserves
-        # v0.10.2 behavior exactly (the D19 empty-config invariant).
-        "approval_policies": {
-            "source_conditions_json": "TEXT",
-            "engine_conditions_json": "TEXT",
-            "domains_json": "TEXT",
-        },
-        # v1.2.0 WS0 (D25): connectors reference outbound credentials by
-        # id, never by value. NULL = the provider needs none (LOCAL_FOLDER)
-        # - an honest NULL, not a dummy credential.
-        # v1.4.0 WS0 (D29/D30): lane - existing connectors are ordinary
-        # knowledge acquisition (PRIMARY); the proposal lane is a
-        # deliberate declaration, never a default.
-        "source_connectors": {
-            "external_credential_id": "INTEGER",
-            "lane": "TEXT NOT NULL DEFAULT 'PRIMARY'",
-        },
-        # Identity Boundary v1.0: nullable fact references on the landing
-        # pads. NULL on pre-boundary rows means "we did not know" - facts
-        # are never retroactively fabricated (D12).
-        "audit_events": {
-            "identity_fact_id": "INTEGER",
-        },
-        "asset_reviews": {
-            "identity_fact_id": "INTEGER",
-        },
-        "asset_revisions": {
-            "identity_fact_id": "INTEGER",
-        },
-    }
-    with engine.connect() as conn:
-        for table, columns in additions.items():
-            existing = {row[1] for row in conn.execute(text(f"PRAGMA table_info({table})"))}
-            if not existing:
-                continue  # table not created yet; create_all handles it fully
-            for column, ddl in columns.items():
-                if column not in existing:
-                    conn.execute(text(f"ALTER TABLE {table} ADD COLUMN {column} {ddl}"))
-        conn.commit()
+      * no tables at all          -> upgrade head (baseline builds the schema)
+      * tables, no alembic_version -> stamp head (adopt a head-shape
+                                      pre-Alembic DB; refuse if deficient)
+      * alembic_version present    -> upgrade head (normal path; no-op at head)
+
+    The effective schema is unchanged: applying the baseline to an empty DB
+    reproduces the create_all fingerprint byte-for-byte (28 tables /
+    305 columns, the D24 count). Formalize the history; improve nothing."""
+    from alembic import command
+    from sqlalchemy import inspect
+    tables = set(inspect(engine).get_table_names())
+    # engine.begin() commits on exit - required so `stamp` persists the
+    # alembic_version row (it writes no DDL to force an implicit commit).
+    with engine.begin() as connection:
+        cfg = _alembic_config(connection)
+        if not tables:
+            command.upgrade(cfg, "head")
+        elif "alembic_version" not in tables:
+            _assert_at_head_shape(connection)
+            command.stamp(cfg, "head")
+        else:
+            command.upgrade(cfg, "head")

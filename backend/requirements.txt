@@ -61,6 +61,14 @@ anthropic==0.109.1
 # explicitly now that app/custody.py imports Fernet directly.
 cryptography==48.0.1
 
+# Governed schema migrations (audit T2.3, Alembic migration spine -
+# docs/t23-alembic-inventory.md). Retires the hand-rolled
+# database._ensure_columns additive engine: schema history becomes an
+# explicit, versioned, reviewable Alembic path. Pulls Mako + MarkupSafe
+# (templating for migration scaffolds) - kept in the pip-audit gate, which
+# must stay ZERO-vuln / ZERO-ignore (the T2.6 win).
+alembic==1.16.5
+
 # Suite harness (audit 2026-07-07, T0.1/T0.2): pytest discovers and runs
 # every backend/test_*.py as an isolated subprocess - CI no longer
 # enumerates suites by hand (the mechanism that orphaned 18 of 64).
