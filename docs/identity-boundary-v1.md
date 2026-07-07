@@ -237,7 +237,10 @@ new checkpoints; the only hard gate remains compile time.
   strings with `identity_fact_id = NULL` — truthfully pre-boundary.
   **No retroactive IdentityFacts are ever fabricated.** UI labels legacy
   records as such.
-- Schema changes are additive via `database._ensure_columns()`.
+- Schema changes were additive via `database._ensure_columns()` (retired at
+  audit T2.3 in favor of the governed Alembic migration spine —
+  docs/t23-alembic-inventory.md; the additive landing-pad columns described
+  above are now the Alembic baseline).
 - Frontend: login screen, session handling, current-user display,
   hardcoded actor names deleted, Settings gains Users & Tokens
   administration (ADMIN only), role-aware action visibility.
