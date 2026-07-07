@@ -26,6 +26,10 @@ import secrets as _secrets
 from sqlalchemy.orm import Session
 
 from app import database as db
+# T3.1: the neutral audit-write module. audit imports only database, so this
+# top-level import creates no cycle - it is what let us drop identity's lazy
+# `from app import crud` (the crud<->identity hinge).
+from app import audit
 
 PRINCIPAL_KINDS = {"HUMAN", "DELEGATED", "SYSTEM", "SERVICE", "AGENT"}
 CREDENTIAL_KINDS = {"PASSWORD", "API_TOKEN", "SESSION"}
@@ -308,10 +312,13 @@ def _fingerprint(credential_id: int, secret_hash: str) -> str:
 
 def _audit(session: Session, actor: str, event_type: str, target_id: str = None,
            details: str = None, identity_fact_id: int = None):
-    from app import crud  # lazy: crud will import identity in WS1c
-    return crud.log_audit_event(session, actor=actor, event_type=event_type,
-                                target_id=target_id, details=details,
-                                identity_fact_id=identity_fact_id)
+    # T3.1: log_audit_event now lives in the neutral app/audit.py (imported at
+    # module top). Previously this was a lazy `from app import crud` - the sole
+    # edge that closed the crud<->identity import cycle. audit imports neither
+    # crud nor identity, so the cycle is gone and this call is import-safe.
+    return audit.log_audit_event(session, actor=actor, event_type=event_type,
+                                 target_id=target_id, details=details,
+                                 identity_fact_id=identity_fact_id)
 
 
 # ------------------------------------------------------------- principals
