@@ -230,15 +230,17 @@ def main():
         for forbidden in ("token", "status", "runtime", "endpoint", "tool"):
             assert not any(forbidden in c for c in cols), \
                 f"Binding must not carry {forbidden}-shaped state"
-        main_src = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "main.py")
-        with open(main_src, encoding="utf-8") as f:
+        # T2.4: bindings routes relocated verbatim from main.py into the
+        # packages router (pure relocation). Assertion unchanged; file moved.
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "routers", "packages.py")
+        with open(src_path, encoding="utf-8") as f:
             src = f.read()
-        assert '@app.post("/api/packages/{package_id}/bindings"' in src
-        assert '@app.get("/api/packages/{package_id}/bindings"' in src
+        assert '@router.post("/api/packages/{package_id}/bindings"' in src
+        assert '@router.get("/api/packages/{package_id}/bindings"' in src
         for verb in ("put", "patch", "delete"):
-            assert f'@app.{verb}("/api/packages/{{package_id}}/bindings' not in src, \
+            assert f'@router.{verb}("/api/packages/{{package_id}}/bindings' not in src, \
                 "Bindings are append-only at the API boundary"
-        post_route = src.split('@app.post("/api/packages/{package_id}/bindings"')[1].split("@app.")[0]
+        post_route = src.split('@router.post("/api/packages/{package_id}/bindings"')[1].split("@router.")[0]
         assert 'require_perm("assets:approve")' in post_route
         print("Part 4 passed: snapshot columns only; POST+GET only; approval-tier write.")
     finally:

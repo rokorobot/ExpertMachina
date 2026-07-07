@@ -223,13 +223,16 @@ def main():
 
         # Part 5: the write surface sits at the approval tier (structural).
         print("\n--- Part 5: Selection requires assets:approve at the route boundary ---")
-        main_src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "main.py")
-        with open(main_src_path, encoding="utf-8") as f:
+        # T2.4: these routes were relocated verbatim from main.py into the
+        # packages router (pure relocation; app.include_router wires them).
+        # The structural assertion is unchanged - only the source file moved.
+        src_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "app", "routers", "packages.py")
+        with open(src_path, encoding="utf-8") as f:
             src = f.read()
-        put_route = src.split('@app.put("/api/packages/{package_id}/model-selection"')[1].split("@app.")[0]
+        put_route = src.split('@router.put("/api/packages/{package_id}/model-selection"')[1].split("@router.")[0]
         assert 'require_perm("assets:approve")' in put_route, \
             "Selecting a model is an approval-tier decision"
-        get_route = src.split('@app.get("/api/packages/{package_id}/model-selection"')[1].split("@app.")[0]
+        get_route = src.split('@router.get("/api/packages/{package_id}/model-selection"')[1].split("@router.")[0]
         assert 'require_perm("assets:read")' in get_route
         print("Part 5 passed: write at assets:approve, read at assets:read.")
     finally:
