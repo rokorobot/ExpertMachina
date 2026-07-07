@@ -30,11 +30,27 @@ import pytest
 
 BACKEND_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
-# Files matching test_*.py that are NOT runnable suites. Every entry
-# needs a reason - this list is the only sanctioned way to keep a
-# test_*.py out of CI.
+# Files matching test_*.py that the per-push harness does NOT run. Every
+# entry needs a reason - this list is the only sanctioned way to keep a
+# test_*.py out of the per-push CI sweep.
+#
+# Two kinds live here: non-suites (shared fixtures) and MODEL-DEPENDENT
+# suites that belong to the nightly, not per-push. The latter force the
+# real NLI cross-encoder on and require the ~1GB model AND its exact
+# HuggingFace cache layout - which per-push CI has no business fetching.
+# They are the nightly's exclusive gate (nightly-nli.yml, task T0.3),
+# which restores the cached model and runs them full-model with a
+# fail-on-skip guard, so excluding them here loses zero coverage.
 NOT_SUITES = {
     "test_support.py",  # shared fixture module (governed_actor helper), no __main__ suite
+    # Model-dependent - nightly only (nightly-nli.yml). test_nli_verification
+    # flips EM_NLI on and asserts the model weights-hash fingerprint, which
+    # needs the model's real cache snapshot (a live per-push download does not
+    # populate it the way the fingerprint path expects - a fresh Linux runner
+    # fails on exactly that assertion). test_conflict_engine likewise needs
+    # the NLI engine; per-push it would only ever skip.
+    "test_nli_verification.py",
+    "test_conflict_engine.py",
 }
 
 # Per-suite wall-clock ceiling. The slowest suites (package evaluation,
