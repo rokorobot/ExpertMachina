@@ -7,9 +7,13 @@ from sqlalchemy.orm import sessionmaker
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
+os.environ["EM_NLI_VERIFICATION"] = "off"
+os.environ.setdefault("OPENAI_API_KEY", "mock-key")
+
 from app import database as db
 from app import schemas
 from app import crud
+from app import identity
 from app import query_engine
 from app.main import app
 from fastapi.testclient import TestClient
@@ -18,9 +22,14 @@ import test_support
 def test_audit_logging_scenarios():
     print("\nInitializing test database for Audit expansion checks...")
     
-    # Use in-memory SQLite database
+    # Use in-memory SQLite database. StaticPool: every connection checkout
+    # must reach the SAME memory database - TestClient serves requests on a
+    # worker thread, and without it a post-commit checkout gets a fresh,
+    # empty :memory: connection ("no such table").
+    from sqlalchemy.pool import StaticPool
     TEST_DATABASE_URL = "sqlite:///:memory:"
-    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False})
+    engine = create_engine(TEST_DATABASE_URL, connect_args={"check_same_thread": False},
+                           poolclass=StaticPool)
     db.Base.metadata.create_all(bind=engine)
     TestingSessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
     session = TestingSessionLocal()
@@ -75,11 +84,23 @@ def test_audit_logging_scenarios():
     app.dependency_overrides[get_db] = lambda: session
     client = TestClient(app)
 
+    # Identity boundary (v1.0): the query route requires an authenticated
+    # actor - callers can no longer act anonymously. This suite pre-dated
+    # the boundary (the reason it fell out of CI); repaired 2026-07-07 to
+    # authenticate like every modern suite does.
+    auditor = identity.create_principal(session, name="auditor", display_name="Auditor",
+                                        kind="HUMAN", role="ADMIN", created_by="test-suite")
+    identity.set_password(session, auditor, "auditor-password-123", actor="test-suite")
+    r = client.post("/api/auth/login", json={"name": "auditor", "password": "auditor-password-123"})
+    assert r.status_code == 200, f"Login failed: {r.text}"
+    HEADERS = {"Authorization": f"Bearer {r.json()['token']}"}
+
     # --- SCENARIO 1: Ask unrelated question (triggers INSUFFICIENT EVIDENCE block) ---
     print("\n--- Running Scenario 1: Unrelated question (Expected Block) ---")
     response = client.post(
         f"/api/projects/{project.id}/query",
-        json={"expert_model_id": model.id, "question": "Does clinical monitoring cover remote audits?"}
+        json={"expert_model_id": model.id, "question": "Does clinical monitoring cover remote audits?"},
+        headers=HEADERS
     )
     
     assert response.status_code == 200, "Query request failed"
@@ -99,14 +120,17 @@ def test_audit_logging_scenarios():
     print(f"Log event details schema: {details}")
     assert details["verification_status"] == "INSUFFICIENT_EVIDENCE"
     assert "Clinical monitoring covers remote audits." in details["unsupported_claims"]
-    assert details["operator"] == "operator_admin_02"
+    # The boundary decides the actor: the ledger records the authenticated
+    # principal's display, never a hardcoded operator string.
+    assert details["operator"] == "Auditor"
     print("Scenario 1: Passed (blocked query successfully logged with full verification details)")
 
     # --- SCENARIO 2: Valid Grounded Question (Expected ASK_EXPERT_QUERY log) ---
     print("\n--- Running Scenario 2: Grounded question (Expected Success log) ---")
     response_ok = client.post(
         f"/api/projects/{project.id}/query",
-        json={"expert_model_id": model.id, "question": "What is the SLA refund percentage?"}
+        json={"expert_model_id": model.id, "question": "What is the SLA refund percentage?"},
+        headers=HEADERS
     )
     assert response_ok.status_code == 200
     data_ok = response_ok.json()

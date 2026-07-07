@@ -33,3 +33,8 @@ anthropic==0.109.1
 # outbound secrets under EM_SECRET_KEY. Previously transitive; pinned
 # explicitly now that app/custody.py imports Fernet directly.
 cryptography==48.0.1
+
+# Suite harness (audit 2026-07-07, T0.1/T0.2): pytest discovers and runs
+# every backend/test_*.py as an isolated subprocess - CI no longer
+# enumerates suites by hand (the mechanism that orphaned 18 of 64).
+pytest==8.4.1
