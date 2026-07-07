@@ -38,10 +38,20 @@ app = FastAPI(title="ExpertMachina MVP Backend", version="0.1.0")
 # no identity layer until v1.x (D14) - a wildcard here let any webpage the
 # operator visits call state-mutating endpoints from their browser. Override
 # for other deployments via EM_CORS_ORIGINS (comma-separated).
+_cors_origins = [o.strip() for o in os.environ.get(
+    "EM_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()]
+if "*" in _cors_origins:
+    # Audit QW-3 (docs/audit-2026-07-07.md, M-SEC-3): a wildcard origin
+    # combined with allow_credentials lets any webpage the operator visits
+    # drive state-mutating endpoints with the victim's credentials. Refuse
+    # loudly at import - a misconfigured boundary must never come up quiet.
+    raise RuntimeError(
+        "EM_CORS_ORIGINS must not contain '*': the API allows credentials, and a "
+        "wildcard origin would let any webpage call it as the operator. List the "
+        "frontend origins explicitly (comma-separated).")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[o.strip() for o in os.environ.get(
-        "EM_CORS_ORIGINS", "http://localhost:3000,http://127.0.0.1:3000").split(",") if o.strip()],
+    allow_origins=_cors_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1278,10 +1288,17 @@ def get_agent_activity(db_session: Session = Depends(get_db),
     ).order_by(db.AuditEvent.timestamp.desc()).limit(2000).all()
 
     agents = {}
+    # Audit QW-5 (docs/audit-2026-07-07.md, M-CQ-1): unparseable ledger rows
+    # used to vanish from this view with no trace. They are still excluded
+    # from aggregation (their content is unreadable) but are now COUNTED and
+    # reported - an activity view over an audit ledger must say when it
+    # could not read part of the ledger.
+    unparseable_events = 0
     for e in events:
         try:
             d = json.loads(e.details)
         except Exception:
+            unparseable_events += 1
             continue
         agent_id = d.get("agent_id", e.actor)
         a = agents.setdefault(agent_id, {
@@ -1315,7 +1332,10 @@ def get_agent_activity(db_session: Session = Depends(get_db),
     return {
         "agents": sorted(agents.values(), key=lambda x: x["last_seen"], reverse=True),
         "total_calls": sum(a["calls"] for a in agents.values()),
-        "total_denied": sum(a["denied"] for a in agents.values())
+        "total_denied": sum(a["denied"] for a in agents.values()),
+        # Honest reporting (D12): rows this view could not read are declared,
+        # never silently dropped.
+        "unparseable_events": unparseable_events
     }
 
 # Audit Trail routes

@@ -40,16 +40,24 @@ def create_evaluation_run(session: Session, run_in: schemas.EvaluationRunCreate)
         if run_in.agent_package_id is not None:
             raise ValueError("LIVE runs take no package coordinates - the channels are never blurred (D10)")
         # The knowledge universe of a LIVE run: approved DB assets.
+        # Audit QW-5 (docs/audit-2026-07-07.md, M-CQ-1): a malformed
+        # asset_ids_json used to be swallowed silently, quietly giving the
+        # run an EMPTY knowledge universe - the evaluation basis corrupted
+        # with no trace. Refusal-first: a run whose basis cannot be read
+        # is refused (400 at the route), never launched hollow.
         approved_assets = []
         if expert_model.asset_ids_json:
             try:
                 asset_ids = json.loads(expert_model.asset_ids_json)
-                approved_assets = session.query(db.KnowledgeAsset).filter(
-                    db.KnowledgeAsset.id.in_(asset_ids),
-                    db.KnowledgeAsset.status == "APPROVED"
-                ).all()
-            except Exception:
-                pass
+            except Exception as e:
+                raise ValueError(
+                    f"Expert Model {expert_model.id} has unreadable asset_ids_json "
+                    f"({e}); refusing to launch a LIVE run over an empty knowledge "
+                    "universe. Repair the expert model first.")
+            approved_assets = session.query(db.KnowledgeAsset).filter(
+                db.KnowledgeAsset.id.in_(asset_ids),
+                db.KnowledgeAsset.status == "APPROVED"
+            ).all()
         asset_ids_snapshot = [a.id for a in approved_assets]
         asset_hashes_snapshot = {str(a.id): a.source_hash for a in approved_assets if a.source_hash}
     else:
