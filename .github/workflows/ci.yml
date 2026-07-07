@@ -67,6 +67,9 @@ jobs:
       - name: Workbench projection guard (D24 schema snapshot)
         working-directory: backend
         run: python test_workbench_projection.py
+      - name: Route-manifest guard (T2.4 - router split is pure relocation)
+        working-directory: backend
+        run: python test_route_manifest.py
       - name: Credential custody guard (D25 sentinel sweep)
         working-directory: backend
         run: python test_credential_custody.py
