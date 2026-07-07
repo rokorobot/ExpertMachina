@@ -2,11 +2,20 @@ import os
 import shutil
 import hashlib
 import json
+import uuid
 import datetime
 from fastapi import FastAPI, Depends, Header, UploadFile, File, Form, HTTPException, status, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from typing import List, Optional
+
+from app import logging_config
+
+# T2.1 (audit H-OPS-1): operational logging configured before anything can
+# emit. The audit ledger stays the governed record; logs are runtime
+# visibility only - never substitute one for the other.
+logging_config.configure_logging()
+logger = logging_config.get_logger(__name__)
 
 from app import database as db
 from app import schemas
@@ -56,6 +65,19 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# T2.1: request correlation. Every log line emitted while serving a request
+# carries a short random id, so concurrent requests' operational logs are
+# attributable. Observability only - identity facts and audit events remain
+# the governed record of WHO did WHAT.
+@app.middleware("http")
+async def request_context_middleware(request, call_next):
+    token = logging_config.request_id_var.set(uuid.uuid4().hex[:12])
+    try:
+        return await call_next(request)
+    finally:
+        logging_config.request_id_var.reset(token)
 
 # Upload directory
 UPLOAD_DIR = "./uploads"
@@ -136,6 +158,10 @@ def startup_event():
         identity.ensure_system_principals(session)
         admin, one_time_password = identity.bootstrap_admin(session)
         if one_time_password:
+            # DELIBERATELY print(), never the logging layer (T2.1 ruling):
+            # "shown once, never logged" is this credential's contract - it
+            # must reach the operator's console exactly once and must never
+            # land in any routed/collected log stream.
             # flush=True: under uvicorn, stdout is block-buffered - without
             # an explicit flush the one-time credential can sit invisible in
             # the buffer, which operationally means a locked-out admin.
@@ -156,7 +182,7 @@ def startup_event():
         # Report-only (authorization fails closed regardless), but LOUD.
         findings = identity.validate_boundary(session)
         for finding in findings:
-            print(f"BOUNDARY VALIDATION: {finding}", flush=True)
+            logger.warning("BOUNDARY VALIDATION: %s", finding)
 
 # Status Check
 @app.get("/api/health")

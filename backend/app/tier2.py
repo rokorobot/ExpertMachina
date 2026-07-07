@@ -10,6 +10,9 @@ from app import schemas
 from app import identity
 from app import policy
 from app import classification
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Tier-2 engine-verified auto-approval (v1.2.1 WS3, D26).
 #
@@ -180,7 +183,7 @@ def _run_with_owned_session(project_id, document_ids, connector_id,
                 target_id=str(ingestion_job_id) if ingestion_job_id else None,
                 details=json.dumps({"error": str(e), "auto_approved": 0}))
         except Exception:
-            print(f"TIER2: pass failed and the failure event could not be written: {e}")
+            logger.error("TIER2: pass failed and the failure event could not be written: %s", e)
     finally:
         session.close()
 

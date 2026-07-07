@@ -6,6 +6,9 @@ from app import database as db
 from app import schemas
 from app import query_engine
 from app import package_consumer
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 from app import llm
 
 # Evaluation (MVP 0.4 onward). v1.1 WS2: evaluation is ONE concept; the
@@ -411,7 +414,7 @@ def run_evaluation_batch(session: Session, run_id: int):
         session.commit()
 
     except Exception as e:
-        print(f"Evaluation Run {run_id} failed: {e}")
+        logger.exception("Evaluation Run %s failed", run_id)
         session.rollback()
         db_run = session.query(db.EvaluationRun).filter(db.EvaluationRun.id == run_id).first()
         db_run.status = "FAILED"

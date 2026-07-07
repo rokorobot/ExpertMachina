@@ -4,8 +4,11 @@ import json
 from sqlalchemy.orm import Session
 from app import database as db
 from app import crud
+from app.logging_config import get_logger
 from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
+
+logger = get_logger(__name__)
 
 # Initialize local Qdrant client lazily
 QDRANT_DIR = "./qdrant_db"
@@ -31,7 +34,7 @@ def init_qdrant():
                 vectors_config=VectorParams(size=1536, distance=Distance.COSINE),
             )
     except Exception as e:
-        print(f"Error initializing Qdrant: {e}")
+        logger.error("Error initializing Qdrant: %s", e)
 
 # Helper to generate mock embeddings if OpenAI is not configured
 def get_embedding(text: str) -> list:
@@ -42,7 +45,7 @@ def get_embedding(text: str) -> list:
             embedder = OpenAIEmbedding(api_key=api_key)
             return embedder.get_text_embedding(text)
         except Exception as e:
-            print(f"Error calling OpenAI Embeddings: {e}. Falling back to mock embeddings.")
+            logger.warning("Error calling OpenAI Embeddings: %s. Falling back to mock embeddings.", e)
             
     # Mock embedding: generate a deterministic 1536-dim float array from the text hash
     h = hashlib.sha256(text.encode('utf-8')).digest()
@@ -105,7 +108,7 @@ def parse_and_index_document(session: Session, doc_id: int):
                 table_count = len(result.pages[0].tables) if hasattr(result, "pages") and len(result.pages) > 0 else 0
                 docling_json_str = json.dumps({"parsed_by": "docling_docx"})
             except Exception as e:
-                print(f"Docling docx parsing skipped or failed ({e}). Falling back to python-docx.")
+                logger.warning("Docling docx parsing skipped or failed (%s). Falling back to python-docx.", e)
                 try:
                     import docx
                     doc_obj = docx.Document(file_path)
@@ -120,7 +123,7 @@ def parse_and_index_document(session: Session, doc_id: int):
                     text_content = "\n\n".join(paragraphs)
                     docling_json_str = json.dumps({"parsed_by": "python_docx"})
                 except Exception as ex:
-                    print(f"python-docx parsing failed: {ex}")
+                    logger.warning("python-docx parsing failed: %s", ex)
         else:
             # Non-docx files
             try:
@@ -131,7 +134,7 @@ def parse_and_index_document(session: Session, doc_id: int):
                 table_count = len(result.pages[0].tables) if hasattr(result, "pages") and len(result.pages) > 0 else 0
                 docling_json_str = json.dumps({"parsed_by": "docling"})
             except Exception as e:
-                print(f"Docling parsing skipped or failed ({e}). Falling back to native text extraction.")
+                logger.warning("Docling parsing skipped or failed (%s). Falling back to native text extraction.", e)
                 if file_path.endswith(".txt") or file_path.endswith(".md"):
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         text_content = f.read()
@@ -145,7 +148,7 @@ def parse_and_index_document(session: Session, doc_id: int):
                             pages_text.append(page.extract_text() or "")
                         text_content = "\n\n".join(pages_text)
                     except Exception as ex:
-                        print(f"pypdf extraction skipped: {ex}")
+                        logger.warning("pypdf extraction skipped: %s", ex)
                 else:
                     with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
                         text_content = f.read()

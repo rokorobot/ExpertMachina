@@ -10,6 +10,9 @@ from app import crud
 from app import custody
 from app import identity
 from app import ingestion
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 from app import extraction
 from app import policy
 from app import classification
@@ -79,7 +82,7 @@ def execute_ingestion_job(session: Session, job_id: int, auto_extract: bool = Tr
                           on_behalf_of_fact_id: int = None) -> db.IngestionJob:
     job = session.query(db.IngestionJob).filter(db.IngestionJob.id == job_id).first()
     if not job:
-        print(f"Ingestion job {job_id} not found")
+        logger.error("Ingestion job %s not found", job_id)
         return None
     connector = session.query(db.SourceConnector).filter(
         db.SourceConnector.id == job.connector_id).first()

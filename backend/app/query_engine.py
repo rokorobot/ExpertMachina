@@ -6,6 +6,9 @@ import hashlib
 from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 from app import crud
 from app import ingestion
 from app import verification_engine
@@ -94,7 +97,7 @@ def validate_asset_evidence(
         "source_hash_verified": source_hash_verified
     }
     
-    print(f"VALIDATION_REPORT: {json.dumps(report)}")
+    logger.info("VALIDATION_REPORT: %s", json.dumps(report))
     return report
 
 def split_into_claims(text: str) -> list:
@@ -181,7 +184,7 @@ def verify_answer_claims(
                         except ValueError:
                             pass
             except Exception as e:
-                print(f"LLM Claim alignment check failed: {e}. Falling back to text overlap.")
+                logger.warning("LLM Claim alignment check failed: %s. Falling back to text overlap.", e)
 
         if not supporting_asset_ids:
             claim_words = set(claim.lower().replace(".", "").replace(",", "").replace(";", "").split())
@@ -261,7 +264,7 @@ def _finalize_verification_report(
         "verifier": verifier
     }
 
-    print(f"VERIFICATION_REPORT: {json.dumps(report)}")
+    logger.info("VERIFICATION_REPORT: %s", json.dumps(report))
     return report
 
 def generate_evidence_answer(
@@ -330,7 +333,7 @@ def generate_evidence_answer(
                 "generation_mode": "LLM_ASSISTED"
             }
         except Exception as e:
-            print(f"LLM Generation failed: {e}. Falling back to deterministic generation.")
+            logger.warning("LLM Generation failed: %s. Falling back to deterministic generation.", e)
 
     q_lower = question.lower()
     
@@ -505,7 +508,7 @@ def retrieve_approved_evidence(
                         retrieved_citations.append(citation)
                         
         except Exception as e:
-            print(f"Retrieval engine error: {e}")
+            logger.exception("Retrieval engine error; falling back to direct match")
             
     # Fallback to direct SQLite match
     if not retrieved_citations:
@@ -530,7 +533,7 @@ def retrieve_approved_evidence(
         "caller_access_level": caller_access_level,
         "access_blocked_assets": access_blocked_asset_ids
     }
-    print(f"RETRIEVAL_AUDIT: {json.dumps(retrieved_audit_log)}")
+    logger.info("RETRIEVAL_AUDIT: %s", json.dumps(retrieved_audit_log))
 
     return {
         "citations": retrieved_citations,

@@ -2,6 +2,10 @@ import os
 import re
 import json
 
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
+
 # Atomic claim decomposition (MVP 0.6). A compound policy sentence like
 #   "Critical deviations must be logged within 24 hours and reviewed weekly
 #    by the quality manager unless escalated."
@@ -87,7 +91,7 @@ def _decompose_llm(text: str) -> list:
         cleaned = [c.strip() for c in claims if isinstance(c, str) and len(c.split()) > 2]
         return cleaned or None
     except Exception as e:
-        print(f"LLM claim decomposition failed ({e}). Falling back to rule-based decomposition.")
+        logger.warning("LLM claim decomposition failed (%s). Falling back to rule-based decomposition.", e)
         return None
 
 
