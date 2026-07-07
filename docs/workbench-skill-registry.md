@@ -837,3 +837,35 @@ scoping session → `workbench/<name>/skills/` → runner + tests.
    consumes another workbench's ACCEPTED DERIVED facts, never its
    pending proposals; second-generation synthesis stays visible
    through D30 citation depth.
+## The scoped roadmap layer (added at the v1.8 selection scoping, 2026-07-07)
+
+Normalization over the 16-workbench inventory above: proof names, commercial-verdict
+readers, and sequence markers. Statuses: [now] buildable in its document slice ·
+[next] named prerequisite first · [gated] requires minting [OE]/[ES]/[PMD] ·
+[deferred] deliberate · [shipped].
+
+| # | Workbench (enterprise-facing name) | Status | Distinctive proof | Verdict reader | Milestone |
+|---|---|---|---|---|---|
+| 3 | Procurement Document Intelligence | [now] | THE CLAUSE ARITHMETIC PROOF — every number/percentage verbatim + cited; only computed values are date windows over verbatim dates at the declared as_of | procurement/finance owner | v1.8 (SELECTED) |
+| 1 | Executive Operations Briefing | [now] (decision queue [gated: PMD]) | THE BRIEFING PROOF — every sentence cited or SYNTHESIS_INFERRED-declared; byte-identical per ledger cursor; zero door growth | CEO | v1.9 (recommended) |
+| 15 | Risk & Exception Stewardship | [gated: ES] (queue [shipped]) | THE STEWARDSHIP PROOF — queue recomputes identically from the ledger; decisions persist as events; no exception row exists | governance officer | v2.0 (the [ES] minting milestone) |
+| 16 | Contract Intelligence | [next: two consumers exist after v1.8] | THE SHARED ENGINE PROOF — one extraction contract, two consumers, zero drift, no shared fact store | general counsel / procurement | v2.1 candidate |
+| 4 | Sales & Commitments Intelligence | [next: the diagnostic-subject ruling] | THE UNBACKED PROMISE PROOF — the unbacked promise found; the backed one silent; proposal claims never become knowledge | sales director | v2.1 candidate |
+| 6 | Customer Success / Retention | [next] | THE CUSTOM TERMS PROOF — per-customer deviation from standard terms found; conforming customer silent | CS lead | pull-driven |
+| 11 | Project / Delivery Intelligence | [next] | THE SCOPE DRIFT PROOF — contract obligation absent from the plan found from documents alone | delivery lead | pull-driven |
+| 12 | Internal IT & SaaS Governance | [next] | THE UNAPPROVED TOOL PROOF — policy-vs-approved-tools deviation found; renewal window on the declared clock | IT manager | pull-driven |
+| 8 | Operations & SOP Intelligence | [next: procedural corpus + evidence rules] | THE HANDOFF PROOF — the missing cross-SOP handoff found; the covered handoff silent | operations lead | pull-driven |
+| 2 | Finance & Cost Leakage | [now: doc slice; full scope gated: OE] | THE LEAKAGE LEDGER PROOF — every leak clause-cited, never transaction-inferred | CFO | fold into #3/#16 |
+| 7 | HR / People Operations | [deferred: positioning-sensitive] | THE POLICY-ONLY PROOF — structurally incapable of person-level findings | HR director | on demand, Fable-only |
+| 13 | Meeting & Decision Intelligence | [deferred surface] | THE DECISION EVIDENCE PROOF — the unevidenced, unowned decision surfaces; PRIMARY authorship path unchanged | chief of staff | after [PMD] / pull |
+| 5 | Customer Operations | [shipped v1.6.0] | THE DIAGNOSIS PROOF + Commercial Verdict | customer-ops manager | done |
+| 9 | Compliance & Obligation | [shipped v1.7.0] | THE COMPOSITION PROOF + Commercial Verdict | audit-facing reader | done |
+| 10 | Document / Knowledge Quality | [shipped platform] | the six standing guard families | — | platform |
+| 14 | Ask Company Expert | [shipped platform] | "no evidence = no answer" (constitutional) | — | platform |
+
+Standing roadmap rules ratified with this layer: every milestone keeps the WS0→WS3
+gate pattern with a named distinctive proof and a user commercial verdict; [OE]/[ES]/
+[PMD] are minted only at their own scoping sessions ([ES] targeted at v2.0); the
+sensitivity posture is named per workbench at WS0 (v1.8's cardinal sin: the invented
+number); model routing — Fable for scoping/gates/proof design, Opus for post-
+ratification implementation, Sonnet for mechanical closeout.
