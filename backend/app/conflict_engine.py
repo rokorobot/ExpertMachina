@@ -9,6 +9,9 @@ from app import database as db
 from app import crud
 from app import ingestion
 from app import verification_engine
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Semantic Conflict Engine (MVP 0.7 Sprint 1).
 # Runs pairwise NLI across the approved assets of an Expert Model and stores
@@ -212,7 +215,7 @@ def scan_expert_model_conflicts(session: Session, expert_model_id: int) -> dict:
     summary["compared_pairs"] = len(pairs)
     summary["dropped_pairs"] = dropped
     if dropped:
-        print(f"CONFLICT_SCAN: embedding pre-filter dropped {dropped} low-similarity pairs (cap {MAX_NLI_PAIRS}).")
+        logger.info("CONFLICT_SCAN: embedding pre-filter dropped %s low-similarity pairs (cap %s).", dropped, MAX_NLI_PAIRS)
 
     inputs = []
     for a, b in pairs:

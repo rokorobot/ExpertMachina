@@ -3,6 +3,9 @@ import math
 import hashlib
 
 from app import ingestion
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Knowledge Integrity Engine: local NLI entailment with embedding pre-filter.
 # Falls back to None when transformers/torch are unavailable so callers can
@@ -53,7 +56,7 @@ def _compute_model_fingerprint() -> dict:
         if weight_files:
             fingerprint["weights_hash"] = hasher.hexdigest()
     except Exception as e:
-        print(f"Model fingerprint unavailable ({e}).")
+        logger.warning("Model fingerprint unavailable (%s).", e)
     _model_fingerprint = fingerprint
     return fingerprint
 
@@ -86,7 +89,7 @@ def get_nli_pipeline():
         )
         return _nli_pipeline
     except Exception as e:
-        print(f"NLI verifier unavailable ({e}). Falling back to legacy verification.")
+        logger.warning("NLI verifier unavailable (%s). Falling back to legacy verification.", e)
         _nli_load_failed = True
         return None
 
@@ -114,7 +117,7 @@ def prefilter_evidence(claim: str, citations: list, top_k: int = PREFILTER_TOP_K
         scored.sort(key=lambda pair: pair[0], reverse=True)
         return [citations[idx] for _, idx in scored[:top_k]]
     except Exception as e:
-        print(f"Embedding pre-filter failed ({e}). Using unfiltered evidence.")
+        logger.warning("Embedding pre-filter failed (%s). Using unfiltered evidence.", e)
         return citations[:top_k]
 
 
@@ -144,7 +147,7 @@ def verify_claims_nli(claims: list, citations: list) -> dict:
     try:
         results = pipe(inputs, top_k=None, truncation=True)
     except Exception as e:
-        print(f"NLI inference failed ({e}). Falling back to legacy verification.")
+        logger.warning("NLI inference failed (%s). Falling back to legacy verification.", e)
         return None
 
     per_claim = [{"supporting": {}, "contradicting": {}, "max_neutral": 0.0} for _ in claims]

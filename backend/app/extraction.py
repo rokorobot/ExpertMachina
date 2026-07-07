@@ -6,6 +6,9 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import schemas
 from app import crud
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Types of assets: PROCEDURE, POLICY, ROLE, SYSTEM, WORKFLOW, PRODUCT, DEPARTMENT
 
@@ -123,7 +126,7 @@ def extract_via_llm(session: Session, project_id: int, doc: db.Document, chunk: 
             
         return True
     except Exception as e:
-        print(f"LLM Extraction failed: {e}. Falling back to Rule Extraction.")
+        logger.warning("LLM Extraction failed: %s. Falling back to Rule Extraction.", e)
         return extract_via_rules(session, project_id, doc, chunk)
 
 def extract_via_rules(session: Session, project_id: int, doc: db.Document, chunk: db.DocumentChunk) -> bool:

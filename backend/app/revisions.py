@@ -7,6 +7,9 @@ from sqlalchemy.orm import Session
 from app import database as db
 from app import crud
 from app import identity
+from app.logging_config import get_logger
+
+logger = get_logger(__name__)
 
 # Asset Revision Workflow (MVP 0.7 Sprint 4).
 #
@@ -210,7 +213,7 @@ def run_post_approval_rescan(asset_id: int):
     try:
         asset = session.query(db.KnowledgeAsset).filter(db.KnowledgeAsset.id == asset_id).first()
         if not asset:
-            print(f"Post-approval rescan skipped: asset {asset_id} no longer exists")
+            logger.warning("Post-approval rescan skipped: asset %s no longer exists", asset_id)
             return
         _rescan_affected_models(session, asset)
     finally:
@@ -246,7 +249,7 @@ def _rescan_affected_models(session: Session, asset: db.KnowledgeAsset) -> list:
                 "semantic_conflict_score": scan["semantic_conflict_score"]
             })
         except Exception as e:
-            print(f"Post-approval conflict rescan failed for model {model.id}: {e}")
+            logger.exception("Post-approval conflict rescan failed for model %s", model.id)
             results.append({"expert_model_id": model.id, "error": str(e)})
     return results
 
