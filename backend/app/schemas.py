@@ -1,6 +1,25 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 from typing import List, Optional
 from datetime import datetime
+
+# Access tiers (mirrors identity.ACCESS_TIERS / mcp_gateway.VALID_CLEARANCES;
+# kept literal here so the schema layer stays import-light). Audit QW-6
+# (docs/audit-2026-07-07.md, L-SEC-4): an unknown access_level used to fall
+# through to INTERNAL rank downstream - a mistyped "RESTRICTED" silently
+# DOWNGRADED the asset. Classification must fail closed: reject at the
+# boundary, never guess.
+ACCESS_TIERS = ("PUBLIC", "INTERNAL", "RESTRICTED", "EXECUTIVE")
+
+
+def _validate_access_tier(v):
+    if v is None:
+        return v
+    tier = str(v).strip().upper()
+    if tier not in ACCESS_TIERS:
+        raise ValueError(
+            f"Unknown access_level {v!r}: must be one of {', '.join(ACCESS_TIERS)}. "
+            "Classification fails closed - unknown tiers are rejected, never defaulted.")
+    return tier
 
 class CustomerBase(BaseModel):
     name: str
@@ -90,8 +109,10 @@ class KnowledgeAssetBase(BaseModel):
     condition: Optional[str] = None
     source_citation: Optional[str] = None
     content: str
-    access_level: Optional[str] = "INTERNAL" # PUBLIC, INTERNAL, etc.
+    access_level: Optional[str] = "INTERNAL" # one of ACCESS_TIERS; unknown values rejected (QW-6)
     extraction_method: Optional[str] = "MOCK_RULE_BASED"
+
+    _access_tier_guard = field_validator("access_level")(_validate_access_tier)
 
 class KnowledgeAssetCreate(KnowledgeAssetBase):
     project_id: int
@@ -108,10 +129,12 @@ class KnowledgeAssetUpdate(BaseModel):
     source_citation: Optional[str] = None
     content: Optional[str] = None
     status: Optional[str] = None # CANDIDATE, REVIEWED, APPROVED, ARCHIVED
-    access_level: Optional[str] = None
+    access_level: Optional[str] = None # one of ACCESS_TIERS; unknown values rejected (QW-6)
     # v1.2.1 WS1 (D27): human domain correction through the normal update
     # surface - a governed act (ASSET_DOMAIN_CORRECTED), never an edit.
     domain: Optional[str] = None
+
+    _access_tier_guard = field_validator("access_level")(_validate_access_tier)
 
 class KnowledgeAssetResponse(KnowledgeAssetBase):
     id: int
@@ -441,7 +464,10 @@ class QueryInput(BaseModel):
     # A caller may NARROW its query to a lower tier, never widen it: the
     # effective clearance is decided by the boundary from the authenticated
     # principal (identity.effective_query_clearance, H-SEC-1 fix 2026-07-07).
+    # Unknown tiers are rejected at validation (QW-6), never silently ignored.
     access_level: Optional[str] = None # optional self-imposed ceiling: PUBLIC | INTERNAL | RESTRICTED | EXECUTIVE
+
+    _access_tier_guard = field_validator("access_level")(_validate_access_tier)
 
 class CitationModel(BaseModel):
     asset_id: int
