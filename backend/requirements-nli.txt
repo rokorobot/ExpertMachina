@@ -1,0 +1,23 @@
+# The NLI / model-runtime manifest (audit T2.5 - docs/audit-2026-07-07.md,
+# M-DEP-2). The opt-in proof lane: the local NLI cross-encoder behind
+# three-way claim verification and conflict detection.
+#
+# This is a SUPERSET of the base: it includes requirements.txt so the
+# resolved NLI lock is a single self-contained set (base + model runtime),
+# co-resolved so the shared transitive tree cannot diverge between the two.
+#
+#   Regenerate the NLI lock after editing this file OR requirements.txt:
+#
+#     uv pip compile requirements-nli.txt --universal --generate-hashes \
+#         --python-version 3.11 -o requirements-nli.lock
+#
+# Only the nightly full-model job (nightly-nli.yml) installs this lock;
+# per-push CI installs the base requirements.lock and runs
+# EM_NLI_VERIFICATION=off, where this stack is never imported.
+
+-r requirements.txt
+
+# ~GB of model runtime - the reason this is opt-in (M-DEP-2).
+torch==2.12.0
+transformers==5.11.0
+sentencepiece==0.2.1
