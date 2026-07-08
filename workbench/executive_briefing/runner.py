@@ -156,10 +156,16 @@ def _class(entry):
 
 # ---------------------------------------------- THE UNSOURCED SENTENCE
 # a line in a CITED section must carry one of these source tokens; prose
-# is allowed only in the two framed sections (synth + boundary).
+# is allowed only in the two framed sections (synth + boundary). The
+# empty-note marker is a DECLARED ABSENCE - the contract mandates every
+# section even when empty, and a declared "nothing here" is information,
+# never an unsourced sentence (found at the WS3 gate: the v2-model
+# conflict does not travel to a recompiled model, so the next briefing's
+# conflicts section is legitimately empty).
 _SOURCE_TOKENS = ("asset ", "conflict ", "trust component", "revision ",
                   REFUSAL_MARKER, "as_of", "since ", "exclud", "[DERIVED]",
-                  "[PMD]", "[OE]", "[ES]")
+                  "[PMD]", "[OE]", "[ES]",
+                  "an empty section is itself information")
 
 
 def _line_sourced(line):
