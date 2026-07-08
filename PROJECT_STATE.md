@@ -4,33 +4,41 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-08 · current version **v2.1.0** (Contract
-Intelligence — the shared engine, catalog #16, the FOURTH commercial
-workbench, earned by two consumer workbenches already existing
-(Compliance v1.7, Procurement v1.8): ONE extraction engine turns
-contracts the governed pipeline already holds into a clause register
-— verbatim, class-declared, human-accepted DERIVED facts — that the
-EXISTING consumer workbenches cite as evidence through the valve;
-THE PARAPHRASED CLAUSE cardinal sin + its twin THE LEGAL CONCLUSION;
-THE REGISTER DISTINCTION ratified (verbatim structure extraction may
-become DERIVED fact through the valve, narrative synthesis never);
-the 15→1 clause-class consolidation with pinned first-match
-shadowing; THE SHARED ENGINE PROOF as the named distinctive WS3 stage
-— one extraction contract, two UNCHANGED consumers citing the same
-accepted register asset BY ID, NO SHARED FACT STORE proven three ways
-including THE WORKSPACE DELETION TEST and THE EXACTLY-TWO-COPIES
-CHECK; THE COMMERCIAL VERDICT passed by the general counsel /
-procurement owner; zero new surface or law — no D33, no eighth guard,
-[OE]/[PMD] still unminted, no corpus of its own; D24 held at 28/305;
-all four workstreams user-ratified end to end in one milestone) ·
-branch `main` · tag `v2.1.0` = `2938286` (merge commit
-`29382864e568185b962c219d4b6d96ca499fc48a`); tag `v2.0.0` =
+**Snapshot:** 2026-07-08 · current version **v2.2.0** (Deadline &
+Obligation Intelligence — the catalog's FIRST shipped-workbench
+EXTENSION: the compliance workbench (#9)'s deferred deadline family,
+unlocked by [ES]/D32 — *decisions persist; existence never does*
+answered the v1.7 deferral's state-machine fear by name, and the
+tracking verb died at scoping. THE ACTIVE THREE
+(`detect_obligation_deadlines` + `extract_recurrence_rules` +
+`prepare_obligation_calendar_brief` [assist]) under THE ENGAGEMENT
+RULE — an unengaged run is indistinguishable from v1.7; an engaged
+run computes at the declared clock pair (as_of + window_days); THE
+INVENTED DATE + THE PRESUMED COMPLETION cardinal sins (documents
+require, never happened); **THE COMPUTED CALENDAR** as the named
+distinctive WS3 stage — deletion loses nothing, the declared clock
+reproduces every byte, a re-declared clock changes only computed
+fields; **THE HARVEST** — the v2.1 register's first downstream
+consumer: deadline findings cite accepted register clauses BY
+governed asset id, the chain resolving finding → DERIVED register →
+PRIMARY contract; THE NON-CONFLATION ruling held (an extracted
+deadline is not a DUE_DATE_SET, Guard 7 untouched); THE COMMERCIAL
+VERDICT passed by the compliance/obligation owner; zero new surface
+or law — no D33, no eighth guard, [OE]/[PMD] still unminted; D24
+held at 28/305; the constitutional outcome: **ExpertMachina may
+compute a compliance calendar from governed obligations, but it does
+not become the company's operational task tracker**; all four
+workstreams user-ratified end to end in one milestone) ·
+branch `main` · tag `v2.2.0` = `7040cda` (merge commit
+`7040cda2a242b015583c812943e7c6a824f540b6`); tag `v2.1.0` =
+`2938286`; tag `v2.0.0` =
 `caa6d73`; tag `v1.9.0` = `a9ded83`; tag `v1.8.0` = `4bb0033`;
 checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
-release commit) per the standing release ruling — v2.1 shipped as one
-workbench bundle directory + three test suites, no audit-hardening
-surface touched (`frontend/` and `backend/app/` are byte-identical to
-v2.0; route manifest unchanged at 88) · **D32 minted — the
+release commit) per the standing release ruling — v2.2 shipped as an
+extension inside the shipped compliance bundle + three test suites,
+no audit-hardening surface touched (`frontend/` and `backend/app/`
+are byte-identical to v2.1; route manifest unchanged at 88;
+`workbench/common.py` unchanged a FIFTH time) · **D32 minted — the
 register stays at D1–D32, deliberately no further law reserved** ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
@@ -279,6 +287,52 @@ columns, route manifest unchanged at 88, MCP frozen at 9 tools; the
 in-browser before/after (25 proposals/147 held/0 accepted → 146
 held/1 accepted DERIVED, zero console errors) is the recorded release
 evidence.
+v2.2.0 delivers Deadline & Obligation Intelligence — the catalog's
+FIRST shipped-workbench EXTENSION: the compliance workbench (#9)'s
+deferred deadline family (the v1.7 deferral, held through five
+milestones), unlocked by [ES]. D32 answered the deferral's fear by
+name — *decisions persist; existence never does* — so the tracking
+verb died at scoping: a deadline is a finding computed at the
+declared as_of, and the only things that ever persist are a
+human-accepted DERIVED fact through the valve and a human's
+stewardship decision. THE ACTIVE THREE (`detect_obligation_deadlines`
+consolidating three deferred drafts on the v1.8 window-arithmetic
+discipline; `extract_recurrence_rules` — verbatim, never expanded
+into occurrences; `prepare_obligation_calendar_brief` [assist] — a
+snapshot allowed, persistence refused) run under **THE ENGAGEMENT
+RULE**: an unengaged run is indistinguishable from v1.7 (three
+declared skips, one workspace file); an engaged run computes at the
+declared clock pair. **THE INVENTED DATE** and **THE PRESUMED
+COMPLETION** are the cardinal sins — a date appears only verbatim or
+as declared-clock arithmetic over a verbatim date; vague language
+("promptly", "within a reasonable period") is flagged
+DEADLINE_AMBIGUITY and never dated; "missed/breached/complied" is
+forbidden vocabulary swept on every byte — the workbench knows what
+documents REQUIRE and WHEN, never what HAPPENED. **THE COMPUTED
+CALENDAR** (the named distinctive WS3 stage) is the milestone's whole
+point: all 52 computed outputs deleted → zero governed change (the
+byte fingerprint over every knowledge table); the same declared clock
+reproduced every byte; a re-declared clock changed only the
+legitimately computed fields. **THE HARVEST** made v2.2 the v2.1
+register's first downstream consumer through the REAL chain: the
+engine proposed 147 register candidates, all held DERIVED at the
+valve, a human accepted the dated clause, and the deadline finding
+cites that register fact BY governed asset id — the chain resolving
+finding → DERIVED register → PRIMARY contract source, the clause in
+approved knowledge exactly twice. THE NON-CONFLATION ruling held on
+evidence: a real human DUE_DATE_SET decision and the accepted
+deadline fact co-exist without becoming each other, Guard 7
+untouched. `workbench/common.py` is unchanged a FIFTH time; the
+shipped v1.7 suites passed byte-untouched. THE COMMERCIAL VERDICT
+(the user as the compliance/obligation owner) closed the milestone on
+2026-07-08 — YES to the weekly review, with completion claims
+honestly refused until [OE] is someday minted. The constitutional
+outcome: **ExpertMachina may compute a compliance calendar from
+governed obligations, but it does not become the company's
+operational task tracker.** The in-browser before/after (305 held/0
+accepted → 304/1 accepted DERIVED live, the register citation
+visible as second-generation synthesis, zero console errors) is the
+recorded release evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -502,7 +556,7 @@ Outside `backend/app/` (deliberately — D29/D22):
 | `workbench/onboarding_diagnostic.py` | **v1.4.0 WS3: the reference consumer**, never a subsystem — doors ONLY (Guard 5 Part 5 sweeps them in CI permanently): stdlib + `app.package_consumer` + `app.llm` + `mcp`. Verifies the .empkg chain, queries `get_domain_subgraph` (StdioMcpGraphClient = the real stdio door; a graph-client seam lets suites inject an in-process substitute resolving the same token), synthesizes behind an injectable seam (real = `consume()` via D19; CI = deterministic), writes ONE content-hash-named timestamp-free proposal to `/08_proposals` |
 | `workbench/customer_operations/` | **v1.6.0: the first commercial workbench bundle** — `workbench.yaml` (manifest: canonical #5, domain scope, binding expectations) + `skills/*.yaml` (the five ratified 13-field contracts) + `runner.py` (doors only, Guard 5-swept: contracts drive runtime behavior — frames read from the YAMLs, non-ACTIVE refused, refusal-first, evidence-driven kinding via `get_revision_history` content, the declared same-subject / cross-document / subject-token evidence rules; ONE proposal per finding to `/08_proposals`, the assist brief to `/07_agent_workspaces`) + `corpus/` (the 12-document plant corpus; `corpus_seed/` = revision-1 content; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/common.py` | **v1.7.0 WS2 (ruling 6): the shared runner plumbing** — the catalog's first reuse moment: door setup, contract loading + ACTIVE gating, the inherited same-subject evidence helpers, the MCP stdio door, content-hashed proposal writing. Stdlib-only, Guard 5-swept. Reuse is by RELATIVE import (`from ..common import …`) — Guard 5 skips relative imports; an absolute `from workbench.common import` trips the doors-only sweep |
-| `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list) + `skills/*.yaml` (six ratified 13-field contracts) + `runner.py` (on common.py; contracts drive runtime — markers/rules/frames/marker_pattern PARSED from the YAMLs; declared as_of clock, refused if absent; gated skills refused live naming the unminted decision; posture enforced pre-write; DERIVED cited as DERIVED) + `corpus/` (12 documents; `CORPUS.md` = the plant map, outside the scanned folder) |
+| `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle — EXTENDED at v2.2.0 (the catalog's first shipped-workbench extension)** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list; nine declared skills as of v2.2, `deferral_resolved_v22` recorded) + `skills/*.yaml` (six v1.7 + three v2.2 ratified 13-field contracts — the deadline extension carries its declared marker/duration/vague-marker/class-rule conventions and THE PRESUMED COMPLETION forbidden_vocabulary in the bytes) + `runner.py` (on common.py, unchanged a FIFTH time; contracts drive runtime; the v2.2 extension ENGAGES at the declared clock pair as_of+window_days — unengaged runs are indistinguishable from v1.7, three declared skips; engaged runs compute deadlines/recurrence and the 07-confined calendar brief; gated skills refused live) + `corpus/` (12 documents, untouched) + `corpus_deadline/` (the v2.2 extension corpus, 2 plants — only v2.2 suites ingest it; plant map appended to `CORPUS.md`) |
 | `workbench/procurement_intelligence/` | **v1.8.0: the third commercial workbench bundle** — `workbench.yaml` (canonical #3, THE INVENTED NUMBER posture + the numeric-overclaim forbidden_vocabulary, the declared clock, the [OE]/[ES]/SEQUENCED lists) + `skills/*.yaml` (six ratified 13-field contracts, incl. the declared `subject_boilerplate_stopwords` evidence-rule refinement) + `runner.py` (on common.py, ZERO shared-module edits; term_class rules/date marker_pattern+auto-renewal+context markers/increase markers/certification requirement+question_template/named policy all PARSED from the YAMLs; date-window arithmetic ONLY from verbatim dates at declared as_of+window_days; the persistent-calendar request refused live) + `corpus/` (12 documents incl. the paraphrase-trap and unparseable-date plants; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/executive_briefing/` | **v1.9.0: the first cross-workbench consumer** — `workbench.yaml` (canonical #1, THE UNSOURCED SENTENCE posture + the 12-phrase forbidden_vocabulary, the visibility budget, the findings ruling, the [PMD]/[OE]/[ES] gated list) + `skills/*.yaml` (six ratified 13-field contracts: five read-compose [now] + one gap [now] + `prepare_executive_briefing` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits; the executive frames/origin convention/section list/boundary declarations PARSED from the YAMLs; the declared as_of+since clock, refused if absent; THE UNSOURCED SENTENCE enforced pre-write; exactly one EXECUTIVE_EVIDENCE_GAP proposal kind; the runner-local `BriefingGraphClient` = a subclass adapter over the frozen `get_trust_score`, never a new door). No corpus of its own — the input is the governed state the trio produced |
 | `workbench/contract_intelligence/` | **v2.1.0: the shared engine, the fourth commercial workbench bundle** — `workbench.yaml` (canonical #16, THE PARAPHRASED CLAUSE posture + the legal-conclusion forbidden vocabulary, the pinned 15→1 `clause_class` taxonomy under first-match shadowing, the required-metadata set, the SEQUENCED/gated lists) + `skills/*.yaml` (three ratified 13-field contracts: `extract_contract_clauses`, `detect_missing_contract_metadata`, `prepare_contract_review_brief` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits a fourth time; clause_class markers/rules, the required-metadata set, and the forbidden vocabulary all PARSED from the YAMLs; every clause fact's statement the VERBATIM excerpt, extraction adds only declared structure). No corpus of its own — reuses the existing v1.7/v1.8 corpora; the engine's whole product is the register the OTHER workbenches cite BY ID (THE SHARED ENGINE PROOF) |
@@ -687,6 +741,14 @@ engine", or "agent wrote a fact".
 | WS3 | `13a8a72` | THE MILESTONE GATE + THE SHARED ENGINE PROOF (`backend/test_contract_acceptance.py`, 80th suite, eight stages, first run: one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways incl. THE WORKSPACE DELETION TEST + THE EXACTLY-TWO-COPIES CHECK) + the in-browser before/after (25 proposals/147 held/0 accepted → 146 held/1 accepted DERIVED, zero console errors) |
 | — | `bf59297` | THE COMMERCIAL VERDICT PASSED (the general counsel / procurement owner) — the milestone gate closed |
 | **v2.1.0** | PR #23 `2938286` (tag v2.1.0) | the shared engine — catalog #16, the fourth commercial workbench; zero new surface or law (no D33, no eighth guard, [OE]/[PMD] unminted, no corpus of its own); route manifest unchanged at 88; MCP frozen at 9 tools; D24 held 28/305; harness 80/80 |
+| — | PR #24 `4e263ae` | release: v2.1.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| — | PR #25 `733b583` | docs: the v1.7.0/v1.8.0 roadmap narrative sections backfilled (docs-only) |
+| — | PR #26 `d70e917` | the Operations Workbench Catalog UI — per-workbench cards/filter/chips over the coded bundles, origin derived from the proposal filename convention in the EXISTING assets:read projection; zero new routes/schema/doors |
+| WS0 | `fd761f4` (part of `feat/v22-deadline-obligation`) | v2.2 scoping ratified — the FIRST shipped-workbench extension (compliance #9's deferred deadline family, unlocked by [ES]); the tracking verb died at scoping; THE INVENTED DATE + THE PRESUMED COMPLETION; THE HARVEST of the v2.1 register named; THE NON-CONFLATION ruling; [OE]/[PMD] NOT minted |
+| WS1 | `495b779` | the three ratified contracts + the deferred-family promotion (29 ACTIVE / 44 CONSOLIDATED globally) + the ratified extension corpus (`corpus_deadline/`, 2 plants — the shipped 12-doc assertions untouched) + THE PRECONDITION PROOF (`backend/test_deadline_corpus.py`, 81st suite, six parts, before any runner) |
+| WS2 | `66f71f8` | the runner extension (ACTIVE_SKILLS 6→9 under THE ENGAGEMENT RULE; the ratified contract amendments; common.py unchanged a FIFTH time) + THE DIAGNOSIS PROOF (`backend/test_deadline_workbench.py`, 82nd suite, seven parts incl. THE HARVEST via a DERIVED register fixture BY ID and THE V1.7 SHAPE preserved) |
+| WS3 | `1626108` | THE MILESTONE GATE (`backend/test_deadline_acceptance.py`, 83rd suite, ten stages) + THE COMPUTED CALENDAR + THE HARVEST PROOF through the REAL register chain (finding → DERIVED register → PRIMARY contract; exactly two governed copies) + THE AMBIGUITY + NON-CONFLATION proofs + THE COMMERCIAL VERDICT PASSED (the compliance/obligation owner) + the in-browser before/after (305 held/0 accepted → 304/1 accepted DERIVED, the register citation visible, zero console errors) |
+| **v2.2.0** | PR #27 `7040cda` (tag v2.2.0) | the first shipped-workbench extension — the computed calendar, never a task tracker; zero new surface or law ([OE]/[PMD] unminted, Guard 7 untouched); route manifest 88; MCP frozen at 9 tools; D24 held 28/305; harness 83/83 |
 
 ## How to run
 
@@ -875,8 +937,22 @@ engine", or "agent wrote a fact".
   THE EXACTLY-TWO-COPIES CHECK and THE WORKSPACE DELETION TEST; every
   approval event non-AGENT; route manifest 88 at its ratified digest;
   MCP at 9; D24 at exactly 28/305).
+  **v2.2.0 deadline-obligation suites (in CI):**
+  `test_deadline_corpus.py` (WS1 THE PRECONDITION PROOF, 81st suite,
+  six parts — the bundle shape with the runner-doesn't-know-yet
+  assertion; the declared patterns firing on real facts; the window
+  arithmetic deterministic at the declared clock; the harvest anchor
+  citable BY ID; zero stewardship events; the sweep constants move to
+  29 ACTIVE / 44 CONSOLIDATED), `test_deadline_workbench.py` (WS2 THE
+  DIAGNOSIS PROOF, 82nd suite, seven parts — THE ENGAGEMENT RULE, THE
+  HARVEST via a DERIVED register fixture, THE WINDOW RE-DECLARATION,
+  THE V1.7 SHAPE preserved), `test_deadline_acceptance.py` (WS3 THE
+  MILESTONE GATE, 83rd suite, ten stages — THE COMPUTED CALENDAR, THE
+  HARVEST PROOF through the REAL register chain, THE AMBIGUITY PROOF
+  on the bytes, THE NON-CONFLATION PROOF with a real human
+  DUE_DATE_SET; route manifest 88; MCP at 9; D24 at exactly 28/305).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (80 suites as of v2.1.0; keeping one out requires an explicit
+  (83 suites as of v2.2.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -1138,15 +1214,43 @@ frozen at 9 tools. The honest slots carried: the real-model
 diagnostic run (there is no runner in this milestone) and the v1.2.0
 live-SharePoint scan.
 
+**v2.2.0 DELIVERED (2026-07-08) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/deadline-obligation-v2.2.md). The catalog's FIRST
+shipped-workbench extension, in four user-ratified gates: WS0 the
+rulings (the v1.7 deferral RESOLVED by D32's answer; the tracking
+verb died at scoping; THE INVENTED DATE + THE PRESUMED COMPLETION;
+THE HARVEST named; THE NON-CONFLATION ruling); WS1 the three ratified
+contracts + the deferred-family promotion (29/44) + the ratified
+extension corpus + THE PRECONDITION PROOF (81st suite) before any
+runner; WS2 the runner extension under **THE ENGAGEMENT RULE**
+(unengaged runs indistinguishable from v1.7 — the shipped suites
+passed byte-untouched; `common.py` unchanged a FIFTH time) + THE
+DIAGNOSIS PROOF (82nd suite); WS3 THE MILESTONE GATE (83rd suite, ten
+stages) + **THE COMPUTED CALENDAR** (deletion loses nothing; the
+declared clock reproduces every byte) + **THE HARVEST PROOF** through
+the REAL register chain (finding → DERIVED register → PRIMARY
+contract; exactly two governed copies) + THE AMBIGUITY + THE
+NON-CONFLATION proofs + THE COMMERCIAL VERDICT (the
+compliance/obligation owner) + the in-browser before/after. Zero new
+surface or law — no D33, no eighth guard, [OE]/[PMD] still unminted,
+Guard 7 untouched; D24 held at 28/305; route manifest 88; MCP frozen
+at 9. The constitutional outcome: **ExpertMachina may compute a
+compliance calendar from governed obligations, but it does not become
+the company's operational task tracker.** The honest slots carried:
+the real-model diagnostic run and the v1.2.0 live-SharePoint scan.
+
 **NEXT: the sellable trio, the first cross-workbench consumer, the
-[ES] minting law, and the shared extraction engine have all shipped.**
+[ES] minting law, the shared extraction engine, and the first
+shipped-workbench extension have all shipped.**
 The two remaining named decisions still await their own pressure and
-scoping session (the Operational Evidence Realm [OE], the Pipeline
-Metadata Door [PMD] — the deferred deadline-extraction family,
-`track_explicit_deadlines` / `track_recurrence_rules`, UNLOCKED since
-[ES]). Also on the table: the honest slots above, and the standing
+scoping session (the Operational Evidence Realm [OE] — v2.2 sharpened
+its boundary to one sentence, "did the work happen?"; the Pipeline
+Metadata Door [PMD]). The deadline-extraction family is DELIVERED
+(v2.2.0). Also on the table: the honest slots above, the remaining
+catalog workbenches, and the standing
 backlog (SSO/SAML/SCIM; OS keystore/KMS; Confluence/Drive providers;
-Gemini/open-model adapters; **D23 — deferred through eleven
+Gemini/open-model adapters; **D23 — deferred through twelve
 milestones**; embedding index inside .empkg; the remaining T3.x
 polish — main.py unused-import prune, Pydantic model_config, _iso
 dedup, N+1 citation batching; ruff/Dockerfile/pytest-cov/frontend
@@ -1155,11 +1259,12 @@ business reader pays attention; v1.7 proved the pattern repeats; v1.8
 proved the pattern industrializes; v1.9 proved the pattern composes
 (the first consumer that reads what other workbenches produced); v2.0
 proved the platform can mint a new LAW without becoming a second
-truth system; **v2.1 proves the platform can share ONE extraction
+truth system; v2.1 proved the platform can share ONE extraction
 engine across multiple consumer workbenches with zero drift and no
-second fact store — the register lives in governed facts alone, and
-deleting every byte the engine wrote changes nothing either consumer
-cites.**
+second fact store; **v2.2 proves a shipped workbench can GROW without
+re-opening its law — and that the platform can compute an operational
+view (the obligation calendar) while structurally refusing to become
+the operational system itself.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
