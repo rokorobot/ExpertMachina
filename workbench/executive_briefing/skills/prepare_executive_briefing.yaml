@@ -1,0 +1,62 @@
+skill_id: prepare_executive_briefing
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist (the product)
+consolidates:
+  # the v1.9 consolidation ruling: one briefing pack, renamed off
+  # "weekly" - point-in-time at the declared clock; a human runs it
+  # weekly; the workbench never schedules.
+  - generate_weekly_ceo_briefing
+  - summarize_company_status
+  - prepare_board_report
+  - produce_recommended_next_actions
+purpose: >
+  THE product: the executive briefing pack composed from the other
+  five skills' sections. Every sentence carries a governed citation,
+  the declared clock, or sits inside a SYNTHESIS_INFERRED-framed
+  section (THE UNSOURCED SENTENCE is the cardinal sin). The pack
+  prepares leadership; it never decides.
+sections:
+  # mandatory, always present even when empty - FALSE COMPLETENESS is
+  # the twin sin, and the boundary section is its structural guard.
+  - accepted_findings: by workbench-of-origin, DERIVED marked
+  - unresolved_conflicts: governed disputes awaiting a human
+  - governance_health: door-visible signals only
+  - what_changed_since: at the declared since
+  - unknowns_evidence_gaps: the declared questions the corpus refuses
+  - recommended_attention: SYNTHESIS_INFERRED-framed; recommendations
+      prepare, never decide
+  - what_this_briefing_cannot_see: the boundary section - pending
+      proposals (PMD), operational metrics (OE), clearance exclusions
+      as declared by the gateway
+allowed_inputs:
+  - the other five skills' door-derived sections (this run's own
+    composition - never their output as knowledge)
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - pending proposals, held candidates, the computed inbox (PMD)
+  - operational records, metrics, period comparisons (OE)
+  - any figure not verbatim in cited evidence
+evidence_rules: >
+  Every sentence cited, clocked, or SYNTHESIS_INFERRED-framed; DERIVED
+  facts cited as DERIVED with origin named; the boundary section
+  always present and truthful; no forbidden vocabulary; the briefing
+  is byte-identical when regenerated at the same declared clock over
+  the same governed state.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A pack for humans (07_agent_workspaces) - NOT a proposal, never
+  written to /08_proposals, never enters knowledge. If leadership
+  wants pack content to become knowledge, a human authors it (PRIMARY)
+  or an agent proposes it through the valve.
+human_approval_requirement: >
+  None required - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call; package consumption locally verifiable.
+refusal_conditions:
+  - no as_of/since declared -> refuse (the clock is declared)
+  - a decision, approval, or schedule is requested -> refuse; the
+    briefing prepares, it never decides and never recurs
+  - the project has no approved coverage -> the pack says so rather
+    than composing an unsupported narrative

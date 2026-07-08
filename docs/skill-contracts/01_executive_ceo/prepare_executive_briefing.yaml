@@ -1,0 +1,13 @@
+# DRAFT skill contract - added at the v1.9 WS0 consolidation ruling
+# (docs/executive-briefing-v1.9.md): this skill_id is the ratified
+# CONSOLIDATION TARGET; the absorbed drafts carry consolidated_into
+# pointing here. Refined and ratified at the v1.9 scoping session.
+skill_id: prepare_executive_briefing
+workbench: executive_ceo   # 1. Executive / CEO Workbench
+status: ACTIVE
+ratified_path: workbench/executive_briefing/skills/prepare_executive_briefing.yaml
+boundary_tags: [assist, synth]
+pattern: consolidation-target
+purpose: >
+  See the ratified contract at ratified_path (the binding v1.9
+  execution contract; this draft records the consolidation).

@@ -1,0 +1,36 @@
+skill_id: summarize_unresolved_conflicts
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: read-compose (conflict axis)
+consolidates:
+  # the conflicts/compile-gates half of
+  # detect_unresolved_blockers_by_department (its held-proposals half
+  # stays PMD-gated in the draft, split_note recorded there).
+  - detect_unresolved_blockers_by_department (conflicts half)
+purpose: >
+  Summarize governed CONFLICTS_WITH relationships still awaiting human
+  review - the disputes the knowledge system itself has declared. The
+  briefing states that two approved documents disagree and that no
+  human has ruled; it never resolves, ranks, or predicts.
+allowed_inputs:
+  - MCP get_conflicts at the AGENT token's clearance
+  - the compiled expert package (for the participants' excerpts)
+forbidden_inputs:
+  - pending proposals or held candidates (PMD)
+  - operational records (OE)
+evidence_rules: >
+  Every conflict cited by its governed relationship id with both asset
+  ids; participants outside the binding's clearance are declared as
+  excluded, never guessed at. evidence_basis: CONFLICT_BACKED.
+allowed_finding_kinds: []   # read-compose - briefing pack only
+output_format: >
+  A section of the briefing pack - never a proposal, never knowledge.
+human_approval_requirement: >
+  None - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call.
+refusal_conditions:
+  - no governed conflict relationship -> nothing is reported (a
+    suspected dispute without one is not a conflict)
+  - a request to resolve or dismiss -> refuse (human work)

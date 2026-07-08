@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: summarize_governance_health
 workbench: executive_ceo   # 1. Executive / CEO Workbench
-status: FUTURE
+status: ACTIVE
+ratified_path: workbench/executive_briefing/skills/summarize_governance_health.yaml
 boundary_tags: [now, assist]
 pattern: assist
 purpose: >

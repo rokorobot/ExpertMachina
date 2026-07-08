@@ -1,0 +1,42 @@
+skill_id: summarize_governance_health
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: read-compose (metadata axis)
+consolidates:
+  # a "major operational risk" in v1 is a DOOR-VISIBLE signal - an
+  # unresolved DIRECT_CONTRADICTION, a low trust component, a stale
+  # revision chain - named as such, never an operational claim.
+  - identify_major_operational_risks
+purpose: >
+  Summarize the governed system's own health signals through the
+  existing doors: trust components (get_trust_score), unresolved
+  conflict counts, revision staleness derivable from revision chains,
+  and the clearance exclusions the gateway declares. Door-limited by
+  ruling: any health signal not derivable through an existing door is
+  OUT of scope and declared in the boundary section.
+allowed_inputs:
+  - MCP get_trust_score / get_conflicts / get_revision_history /
+    get_domain_subgraph at the AGENT token's clearance
+  - the compiled expert package
+forbidden_inputs:
+  - the computed Governance Inbox (a human surface, not a door - its
+    agent visibility is exactly the unminted PMD question)
+  - operational records (OE)
+evidence_rules: >
+  Every signal cites its door verbatim (trust component values quoted
+  as returned; conflict ids; revision numbers); no score is invented,
+  averaged, or re-weighted by the briefing. evidence_basis:
+  METADATA_BACKED.
+allowed_finding_kinds: []   # read-compose - briefing pack only
+output_format: >
+  A section of the briefing pack - never a proposal, never knowledge.
+human_approval_requirement: >
+  None - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call.
+refusal_conditions:
+  - a health signal not derivable through an existing door -> declared
+    in the boundary section, never fabricated
+  - a request for an operational risk judgment -> refuse; door-visible
+    signals only

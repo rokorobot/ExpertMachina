@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: summarize_company_status
 workbench: executive_ceo   # 1. Executive / CEO Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: prepare_executive_briefing
+ratified_path: workbench/executive_briefing/skills/prepare_executive_briefing.yaml
 boundary_tags: [now, assist]
 pattern: assist
 purpose: >

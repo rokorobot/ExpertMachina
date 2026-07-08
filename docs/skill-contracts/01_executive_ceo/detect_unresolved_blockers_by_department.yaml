@@ -6,6 +6,10 @@
 skill_id: detect_unresolved_blockers_by_department
 workbench: executive_ceo   # 1. Executive / CEO Workbench
 status: FUTURE
+split_note: >
+  the conflicts/compile-gates half is ratified into
+  summarize_unresolved_conflicts (v1.9); held-proposal visibility
+  remains [PMD]-gated here
 boundary_tags: [now, PMD]
 pattern: finding
 purpose: >

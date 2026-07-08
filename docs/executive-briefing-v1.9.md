@@ -267,3 +267,63 @@ CROSS-WORKBENCH FIXTURE + THE FIXTURE PROOF, on Fable). Baseline at
 ratification: main 21fc3d2, tag v1.8.0 = 4bb0033, harness 71/71.
 
 **Verdict: v1.9.0 WS0 PASSED.** WS1 may proceed.
+
+### WS1 — The Contracts, THE CROSS-WORKBENCH FIXTURE, and THE FIXTURE PROOF: evidence recorded, gate pending ratification (2026-07-07)
+
+Delivered: the SIX ratified 13-field contracts in
+`workbench/executive_briefing/skills/` (consolidations per ruling 1,
+never silent: summarize_governance_health absorbs
+identify_major_operational_risks; prepare_executive_briefing absorbs
+generate_weekly_ceo_briefing + summarize_company_status +
+prepare_board_report + produce_recommended_next_actions; the
+detect_unresolved_blockers split recorded as a split_note — its
+conflicts half ratified into summarize_unresolved_conflicts, its
+held-proposals half staying [PMD]); the manifest (`workbench.yaml`:
+canonical #1, two-stage declared, THE UNSOURCED SENTENCE posture + the
+12-phrase forbidden vocabulary, the visibility budget, the findings
+ruling, the gated/SEQUENCED lists); the registry promotion (**23
+ACTIVE / 18 CONSOLIDATED globally**, every ratified_path resolving; the
+prepare_executive_briefing consolidation-target draft added; both
+prior corpus proofs' sweep constants moved 17→23 / 13→18 — the
+recorded-assertion-edit pattern, third occurrence, both suites re-run
+green). No corpus directory of its own — ruling 6 held.
+
+**THE FIXTURE PROOF** (`backend/test_executive_fixture.py`, the 72nd
+suite — all seven parts green; full harness 72/72):
+1. THE CROSS-WORKBENCH FIXTURE is real: both corpora (12+12
+   documents) in ONE project, 86 PRIMARY facts across two domains,
+   BOTH runners diagnosing through the doors (25+26 proposals), 297
+   candidates held DERIVED under the valve.
+2. One acceptance per workbench — and both accepted DERIVED facts'
+   **workbench-of-origin derivable from provenance.source_document**
+   (compliance-obligation and procurement-intelligence both named),
+   with zero new machinery.
+3. **THE PENDING-PROPOSAL SENTINEL** (EM-PENDING-SENTINEL-9K3W): a
+   held, never-accepted proposal is a CANDIDATE in the lane and its
+   bytes appear in NO package — the [PMD] boundary provable on bytes.
+4. The declared `since` discriminates: an acceptance after the
+   captured since sorts after it; the earlier ones before it —
+   approved_at ordering over governed revision records, both
+   directions.
+5. Door-visible health: an unresolved DIRECT_CONTRADICTION inserted
+   AFTER the package compiled (post-compile drift, the realistic
+   rhythm) is visible via get_conflicts; get_trust_score returns the
+   components; both declared executive gap questions refuse
+   reproducibly; the covered control answers.
+6. Contract shape + the draft≠ratified sweep honest at 23/18; the
+   suite's questions are the contract's frames verbatim.
+7. Zero schema: D24 at exactly 28 tables / 305 columns.
+
+**Two authoring notes (recorded, the standing lessons):** the pending
+sentinel's plant sentence needed an explicit extraction trigger
+("must") to become a governed candidate (the v1.8 corpus lesson); and
+one declared gap question was reworded at WS1 (insurance → board
+quorum) because its generic vocabulary collided with the ISO
+certification statement at the declared retrieval threshold — chosen
+empirically (max doc-level overlap 4 < 6), recorded in the contract,
+never a silent threshold bend.
+
+**THE GATE (per WS0): user ratification of the cross-workbench fixture
+as realistic and the six contracts as the declared product is now
+requested. WS2 (the runner, on Opus per the recorded routing) starts
+only on ratification.**
