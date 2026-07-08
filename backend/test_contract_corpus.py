@@ -589,8 +589,19 @@ def main():
         assert "contract_intelligence" not in src_text, \
             f"{runner_path}: consumers must not import the engine - the " \
             f"feed is governed facts only"
-    assert not os.path.isfile(os.path.join(WB_DIR, "runner.py")), \
-        "WS1 ships NO runner - the precondition proof comes first"
+    # Epoch-aware (the WS1 gate shipped NO runner; WS2 mounts it): once
+    # the runner exists, the stronger claim replaces absence - the
+    # runner's parsed rules must EQUAL this suite's independent parse of
+    # the same ratified bytes (two implementations, one contract).
+    runner_path = os.path.join(WB_DIR, "runner.py")
+    if os.path.isfile(runner_path):
+        import workbench.contract_intelligence.runner as ci_runner
+        assert ci_runner.parse_taxonomy(engine_path) == rules, \
+            "the runner's taxonomy parse drifted from the ratified bytes"
+        assert ci_runner.parse_regimes(engine_path) == \
+            (commitment, structural, markers), "regimes drifted"
+    else:
+        pass  # WS1 epoch: the precondition proof precedes the runner
     assert route_guard.digest(route_guard.build_manifest()) == \
         route_guard.FROZEN_DIGEST
     assert len(route_guard.build_manifest()) == 88

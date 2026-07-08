@@ -378,3 +378,81 @@ pinned taxonomy (including the declared first-match shadowing), the
 registry promotion, and THE CONVERGENCE evidence is now requested. WS2
 (the runner, on Opus per the recorded routing) starts only on
 ratification.**
+
+**WS1 RATIFICATION: PASSED (2026-07-08, user-ratified)** — the three
+contracts, the 15-class closed taxonomy with its declared first-match
+order, the paraphrase/legal-conclusion posture, the registry promotion
+(3/22/5/1; global sweep 26/40), the sufficiency of the existing corpus,
+and THE CONVERGENCE evidence all accepted. **The declared first-match
+shadowing accepted with the reason recorded (user, verbatim):** "One
+clause should resolve to one clause_class. Multi-class extraction
+would create duplicate register entries and weaken the 'single
+upstream source' proof. The important thing is that the shadowing is
+pinned, declared, empirically reported, and not hidden." The
+load-bearing WS1 result, ruled: Contract Intelligence can produce a
+governed clause register that procurement and compliance consumers
+both cite by the same accepted derived asset id, without either
+consumer knowing the engine exists and without creating a shared
+internal fact store. WS2 opened on Opus per the recorded routing.
+
+### WS2 — The runner + THE DIAGNOSIS PROOF: evidence recorded, gate pending ratification (2026-07-08)
+
+Delivered: `workbench/contract_intelligence/runner.py` on
+`workbench/common.py` (relative import; **zero shared-module edits —
+the FOURTH reuse proof**; zero consumer edits). Contracts drive the
+runtime whole: the pinned taxonomy, first-match order, marker regimes,
+contract-document rule, and required-metadata groups are all PARSED
+from the ratified YAMLs at run time. THE PARAPHRASED CLAUSE is
+enforced at the source (every statement embeds the packaged content
+verbatim); THE LEGAL CONCLUSION is refused pre-write (the 12-phrase
+sweep over every output byte). Register idempotence is structural: a
+clause already carried by the package as an accepted register entry
+(DERIVED, origin `contract-intelligence` via the filename convention)
+is SKIPPED with a declared reason — the engine never re-proposes its
+own register, and register entries are never extraction inputs (no
+self-feeding loop). The review brief is assist-only (THE REGISTER
+DISTINCTION operative), showing the register class- and
+origin-visible.
+
+**THE DIAGNOSIS PROOF** (`backend/test_contract_workbench.py`, the
+79th suite — seven parts green, first full run; full harness 79/79):
+1. Guard 5 sweeps 8 workbench modules incl. the new runner — zero
+   guard edits.
+2. The fixture: 24 documents → 86 PRIMARY facts, package + binding.
+3. **TWO IMPLEMENTATIONS, ONE CONTRACT**: the runner's clause-candidate
+   set EQUALS an independent test-side application of the same
+   ratified bytes — 12 candidates, identical (asset id, class) pairs;
+   byte-identical regeneration at the declared as_of; outputs confined
+   to 07/08.
+4. The posture on the bytes: all 12 statements carry their excerpt
+   VERBATIM (byte equality against packaged content); the 12 forbidden
+   phrases in no written byte; **13 genuine metadata gaps declared on 7
+   real corpus contracts** (each stating "never that the clause does
+   not exist") and **2 covered contracts producing NO gap**
+   (refusal-first, both ways).
+5. The valve: 147 register candidates held DERIVED; ONE human
+   acceptance with VERIFIED synthesis provenance citing the PRIMARY
+   clause.
+6. **THE SHARED-ENGINE RUNTIME CHECK**: THE CONVERGENCE re-proven
+   through the runner's OWN output — the accepted register entry cited
+   by asset id by BOTH unchanged consumers (v1.7 COMPLIANCE_OBLIGATION
+   + v1.8 VENDOR_TERM); the re-run on the recompiled package SKIPS the
+   registered clause (idempotence declared in `skipped`); the brief
+   shows `[DERIVED, origin: contract-intelligence]`.
+7. Refusals live: no-as_of + all 9 gated/SEQUENCED skills naming their
+   ruling ([ES] per D32, [OE], [PMD], SEQUENCED per ruling 3); route
+   manifest 88 at its ratified digest; MCP 9; D24 28/305.
+
+**Regression at the gate**: full harness **79/79** green; the WS1
+suite's epoch-aware check upgraded (the runner now exists, so the
+absence assertion became the STRONGER claim: the runner's parsed rules
+equal the suite's independent parse of the same bytes — recorded, the
+runner-arrival edit the WS1 design anticipated).
+
+**No PR opened, nothing merged, nothing tagged. WS3 not started.**
+
+**THE GATE (per WS0): user ratification of the runner as the accepted
+Contract Intelligence engine is now requested. WS3 (THE SHARED ENGINE
+PROOF as the named milestone stage + the browser proof + THE
+COMMERCIAL VERDICT, on Fable per the recorded routing) starts only on
+ratification.**
