@@ -465,10 +465,28 @@ export interface OperationsPipelineEntry {
   connector_id: number;
   ingested_at: string | null;
   agent_principal: string | null;
+  // Workbench-of-origin derived at read time from the proposal filename
+  // convention "{workbench}-{skill_id}-{12hex}.md" (the v1.9 ruling) -
+  // null when the filename does not match, declared, never guessed.
+  workbench: string | null;
+  skill_id: string | null;
   provenance: OperationsProvenance;
   candidates: { asset_id: number; name: string; type: string; status: string; source_class: string }[];
   held_count: number;
   accepted_count: number;
+}
+
+// Per-workbench activity aggregated from the pipeline (filename-derived
+// origin): which shipped workbench bundles have actually proposed, which
+// skills fired, and what the human gate did with it.
+export interface OperationsWorkbench {
+  workbench: string;
+  proposal_documents: number;
+  held_candidates: number;
+  accepted_derived: number;
+  unverified_documents: number;
+  skills: string[];
+  last_ingested_at: string | null;
 }
 
 export interface OperationsAgent {
@@ -502,7 +520,8 @@ export interface OperationsView {
     last_scan: { job_id: number; status: string; started_at: string | null; completed_at: string | null; files_discovered: number; files_ingested: number; files_changed: number } | null;
   }[];
   unattributed_proposals: { proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number } | null;
-  summary: { agents: number; active_agents: number; lanes: number; proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number };
+  workbenches: OperationsWorkbench[];
+  summary: { agents: number; active_agents: number; lanes: number; workbenches: number; proposal_documents: number; held_candidates: number; accepted_derived: number; unverified_documents: number };
 }
 
 // v1.2.0 (D25): outbound credential METADATA. There is deliberately no

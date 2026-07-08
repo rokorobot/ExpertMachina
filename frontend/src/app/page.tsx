@@ -42,6 +42,22 @@ import { useAppStore, can, type ExternalCredentialDetail } from '../store';
 // The deterministic class dimension auto-approval rules are keyed on (MVP 0.10.2).
 const POLICY_ASSET_TYPES = ['PROCEDURE', 'POLICY', 'ROLE', 'SYSTEM', 'WORKFLOW', 'PRODUCT', 'DEPARTMENT'];
 
+// The shipped workbench bundles - PRESENTATION metadata only (display
+// name, catalog number, milestone, the declared posture line). Convention,
+// not constitution: activity numbers always come from the governed
+// operations projection (workbench-of-origin derived from proposal
+// filenames at read time, the v1.9 ruling); an origin this map does not
+// know still renders, by its raw name. Adding a workbench bundle to the
+// repo means adding its row here when it ships.
+const WORKBENCH_CATALOG_INFO: Record<string, { title: string; canonical?: number; milestone: string; posture: string }> = {
+  'onboarding-diagnostic': { title: 'Onboarding Diagnostic', milestone: 'v1.4', posture: 'The reference consumer - the pattern the catalog industrialized' },
+  'customer-operations': { title: 'Customer Operations', canonical: 5, milestone: 'v1.6', posture: 'Promise conflicts and outdated guidance - refusal-first, evidence-driven kinding' },
+  'compliance-obligation': { title: 'Compliance & Obligation', canonical: 9, milestone: 'v1.7', posture: 'What the company documents, never what it does - overclaiming refused' },
+  'procurement-intelligence': { title: 'Procurement Document Intelligence', canonical: 3, milestone: 'v1.8', posture: 'Every number verbatim; windows computed only on the declared clock' },
+  'executive-briefing': { title: 'Executive Operations Briefing', canonical: 1, milestone: 'v1.9', posture: 'Every sentence cited, clocked, or declared synthesis - the boundary states what it cannot see' },
+  'contract-intelligence': { title: 'Contract Intelligence', canonical: 16, milestone: 'v2.1', posture: 'The shared engine - verbatim clause register; the paraphrased clause refused' },
+};
+
 interface ConsoleCitation {
   asset_id: string;
   name: string;
@@ -201,6 +217,11 @@ export default function Home() {
   const [selForm, setSelForm] = useState<{ provider: string; model: string; runIds: number[]; rationale: string } | null>(null);
   const [consumptionView, setConsumptionView] = useState<'workbench' | 'inbox' | 'bindings'>('workbench');
   const [consumptionBindingId, setConsumptionBindingId] = useState<number | null>(null);
+
+  // Operations area: which workbench-of-origin the pipeline is filtered
+  // to. Ephemeral view state only - the projection is never filtered
+  // server-side and the area owns no persisted state (D24).
+  const [opsWorkbenchFilter, setOpsWorkbenchFilter] = useState<string | null>(null);
 
   // Consumption workbench: runs come from the existing evaluations read;
   // selection/comparison/history are fetched per package. All projections.
@@ -4786,9 +4807,10 @@ export default function Home() {
                   ) : (
                     <>
                       {/* Summary strip */}
-                      <div className="grid grid-cols-2 md:grid-cols-6 gap-3">
+                      <div className="grid grid-cols-2 md:grid-cols-7 gap-3">
                         {[
                           { label: 'Agents', value: `${operations.summary.active_agents}/${operations.summary.agents}`, hint: 'active / registered AGENT principals' },
+                          { label: 'Workbenches', value: operations.summary.workbenches ?? 0, hint: 'workbench bundles with proposals in this project (origin derived from proposal filenames)' },
                           { label: 'Proposal Lanes', value: operations.summary.lanes, hint: 'PROPOSAL-lane connectors' },
                           { label: 'Proposals', value: operations.summary.proposal_documents, hint: 'proposal documents ingested' },
                           { label: 'Held', value: operations.summary.held_candidates, hint: 'candidates awaiting the human gate (never auto-approved, D29)' },
@@ -4802,11 +4824,79 @@ export default function Home() {
                         ))}
                       </div>
 
-                      {/* WORKBENCHES — bound agents and what they proposed */}
+                      {/* WORKBENCH CATALOG — the coded workbench bundles and
+                          their governed activity. Presentation metadata from
+                          WORKBENCH_CATALOG_INFO; every number from the
+                          projection (workbench-of-origin derived from
+                          proposal filenames at read time - the v1.9 ruling).
+                          Cards are FILTERS, never launchers: EM never
+                          launches agents (D22). */}
+                      <div className="glass-panel p-6 rounded-xl space-y-3">
+                        <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
+                          <Wrench className="w-4 h-4 text-fuchsia-400" />
+                          Workbench Catalog
+                          <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
+                            The coded workbench bundles and what the gate did with their proposals — a card filters the pipeline below; ExpertMachina never launches workbenches (D22)
+                          </span>
+                        </h3>
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3">
+                          {(() => {
+                            const observed = new Map((operations.workbenches ?? []).map(w => [w.workbench, w]));
+                            const names = Array.from(new Set([...Object.keys(WORKBENCH_CATALOG_INFO), ...observed.keys()]));
+                            return names.map(name => {
+                              const info = WORKBENCH_CATALOG_INFO[name];
+                              const act = observed.get(name);
+                              const selected = opsWorkbenchFilter === name;
+                              return (
+                                <button
+                                  key={name}
+                                  onClick={() => setOpsWorkbenchFilter(selected ? null : name)}
+                                  disabled={!act}
+                                  title={act ? (selected ? 'Clear the pipeline filter' : 'Filter the Proposal Pipeline to this workbench') : 'No proposals from this workbench in this project yet'}
+                                  className={`text-left bg-slate-950/60 border rounded-lg p-4 space-y-2 transition-colors ${selected ? 'border-fuchsia-700/60 ring-1 ring-fuchsia-700/40' : 'border-slate-900'} ${act ? 'hover:border-slate-700 cursor-pointer' : 'opacity-60 cursor-default'}`}
+                                >
+                                  <div className="flex flex-wrap items-center gap-2">
+                                    <span className="font-bold text-sm text-slate-200">{info?.title ?? name}</span>
+                                    {info?.canonical !== undefined && (
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800" title="Canonical number in the 16-workbench catalog">#{info.canonical}</span>
+                                    )}
+                                    {info && (
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 text-slate-500 border border-slate-800">{info.milestone}</span>
+                                    )}
+                                    {selected && (
+                                      <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-fuchsia-950/40 text-fuchsia-400 border border-fuchsia-900/40 ml-auto">FILTERING</span>
+                                    )}
+                                  </div>
+                                  {info && (
+                                    <p className="text-[10px] text-slate-500 leading-relaxed">{info.posture}</p>
+                                  )}
+                                  {act ? (
+                                    <div className="flex flex-wrap items-center gap-2 text-[10px] font-mono">
+                                      <span className="px-2 py-0.5 rounded bg-slate-900 border border-slate-850 text-slate-400">{act.proposal_documents} proposals</span>
+                                      <span className="px-2 py-0.5 rounded bg-yellow-950/30 border border-yellow-900/30 text-yellow-400">{act.held_candidates} held</span>
+                                      <span className="px-2 py-0.5 rounded bg-fuchsia-950/30 border border-fuchsia-900/30 text-fuchsia-400">{act.accepted_derived} accepted DERIVED</span>
+                                      {act.unverified_documents > 0 && (
+                                        <span className="px-2 py-0.5 rounded bg-amber-950/30 border border-amber-900/30 text-amber-400">{act.unverified_documents} unverified</span>
+                                      )}
+                                      <span className="text-slate-600 w-full" title={`Skills observed in proposal filenames: ${act.skills.join(', ')}`}>
+                                        {act.skills.length} skill{act.skills.length === 1 ? '' : 's'} fired{act.last_ingested_at ? ` · last proposal ${new Date(act.last_ingested_at).toLocaleString()}` : ''}
+                                      </span>
+                                    </div>
+                                  ) : (
+                                    <p className="text-[10px] font-mono text-slate-600 italic">no proposals in this project yet</p>
+                                  )}
+                                </button>
+                              );
+                            });
+                          })()}
+                        </div>
+                      </div>
+
+                      {/* BOUND AGENTS — AGENT principals and what they proposed */}
                       <div className="glass-panel p-6 rounded-xl space-y-3">
                         <h3 className="font-bold text-sm text-slate-200 tracking-wide border-b border-slate-900 pb-3 flex items-center gap-2">
                           <Bot className="w-4 h-4 text-fuchsia-400" />
-                          Workbenches
+                          Bound Agents
                           <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
                             Bound agents and their governed record — ExpertMachina never launches agents (D22); execution stays outside the boundary
                           </span>
@@ -4865,13 +4955,37 @@ export default function Home() {
                           <span className="text-[10px] font-mono text-slate-500 font-normal ml-2">
                             Proposal-lane candidates are never auto-approved (D29) — accepting a finding creates a DERIVED fact with its verified provenance quoted in the ledger
                           </span>
+                          {opsWorkbenchFilter && (
+                            <button
+                              onClick={() => setOpsWorkbenchFilter(null)}
+                              className="ml-auto text-[10px] font-mono px-2 py-0.5 rounded-full bg-fuchsia-950/40 text-fuchsia-400 border border-fuchsia-900/40 hover:bg-fuchsia-950/60"
+                              title="Clear the workbench filter"
+                            >
+                              {WORKBENCH_CATALOG_INFO[opsWorkbenchFilter]?.title ?? opsWorkbenchFilter} ✕
+                            </button>
+                          )}
                         </h3>
-                        {operations.pipeline.length === 0 ? (
-                          <p className="text-xs text-slate-500 italic">No proposals in flight.</p>
-                        ) : operations.pipeline.map(p => (
+                        {(() => {
+                          const shown = operations.pipeline.filter(p => !opsWorkbenchFilter || p.workbench === opsWorkbenchFilter);
+                          if (shown.length === 0) {
+                            return (
+                              <p className="text-xs text-slate-500 italic">
+                                {opsWorkbenchFilter ? 'No proposals from this workbench in flight.' : 'No proposals in flight.'}
+                              </p>
+                            );
+                          }
+                          return shown.map(p => (
                           <div key={p.document_id} className="bg-slate-950/60 border border-slate-900 rounded-lg p-4 space-y-2">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-bold text-sm text-slate-200 font-mono">{p.filename}</span>
+                              {p.workbench && (
+                                <span
+                                  className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-indigo-950/40 text-indigo-400 border border-indigo-900/40"
+                                  title={`Workbench-of-origin derived from the proposal filename convention${p.skill_id ? ` · skill: ${p.skill_id}` : ''}`}
+                                >
+                                  {WORKBENCH_CATALOG_INFO[p.workbench]?.title ?? p.workbench}{p.skill_id ? ` · ${p.skill_id}` : ''}
+                                </span>
+                              )}
                               {p.agent_principal && (
                                 <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-slate-900 text-slate-400 border border-slate-800">{p.agent_principal}</span>
                               )}
@@ -4930,7 +5044,8 @@ export default function Home() {
                               ))}
                             </div>
                           </div>
-                        ))}
+                          ));
+                        })()}
                       </div>
 
                       {/* LANES & VAULT */}
