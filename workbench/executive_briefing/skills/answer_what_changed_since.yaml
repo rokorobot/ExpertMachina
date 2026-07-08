@@ -1,0 +1,37 @@
+skill_id: answer_what_changed_since
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: declared-clock (history axis)
+purpose: >
+  Answer "what changed since the declared date" from governed revision
+  chains and acceptance evidence: revisions approved after the
+  declared `since`, and newly accepted facts. Point-in-time at the
+  declared clock - never a subscription, never a schedule.
+clock_convention: >
+  `since` is a DECLARED run parameter (YYYY-MM-DD or a full timestamp)
+  recorded verbatim in the section header; wall-clock is never
+  sampled; a run without `since` refuses. Comparison is approved_at >
+  since over governed revision records - the only computation is the
+  timestamp comparison itself.
+allowed_inputs:
+  - MCP get_revision_history at the AGENT token's clearance
+  - the compiled expert package (active revision numbers, classes)
+forbidden_inputs:
+  - pending proposals or held candidates (PMD)
+  - wall-clock time (since is declared, never sampled)
+evidence_rules: >
+  Every change cites the asset id and revision number with approved_at
+  quoted verbatim; the declared since recorded verbatim beside it.
+  evidence_basis: REVISION_BACKED.
+allowed_finding_kinds: []   # read-compose - briefing pack only
+output_format: >
+  A section of the briefing pack - never a proposal, never knowledge.
+human_approval_requirement: >
+  None - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call.
+refusal_conditions:
+  - no since declared for the run -> refuse (never sample the clock)
+  - recurrence/subscription requested -> refuse (a human runs the
+    briefing; the workbench never schedules)

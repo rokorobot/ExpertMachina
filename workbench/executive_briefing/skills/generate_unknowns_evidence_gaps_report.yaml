@@ -1,0 +1,52 @@
+skill_id: generate_unknowns_evidence_gaps_report
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: missing-evidence (executive axis)
+purpose: >
+  Surface what the governed corpus CANNOT answer: declared executive
+  question frames run through the packaged answering contract, whose
+  reproducible refusals ARE the unknowns. The ONLY proposal-emitting
+  skill of this workbench (the v1.9 findings ruling): a documented
+  evidence gap is genuinely new information and may be accepted as a
+  DERIVED fact; a question the corpus answers produces NO gap entry
+  (refusal-first cuts both ways).
+question_frame:
+  # the declared executive questions - the v1 set; a deployment
+  # extends the list by contract amendment, never ad hoc.
+  - "Which approved document states our incident response commitments
+    to customers?"
+  - "Which approved document states the board quorum required for
+    emergency decisions?"
+  - "Which approved document defines the delegation of authority for
+    contract signatures?"
+allowed_inputs:
+  - the declared question frames, run through package consume() under
+    the packaged answering contract
+  - the compiled expert package at binding clearance
+forbidden_inputs:
+  - pending proposals or held candidates (PMD)
+  - ad-hoc questions not declared in the contract
+evidence_rules: >
+  A gap requires the reproducible INSUFFICIENT EVIDENCE refusal for a
+  declared question; an answered question is a covered control, no
+  entry. Absence becomes a finding, never a fact about the world.
+  evidence_basis: REFUSAL_BACKED.
+allowed_finding_kinds: [EXECUTIVE_EVIDENCE_GAP]
+output_format: >
+  One proposal document per gap to /08_proposals with the D30 +
+  catalog frontmatter claims; the gap list also appears as a briefing
+  section. Proposed action: author or ingest the missing document
+  through the governed pipeline (the gap never asserts the answer does
+  not exist in the world - only that the governed corpus cannot
+  produce it).
+human_approval_requirement: >
+  The valve (D29): every gap is a held CANDIDATE until a human accepts
+  it as a DERIVED fact; no policy tier ever applies.
+audit_event: >
+  MCP calls audited; scan/hold/gate events are the ledger trail;
+  approval quotes verified provenance verbatim.
+refusal_conditions:
+  - the corpus answers the question (a covered control - no gap)
+  - an undeclared question is requested -> refuse (frames are
+    contract-declared)

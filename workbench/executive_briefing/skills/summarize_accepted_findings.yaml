@@ -1,0 +1,45 @@
+skill_id: summarize_accepted_findings
+workbench: executive_briefing
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: read-compose
+purpose: >
+  Summarize the APPROVED knowledge the governed system holds - PRIMARY
+  and DERIVED shown with their class, and every DERIVED fact cited AS
+  DERIVED with its workbench-of-origin named. A read-compose skill:
+  its output lives in the briefing pack only and NEVER re-enters
+  knowledge (the v1.9 findings ruling - a summary of accepted facts
+  becoming a fact is circular derivation, refused).
+origin_convention: >
+  The workbench-of-origin of a DERIVED fact is derived from
+  provenance.source_document - the proposal filename convention
+  "{workbench}-{skill}-{hash}.md" - never guessed; a DERIVED fact
+  whose origin cannot be derived is shown as "origin undeclared",
+  honestly.
+allowed_inputs:
+  - the compiled expert package at binding clearance (source_class and
+    provenance travel per D30)
+  - MCP get_provenance / get_domain_subgraph at the AGENT token's
+    clearance
+forbidden_inputs:
+  - pending proposals, held candidates, or any ungated material (PMD)
+  - operational records (OE)
+  - rendered vault notes as authority
+evidence_rules: >
+  Every summarized statement cites its asset id verbatim; DERIVED
+  facts carry [DERIVED] and the named origin; PRIMARY and DERIVED are
+  never blended without the class shown. No number appears except
+  inside a verbatim excerpt. evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: []   # read-compose - briefing pack only
+output_format: >
+  A section of the briefing pack (07_agent_workspaces) - never a
+  proposal, never knowledge.
+human_approval_requirement: >
+  None - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call; package consumption locally verifiable.
+refusal_conditions:
+  - a fact's class or citation cannot be established -> omitted and
+    declared, never paraphrased in
+  - a request to persist the summary as knowledge -> refuse (the
+    findings ruling)

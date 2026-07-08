@@ -114,7 +114,7 @@ OVERLAP_THRESHOLD = 6
 REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
-RATIFIED_ACTIVE = 17  # 5 customer-ops (v1.6) + 6 compliance (v1.7) + 6 procurement (v1.8 WS1 promotion)
+RATIFIED_ACTIVE = 23  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9 WS1 promotion)
 
 
 def norm(text):
@@ -504,8 +504,8 @@ def main():
                     f"{name}: the deferred deadline family must stay SEQUENCED"
     assert len(active) == RATIFIED_ACTIVE, \
         f"expected exactly {RATIFIED_ACTIVE} ACTIVE drafts, got {sorted(active)}"
-    assert len(consolidated) == 13, \
-        f"expected the 13 consolidated drafts (8 at v1.7 + 5 at v1.8), got {sorted(consolidated)}"
+    assert len(consolidated) == 18, \
+        f"expected the 18 consolidated drafts (8 v1.7 + 5 v1.8 + 5 v1.9), got {sorted(consolidated)}"
     assert sorted(deferred) == ["detect_certification_expiry_risk.yaml",
                                 "identify_upcoming_obligations_30_60_90.yaml",
                                 "track_explicit_deadlines.yaml",

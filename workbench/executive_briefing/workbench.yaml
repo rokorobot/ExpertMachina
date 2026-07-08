@@ -1,0 +1,103 @@
+# The Executive Operations Briefing Workbench manifest (v1.9.0)
+# Canonical workbench #1 - TWO-STAGE by standing ruling: v1 (this
+# bundle) reads accepted facts + governance health; the decision queue
+# stays behind the Pipeline Metadata Door, refused live. The FIRST
+# cross-workbench consumer: it reads what the shipped workbenches
+# produced. Convention, not constitution.
+workbench: executive_briefing
+canonical_number: 1
+status: ACTIVE
+version: 1
+milestone: v1.9
+purpose: >
+  The governed leadership view - accepted facts (PRIMARY and DERIVED,
+  class and workbench-of-origin visible), unresolved conflicts, trust
+  and governance health, what changed since the declared date, and the
+  declared unknowns - composed into a briefing where every sentence is
+  cited, clocked, or declared synthesis, and the briefing states
+  exactly what it cannot see.
+sensitivity_posture: >
+  THE UNSOURCED SENTENCE is the cardinal sin: every sentence in the
+  briefing must carry a governed citation, be the declared clock, or
+  sit inside an explicitly SYNTHESIS_INFERRED-framed section. Its twin
+  is FALSE COMPLETENESS: the briefing must declare its boundaries in
+  the pack itself - no pending proposals (PMD), no operational metrics
+  (OE), clearance exclusions declared; "what this briefing cannot see"
+  is a mandatory section. The briefing prepares leadership; it never
+  decides, never schedules, never claims the complete picture.
+forbidden_vocabulary:
+  # swept over every written briefing byte at the WS2 gate
+  - "all clear"
+  - "no risks exist"
+  - "nothing requires attention"
+  - "everything is on track"
+  - "fully compliant"
+  - "the complete picture"
+  - "comprehensive view of"
+  - "we approved"
+  - "the board approved"
+  - "you should approve"
+  - "guaranteed"
+  - "certainly will"
+visibility_budget: >
+  ZERO DOOR GROWTH: the nine frozen MCP tools + the .empkg are the
+  entire input surface. Accepted knowledge with source_class and
+  workbench-of-origin (provenance.source_document carries the proposal
+  filename); conflicts via get_conflicts; trust via get_trust_score;
+  what-changed via get_revision_history at the declared since; domain
+  structure + exclusions via get_domain_subgraph; unknowns via
+  consume() refusals on declared question frames. Anything not
+  derivable through an existing door is out of scope and DECLARED in
+  the boundary section - never silently absent.
+domain_scope: ""   # cross-domain: the briefing reads the whole project
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes: the briefing pack to <vault>/07_agent_workspaces;
+    EXECUTIVE_EVIDENCE_GAP proposals (the ONLY proposal kind) to
+    <vault>/08_proposals
+declared_clock: >
+  as_of and since are DECLARED run parameters recorded verbatim in the
+  briefing - wall-clock is never sampled; a run without them is
+  refused. The briefing is point-in-time: a human runs it weekly; the
+  workbench never schedules and never recurs.
+skills:
+  - summarize_accepted_findings
+  - summarize_unresolved_conflicts
+  - summarize_governance_health
+  - answer_what_changed_since
+  - generate_unknowns_evidence_gaps_report
+  - prepare_executive_briefing
+findings_ruling: >
+  Read-compose summaries NEVER re-enter knowledge (a summary of
+  accepted facts becoming a fact is circular derivation - refused).
+  Exactly one skill proposes: generate_unknowns_evidence_gaps_report
+  emits EXECUTIVE_EVIDENCE_GAP findings, because a documented gap is
+  genuinely new information.
+schema_posture: >
+  Zero schema, zero backend change, zero new endpoints, MCP tools, or
+  UI areas. The route-manifest digest and the 9-tool MCP surface are
+  asserted unchanged at the milestone gate; D24 holds at 28 tables /
+  305 columns.
+refused_until_minted:
+  pipeline_metadata_door: identify_decisions_needing_approval,
+    produce_executive_decision_queue, and any held-proposal or
+    pending-candidate visibility (stage 2 of the two-stage ruling)
+  operational_evidence: operational metrics and period-vs-period
+    operational comparisons
+  exception_stewardship: owner assignment, routing, and register
+    owner columns
+sequenced_deliberately:
+  platform_overlap: identify_unsupported_claims (knowledge-quality
+    territory, workbench 10)
+  register_temptation: produce_cross_functional_risk_register as a
+    standalone persistent surface (the exception-never-becomes-a-row
+    shape; its door-visible content lives inside
+    summarize_governance_health)
+  two_clock_rule: compare_period_vs_previous for governance history
+    (a declared since_a/since_b comparison deserves its own ruling)

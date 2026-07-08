@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: identify_major_operational_risks
 workbench: executive_ceo   # 1. Executive / CEO Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: summarize_governance_health
+ratified_path: workbench/executive_briefing/skills/summarize_governance_health.yaml
 boundary_tags: [now]
 pattern: finding
 purpose: >
