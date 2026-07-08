@@ -4,13 +4,17 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-07 · current version **v1.7.0** (the Compliance
-& Obligation Workbench — the SECOND commercial workbench, canonical
-catalog #9: six ratified skill contracts driving the runner at
-runtime, THE COMPOSITION PROOF executed live for the first time,
-THE COMMERCIAL VERDICT passed by the audit-facing reader; all gates
-user-ratified) · branch `main` · tags `v1.7.0` = `post-audit-hardening`
-= c2179c2 · register through D31 (**still no D32, deliberately**) ·
+**Snapshot:** 2026-07-07 · current version **v1.8.0** (the Procurement
+Document Intelligence Workbench — the THIRD commercial workbench,
+canonical catalog #3: six ratified skill contracts driving the runner
+at runtime, THE CLAUSE ARITHMETIC PROOF executed as the named
+distinctive WS3 stage, THE COMMERCIAL VERDICT passed by the
+procurement/finance owner; all four workstreams user-ratified end to
+end in one milestone) · branch `main` · tag `v1.8.0` = `4bb0033`;
+checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
+release commit) per the user's v1.8 release ruling — v1.8 shipped
+purely as a new workbench bundle, no audit-hardening surface touched ·
+register through D31 (**still no D32, deliberately**) ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
 backend/test_*.py, the nightly full-model NLI workflow, structured
@@ -123,6 +127,31 @@ COMMERCIAL VERDICT (the user as the audit-facing reader) closed the
 milestone; the in-browser before/after (seeded throwaway DB, live
 Accept-as-DERIVED 0→1, zero console errors) is the recorded release
 evidence.
+v1.8.0 delivers the THIRD commercial workbench (Procurement Document
+Intelligence, catalog #3), completing the ratified sellable trio
+(customers → risk/compliance → money). Six ratified contracts DRIVE the
+runner (explicit term markers + term_class rules, the date_convention
+marker_pattern + auto-renewal + renewal-context markers, increase
+markers, the certification requirement + question template, the named
+policy, and the forbidden vocabulary all parsed from the YAMLs, never
+hardcoded). **THE INVENTED NUMBER is the cardinal sin**: every
+monetary figure, percentage, notice period, and date is verbatim-cited;
+the ONLY computed value is deterministic date-window arithmetic over a
+verbatim date at the DECLARED as_of + window_days (never wall-clock, no
+persistent calendar — the two-state-machine drift D1 names, refused by
+ruling). The runner is built on `workbench/common.py` with **zero
+shared-module edits** — the second proof the catalog's reuse foundation
+industrializes. **THE CLAUSE ARITHMETIC PROOF** (the named distinctive
+WS3 stage) verified every number in every finding statement traceable
+to a governed clause or the declared clock; a declared
+`subject_boilerplate_stopwords` refinement (the v1.6/v1.7
+signal-to-noise precedent) separates a real cross-document policy
+conflict from generic contract boilerplate. The standing composition
+machinery (D30 class-travel, second-generation DERIVED citations)
+proved unchanged on a third workbench. THE COMMERCIAL VERDICT (the
+user as the procurement/finance owner) closed the milestone; the
+in-browser before/after (66 held/0 accepted → 65/1 live, zero console
+errors) is the recorded release evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -346,6 +375,7 @@ Outside `backend/app/` (deliberately — D29/D22):
 | `workbench/customer_operations/` | **v1.6.0: the first commercial workbench bundle** — `workbench.yaml` (manifest: canonical #5, domain scope, binding expectations) + `skills/*.yaml` (the five ratified 13-field contracts) + `runner.py` (doors only, Guard 5-swept: contracts drive runtime behavior — frames read from the YAMLs, non-ACTIVE refused, refusal-first, evidence-driven kinding via `get_revision_history` content, the declared same-subject / cross-document / subject-token evidence rules; ONE proposal per finding to `/08_proposals`, the assist brief to `/07_agent_workspaces`) + `corpus/` (the 12-document plant corpus; `corpus_seed/` = revision-1 content; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/common.py` | **v1.7.0 WS2 (ruling 6): the shared runner plumbing** — the catalog's first reuse moment: door setup, contract loading + ACTIVE gating, the inherited same-subject evidence helpers, the MCP stdio door, content-hashed proposal writing. Stdlib-only, Guard 5-swept. Reuse is by RELATIVE import (`from ..common import …`) — Guard 5 skips relative imports; an absolute `from workbench.common import` trips the doors-only sweep |
 | `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list) + `skills/*.yaml` (six ratified 13-field contracts) + `runner.py` (on common.py; contracts drive runtime — markers/rules/frames/marker_pattern PARSED from the YAMLs; declared as_of clock, refused if absent; gated skills refused live naming the unminted decision; posture enforced pre-write; DERIVED cited as DERIVED) + `corpus/` (12 documents; `CORPUS.md` = the plant map, outside the scanned folder) |
+| `workbench/procurement_intelligence/` | **v1.8.0: the third commercial workbench bundle** — `workbench.yaml` (canonical #3, THE INVENTED NUMBER posture + the numeric-overclaim forbidden_vocabulary, the declared clock, the [OE]/[ES]/SEQUENCED lists) + `skills/*.yaml` (six ratified 13-field contracts, incl. the declared `subject_boilerplate_stopwords` evidence-rule refinement) + `runner.py` (on common.py, ZERO shared-module edits; term_class rules/date marker_pattern+auto-renewal+context markers/increase markers/certification requirement+question_template/named policy all PARSED from the YAMLs; date-window arithmetic ONLY from verbatim dates at declared as_of+window_days; the persistent-calendar request refused live) + `corpus/` (12 documents incl. the paraphrase-trap and unparseable-date plants; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `tools/generate_skill_contracts.py` | **v1.6.0: the skill-contract generator** — the master inventory as data (16 workbenches, ~360 subtasks) deterministically emitting one 13-field draft YAML per skill into `docs/skill-contracts/`; drafts are scaffolding, never runtime permission (promotion happens at each workbench's scoping session) |
 | `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
@@ -502,6 +532,12 @@ engine", or "agent wrote a fact".
 | WS2p1 | PR #13 `2adf29a` | `workbench/common.py` extracted (ruling 6, the catalog's first reuse moment); customer-ops runner refactored onto it, zero assertion edits, zero guard edits |
 | WS2 | PR #14 `b00877c` | the Compliance & Obligation runner (contracts drive runtime; declared as_of clock; gated list refused live; posture enforced at source) + THE DIAGNOSIS PROOF (47th suite, first run) + the WS2 gate record (user-ratified; closes the WS1 corpus gate explicitly) |
 | **v1.7.0** | PR #15 `c2179c2` (tag v1.7.0) | WS3 THE MILESTONE GATE (48th suite, first run) + THE COMPOSITION PROOF (second-generation DERIVED citations, derivation visible at the gate) + THE COMMERCIAL VERDICT PASSED (the audit-facing reader) + the in-browser before/after (123→122 held, 0→1 accepted DERIVED, zero console errors) |
+| — | PR #16 `84c7207` | release: v1.7.0 PROJECT_STATE regeneration (docs-only) |
+| WS0 | PR #17 (part of `feat/v18-procurement`) `92db66c` | v1.8 scoping ratified — the ACTIVE SIX consolidations, THE INVENTED NUMBER posture, THE CLAUSE ARITHMETIC PROOF named, the [OE]/[ES]/SEQUENCED lists, the calendar refusal re-affirmed, the 12-doc corpus plan |
+| WS1 | `6d0f577` | the six ratified contracts (17 ACTIVE / 13 CONSOLIDATED globally) + the 12-document corpus + THE CORPUS PROOF (69th suite) — clause/date/number extraction preconditions proven before any runner |
+| WS2 | `16f0d76` | the Procurement runner on common.py (ZERO shared-module edits) + THE DIAGNOSIS PROOF (70th suite); the declared `subject_boilerplate_stopwords` evidence-rule refinement |
+| WS3 | `c58fcba`+`699d57b` | THE MILESTONE GATE (71st suite, first full run) + THE CLAUSE ARITHMETIC PROOF (13 statement-numbers, each verbatim-cited or declared-clock arithmetic) + composition standing + THE COMMERCIAL VERDICT PASSED (the procurement/finance owner) + the in-browser before/after (66→65 held, 0→1 accepted DERIVED, zero console errors) |
+| **v1.8.0** | PR #17 `4bb0033` (tag v1.8.0) | the sellable trio complete — customers (v1.6) · risk/compliance (v1.7) · money (v1.8); D24 held 28/305; harness 71/71 |
 
 ## How to run
 
@@ -631,9 +667,23 @@ engine", or "agent wrote a fact".
   as_of), `test_compliance_acceptance.py` (WS3 THE MILESTONE GATE +
   THE COMPOSITION PROOF: second-generation DERIVED citations visible
   at the gate; `EM_COMMERCIAL_ARTIFACT_DIR` exports the diagnosis for
-  the audit-facing reader).
+  the audit-facing reader). **v1.8.0 procurement suites (in CI):**
+  `test_procurement_corpus.py` (WS1 THE CORPUS PROOF — window
+  arithmetic from verbatim dates at the pinned as_of both directions,
+  the paraphrase-trap non-numeric precondition, the unparseable-date
+  refusal precondition, supplier-named consume() refusing AND
+  answering, the draft≠ratified sweep at 17/13), `test_procurement_
+  workbench.py` (WS2 THE DIAGNOSIS PROOF — six contracts drive
+  runtime, every plant found/kinded, covered controls silent incl.
+  supplier-named certification coverage, [OE]/[ES]/SEQUENCED refused
+  live, the numeric posture swept over every written byte,
+  byte-identical at pinned as_of+window_days), `test_procurement_
+  acceptance.py` (WS3 THE MILESTONE GATE + THE CLAUSE ARITHMETIC
+  PROOF: every number in every finding statement traceable to a
+  verbatim clause or the declared clock; `EM_COMMERCIAL_ARTIFACT_DIR`
+  exports the diagnosis for the procurement/finance reader).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (68 suites as of v1.7.0; keeping one out requires an explicit
+  (71 suites as of v1.8.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -775,22 +825,57 @@ edits. The honest slots carried: the real-model diagnostic run
 (PENDING, no key — the compliance audit-readiness pack is this
 workbench's vehicle) and the v1.2.0 live-SharePoint scan.
 
-**NEXT: Procurement Document Intelligence (third), per the ratified
-catalog sequence**, at its own scoping session promoting its drafted
-contracts from the registry. Also on the table: the Executive
-Briefing v1 (accepted facts + governance health, zero door growth),
-the three named decisions when their pressure arrives (the
+**v1.8.0 DELIVERED (2026-07-07) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/procurement-workbench-v1.8.md). The THIRD commercial workbench —
+completing the ratified sellable trio (customers → risk/compliance →
+money) — in four user-ratified gates: WS0 the rulings (the ACTIVE SIX
+with their consolidations, THE INVENTED NUMBER posture, THE CLAUSE
+ARITHMETIC PROOF named, the [OE]/[ES] gated list, the SEQUENCED pair,
+the calendar refusal re-affirmed); WS1 the six contracts + the
+12-document corpus + THE CORPUS PROOF (clause/date/number extraction
+preconditions, the paraphrase-trap and unparseable-date preconditions,
+supplier-named consume() refusing AND answering — before any runner
+existed; the global draft≠ratified sweep at 17 ACTIVE / 13
+CONSOLIDATED); WS2 the runner on `workbench/common.py` with **ZERO
+shared-module edits** (the second proof the reuse foundation
+industrializes) + THE DIAGNOSIS PROOF, plus a declared
+`subject_boilerplate_stopwords` evidence-rule refinement (the
+signal-to-noise precedent, third occurrence); WS3 THE MILESTONE GATE +
+**THE CLAUSE ARITHMETIC PROOF** (13 statement-numbers, each
+verbatim-cited or declared-clock arithmetic; no persistent calendar
+anywhere) + composition standing (DERIVED travels + is cited
+second-generation, proven unchanged on a third workbench) + THE
+COMMERCIAL VERDICT (the procurement/finance owner) + the in-browser
+before/after. **No new law, a third time: no D32, no seventh guard
+family** — Guard 5 swept the runner with zero edits. The honest slots
+carried: the real-model diagnostic run (PENDING, no key — the
+renegotiation brief is this workbench's vehicle) and the v1.2.0
+live-SharePoint scan.
+
+**NEXT: the sellable trio is complete.** Per the ratified catalog's
+full-inventory scoping (2026-07-07): **v1.9 Executive Operations
+Briefing** (accepted facts + governance health, zero door growth — the
+first cross-workbench consumer) is recommended next, then **v2.0
+Risk & Exception Stewardship** (the [ES] minting milestone — its own
+scoping session, likely the seventh guard family, the ruled shape "the
+exception never becomes a row; the human decisions about it do").
+Contract Intelligence (catalog #16, the shared extraction engine) is
+now EARNABLE — two consumers exist (Compliance + Procurement). Also on
+the table: the three named decisions when their pressure arrives (the
 Operational Evidence Realm, Exception Stewardship, the Pipeline
 Metadata Door — the deferred deadline family unlocks after [ES]), the
 two honest slots above, and the standing backlog (SSO/SAML/SCIM; OS
 keystore/KMS; Confluence/Drive providers; Gemini/open-model adapters;
-**D23 — deferred through seven milestones**; embedding index inside
+**D23 — deferred through eight milestones**; embedding index inside
 .empkg; the remaining T3.x polish — main.py unused-import prune,
 Pydantic model_config, _iso dedup, N+1 citation batching; ruff/
 Dockerfile/pytest-cov/frontend tests). The narrative: v1.2→v1.5 built
-the substrate; v1.6 proved a business reader pays attention; **v1.7
-proves the pattern REPEATS — a second workbench, a reused foundation,
-and composition across the valve with derivation visible.**
+the substrate; v1.6 proved a business reader pays attention; v1.7
+proved the pattern repeats; **v1.8 proves the pattern industrializes —
+a third workbench, a truly unmodified shared foundation (zero
+common.py edits), and a domain-specific evidence discipline (numbers
+verbatim, windows on the declared clock) layered cleanly on top.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
