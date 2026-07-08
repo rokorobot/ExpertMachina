@@ -456,3 +456,97 @@ Contract Intelligence engine is now requested. WS3 (THE SHARED ENGINE
 PROOF as the named milestone stage + the browser proof + THE
 COMMERCIAL VERDICT, on Fable per the recorded routing) starts only on
 ratification.**
+
+**WS2 RATIFICATION: PASSED (2026-07-08, user-ratified)** — the
+contract-driven runner, the common.py reuse with zero consumer edits,
+the verbatim posture, the absent legal-conclusion vocabulary, the
+metadata-gap detection, the assist-only brief, the register
+idempotence (never re-proposed, never self-feeding), and THE
+CONVERGENCE through the runner's own output all accepted. The decisive
+result, ruled (user, verbatim): "The shared engine now exists at
+runtime, but it still does not become a shared fact store. It emits
+governed DERIVED register proposals through the valve, and consumers
+cite accepted register assets by id." WS3 opened on Fable per the
+recorded routing.
+
+### WS3 — THE MILESTONE GATE + THE SHARED ENGINE PROOF: evidence recorded, THE COMMERCIAL VERDICT pending (2026-07-08)
+
+`backend/test_contract_acceptance.py` (the 80th suite) — eight stages,
+all green; full harness **80/80** (477s):
+
+1. The workstream record + the engine's isolation: WS0/WS1/WS2 records
++ both prior suites present; neither consumer's source names the
+engine (`git diff main...HEAD -- frontend backend/app` is EMPTY — the
+zero-surface posture visible in git itself).
+2. 86 PRIMARY facts into two domains through the real pipeline; the
+EXECUTIVE memos above package clearance; INTERNAL package + real AGENT
+binding.
+3. THE ENGINE at the declared clock: 12 clause candidates across 7
+classes + 13 metadata gaps; the held register plant seeded.
+4. The valve under maximal permissiveness: 148 candidates held DERIVED
+under a global permissive Tier-1 policy AND a live approve-everything
+Tier-2 engine — never auto-approved.
+5. A human builds the register across FOUR classes (data_access —
+fragment-pinned to the convergence clause — renewal, payment,
+certification_obligation) plus one metadata gap; every approval event
+quotes VERIFIED synthesis provenance.
+6. **THE SHARED ENGINE PROOF (the distinctive stage)**:
+   - ONE extraction contract, the accepted set spanning ≥3 classes;
+   - TWO consumers, UNCHANGED, each citing the register entry BY ASSET
+     ID (zero drift is id equality, never string similarity);
+   - the provenance chain resolves: consumer finding → register entry
+     (origin `contract-intelligence` via the filename convention) →
+     the PRIMARY clause asset carrying the verbatim text;
+   - **NO SHARED FACT STORE, three ways**: D24 byte-identical at
+     28/305 (no table to hold one); THE EXACTLY-TWO-COPIES CHECK (the
+     clause exists in APPROVED knowledge exactly twice by design —
+     PRIMARY + register — and consumer runs create ZERO approved
+     facts); **THE WORKSPACE DELETION TEST** (erasing all 26 of the
+     engine's output files — the brief and every register proposal —
+     changed NEITHER consumer's citation fingerprint by one byte: the
+     feed lives in governed facts alone);
+   - the held plant cited by no one, in no package byte.
+7. THE REGISTER DISTINCTION on the bytes: the brief (synthesis) never
+entered knowledge (no document carries it); 62 files swept — no
+legal-conclusion phrase, no EXECUTIVE sentinel in any written byte.
+8. THE CLOSING LINES: every approval event non-AGENT; every APPROVED
+DERIVED fact human-reviewed; route manifest 88 at its ratified digest;
+MCP at 9; D24 at exactly 28/305.
+
+**The in-browser before/after (recorded 2026-07-08): PASSED.** Seeded
+throwaway DB (the `backend/.ui-gate-db` pattern, seed_v21, this
+branch's code — `frontend/` and `backend/app/` byte-identical to
+main): login as a governed GOVERNANCE_REVIEWER (`exec_reviewer`);
+Operations BEFORE — **25 proposals (12 register clause proposals
+across 7 classes + 13 metadata gaps), 147 held DERIVED, 0 accepted**;
+the register and gap groups both showing **PROVENANCE VERIFIED** and
+the **"cites N governed asset(s)"** chips (the citation chain visible
+in the browser — candidate #189's own text reads "Verbatim clause from
+governed asset 58"); the Lanes & Vault panel showing `08_proposals` as
+the only agent-writable ingress; the assist brief confined to
+`07_agent_workspaces`, never surfaced as knowledge; ONE live **Accept
+as DERIVED** on the convergence candidate (#189, the pre-existing
+review PATCH, the area's only write) → AFTER — **146 held, 1 accepted
+DERIVED**, #189 APPROVED DERIVED; zero console errors, zero warnings;
+the only non-2xx request is the pre-login session-restore probe (401
+by design). The screenshot rasterizer times out in this preview
+environment (as at the v1.9/v2.0 gates) — the DOM/text record above is
+the browser evidence, per the standing pattern.
+
+**Limitations, stated:** 8 of 15 clause classes are fixture-uncovered
+on the existing corpora (declared at WS1 — shadowing pinned and
+reported); the register carries clause STRUCTURE, not legal meaning
+(the twin sin, refused permanently); consumer citation of register
+entries is organic (their own detectors firing on verbatim register
+text), not addressed — a consumer whose markers never fire on a clause
+will not cite it. The honest slots carry: the ONE real-model
+diagnostic run (PENDING, no provider key) and the v1.2.0
+live-SharePoint scan.
+
+**THE GATE: THE COMMERCIAL VERDICT (ruling 9) — the user answers as
+GENERAL COUNSEL / the procurement owner.** The question, verbatim:
+*"Would you let this clause register be the single upstream source
+your procurement and compliance reviews both cite — every clause
+verbatim, every gap declared, provably the same governed fact under
+both readers?"* The milestone closes on that verdict or it does not
+close.
