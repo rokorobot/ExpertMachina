@@ -550,3 +550,12 @@ your procurement and compliance reviews both cite — every clause
 verbatim, every gap declared, provably the same governed fact under
 both readers?"* The milestone closes on that verdict or it does not
 close.
+
+**THE VERDICT: PASSED (2026-07-08).** The user, answering as general
+counsel / the procurement owner, answered **YES — close out v2.1.0**:
+the clause register is accepted as the single upstream source both
+the procurement and compliance reviews cite — every clause verbatim,
+every gap declared, provably the same governed fact under both
+readers. The verdict was given against the full WS3 evidence record
+above, limitations stated and standing. THE MILESTONE GATE IS CLOSED;
+v2.1 Contract Intelligence ships as v2.1.0.
