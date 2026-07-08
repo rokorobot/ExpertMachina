@@ -482,3 +482,35 @@ CEO: is this briefing trustworthy enough to replace a status meeting
 — every claim traceable, every unknown declared — and bounded enough
 that you know exactly what it will not tell you?"* The milestone
 closes on that verdict or it does not close.
+
+### THE COMMERCIAL VERDICT: PASSED (2026-07-08, user-ratified)
+
+**The gate ruling (user, verbatim):**
+
+> Verdict: YES — commercially passed.
+>
+> As the CEO, I would trust this briefing enough to replace a status
+> meeting for governed-knowledge status because it does exactly what
+> v1.9 promised:
+>
+> - every claim is traceable, cited, clocked, or explicitly marked as
+>   synthesis;
+> - DERIVED facts show their workbench origin;
+> - unknowns are not hidden — they become evidence-gap candidates;
+> - pending proposals remain invisible without [PMD];
+> - operational metrics remain excluded without [OE];
+> - owner/routing/stewardship remains excluded without [ES];
+> - the boundary section states what the briefing cannot see;
+> - zero door growth, zero schema change, and D24 at 28/305 held.
+>
+> v1.9 WS3 is ratified.
+
+**Verdict: v1.9.0 WS3 PASSED. THE MILESTONE CLOSES.** The Executive
+Operations Briefing is the FIRST CROSS-WORKBENCH CONSUMER: it reads
+what the sellable trio produced and composes a governed leadership
+view where every sentence is cited, clocked, or declared synthesis,
+the briefing states exactly what it cannot see, and — the distinctive
+v1.9 turn — the briefing can consume its own human-accepted evidence
+gap, carrying derivation visible into the next cycle. Zero doors
+grown; the visibility budget was the nine frozen tools and the .empkg,
+end to end.
