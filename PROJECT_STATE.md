@@ -4,27 +4,34 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-08 · current version **v2.0.0** (Risk & Exception
-Stewardship — the [ES] MINTING milestone, a LAW milestone not a
-catalog bundle: D32 ratified — "the exception never becomes a row; the
-human decisions about it do"; the SEVENTH permanent guard family
-(`test_exception_stewardship_guard.py`) built and adversarially
-self-proven BEFORE the stewardship door existed, its door-aware part
-activating live with zero guard edits the moment the route was
-mounted; ONE new route, the route manifest's FIRST ratified 87→88
-amendment; THE STEWARDSHIP PROOF (the row test, the ledger-alone
-reconstruction, the vanishing test across three exception species)
-executed as the named distinctive WS3 stage; THE COMMERCIAL VERDICT
-passed by the governance officer; zero schema change through a LAW
-milestone — D24 held at 28/305; all four workstreams user-ratified
-end to end in one milestone) · branch `main` · tag `v2.0.0` =
+**Snapshot:** 2026-07-08 · current version **v2.1.0** (Contract
+Intelligence — the shared engine, catalog #16, the FOURTH commercial
+workbench, earned by two consumer workbenches already existing
+(Compliance v1.7, Procurement v1.8): ONE extraction engine turns
+contracts the governed pipeline already holds into a clause register
+— verbatim, class-declared, human-accepted DERIVED facts — that the
+EXISTING consumer workbenches cite as evidence through the valve;
+THE PARAPHRASED CLAUSE cardinal sin + its twin THE LEGAL CONCLUSION;
+THE REGISTER DISTINCTION ratified (verbatim structure extraction may
+become DERIVED fact through the valve, narrative synthesis never);
+the 15→1 clause-class consolidation with pinned first-match
+shadowing; THE SHARED ENGINE PROOF as the named distinctive WS3 stage
+— one extraction contract, two UNCHANGED consumers citing the same
+accepted register asset BY ID, NO SHARED FACT STORE proven three ways
+including THE WORKSPACE DELETION TEST and THE EXACTLY-TWO-COPIES
+CHECK; THE COMMERCIAL VERDICT passed by the general counsel /
+procurement owner; zero new surface or law — no D33, no eighth guard,
+[OE]/[PMD] still unminted, no corpus of its own; D24 held at 28/305;
+all four workstreams user-ratified end to end in one milestone) ·
+branch `main` · tag `v2.1.0` = `2938286` (merge commit
+`29382864e568185b962c219d4b6d96ca499fc48a`); tag `v2.0.0` =
 `caa6d73`; tag `v1.9.0` = `a9ded83`; tag `v1.8.0` = `4bb0033`;
 checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
-release commit) per the standing release ruling — v2.0 shipped as one
-new route + one new module, no audit-hardening surface touched
-(`frontend/` and `backend/app/` are otherwise byte-identical to v1.9;
-route count is the one ratified exception) · **D32 minted — the
-register moves to D1–D32, deliberately no further law reserved** ·
+release commit) per the standing release ruling — v2.1 shipped as one
+workbench bundle directory + three test suites, no audit-hardening
+surface touched (`frontend/` and `backend/app/` are byte-identical to
+v2.0; route manifest unchanged at 88) · **D32 minted — the
+register stays at D1–D32, deliberately no further law reserved** ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
 backend/test_*.py, the nightly full-model NLI workflow, structured
@@ -232,6 +239,46 @@ milestone; the in-browser before/after (0 stewarded → 2 stewarded
 live, the HIGH conflict wearing RISK ACCEPTED/OWNER ASSIGNED/DUE DATE
 SET/the computed OVERDUE chip while staying HIGH and blocking, zero
 console errors) is the recorded release evidence.
+v2.1.0 delivers Contract Intelligence (catalog #16, the shared
+engine) — the FOURTH commercial workbench, earned by two consumer
+workbenches already existing (Compliance v1.7, Procurement v1.8):
+ONE extraction contract turns contracts the governed pipeline already
+holds into a **clause register** — verbatim, class-declared,
+human-accepted DERIVED facts — that the EXISTING consumer workbenches
+cite as evidence through the valve. **THE PARAPHRASED CLAUSE is the
+cardinal sin**: every clause fact's statement is the VERBATIM excerpt
+(parties, dates, amounts, percentages, notice periods exactly as
+written); its twin **THE LEGAL CONCLUSION** refuses to state what a
+contract SAYS as what is legally true, enforceable, or advisable
+(forbidden vocabulary swept on every written byte). **THE REGISTER
+DISTINCTION** was ratified as the milestone's one new ruling:
+verbatim structure extraction may become a DERIVED fact through the
+valve; narrative synthesis never does. Fifteen candidate clause
+classes consolidate to ONE pinned taxonomy under first-match
+shadowing (the 15→1 consolidation). **THE SHARED ENGINE PROOF** (the
+named distinctive WS3 stage) is the milestone's whole point: ONE
+extraction contract, TWO UNCHANGED consumers (procurement +
+compliance) citing the same accepted register asset BY ID with zero
+drift, and NO SHARED FACT STORE proven three ways — D24
+byte-identical at 28/305 (no table to hold one), THE
+EXACTLY-TWO-COPIES CHECK (the clause exists in APPROVED knowledge
+exactly twice by design, PRIMARY + register, and consumer runs create
+zero approved facts), and THE WORKSPACE DELETION TEST (erasing every
+one of the engine's output files changed neither consumer's citation
+fingerprint by one byte — the feed lives in governed facts alone).
+`workbench/common.py` is unchanged a FOURTH time. THE COMMERCIAL
+VERDICT (the user as general counsel / the procurement owner) closed
+the milestone on 2026-07-08: would you let this clause register be
+the single upstream source procurement and compliance reviews both
+cite, every clause verbatim, every gap declared, provably the same
+governed fact under both readers — YES. Zero new surface or law
+through the entire milestone: no D33, no eighth guard family,
+[OE]/[PMD] still unminted, no corpus of its own (the engine reuses
+the existing v1.7/v1.8 corpora); D24 holds at 28 tables / 305
+columns, route manifest unchanged at 88, MCP frozen at 9 tools; the
+in-browser before/after (25 proposals/147 held/0 accepted → 146
+held/1 accepted DERIVED, zero console errors) is the recorded release
+evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -458,6 +505,7 @@ Outside `backend/app/` (deliberately — D29/D22):
 | `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list) + `skills/*.yaml` (six ratified 13-field contracts) + `runner.py` (on common.py; contracts drive runtime — markers/rules/frames/marker_pattern PARSED from the YAMLs; declared as_of clock, refused if absent; gated skills refused live naming the unminted decision; posture enforced pre-write; DERIVED cited as DERIVED) + `corpus/` (12 documents; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/procurement_intelligence/` | **v1.8.0: the third commercial workbench bundle** — `workbench.yaml` (canonical #3, THE INVENTED NUMBER posture + the numeric-overclaim forbidden_vocabulary, the declared clock, the [OE]/[ES]/SEQUENCED lists) + `skills/*.yaml` (six ratified 13-field contracts, incl. the declared `subject_boilerplate_stopwords` evidence-rule refinement) + `runner.py` (on common.py, ZERO shared-module edits; term_class rules/date marker_pattern+auto-renewal+context markers/increase markers/certification requirement+question_template/named policy all PARSED from the YAMLs; date-window arithmetic ONLY from verbatim dates at declared as_of+window_days; the persistent-calendar request refused live) + `corpus/` (12 documents incl. the paraphrase-trap and unparseable-date plants; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/executive_briefing/` | **v1.9.0: the first cross-workbench consumer** — `workbench.yaml` (canonical #1, THE UNSOURCED SENTENCE posture + the 12-phrase forbidden_vocabulary, the visibility budget, the findings ruling, the [PMD]/[OE]/[ES] gated list) + `skills/*.yaml` (six ratified 13-field contracts: five read-compose [now] + one gap [now] + `prepare_executive_briefing` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits; the executive frames/origin convention/section list/boundary declarations PARSED from the YAMLs; the declared as_of+since clock, refused if absent; THE UNSOURCED SENTENCE enforced pre-write; exactly one EXECUTIVE_EVIDENCE_GAP proposal kind; the runner-local `BriefingGraphClient` = a subclass adapter over the frozen `get_trust_score`, never a new door). No corpus of its own — the input is the governed state the trio produced |
+| `workbench/contract_intelligence/` | **v2.1.0: the shared engine, the fourth commercial workbench bundle** — `workbench.yaml` (canonical #16, THE PARAPHRASED CLAUSE posture + the legal-conclusion forbidden vocabulary, the pinned 15→1 `clause_class` taxonomy under first-match shadowing, the required-metadata set, the SEQUENCED/gated lists) + `skills/*.yaml` (three ratified 13-field contracts: `extract_contract_clauses`, `detect_missing_contract_metadata`, `prepare_contract_review_brief` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits a fourth time; clause_class markers/rules, the required-metadata set, and the forbidden vocabulary all PARSED from the YAMLs; every clause fact's statement the VERBATIM excerpt, extraction adds only declared structure). No corpus of its own — reuses the existing v1.7/v1.8 corpora; the engine's whole product is the register the OTHER workbenches cite BY ID (THE SHARED ENGINE PROOF) |
 | `tools/generate_skill_contracts.py` | **v1.6.0: the skill-contract generator** — the master inventory as data (16 workbenches, ~360 subtasks) deterministically emitting one 13-field draft YAML per skill into `docs/skill-contracts/`; drafts are scaffolding, never runtime permission (promotion happens at each workbench's scoping session) |
 | `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
@@ -632,6 +680,13 @@ engine", or "agent wrote a fact".
 | WS2 | `65a7d68` | `app/stewardship.py` (the ratified vocabulary + the ledger-only write + the read-time join) + ONE route `POST /api/projects/{id}/stewardship` (`assets:review`; AGENT 403; phantom key 404) + the Governance Inbox join + the route manifest re-frozen 87→88 (digest `d8d4eaa5…`, the FIRST ratified T2.4 amendment, same commit as the door) + THE DOOR PROOF (`test_stewardship_workbench.py`, 76th suite, seven parts end to end over HTTP) |
 | WS3 | `573c741`+`75f9ade` | THE MILESTONE GATE + THE STEWARDSHIP PROOF (`test_stewardship_acceptance.py`, 77th suite, eight stages first run: every exception species incl. a held proposal via the vault lane + a stale render; THE ROW TEST; THE LEDGER-ALONE RECONSTRUCTION; THE OVERDUE SUPERSESSION; THE SILENT VETO refused; THE VANISHING TEST across 3 species) + the Governance Inbox stewardship controls (badges/OVERDUE/filter) + THE COMMERCIAL VERDICT PASSED (the governance officer) + the in-browser before/after (0→2 stewarded, HIGH stays blocking, zero console errors) |
 | **v2.0.0** | PR #21 `caa6d73` (tag v2.0.0) | the [ES] minting milestone — D32 ratified, the SEVENTH permanent guard family, zero schema through a LAW milestone; route manifest 88 (first ratified amendment); MCP frozen at 9 tools; D24 held 28/305; harness 77/77 |
+| — | PR #22 `59444ed` | release: v2.0.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| WS0 | `d1b66ac` (part of `feat/v21-contract-intelligence`) | v2.1 scoping ratified — catalog #16 earned by two consumers existing (Compliance v1.7, Procurement v1.8); THE PARAPHRASED CLAUSE posture + its twin THE LEGAL CONCLUSION; THE REGISTER DISTINCTION ruled (verbatim structure extraction may become DERIVED fact through the valve, narrative synthesis never); the 15→1 clause-class consolidation named; THE SHARED ENGINE PROOF named as the distinctive WS3 stage |
+| WS1 | `0dab8e9` | the three ratified contracts (`extract_contract_clauses`, `detect_missing_contract_metadata`, `prepare_contract_review_brief`) + the registry promotion (26 ACTIVE / 40 CONSOLIDATED globally) + THE EXTRACTION PRECONDITION PROOF (`backend/test_contract_corpus.py`, 78th suite) — every clause class detectable in approved facts, the UNCHANGED v1.7/v1.8 consumer markers still firing on accepted register text, before any runner |
+| WS2 | `954eac9` | the Contract Intelligence runner on common.py (ZERO shared-module edits a fourth time) + THE DIAGNOSIS PROOF (`backend/test_contract_workbench.py`, 79th suite, seven parts, first full run) |
+| WS3 | `13a8a72` | THE MILESTONE GATE + THE SHARED ENGINE PROOF (`backend/test_contract_acceptance.py`, 80th suite, eight stages, first run: one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways incl. THE WORKSPACE DELETION TEST + THE EXACTLY-TWO-COPIES CHECK) + the in-browser before/after (25 proposals/147 held/0 accepted → 146 held/1 accepted DERIVED, zero console errors) |
+| — | `bf59297` | THE COMMERCIAL VERDICT PASSED (the general counsel / procurement owner) — the milestone gate closed |
+| **v2.1.0** | PR #23 `2938286` (tag v2.1.0) | the shared engine — catalog #16, the fourth commercial workbench; zero new surface or law (no D33, no eighth guard, [OE]/[PMD] unminted, no corpus of its own); route manifest unchanged at 88; MCP frozen at 9 tools; D24 held 28/305; harness 80/80 |
 
 ## How to run
 
@@ -806,8 +861,22 @@ engine", or "agent wrote a fact".
   THE LEDGER-ALONE RECONSTRUCTION; THE OVERDUE SUPERSESSION; THE
   VANISHING TEST across three species; every decision HUMAN
   identity-backed).
+  **v2.1.0 contract-intelligence suites (in CI):**
+  `test_contract_corpus.py` (WS1 THE EXTRACTION PRECONDITION PROOF,
+  78th suite — every clause class detectable in approved facts before
+  any runner; the consumer-marker precondition: accepted register
+  text still triggers the UNCHANGED v1.7/v1.8 detectors; the
+  draft≠ratified sweep constants move to 26 ACTIVE / 40 CONSOLIDATED),
+  `test_contract_workbench.py` (WS2 THE DIAGNOSIS PROOF, 79th suite,
+  seven parts, first full run), `test_contract_acceptance.py` (WS3
+  THE MILESTONE GATE + THE SHARED ENGINE PROOF, 80th suite, eight
+  stages — one extraction contract, two UNCHANGED consumers citing
+  the register BY ID; NO SHARED FACT STORE proven three ways incl.
+  THE EXACTLY-TWO-COPIES CHECK and THE WORKSPACE DELETION TEST; every
+  approval event non-AGENT; route manifest 88 at its ratified digest;
+  MCP at 9; D24 at exactly 28/305).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (77 suites as of v2.0.0; keeping one out requires an explicit
+  (80 suites as of v2.1.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -1038,28 +1107,59 @@ untouched at 9 tools (agent visibility of stewardship is the unminted
 run (there is no runner in this milestone) and the v1.2.0
 live-SharePoint scan.
 
-**NEXT: the sellable trio, the first cross-workbench consumer, and the
-[ES] minting law have all shipped.** Contract Intelligence (catalog
-#16, the shared extraction engine) is now EARNABLE — two consumer
-workbenches exist (Compliance + Procurement). Also on the table: the
-two remaining named decisions when their pressure arrives (the
-Operational Evidence Realm [OE], the Pipeline Metadata Door [PMD] —
-the deferred deadline-extraction family, `track_explicit_deadlines` /
-`track_recurrence_rules`, now UNLOCKED for its own scoping session
-after [ES]), the honest slots above, and the standing backlog
-(SSO/SAML/SCIM; OS keystore/KMS; Confluence/Drive providers;
-Gemini/open-model adapters; **D23 — deferred through ten milestones**;
-embedding index inside .empkg; the remaining T3.x polish — main.py
-unused-import prune, Pydantic model_config, _iso dedup, N+1 citation
-batching; ruff/Dockerfile/pytest-cov/frontend tests). The narrative:
-v1.2→v1.5 built the substrate; v1.6 proved a business reader pays
-attention; v1.7 proved the pattern repeats; v1.8 proved the pattern
-industrializes; v1.9 proved the pattern composes (the first consumer
-that reads what other workbenches produced); **v2.0 proves the
-platform can mint a new LAW without becoming a second truth system —
-the exception stays computed, only the human ruling about it persists,
-and a permanent guard proved that boundary before the door existed to
-tempt it.**
+**v2.1.0 DELIVERED (2026-07-08) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/contract-intelligence-v2.1.md). Catalog #16, the shared engine —
+the FOURTH commercial workbench, earned not anticipated (two consumer
+workbenches already existed: Compliance v1.7, Procurement v1.8) — in
+four user-ratified gates: WS0 the rulings (THE PARAPHRASED CLAUSE
+posture + its twin THE LEGAL CONCLUSION, THE REGISTER DISTINCTION
+ratified, the 15→1 clause-class consolidation with pinned first-match
+shadowing, THE SHARED ENGINE PROOF named as the distinctive WS3
+stage); WS1 the three ratified contracts + the registry promotion (26
+ACTIVE / 40 CONSOLIDATED globally) + THE EXTRACTION PRECONDITION
+PROOF (`test_contract_corpus.py`, 78th suite — every clause class
+detectable in approved facts, the UNCHANGED v1.7/v1.8 consumer
+markers still firing on accepted register text, before any runner);
+WS2 the runner on `workbench/common.py` (ZERO shared-module edits a
+fourth time) + THE DIAGNOSIS PROOF (`test_contract_workbench.py`,
+79th suite, seven parts, first run); WS3 THE MILESTONE GATE + **THE
+SHARED ENGINE PROOF** (`test_contract_acceptance.py`, 80th suite,
+eight stages — one extraction contract, two UNCHANGED consumers
+citing the register BY ID with zero drift; NO SHARED FACT STORE
+proven three ways: D24 byte-identical at 28/305, THE
+EXACTLY-TWO-COPIES CHECK, and THE WORKSPACE DELETION TEST) + THE
+COMMERCIAL VERDICT (the general counsel / procurement owner) + the
+in-browser before/after. Zero new surface or law through the entire
+milestone — no D33, no eighth guard family, [OE]/[PMD] still
+unminted, no corpus of its own (reuses the existing v1.7/v1.8
+corpora); D24 held at 28/305; route manifest unchanged at 88; MCP
+frozen at 9 tools. The honest slots carried: the real-model
+diagnostic run (there is no runner in this milestone) and the v1.2.0
+live-SharePoint scan.
+
+**NEXT: the sellable trio, the first cross-workbench consumer, the
+[ES] minting law, and the shared extraction engine have all shipped.**
+The two remaining named decisions still await their own pressure and
+scoping session (the Operational Evidence Realm [OE], the Pipeline
+Metadata Door [PMD] — the deferred deadline-extraction family,
+`track_explicit_deadlines` / `track_recurrence_rules`, UNLOCKED since
+[ES]). Also on the table: the honest slots above, and the standing
+backlog (SSO/SAML/SCIM; OS keystore/KMS; Confluence/Drive providers;
+Gemini/open-model adapters; **D23 — deferred through eleven
+milestones**; embedding index inside .empkg; the remaining T3.x
+polish — main.py unused-import prune, Pydantic model_config, _iso
+dedup, N+1 citation batching; ruff/Dockerfile/pytest-cov/frontend
+tests). The narrative: v1.2→v1.5 built the substrate; v1.6 proved a
+business reader pays attention; v1.7 proved the pattern repeats; v1.8
+proved the pattern industrializes; v1.9 proved the pattern composes
+(the first consumer that reads what other workbenches produced); v2.0
+proved the platform can mint a new LAW without becoming a second
+truth system; **v2.1 proves the platform can share ONE extraction
+engine across multiple consumer workbenches with zero drift and no
+second fact store — the register lives in governed facts alone, and
+deleting every byte the engine wrote changes nothing either consumer
+cites.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
