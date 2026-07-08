@@ -505,17 +505,26 @@ consolidate into `extract_compliance_obligations` (declared
 `detect_missing_evidence` (declared requirement classes). Their
 drafts carry `status: CONSOLIDATED` + `consolidated_into` + a
 resolving `ratified_path` — consolidation is never silent promotion.
-**The deadline deferral (v1.7 WS0):** subtasks 6, 7, 17, 18 stay
-SEQUENCED, deliberately — persistent deadline stewardship risks a
-second operational state machine before [ES] is scoped.
+**The deadline deferral (v1.7 WS0) — RESOLVED at v2.2:** subtasks 6,
+7, 17, 18 stayed SEQUENCED through five milestones because persistent
+deadline stewardship risked a second operational state machine before
+[ES] was scoped. D32 answered the fear by name (*decisions persist;
+existence never does*), and the v2.2 WS0 gate
+(docs/deadline-obligation-v2.2.md) ratified the family as detection
+at a declared clock: 6, 17, 18 CONSOLIDATE into
+`detect_obligation_deadlines`; 7 into `extract_recurrence_rules`; the
+snapshot brief ships as `prepare_obligation_calendar_brief` [assist].
+The tracking verb died at scoping — no deadline table, no calendar
+store, no reminder; THE INVENTED DATE and THE PRESUMED COMPLETION are
+the extension's cardinal sins.
 
 1. `extract_obligations_from_contracts` [now — CONSOLIDATED → extract_compliance_obligations]
 2. `extract_obligations_from_policies` [now — CONSOLIDATED → extract_compliance_obligations]
 3. `extract_obligations_from_certifications` [now — CONSOLIDATED → extract_compliance_obligations]
 4. `extract_obligations_from_regulatory_documents` [now — CONSOLIDATED → extract_compliance_obligations]
 5. `classify_obligation_type` [now — CONSOLIDATED → extract_compliance_obligations (the obligation_type field)]
-6. `track_explicit_deadlines` [now — DEFERRED to after the [ES] scoping]
-7. `track_recurrence_rules` [now — DEFERRED; ambiguity flagged, never assumed]
+6. `track_explicit_deadlines` [now — CONSOLIDATED → detect_obligation_deadlines (v2.2; detection at a declared clock, never tracking)]
+7. `track_recurrence_rules` [now — CONSOLIDATED → extract_recurrence_rules (v2.2; verbatim, never expanded; ambiguity flagged, never assumed)]
 8. `detect_missing_evidence` [now — **ACTIVE (v1.7)**; absence is a finding, never a fact]
 9. `identify_outdated_policies` [now — **ACTIVE (v1.7)**; never age alone]
 10. `compare_policy_vs_policy` [now]
@@ -525,8 +534,8 @@ second operational state machine before [ES] is scoped.
 14. `generate_compliance_evidence_binder` [assist — every section links to governed facts; no generated legal conclusion]
 15. `answer_auditor_questions` [assist — approved evidence only, refusals first-class]
 16. `identify_obligation_owner_gaps` [ES — THE SPLIT RULING: detection ratified as `detect_undocumented_obligation_owner` (**ACTIVE, v1.7**); assignment/routing/stewardship stays gated here]
-17. `identify_upcoming_obligations_30_60_90` [now — DEFERRED; deadline pattern]
-18. `detect_certification_expiry_risk` [now — DEFERRED]
+17. `identify_upcoming_obligations_30_60_90` [now — CONSOLIDATED → detect_obligation_deadlines (v2.2; the declared window_days facet)]
+18. `detect_certification_expiry_risk` [now — CONSOLIDATED → detect_obligation_deadlines (v2.2; the certification_expiry class)]
 19. `detect_reporting_obligation_gaps` [now — CONSOLIDATED → detect_missing_evidence]
 20. `detect_notification_obligation_gaps` [now — CONSOLIDATED → detect_missing_evidence]
 21. `detect_sla_evidence_gaps` [now — CONSOLIDATED → detect_missing_evidence]
@@ -540,6 +549,17 @@ Plus the two v1.7-minted skills: **`extract_compliance_obligations`
 detection half of the owner split); and
 **`detect_conflicting_compliance_statements` [now] — ACTIVE** (the
 compliance specialization of the conflict pattern).
+
+Plus the three v2.2-minted skills (the deadline extension —
+docs/deadline-obligation-v2.2.md): **`detect_obligation_deadlines`
+[now] — ACTIVE (v2.2)** (explicit deadlines inside a declared window
+at a declared as_of; DEADLINE_AMBIGUITY flagged, never dated; accepted
+v2.1 register clauses are first-class inputs BY ID — THE HARVEST),
+**`extract_recurrence_rules` [now] — ACTIVE (v2.2)** (verbatim
+recurrence language; never expanded into occurrences), and
+**`prepare_obligation_calendar_brief` [assist, synth] — ACTIVE
+(v2.2)** (the point-in-time snapshot brief; THE COMPUTED CALENDAR —
+persistence refused, the v1.8 refusal carried).
 
 Future [OE]: `compare_policy_vs_practice` ·
 `verify_obligations_against_operational_records` ·

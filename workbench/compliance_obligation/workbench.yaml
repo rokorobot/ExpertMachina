@@ -51,6 +51,11 @@ skills:
   - detect_undocumented_obligation_owner
   - detect_conflicting_compliance_statements
   - prepare_audit_readiness_pack
+  # the v2.2 extension (docs/deadline-obligation-v2.2.md) - the former
+  # deferred deadline family, ratified as detection at a declared clock
+  - detect_obligation_deadlines
+  - extract_recurrence_rules
+  - prepare_obligation_calendar_brief
 composition_across_the_valve: >
   Registry rule 6, executed here for the first time (the v1.7
   COMPOSITION PROOF): detect_missing_evidence may consume ACCEPTED
@@ -66,9 +71,16 @@ refused_until_minted:
   exception_stewardship: obligation owner assignment, routing, and
     stewardship workflows (detection of an UNDOCUMENTED owner is
     ratified here; deciding who the owner should be is human work)
-deferred_deliberately:
-  deadline_family: track_explicit_deadlines, track_recurrence_rules,
+deferral_resolved_v22:
+  deadline_family: >
+    the v1.7 deferral (track_explicit_deadlines, track_recurrence_rules,
     identify_upcoming_obligations_30_60_90,
-    detect_certification_expiry_risk - document-side in theory, but
-    persistent deadline stewardship risks a second operational state
-    machine before [ES] is scoped (the v1.7 WS0 ruling)
+    detect_certification_expiry_risk) is RESOLVED at the v2.2 extension
+    (docs/deadline-obligation-v2.2.md): [ES]/D32 answered the
+    state-machine fear - decisions persist, existence never does. The
+    family is ratified as detect_obligation_deadlines +
+    extract_recurrence_rules + prepare_obligation_calendar_brief:
+    detection computed at a declared clock, recurrence verbatim and
+    never expanded, the calendar a projection never a store. THE
+    INVENTED DATE and THE PRESUMED COMPLETION are the extension's
+    cardinal sins; completion/status stays [OE], refused live.

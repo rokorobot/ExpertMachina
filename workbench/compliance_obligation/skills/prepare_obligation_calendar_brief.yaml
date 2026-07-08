@@ -1,0 +1,66 @@
+skill_id: prepare_obligation_calendar_brief
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+purpose: >
+  Produce a point-in-time obligation-calendar brief at the declared
+  as_of: the explicit deadlines in the declared window, the verbatim
+  recurrence rules, and the flagged ambiguities - a snapshot for
+  humans planning their review, never a calendar that persists, never
+  a finding, never knowledge. THE COMPUTED CALENDAR made visible: the
+  brief is a projection of governed facts at a declared clock; delete
+  it and nothing is lost; re-run it at the same clock and the bytes
+  are identical.
+sections:
+  # the three mandatory sections; an empty section carries its
+  # declared-absence note (the v1.9 empty-note discipline)
+  - dated: explicit deadlines in the declared window, each with the
+      verbatim excerpt (asset id + quote), the deadline class, and
+      declared-clock arithmetic only
+  - recurring: recurrence rules VERBATIM (never expanded into
+      occurrences - the never_expand_rule binds here too)
+  - flagged: vague or missing time language, quoted exactly as
+      written, never dated
+allowed_inputs:
+  - approved knowledge in the compliance scope (PRIMARY or DERIVED -
+    including accepted clause-register facts, cited by asset id)
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional or
+    operational records ([OE] refused)
+  - wall-clock time (as_of is declared, never sampled)
+  - generated future occurrences of recurrence rules
+    (THE INVENTED DATE)
+  - completion, breach, or compliance status of any obligation
+    (THE PRESUMED COMPLETION)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every dated line cites its governed asset and quotes its verbatim
+  excerpt; every computed figure is declared-clock date arithmetic
+  over a verbatim date; every recurrence line is verbatim; every
+  flagged line quotes its vague language exactly. Narrative framing
+  declared SYNTHESIS_INFERRED. DERIVED facts cited as DERIVED. No
+  conduct vocabulary (the detect_obligation_deadlines
+  forbidden_vocabulary binds here byte-for-byte).
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A brief for humans written to 07_agent_workspaces (ungoverned
+  scratch, never scanned) - NOT a proposal, never written to
+  /08_proposals, never re-enters knowledge (circular derivation
+  refused). The declared as_of and window_days are printed in the
+  brief header verbatim.
+human_approval_requirement: >
+  None applies - the brief proposes nothing and is never accepted
+  into knowledge; the valve is not in its path by design.
+audit_event: >
+  MCP calls audited per call; the brief itself is scratch, not
+  evidence.
+refusal_conditions:
+  - no as_of or window_days declared for the run -> refuse (never
+    sample the clock, never default the window)
+  - persistence, scheduling, reminders, or notification is requested
+    -> refuse (the v1.8 persistent-calendar refusal, carried
+    verbatim: a snapshot brief is allowed; a kept calendar never is)
+  - an obligation completion/status question -> refuse, naming the
+    Operational Evidence Realm (unminted)

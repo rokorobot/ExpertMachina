@@ -114,7 +114,7 @@ OVERLAP_THRESHOLD = 6
 REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
-RATIFIED_ACTIVE = 26  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9) + 3 contract-intelligence (v2.1 WS1 promotion)
+RATIFIED_ACTIVE = 29  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9) + 3 contract-intelligence (v2.1) + 3 deadline-obligation (v2.2 WS1 promotion)
 
 
 def norm(text):
@@ -498,21 +498,21 @@ def main():
                     f"{name}: consolidation ratified_path does not resolve"
                 assert os.path.basename(target) == ci.group(1) + ".yaml", \
                     f"{name}: consolidated_into and ratified_path disagree"
-            if "the v1.7 deadline deferral" in text:
+            if "the v2.2 promotion" in text:
                 deferred.append(name)
-                assert status == "SEQUENCED", \
-                    f"{name}: the deferred deadline family must stay SEQUENCED"
+                assert status == "CONSOLIDATED", \
+                    f"{name}: the former deadline family must be CONSOLIDATED (v2.2)"
     assert len(active) == RATIFIED_ACTIVE, \
         f"expected exactly {RATIFIED_ACTIVE} ACTIVE drafts, got {sorted(active)}"
-    assert len(consolidated) == 40, \
-        f"expected the 40 consolidated drafts (8 v1.7 + 5 v1.8 + 5 v1.9 + 22 v2.1), got {sorted(consolidated)}"
+    assert len(consolidated) == 44, \
+        f"expected the 44 consolidated drafts (8 v1.7 + 5 v1.8 + 5 v1.9 + 22 v2.1 + 4 v2.2), got {sorted(consolidated)}"
     assert sorted(deferred) == ["detect_certification_expiry_risk.yaml",
                                 "identify_upcoming_obligations_30_60_90.yaml",
                                 "track_explicit_deadlines.yaml",
                                 "track_recurrence_rules.yaml"], \
-        f"the deferred deadline family is wrong: {sorted(deferred)}"
+        f"the former deadline family is wrong: {sorted(deferred)}"
     # The manifests and the ratified skill files agree, per bundle.
-    for wb_dir, expected_count in ((CUSOPS_DIR, 5), (WB_DIR, 6)):
+    for wb_dir, expected_count in ((CUSOPS_DIR, 5), (WB_DIR, 9)):
         skills_dir = os.path.join(wb_dir, "skills")
         ratified = sorted(n[:-5] for n in os.listdir(skills_dir)
                           if n.endswith(".yaml"))
@@ -539,9 +539,10 @@ def main():
                             (Q_OWNER_COVERED, ow_text, "owner covered")):
         assert q in where, f"the {label} question is not the contract's frame"
     print(f"Part 7 passed: {total} draft contracts swept; exactly "
-          f"{RATIFIED_ACTIVE} ACTIVE with resolving ratified_path; the 8 "
+          f"{RATIFIED_ACTIVE} ACTIVE with resolving ratified_path; the 44 "
           "CONSOLIDATED drafts each carry consolidated_into + a resolving "
-          "ratified_path; the deadline family stays SEQUENCED; both bundle "
+          "ratified_path; the former deadline family is CONSOLIDATED into "
+          "its v2.2 successors; both bundle "
           "manifests agree with their ratified files; the suite's question "
           "frames are the contracts' frames verbatim.")
 
