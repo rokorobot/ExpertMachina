@@ -789,3 +789,19 @@ class EvaluationRunResponse(BaseModel):
     class Config:
         from_attributes = True
 
+
+
+class StewardshipDecisionCreate(BaseModel):
+    """A human stewardship decision on a computed exception (v2.0, D32).
+    The exception_key is the Governance Inbox item id (inbox-item-v1); the
+    server confirms it names a currently-present exception before recording
+    the append-only decision. Kind-specific fields are validated by
+    app.stewardship against the ratified seven-kind vocabulary."""
+    exception_key: str
+    kind: str
+    reason: Optional[str] = None
+    escalated_to: Optional[str] = None
+    owner_label: Optional[str] = None
+    owner_principal_id: Optional[int] = None
+    due_date: Optional[str] = None
+    clears_kind: Optional[str] = None

@@ -149,6 +149,7 @@ export default function Home() {
     governanceInbox,
     governanceInboxLoading,
     fetchGovernanceInbox,
+    recordStewardship,
     reviewClaimVerdict,
     coverageTrend,
     fetchCoverageTrend,
@@ -485,6 +486,12 @@ export default function Home() {
 
   // Governance Inbox & Readiness Console state (MVP 0.9.1)
   const [inboxModelFilter, setInboxModelFilter] = useState<number | null>(null);
+  // Exception Stewardship state (v2.0, D32): presentation only - the
+  // filter and the per-item decision draft never touch computed truth.
+  const [inboxStewardFilter, setInboxStewardFilter] = useState<'ALL' | 'UNSTEWARDED' | 'STEWARDED'>('ALL');
+  const [stewardDraft, setStewardDraft] = useState<Record<string, { kind: string; primary: string; secondary: string }>>({});
+  const [stewardBusy, setStewardBusy] = useState<string | null>(null);
+  const [stewardError, setStewardError] = useState<string | null>(null);
   const [highlightRelationshipId, setHighlightRelationshipId] = useState<number | null>(null);
   const [highlightRevisionId, setHighlightRevisionId] = useState<number | null>(null);
   // Persisted Verification Verdicts state (MVP 0.9.2)
@@ -3715,6 +3722,33 @@ export default function Home() {
                         ))}
                       </div>
                     )}
+
+                    {/* STEWARDSHIP FILTER (v2.0, D32): presentation over the
+                        annotation - never a stored status. */}
+                    <div className="flex flex-wrap items-center gap-2 pt-1">
+                      <span className="text-[9px] font-mono text-slate-600 uppercase tracking-wider">Stewardship</span>
+                      {(['ALL', 'UNSTEWARDED', 'STEWARDED'] as const).map((f) => (
+                        <button
+                          key={f}
+                          onClick={() => setInboxStewardFilter(f)}
+                          className={`text-[10px] font-mono px-3 py-1 rounded-full border transition-colors ${
+                            inboxStewardFilter === f
+                              ? 'bg-violet-950/40 text-violet-300 border-violet-800'
+                              : 'bg-slate-950 text-slate-500 border-slate-900 hover:text-slate-300'
+                          }`}
+                        >
+                          {f}
+                        </button>
+                      ))}
+                      {governanceInbox && (
+                        <span className="text-[9px] font-mono text-slate-500">
+                          {governanceInbox.summary.stewarded ?? 0} stewarded · decisions are append-only ledger events; existence and severity never move with them
+                        </span>
+                      )}
+                      {stewardError && (
+                        <span className="text-[9px] font-mono text-rose-400 w-full">{stewardError}</span>
+                      )}
+                    </div>
                   </div>
 
                   {/* COMPILE READINESS PANEL */}
@@ -3820,7 +3854,47 @@ export default function Home() {
                       inboxModelFilter === null ||
                       item.expert_model_id === inboxModelFilter ||
                       (item.related_expert_model_ids || []).includes(inboxModelFilter);
-                    const visible = governanceInbox.items.filter(matchesModel);
+                    // v2.0 (D32): the steward filter is PRESENTATION over the
+                    // annotation - existence, severity, and buckets are
+                    // computed upstream and never move with a decision.
+                    const matchesSteward = (item: typeof governanceInbox.items[number]) =>
+                      inboxStewardFilter === 'ALL' ||
+                      (inboxStewardFilter === 'STEWARDED' ? !!item.stewardship : !item.stewardship);
+                    const visible = governanceInbox.items.filter(i => matchesModel(i) && matchesSteward(i));
+
+                    // v2.0 (D32): the seven ratified decision kinds - the door
+                    // validates; this map only drives which inputs to show.
+                    const STEWARD_KINDS: Record<string, { primary: string | null; secondary: string | null }> = {
+                      ACKNOWLEDGED: { primary: null, secondary: null },
+                      RISK_ACCEPTED: { primary: 'reason', secondary: null },
+                      DISMISSED: { primary: 'reason', secondary: null },
+                      ESCALATED: { primary: 'reason', secondary: 'escalated to' },
+                      OWNER_ASSIGNED: { primary: 'owner label', secondary: null },
+                      DUE_DATE_SET: { primary: 'due date YYYY-MM-DD', secondary: null },
+                      CLEARED: { primary: 'reason', secondary: 'clears kind' },
+                    };
+                    const draftFor = (id: string) =>
+                      stewardDraft[id] || { kind: 'ACKNOWLEDGED', primary: '', secondary: '' };
+                    const submitSteward = async (item: typeof visible[number]) => {
+                      if (activeProjectId === null) return;
+                      const draft = draftFor(item.id);
+                      const payload: {
+                        exception_key: string; kind: string; reason?: string;
+                        escalated_to?: string; owner_label?: string;
+                        due_date?: string; clears_kind?: string;
+                      } = { exception_key: item.id, kind: draft.kind };
+                      if (['RISK_ACCEPTED', 'DISMISSED', 'ESCALATED', 'CLEARED'].includes(draft.kind)) payload.reason = draft.primary;
+                      if (draft.kind === 'OWNER_ASSIGNED') payload.owner_label = draft.primary;
+                      if (draft.kind === 'DUE_DATE_SET') payload.due_date = draft.primary;
+                      if (draft.kind === 'ESCALATED') payload.escalated_to = draft.secondary;
+                      if (draft.kind === 'CLEARED') payload.clears_kind = draft.secondary;
+                      setStewardBusy(item.id);
+                      setStewardError(null);
+                      const err = await recordStewardship(activeProjectId, payload);
+                      setStewardBusy(null);
+                      if (err) setStewardError(`${item.id}: ${err}`);
+                      else setStewardDraft(d => ({ ...d, [item.id]: { kind: 'ACKNOWLEDGED', primary: '', secondary: '' } }));
+                    };
 
                     const SEVERITY_BADGE: Record<string, string> = {
                       HIGH: 'bg-rose-950/40 text-rose-400 border-rose-900/50',
@@ -3887,6 +3961,68 @@ export default function Home() {
                           >
                             {TYPE_META[item.type]?.action || 'Open'} <ArrowRight className="w-3 h-3" />
                           </button>
+                        )}
+                        {/* v2.0 (D32): stewardship - human decisions ANNOTATE
+                            the computed exception; they never move severity,
+                            bucket, the gate, or existence. */}
+                        {(item.stewardship || item.bucket !== 'RESOLVED') && (
+                          <div className="w-full flex flex-wrap items-center gap-2 pt-2 border-t border-slate-900/60">
+                            {item.stewardship && Object.values(item.stewardship.active).map((d) => (
+                              <span
+                                key={d.kind}
+                                title={`${d.decided_by} · ${d.decided_at ? new Date(d.decided_at).toLocaleString() : ''}${d.reason ? ` · ${d.reason}` : ''}${d.owner_label ? ` · ${d.owner_label}` : ''}${d.due_date ? ` · due ${d.due_date}` : ''}`}
+                                className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border bg-violet-950/40 text-violet-300 border-violet-900/50"
+                              >
+                                {d.kind.replace(/_/g, ' ')}{d.owner_label ? `: ${d.owner_label}` : ''}{d.due_date ? `: ${d.due_date}` : ''}
+                              </span>
+                            ))}
+                            {item.stewardship?.overdue && (
+                              <span className="text-[9px] font-mono font-bold px-2 py-0.5 rounded border bg-rose-950/40 text-rose-400 border-rose-900/50">
+                                OVERDUE
+                              </span>
+                            )}
+                            {item.stewardship && (
+                              <span className="text-[9px] font-mono text-slate-600">
+                                {item.stewardship.history_count} decision{item.stewardship.history_count !== 1 ? 's' : ''} on the ledger
+                              </span>
+                            )}
+                            {item.bucket !== 'RESOLVED' && (
+                              <span className="flex flex-wrap items-center gap-1.5 ml-auto">
+                                <select
+                                  value={draftFor(item.id).kind}
+                                  onChange={(e) => setStewardDraft(d => ({ ...d, [item.id]: { ...draftFor(item.id), kind: e.target.value } }))}
+                                  className="text-[9px] font-mono bg-slate-950 text-slate-300 border border-slate-800 rounded px-1.5 py-1"
+                                >
+                                  {Object.keys(STEWARD_KINDS).map(k => (
+                                    <option key={k} value={k}>{k.replace(/_/g, ' ')}</option>
+                                  ))}
+                                </select>
+                                {STEWARD_KINDS[draftFor(item.id).kind].primary && (
+                                  <input
+                                    value={draftFor(item.id).primary}
+                                    onChange={(e) => setStewardDraft(d => ({ ...d, [item.id]: { ...draftFor(item.id), primary: e.target.value } }))}
+                                    placeholder={STEWARD_KINDS[draftFor(item.id).kind].primary!}
+                                    className="text-[9px] font-mono bg-slate-950 text-slate-300 border border-slate-800 rounded px-2 py-1 w-40"
+                                  />
+                                )}
+                                {STEWARD_KINDS[draftFor(item.id).kind].secondary && (
+                                  <input
+                                    value={draftFor(item.id).secondary}
+                                    onChange={(e) => setStewardDraft(d => ({ ...d, [item.id]: { ...draftFor(item.id), secondary: e.target.value } }))}
+                                    placeholder={STEWARD_KINDS[draftFor(item.id).kind].secondary!}
+                                    className="text-[9px] font-mono bg-slate-950 text-slate-300 border border-slate-800 rounded px-2 py-1 w-32"
+                                  />
+                                )}
+                                <button
+                                  onClick={() => submitSteward(item)}
+                                  disabled={stewardBusy === item.id}
+                                  className="text-[9px] font-mono font-bold text-violet-300 hover:text-violet-200 bg-violet-950/30 border border-violet-900/40 rounded px-2.5 py-1 uppercase tracking-wider disabled:opacity-50"
+                                >
+                                  {stewardBusy === item.id ? 'Recording…' : 'Record decision'}
+                                </button>
+                              </span>
+                            )}
+                          </div>
                         )}
                       </div>
                     );

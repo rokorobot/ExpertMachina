@@ -57,7 +57,14 @@
   metadata about ungated material). Refused until minted.
 - **[ES]** — requires **Exception Stewardship** (owners, due dates,
   acknowledgments — human decisions persisted, existence computed).
-  Refused until minted.
+  **MINTED as D32 at v2.0** (docs/exception-stewardship-v2.0.md): the
+  platform HUMAN SURFACE is delivered — stewardship decisions are
+  append-only `STEWARDSHIP_DECISION` ledger events keyed to the
+  computed exception identity; the queue is the join. The tag now
+  reads: the human surface exists; **[ES]-tagged skills in other
+  workbenches remain gated per-workbench** (they are agent-side
+  owner/routing questions — stewardship pens stay in human hands, and
+  each workbench ratifies its own [ES] slice at its own scoping).
 - **[assist]** — a consumption output (brief, draft, pack, answer),
   not a finding: never enters knowledge, no valve implications.
 - **[synth]** — declared SYNTHESIS_INFERRED content (scenarios,
@@ -718,7 +725,13 @@ Purpose: cross-workbench findings, risks, exceptions, missing
 approvals, and human stewardship. Boundary note: **exception
 existence must remain computed. Human stewardship decisions may
 persist. The strongest rule: the exception never becomes a row; the
-human decisions about it do.**
+human decisions about it do.** — **the rule became LAW (D32) at
+v2.0**; the [ES] entries below are delivered as the platform HUMAN
+SURFACE (`status: HUMAN_SURFACE`, ratified_path
+docs/exception-stewardship-v2.0.md): they are human acts on the
+governed queue, never agent skill contracts — promoting them into a
+runner would put the stewardship pen in the agent's hand, which D32
+exists to refuse.
 
 1. `surface_high_risk_findings` [now — computed inbox/pipeline, platform]
 2. `classify_risk_by_impact_urgency` [synth]
@@ -726,20 +739,26 @@ human decisions about it do.**
 4. `identify_unresolved_conflicts` [now — platform]
 5. `identify_overdue_reviews` [now — platform]
 6. `generate_investigation_brief` [assist]
-7. `track_unresolved_risks` [now as computed queue; persistence ES]
+7. `track_unresolved_risks` [now — the computed queue itself; its persistence question is ANSWERED by D32: decisions persist, existence never does]
 8. `compare_risk_trend_over_time` [now — ledger history]
-9. `route_to_responsible_owner` [ES]
-10. `record_human_acknowledgement` [ES]
-11. `record_risk_acceptance` [ES]
-12. `record_dismissal_with_reason` [ES]
-13. `record_escalation` [ES]
-14. `produce_exception_queue` [now — computed, platform]
-15. `produce_department_owner_view` [ES]
+9. `route_to_responsible_owner` [ES — HUMAN_SURFACE at v2.0: the OWNER_ASSIGNED decision (owner_label required; owner_principal optional)]
+10. `record_human_acknowledgement` [ES — HUMAN_SURFACE at v2.0: the ACKNOWLEDGED decision]
+11. `record_risk_acceptance` [ES — HUMAN_SURFACE at v2.0: the RISK_ACCEPTED decision (reason required; severity and gate verdict unchanged — THE SILENT VETO refused)]
+12. `record_dismissal_with_reason` [ES — HUMAN_SURFACE at v2.0: the DISMISSED decision (reason required; presentation moves, existence stays computed)]
+13. `record_escalation` [ES — HUMAN_SURFACE at v2.0: the ESCALATED decision (reason + escalated_to required)]
+14. `produce_exception_queue` [now — computed, platform; at v2.0 the queue is the JOIN: existence from facts, stewardship from decisions]
+15. `produce_department_owner_view` [ES — HUMAN_SURFACE at v2.0: the owner filter on the queue, presentation only]
 16. `produce_evidence_pack` [assist]
 17. `produce_recommended_action` [assist, synth]
 18. `produce_approval_status_summary` [now — human surface; agent-side PMD]
 19. `produce_audit_trail` [now — platform ledger]
 20. `generate_weekly_exception_digest` [assist]
+
+*(v2.0 also delivers `DUE_DATE_SET` (declared date; overdue COMPUTED
+at read, never stored) and `CLEARED` (the append-only undo) — decision
+kinds without registry-skill ancestors, ruled at scoping. The
+deadline-extraction family elsewhere in this registry UNLOCKS after
+[ES] but stays sequenced for its own session.)*
 
 ---
 

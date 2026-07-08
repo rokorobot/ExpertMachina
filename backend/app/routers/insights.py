@@ -27,6 +27,7 @@ from app import conflict_engine
 from app import revisions
 from app import trust
 from app import governance_inbox
+from app import stewardship
 from app import consumption_inbox
 from app import operations_view
 from app import binding_lineage
@@ -171,6 +172,52 @@ def get_governance_inbox(project_id: int, db_session: Session = Depends(get_db),
     if not project:
         raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
     return governance_inbox.build_inbox(db_session, project_id)
+
+# Exception Stewardship (v2.0, D32): the ONE human-surface write of this
+# law milestone - the route manifest's first ratified 87->88 amendment
+# (the T2.4 path exercised as designed). A stewardship decision is an
+# append-only ledger event keyed to the exception's stable computed
+# identity via app.stewardship (the one module that names the event
+# type); it creates NO exception row, changes NO governed
+# fact, no severity, no gate verdict. require_perm("assets:review") makes
+# it a governance-review act: HUMAN reviewers only - an AGENT principal
+# (AGENT_CONSUMER = {mcp:consume}) is refused 403 by the permission gate,
+# and Guard 5's route grid + Guard 7's door-aware sweep both cover it.
+# The exception must be present in the CURRENT computed queue - a phantom
+# key is refused 404; the server records the exception's type from the
+# computed truth, never trusting the client.
+@router.post("/api/projects/{project_id}/stewardship")
+def record_stewardship_decision(
+        project_id: int, decision: schemas.StewardshipDecisionCreate,
+        db_session: Session = Depends(get_db),
+        actor: identity.Actor = Depends(require_perm("assets:review"))):
+    project = db_session.query(db.Project).filter(db.Project.id == project_id).first()
+    if not project:
+        raise HTTPException(status_code=404, detail=f"Project {project_id} not found")
+    inbox = governance_inbox.build_inbox(db_session, project_id)
+    item = next((i for i in inbox["items"] if i["id"] == decision.exception_key), None)
+    if item is None:
+        raise HTTPException(
+            status_code=404,
+            detail=(f"Exception {decision.exception_key!r} is not present in the "
+                    f"computed queue for project {project_id}. Stewardship keys "
+                    f"to a currently-computed exception; a fixed fact leaves the "
+                    f"queue (D32)."))
+    fields = decision.model_dump(exclude={"exception_key", "kind"},
+                                 exclude_none=True)
+    try:
+        recorded = stewardship.record_decision(
+            db_session, actor, exception_key=decision.exception_key,
+            exception_type=item["type"], kind=decision.kind, **fields)
+    except stewardship.StewardshipError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    # Echo the decision plus the exception's refreshed current stewardship
+    # state (latest-per-kind, overdue computed) - the same join the inbox
+    # carries, so the caller sees the effect immediately.
+    state = stewardship.stewardship_for(db_session, [decision.exception_key])
+    return {"decision": recorded,
+            "exception_key": decision.exception_key,
+            "stewardship": state.get(decision.exception_key)}
 
 # The Operations view (v1.4.1, the D8 amendment recorded in
 # docs/diagnostic-workbench-v1.4.md): a computed projection of Operations

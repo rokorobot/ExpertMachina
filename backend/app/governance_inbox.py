@@ -9,6 +9,7 @@ from app import trust
 from app import policy as policy_module
 from app import tier2 as tier2_module
 from app import proposals as proposals_module
+from app import stewardship as stewardship_module
 from app.projections import engine as projection_engine
 
 # Governance Inbox & Readiness Console (MVP 0.9.1).
@@ -571,6 +572,20 @@ def build_inbox(session: Session, project_id: int) -> dict:
     items.sort(key=lambda i: i["created_at"] or "", reverse=True)
     items.sort(key=lambda i: _SEVERITY_RANK.get(i["severity"], 3))
 
+    # v2.0 (D32): the queue is the JOIN. Existence, severity, bucket, and
+    # ordering above are computed from governed facts ALONE - untouched by
+    # any human decision. Here we ANNOTATE each item with its current
+    # stewardship state (latest-per-kind from the append-only ledger,
+    # overdue computed against `now`), keyed to the item's stable computed
+    # id. A stewarded item is still the same exception at the same severity;
+    # only the `stewardship` annotation is added. An unstewarded item's
+    # annotation is None. Removing every annotation must reproduce the
+    # pre-stewardship queue byte-for-byte (Guard 7's existence sentinel).
+    stewardship = stewardship_module.stewardship_for(
+        session, [i["id"] for i in items], now=now)
+    for item in items:
+        item["stewardship"] = stewardship.get(item["id"])
+
     summary = {
         "needs_review": sum(1 for i in items if i["bucket"] == "NEEDS_REVIEW"),
         "can_wait": sum(1 for i in items if i["bucket"] == "CAN_WAIT"),
@@ -579,6 +594,9 @@ def build_inbox(session: Session, project_id: int) -> dict:
         "ingestion_exceptions": sum(1 for i in items if i["type"] == "INGESTION_EXCEPTION"),
         "blocked_expert_models": sum(1 for r in readiness if not r["compile_allowed"]),
         "total_expert_models": len(models),
+        # v2.0 (D32): how many computed exceptions carry a human decision -
+        # a presentation count over the annotation, never a stored status.
+        "stewarded": sum(1 for i in items if i.get("stewardship")),
     }
 
     return {
