@@ -32,6 +32,8 @@
 | v1.4.1 | Operations UI Completion (the D8 amendment: a top-level Operations area — Workbenches, Proposal Pipeline, Lanes & Vault; operate = the human gate only) | ✅ Completed (July 2026) — pure projection, one read endpoint, zero schema; lane selector + provenance trace close the v1.4.0 UI gaps; 37 CI suites |
 | v1.5.0 | EM Vault — the Governed Projection Vault (D31 Render Authority Dies at Ingress; Guard 6; the second renderer beside the proposal lane) | ✅ Completed (July 2026, D31 ratified) — "delete everything, lose nothing; re-submit anything, launder nothing"; 41 CI suites; 28/305 held |
 | v1.6.0 | Workbench Catalog v1 — the Customer Operations Workbench (the first commercial Operations Workbench; the 16-workbench catalog + master skill registry; NO new law, NO new guard, deliberately) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT ("useful, bounded, worth acting on"); 44 CI suites; 28/305 held; real-model slot honestly pending |
+| v1.7.0 | the Compliance & Obligation Workbench (second commercial workbench, catalog #9; `workbench/common.py` — the catalog's first reuse moment; THE COMPOSITION PROOF — registry rule 6 live for the first time) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the audit-facing reader); 48 CI suites; 28/305 held; honest slots carry |
+| v1.8.0 | the Procurement Document Intelligence Workbench (third commercial workbench, catalog #3; THE INVENTED NUMBER posture; THE CLAUSE ARITHMETIC PROOF; `workbench/common.py` with ZERO shared-module edits) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the procurement/finance owner); 71 CI suites; 28/305 held; the sellable trio complete |
 
 ---
 
@@ -838,10 +840,18 @@ six-finding diagnosis a Customer Operations manager accepted as
   synthesis provenance; the vault re-render showing marked
   non-canonical DERIVED notes; closing at 28/305), and the in-browser
   before/after (Accept-as-DERIVED live, 0→1, zero console errors).
-- **The ratified sequence continues**: Compliance & Obligation second,
-  Procurement Document Intelligence third; the Executive Briefing is
-  two-stage. Honest slots carry: the real-model diagnostic run and
-  the live SharePoint scan.
+- **The ratified sequence completed the sellable trio**: Compliance &
+  Obligation shipped second (v1.7.0) and Procurement Document
+  Intelligence shipped third (v1.8.0) — both with a Milestone Gate,
+  a distinctive named proof, and a passed Commercial Verdict; see
+  [compliance-workbench-v1.7.md](compliance-workbench-v1.7.md) and
+  [procurement-workbench-v1.8.md](procurement-workbench-v1.8.md).
+  **NEXT: v1.9 Executive Operations Briefing** (the first
+  cross-workbench consumer, zero door growth), then **v2.0 Risk &
+  Exception Stewardship** (the [ES] minting milestone, its own
+  scoping session). Contract Intelligence (catalog #16) is now
+  earnable — two consumer workbenches exist. Honest slots carry: the
+  real-model diagnostic run and the live SharePoint scan.
 
 ## Future Direction
 
