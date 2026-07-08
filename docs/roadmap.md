@@ -36,6 +36,7 @@
 | v1.8.0 | the Procurement Document Intelligence Workbench (third commercial workbench, catalog #3; THE INVENTED NUMBER posture; THE CLAUSE ARITHMETIC PROOF; `workbench/common.py` with ZERO shared-module edits) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the procurement/finance owner); 71 CI suites; 28/305 held; the sellable trio complete |
 | v1.9.0 | the Executive Operations Briefing Workbench (the FIRST cross-workbench consumer, canonical #1; THE UNSOURCED SENTENCE posture; THE BRIEFING PROOF; the runner-local `BriefingGraphClient` adapter over the frozen `get_trust_score`; ZERO door growth) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CEO reader); 74 CI suites; 28/305 held; the briefing consumes its own human-accepted evidence gap; honest slots carry |
 | v2.0.0 | Risk & Exception Stewardship (the [ES] MINTING milestone; D32 — "the exception never becomes a row; the human decisions about it do"; the SEVENTH permanent guard family; the route manifest's first ratified 87→88 amendment) | ✅ Completed (July 2026, D32 ratified) — all gates PASSED incl. THE COMMERCIAL VERDICT (the governance officer); 77 CI suites; 28/305 held; zero schema through a LAW milestone; THE STEWARDSHIP PROOF (row test, ledger-alone reconstruction, vanishing test across three species) |
+| v2.1.0 | Contract Intelligence — the shared engine (catalog #16, the FOURTH commercial workbench; THE PARAPHRASED CLAUSE posture + its twin THE LEGAL CONCLUSION; THE REGISTER DISTINCTION ratified; the 15→1 clause-class consolidation; THE SHARED ENGINE PROOF) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the general counsel / procurement owner); 80 CI suites; 28/305 held; zero new surface or law — no D33, no eighth guard; one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways |
 
 ---
 
@@ -908,7 +909,8 @@ you").
   2→3 accepted, zero console errors). **No new law, a fourth time: no
   D32, no seventh guard family** — Guard 5 swept the runner with zero
   edits.
-- **The [ES] minting milestone shipped as v2.0.0** (below).
+- **The [ES] minting milestone shipped as v2.0.0**, and the shared
+  extraction engine shipped as **v2.1.0** (both below).
 
 ## v2.0.0 — Risk & Exception Stewardship, the [ES] minting milestone (Completed)
 
@@ -981,6 +983,79 @@ read time, always.*
   own scoping sessions. Honest slots carry: the real-model diagnostic
   run and the v1.2.0 live-SharePoint scan (neither is this milestone's
   vehicle — there is no runner).
+
+## v2.1.0 — Contract Intelligence, the shared engine (Completed)
+
+**The FOURTH commercial workbench, earned not anticipated (2026-07-08;
+build contract + all gate records:
+[contract-intelligence-v2.1.md](contract-intelligence-v2.1.md)).**
+Catalog #16 was earnable the moment two consumer workbenches existed
+(Compliance v1.7, Procurement v1.8) — this milestone builds the
+engine they share. The product claim proven: *one governed clause
+register — every clause verbatim, every gap declared — can become the
+single upstream source that procurement and compliance reviews BOTH
+cite, provably the same fact under both readers, without building any
+new door, table, or law.*
+
+- **THE PARAPHRASED CLAUSE (the cardinal sin)**: a shared engine
+  amplifies its own distortions into every consumer at once, so every
+  clause fact's statement is the VERBATIM excerpt — parties, dates,
+  amounts, percentages, and notice periods exactly as the contract
+  wrote them (THE INVENTED NUMBER posture inherited whole from v1.8).
+  Its twin, **THE LEGAL CONCLUSION**: the engine states what the
+  contract SAYS, never what is legally true, enforceable, or
+  advisable — the forbidden vocabulary swept on every written byte.
+- **THE REGISTER DISTINCTION (ratified)**: verbatim structure
+  extraction may become a DERIVED fact through the valve, with the
+  source cited; narrative synthesis of accepted facts may never
+  become a fact. Fifteen candidate clause classes consolidate to ONE
+  pinned taxonomy under a declared first-match shadowing rule (the
+  15→1 consolidation).
+- **Three ratified contracts** (`extract_contract_clauses`,
+  `detect_missing_contract_metadata`, `prepare_contract_review_brief`
+  [assist, synth]) drive the runner (`workbench/contract_intelligence/`)
+  on `workbench/common.py` — **ZERO shared-module edits a fourth
+  time**. Registry promotion moves the sweep constants to **26 ACTIVE
+  / 40 CONSOLIDATED** globally. No corpus of its own — the engine
+  reuses the existing v1.7/v1.8 corpora.
+- **THE SHARED ENGINE PROOF (the distinctive WS3 stage)**: ONE
+  extraction contract, the accepted set spanning ≥3 clause classes;
+  TWO consumers, UNCHANGED, each citing the register entry BY ASSET
+  ID (zero drift is id equality, never string similarity); the
+  provenance chain resolves consumer finding → register entry → the
+  PRIMARY clause asset carrying the verbatim text. **NO SHARED FACT
+  STORE, three ways**: D24 byte-identical at 28/305 (no table to hold
+  one); **THE EXACTLY-TWO-COPIES CHECK** (the clause exists in
+  APPROVED knowledge exactly twice by design — PRIMARY + register —
+  and consumer runs create zero approved facts); **THE WORKSPACE
+  DELETION TEST** (erasing every one of the engine's output files
+  changed neither consumer's citation fingerprint by one byte — the
+  feed lives in governed facts alone).
+- **The gates**: THE EXTRACTION PRECONDITION PROOF
+  (`test_contract_corpus.py`, 78th suite — every clause class
+  detectable in approved facts, the UNCHANGED v1.7/v1.8 consumer
+  markers still firing on accepted register text, before any
+  runner), THE DIAGNOSIS PROOF (`test_contract_workbench.py`, 79th
+  suite, seven parts, first run), THE MILESTONE GATE + THE SHARED
+  ENGINE PROOF (`test_contract_acceptance.py`, 80th suite, eight
+  stages, first run), and the in-browser before/after (25
+  proposals/147 held/0 accepted → 146 held/1 accepted DERIVED on the
+  convergence candidate, zero console errors). **THE COMMERCIAL
+  VERDICT** (general counsel / the procurement owner): *"Would you let
+  this clause register be the single upstream source your procurement
+  and compliance reviews both cite — every clause verbatim, every gap
+  declared, provably the same governed fact under both readers?"* —
+  **RATIFIED, YES.**
+- **Zero new surface or law**: no D33, no eighth guard family,
+  [OE]/[PMD] still unminted. Route manifest unchanged at 88; MCP
+  frozen at 9 tools; D24 held at 28/305.
+- **NEXT**: the two remaining named-not-minted decisions ([OE]
+  Operational Evidence Realm, [PMD] Pipeline Metadata Door — the
+  deferred deadline-extraction family, `track_explicit_deadlines` /
+  `track_recurrence_rules`, UNLOCKED since [ES]) await their own
+  pressure and scoping session. Honest slots carry: the real-model
+  diagnostic run and the v1.2.0 live-SharePoint scan (neither is this
+  milestone's vehicle — there is no runner).
 
 ## Future Direction
 
