@@ -844,15 +844,126 @@ six-finding diagnosis a Customer Operations manager accepted as
   non-canonical DERIVED notes; closing at 28/305), and the in-browser
   before/after (Accept-as-DERIVED live, 0→1, zero console errors).
 - **The ratified sequence completed the sellable trio**: Compliance &
-  Obligation shipped second (v1.7.0) and Procurement Document
-  Intelligence shipped third (v1.8.0) — both with a Milestone Gate,
-  a distinctive named proof, and a passed Commercial Verdict; see
-  [compliance-workbench-v1.7.md](compliance-workbench-v1.7.md) and
-  [procurement-workbench-v1.8.md](procurement-workbench-v1.8.md).
-  **The first cross-workbench consumer shipped as v1.9.0** (below).
-  Contract Intelligence (catalog #16) is now earnable — two consumer
-  workbenches exist. Honest slots carry: the real-model diagnostic run
-  and the live SharePoint scan.
+  Obligation shipped second as v1.7.0 and Procurement Document
+  Intelligence shipped third as v1.8.0 (both below) — each with a
+  Milestone Gate, a distinctive named proof, and a passed Commercial
+  Verdict. **The first cross-workbench consumer shipped as v1.9.0**
+  (below). Honest slots carry: the real-model diagnostic run and the
+  live SharePoint scan.
+
+## v1.7.0 — the Compliance & Obligation Workbench (Completed)
+
+**The second commercial workbench, catalog #9 (2026-07-07; build
+contract + all gate records:
+[compliance-workbench-v1.7.md](compliance-workbench-v1.7.md)).** The
+product claim proven: *the workbench extracts explicit obligations
+from governed documents and detects missing evidence, outdated
+policies, undocumented owners, and conflicting compliance statements —
+every finding document-grounded through the four existing doors,
+re-entering knowledge only through the valve — and proves for the
+first time that skills compose ACROSS the valve* — closed by THE
+COMMERCIAL VERDICT with the user reading as the audit-facing
+compliance owner.
+
+- **Compliance overclaiming is the cardinal sin (the sensitivity
+  posture)**: no finding may imply verification of PRACTICE the doors
+  cannot evidence — the workbench knows what the company *documents*,
+  never what it *does*. Language rulings are contract-backed per
+  finding ("documented", "undocumented", "the governed corpus cannot
+  answer" — never "compliant", "violation", "breach", or any audit
+  conclusion about practice; the manifest's `forbidden_vocabulary` is
+  swept on every finding byte). The [OE]-gated skills
+  (policy-vs-practice, operational-records verification) are exactly
+  the practice claims the workbench refuses live, naming the unminted
+  decision; the audit-readiness pack is [assist] and separates
+  known / missing / contradictory / **unverified** explicitly — the
+  unverified bucket IS the posture.
+- **THE ACTIVE SIX** (`workbench/compliance_obligation/`, six ratified
+  13-field contracts driving the runner at runtime): obligation
+  extraction consolidates four registry drafts into ONE contract with
+  a declared `source_type` field (a declared class, not a separate
+  skill — the consolidation pattern every later workbench reuses);
+  missing evidence is REFUSAL_BACKED (requirement excerpt + a
+  reproducible refusal); outdated policy is REVISION_BACKED
+  (supersession chain OR the document's OWN declared review interval —
+  never age alone); conflicts are CONFLICT_BACKED; the declared
+  `as_of` clock is required, refused if absent.
+- **`workbench/common.py` — the catalog's first reuse moment (ruling
+  6)**: the shared runner plumbing (door setup, contract loading +
+  ACTIVE gating, evidence helpers, the MCP stdio door, content-hashed
+  proposal writing) extracted, and the v1.6 customer-ops runner
+  refactored onto it with zero assertion edits and zero guard edits.
+- **THE COMPOSITION PROOF (the distinctive WS3 stage, the milestone's
+  whole point)**: the package recompiled with human-ACCEPTED
+  obligation facts → a second `detect_missing_evidence` run consumes
+  ACCEPTED facts only → a **second-generation finding citing DERIVED
+  evidence**, its derivation visible at the human gate — registry
+  rule 6 (skills compose across the valve) live for the first time.
+- **The gates**: the 12-document corpus + THE CORPUS PROOF before any
+  runner, THE DIAGNOSIS PROOF (contracts drive runtime, the posture
+  sweep on every byte, byte-identical at the declared clock), THE
+  MILESTONE GATE (the full commercial loop — every candidate held
+  DERIVED under a permissive Tier-1 + live approve-everything Tier-2,
+  human acceptance with verified provenance, the vault before/after,
+  closing at 28/305), THE COMMERCIAL VERDICT, and the in-browser
+  before/after (Accept-as-DERIVED live, zero console errors). 48 CI
+  suites; tag `v1.7.0` = `c2179c2` (also the `post-audit-hardening`
+  checkpoint). No new law: no D32, no seventh guard family; D23
+  deferred a seventh time.
+
+## v1.8.0 — the Procurement Document Intelligence Workbench (Completed)
+
+**The third commercial workbench, catalog #3 — the sellable trio
+complete (2026-07-07; build contract + all gate records:
+[procurement-workbench-v1.8.md](procurement-workbench-v1.8.md)).** The
+product claim proven: *renewals, clauses, and vendor obligations —
+every number verbatim, every window computed on the declared clock:
+the workbench diagnoses vendor contracts, renewal exposure,
+price-increase clauses, supplier certification gaps, and
+vendor-vs-policy conflicts from governed documents, its findings
+becoming knowledge only as human-ACCEPTED DERIVED facts* — closed by
+THE COMMERCIAL VERDICT with the user reading as the
+procurement/finance owner.
+
+- **THE INVENTED NUMBER is the cardinal sin (the sensitivity
+  posture)**: a hallucinated percentage, an extrapolated spend figure,
+  or a guessed date destroys commercial credibility in one finding.
+  The workbench may quote clause numbers, percentages, dates, notice
+  periods, and money figures **only when verbatim present in governed
+  evidence**, and may compute date windows **only from
+  verbatim-extracted dates at the declared `as_of` clock** (declared
+  `window_days`). Never: estimated spend, inferred market rates,
+  paraphrased quantities converted to numerics ("one fifth" never
+  becomes "20%"), rounding/extrapolation, or guessed unparseable
+  dates (unparseable → refused, declared). Impact estimates in the
+  assist brief are SYNTHESIS_INFERRED-declared, never governed
+  numbers.
+- **THE ACTIVE SIX** (`workbench/procurement_intelligence/`, six
+  ratified 13-field contracts, consolidations in the v1.7 style —
+  absorbed registry drafts gain `consolidated_into` +
+  `ratified_path`): `extract_vendor_terms` with declared
+  `term_classes` (sla, data_access, payment, notice, termination);
+  `detect_renewal_window` — the distinctive skill, ONE contract
+  absorbing three point-in-time window drafts as declared facets
+  (`window_days` + an auto-renewal flag); price-increase risk,
+  certification gaps, vendor-vs-policy conflicts, and the [assist]
+  brief. Plus the declared `subject_boilerplate_stopwords`
+  evidence-rule refinement.
+- **The runner on `workbench/common.py` with ZERO shared-module
+  edits** — the first zero-edit reuse, proving the v1.7 extraction
+  industrializes. The persistent-calendar request is refused live:
+  the deadline family stays SEQUENCED behind the [ES] scoping.
+- **THE CLAUSE ARITHMETIC PROOF (the distinctive WS3 stage)**: every
+  one of the 13 statement-numbers in the diagnosis is either
+  verbatim-cited to the clause that says it or declared-clock
+  arithmetic from verbatim dates — swept over every finding byte.
+- **The gates**: the 12-document corpus (including the paraphrase-trap
+  and unparseable-date plants) + THE CORPUS PROOF before any runner
+  (69th suite), THE DIAGNOSIS PROOF (70th), THE MILESTONE GATE (71st)
+  + composition standing + THE COMMERCIAL VERDICT, and the in-browser
+  before/after (66→65 held, 0→1 accepted DERIVED, zero console
+  errors). 71 CI suites; 28/305 held; tag `v1.8.0` = `4bb0033`. No
+  new law: no D32, no seventh guard family.
 
 ## v1.9.0 — the Executive Operations Briefing Workbench (Completed)
 
