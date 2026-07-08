@@ -327,3 +327,59 @@ never a silent threshold bend.
 as realistic and the six contracts as the declared product is now
 requested. WS2 (the runner, on Opus per the recorded routing) starts
 only on ratification.**
+
+### WS2 — The Runner + THE DIAGNOSIS PROOF: evidence recorded, gate pending ratification (2026-07-07)
+
+Delivered: `workbench/executive_briefing/runner.py` on
+`workbench/common.py` (relative import; **zero shared-module edits** —
+common.py untouched, the third industrialization proof). The runner
+composes the briefing pack from the existing doors ONLY: accepted
+findings by class + workbench-of-origin (derived from
+provenance.source_document via the filename convention, zero new
+machinery); unresolved conflicts (get_conflicts, both sides cited);
+governance health (get_trust_score components + unresolved-conflict
+count, door-limited); what-changed (get_revision_history approved_at >
+the declared since); unknowns (declared question frames through
+consume(), refusals REFUSAL_BACKED). THE UNSOURCED SENTENCE is enforced
+at the source: the runner refuses to write a cited-section line without
+a governed token, and the forbidden vocabulary is refused pre-write.
+Exactly one proposal kind (EXECUTIVE_EVIDENCE_GAP); the read-compose
+skills emit none. get_trust_score reached via a runner-local
+BriefingGraphClient(StdioMcpGraphClient) subclass - an EXISTING frozen
+tool, no new door, no common edit.
+
+**THE DIAGNOSIS PROOF** (`backend/test_executive_workbench.py`, the
+73rd suite - eight parts green, first run; full harness 73/73):
+1. Guard 5 sweeps 7 workbench modules, zero guard edits.
+2. The cross-workbench fixture: both loops in one project, accepted
+   DERIVED facts from BOTH workbenches, a post-compile-drift conflict.
+3. One briefing pack (7 mandatory sections) + 3 gap proposals,
+   byte-identical at the declared clock, confined (pack to
+   07_agent_workspaces, gaps to 08_proposals); forbidden vocabulary,
+   the EXECUTIVE sentinel, AND THE PENDING-PROPOSAL SENTINEL absent
+   from every written byte.
+4. Both DERIVED origins named (compliance-obligation +
+   procurement-intelligence), PRIMARY class visible; conflicts cite
+   both sides; trust components + conflict count door-visible;
+   what-changed cites the post-since acceptance; the boundary section
+   names [PMD]/[OE]/[ES].
+5. The findings ruling: 3 EXECUTIVE_EVIDENCE_GAP proposals,
+   REFUSAL_BACKED, empty citations; the read-compose skills emitted no
+   proposals.
+6. no-as_of / no-since / schedule / multi-project refused; [PMD] /
+   [OE] / [ES] / persistent-register / schedule skills refused live
+   naming the boundary.
+7. **ZERO DOOR GROWTH proven structurally**: the route-manifest digest
+   is byte-identical (the T2.4 guard = the door-growth instrument);
+   the MCP surface still frozen at 9 tools; D24 at 28/305.
+8. The gap proposals hold DERIVED at the valve, provenance verified
+   against the governed binding.
+
+**Regression at the gate**: full harness 73/73 green; Guard 5 green
+(swept the runner with zero edits); the route manifest and MCP surface
+unchanged; D24 held at 28/305.
+
+**THE GATE (per WS0): user ratification of the runner as the accepted
+Executive Briefing workbench is now requested. WS3 (THE BRIEFING PROOF
++ the browser proof + THE COMMERCIAL VERDICT, on Fable per the recorded
+routing) starts only on ratification.**
