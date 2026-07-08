@@ -37,6 +37,7 @@
 | v1.9.0 | the Executive Operations Briefing Workbench (the FIRST cross-workbench consumer, canonical #1; THE UNSOURCED SENTENCE posture; THE BRIEFING PROOF; the runner-local `BriefingGraphClient` adapter over the frozen `get_trust_score`; ZERO door growth) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CEO reader); 74 CI suites; 28/305 held; the briefing consumes its own human-accepted evidence gap; honest slots carry |
 | v2.0.0 | Risk & Exception Stewardship (the [ES] MINTING milestone; D32 — "the exception never becomes a row; the human decisions about it do"; the SEVENTH permanent guard family; the route manifest's first ratified 87→88 amendment) | ✅ Completed (July 2026, D32 ratified) — all gates PASSED incl. THE COMMERCIAL VERDICT (the governance officer); 77 CI suites; 28/305 held; zero schema through a LAW milestone; THE STEWARDSHIP PROOF (row test, ledger-alone reconstruction, vanishing test across three species) |
 | v2.1.0 | Contract Intelligence — the shared engine (catalog #16, the FOURTH commercial workbench; THE PARAPHRASED CLAUSE posture + its twin THE LEGAL CONCLUSION; THE REGISTER DISTINCTION ratified; the 15→1 clause-class consolidation; THE SHARED ENGINE PROOF) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the general counsel / procurement owner); 80 CI suites; 28/305 held; zero new surface or law — no D33, no eighth guard; one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways |
+| v2.2.0 | Deadline & Obligation Intelligence (the catalog's FIRST shipped-workbench EXTENSION — compliance #9's deferred deadline family, unlocked by [ES]; THE INVENTED DATE + THE PRESUMED COMPLETION postures; THE ENGAGEMENT RULE; THE COMPUTED CALENDAR; THE HARVEST of the v2.1 register) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the compliance/obligation owner); 83 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched; the constitutional outcome: a computed compliance calendar, never an operational task tracker |
 
 ---
 
@@ -1161,13 +1162,84 @@ new door, table, or law.*
   [OE]/[PMD] still unminted. Route manifest unchanged at 88; MCP
   frozen at 9 tools; D24 held at 28/305.
 - **NEXT**: the two remaining named-not-minted decisions ([OE]
-  Operational Evidence Realm, [PMD] Pipeline Metadata Door — the
-  deferred deadline-extraction family, `track_explicit_deadlines` /
-  `track_recurrence_rules`, UNLOCKED since [ES]) await their own
-  pressure and scoping session. Honest slots carry: the real-model
+  Operational Evidence Realm, [PMD] Pipeline Metadata Door) await
+  their own pressure and scoping session. **The deadline-extraction
+  family shipped as v2.2.0** (below). Honest slots carry: the real-model
   diagnostic run (a narrated clause extraction over a real contract is
   a strong vehicle when a key exists) and the v1.2.0 live-SharePoint
   scan.
+
+## v2.2.0 — Deadline & Obligation Intelligence, the first shipped-workbench extension (Completed)
+
+**The catalog grows a shipped workbench without re-opening its law
+(2026-07-08; build contract + all gate records:
+[deadline-obligation-v2.2.md](deadline-obligation-v2.2.md)).** The
+compliance workbench (#9)'s deferred deadline family — held SEQUENCED
+through five milestones because "persistent deadline stewardship
+risks a second operational state machine" — came ACTIVE the moment
+D32 answered that fear by name: *decisions persist; existence never
+does*. The product claim proven: *a compliance calendar can be
+computed from governed obligations at a declared clock — every
+deadline source-cited, every vague duty flagged, every recurrence
+declared — without the platform becoming the company's operational
+task tracker.*
+
+- **The tracking verb died at scoping**: `track_explicit_deadlines`
+  was ratified as DETECTION. THE ACTIVE THREE —
+  `detect_obligation_deadlines` (consolidating three deferred drafts
+  on the v1.8 window-arithmetic discipline; declared `as_of` +
+  `window_days`, never defaulted, never wall-clock),
+  `extract_recurrence_rules` (verbatim, never expanded into
+  occurrences; ambiguity flagged, never assumed), and
+  `prepare_obligation_calendar_brief` [assist] (a 07-confined
+  snapshot; the v1.8 persistent-calendar refusal carried verbatim).
+- **THE INVENTED DATE + THE PRESUMED COMPLETION (the cardinal
+  sins)**: a date appears only verbatim or as declared-clock
+  arithmetic over a verbatim date; "promptly" / "within a reasonable
+  period" yield DEADLINE_AMBIGUITY and never a date;
+  "missed/breached/complied" is forbidden vocabulary swept on every
+  byte — the workbench knows what documents REQUIRE and WHEN, never
+  what HAPPENED. The [OE] status question is refused live, naming the
+  unminted realm.
+- **THE ENGAGEMENT RULE (the extension composition)**: an unengaged
+  run (no `window_days`) is indistinguishable from v1.7 — three
+  declared skips, one workspace file; the shipped v1.7 suites passed
+  byte-untouched. An engaged run computes at the declared clock pair.
+  `workbench/common.py` unchanged a FIFTH time.
+- **THE COMPUTED CALENDAR (the distinctive WS3 stage — the deferral's
+  answer)**: all 52 computed outputs deleted → ZERO governed change
+  (the knowledge-table byte fingerprint); the same declared clock
+  reproduced every byte; a re-declared clock changed only the
+  legitimately computed fields. *The calendar is a projection of
+  governed facts at a declared clock, never a state machine.*
+- **THE HARVEST PROOF (the v2.1 register's first downstream
+  consumer, through the REAL chain)**: the engine proposed 147
+  register candidates, all held DERIVED at the valve; a human
+  accepted the dated clause; the deadline finding cites that register
+  fact BY governed asset id — finding → DERIVED register → PRIMARY
+  contract source, the clause in approved knowledge exactly twice.
+- **THE NON-CONFLATION PROOF**: a real human DUE_DATE_SET stewardship
+  decision and the accepted deadline fact co-exist without becoming
+  each other — the decision in the ledger alone, the fact in governed
+  knowledge; Guard 7 green and untouched.
+- **The gates**: THE PRECONDITION PROOF (81st suite, before any
+  runner; the mid-WS1 corpus-gap ruling produced the ratified
+  `corpus_deadline/` extension folder so the shipped 12-document
+  assertions stayed untouched), THE DIAGNOSIS PROOF (82nd), THE
+  MILESTONE GATE (83rd, ten stages), and the in-browser before/after
+  (the Workbench Catalog card live: 305 held/0 accepted → 304/1
+  accepted DERIVED, the register citation visible as
+  second-generation synthesis, zero console errors). THE COMMERCIAL
+  VERDICT (the compliance/obligation owner): *"would you let this
+  computed obligation calendar support a weekly
+  compliance/procurement review — every deadline source-cited, every
+  vague obligation flagged, every recurrence declared, and no claim
+  that the work was completed unless a separate governed operational
+  evidence realm is someday minted?"* — **RATIFIED, YES.**
+- **NEXT**: [OE] and [PMD] remain the two named-not-minted decisions
+  — v2.2 sharpened [OE]'s boundary to one sentence: *"did the work
+  happen?"*. Honest slots carry: the real-model diagnostic run and
+  the v1.2.0 live-SharePoint scan.
 
 ## Future Direction
 
