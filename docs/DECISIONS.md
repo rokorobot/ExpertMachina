@@ -887,3 +887,85 @@ confined to the projection package's floor machinery); authority death
 as unrecognized claims); adversarially self-proven.
 **Evidence:** recorded at the WS gates in docs/em-vault-v1.5.md as
 each is accepted.
+
+## D32 — Exception Stewardship (v2.0 scoping, RATIFIED)
+> The exception never becomes a row; the human decisions about it do.
+>
+> Exception existence is computed from governed facts at read time,
+> always. No persisted state may create, mirror, or extinguish an
+> exception — a work-item row whose OPEN/CLOSED tracks governed state
+> is the two-state-machine drift D1 names, and is refused permanently.
+>
+> What persists is the human stewardship decision: an identity-backed,
+> append-only governed record, keyed to the exception's stable
+> computed identity, carrying its own reason. Decisions annotate the
+> queue; they never decide what is in it. A stewardship decision
+> changes no governed knowledge fact, no severity, and no gate verdict
+> — fixing facts is the only way an exception leaves the queue, and
+> the decision history remains as evidence even after the exception it
+> ruled on has vanished.
+>
+> Only humans steward. Agents may propose findings through the valve
+> (D29); they may never acknowledge, accept, dismiss, escalate, own,
+> or schedule an exception.
+
+D1 supplied the prohibition (never persist an operational view); D3
+supplied the persistence shape (a human judgment about a measurement
+is an AuditEvent, never workflow state on the artifact); the conflict
+review workflow supplied the one precedent — possible only because
+conflicts HAVE a governed row. D32 closes the gap for every computed
+exception that has no row to carry a human ruling: warnings, uncovered
+candidates, proposal holds, stale renders.
+
+Companion rulings (binding, recorded in
+docs/exception-stewardship-v2.0.md):
+- **The ledger-only shape**: the persisted artifact is the append-only
+  `STEWARDSHIP_DECISION` AuditEvent written through the one governed
+  audit writer with the actor's identity fact (D20). No exception row;
+  no StewardshipDecision table (a named future alternative only if
+  event-scan cost becomes real, by register amendment). D24 holds at
+  28 tables / 305 columns through a LAW milestone.
+- **The exception key**: the Governance Inbox item id as computed
+  (`key_version: inbox-item-v1`) — derived from the governed fact that
+  produces the exception, stable across recomputes. A new measurement
+  generation is a NEW exception; sticky stewardship across generations
+  is sequenced, never smuggled in.
+- **The decision vocabulary is closed at seven kinds**: ACKNOWLEDGED ·
+  RISK_ACCEPTED (reason required) · DISMISSED (reason required) ·
+  ESCALATED (reason + escalated_to required) · OWNER_ASSIGNED
+  (owner_label required; owner_principal optional — EM does not govern
+  the org chart) · DUE_DATE_SET (declared date; overdue COMPUTED at
+  read, never stored) · CLEARED (the append-only undo; names the kind
+  it clears; reason required). Current state = latest event per
+  (key, kind); nothing mutates, ever.
+- **The queue is the join**; severity honesty (D2) holds absolutely: a
+  risk-accepted HIGH is still HIGH and still blocks the compile gate —
+  the record proves a human accepted the risk; it never unblocks the
+  deployment (THE SILENT VETO, refused).
+- **Door growth, exactly one route, amended openly**: the stewardship
+  write is the route manifest's first ratified 87→88 amendment (the
+  T2.4 path exercised as designed). The MCP surface stays frozen at 9
+  tools — agent visibility of stewardship state is the Pipeline
+  Metadata Door question, unminted.
+
+**Why:** review-by-exception (D26) made the queue the operating
+surface of governance, but a queue nobody can durably rule on forces
+the ruling into side channels — spreadsheets, memory, a second
+tracker — which is the two-state-machine drift with extra steps. The
+stewardship record puts the human ruling INSIDE the governed system
+without letting it become a parallel truth.
+**Tradeoff accepted:** the queue join is a read-time ledger projection
+(the standing `_latest_automation_evidence` pattern); a stewarded
+queue view costs an event scan per read, and dismissing an exception
+never makes it cease to exist — presentation moves, facts don't.
+**Enforcement:** structural, in CI, permanent —
+`backend/test_exception_stewardship_guard.py` (the seventh guard
+family, built at WS1 before the door exists): THE ROW SENTINEL, THE
+EXISTENCE SENTINEL (decisions present vs absent yield an identical
+computed queue), the append-only sweep, structural AGENT refusal (no
+AGENT-permitted role carries the stewardship permission; the Guard 5
+write-route grid is enumeration-based and sweeps the new door by
+construction), the knowledge-table fingerprint, D2 severity honesty —
+adversarially self-proven.
+**Evidence:** recorded at the WS gates in
+docs/exception-stewardship-v2.0.md as each is accepted.

@@ -312,3 +312,64 @@ ratified, then Opus for the one route + queue join. WS3 returns to
 Fable for THE STEWARDSHIP PROOF and the governance-officer verdict.
 
 **Verdict: v2.0.0 WS0 PASSED.** WS1 may proceed.
+
+### WS1 — D32 minted + Guard 7 before the door: evidence recorded, gate pending ratification (2026-07-08)
+
+Delivered:
+- **D32 appended to `docs/DECISIONS.md`** — the ratified law text
+  verbatim + the companion rulings (the ledger-only shape, the
+  exception key `inbox-item-v1`, the seven-kind closed vocabulary,
+  the queue-is-the-join with D2 severity honesty, the one-route
+  87→88 amendment) + why/tradeoff/enforcement in the register's
+  standing shape.
+- **The registry annotated**: the [ES] tag definition records the
+  minting (the human surface exists; [ES]-tagged skills in OTHER
+  workbenches remain gated per-workbench — stewardship pens stay in
+  human hands); workbench 15's five stewardship entries carry
+  `HUMAN_SURFACE at v2.0` with their decision-kind mappings;
+  `track_unresolved_risks`' persistence question is answered by D32.
+- **Guard 7** — `backend/test_exception_stewardship_guard.py` (the
+  seventh permanent guard family, the 75th suite), all six parts
+  green, BEFORE any door exists:
+  1. **THE ROW SENTINEL**: D24 byte-identical at 28/305; no
+     exception/stewardship-shaped table; 57 app modules swept (the
+     event type spelled nowhere; direct AuditEvent construction
+     beside it forbidden); all THREE plants caught (a stewardship
+     table, a direct event construction, an out-of-module mention).
+  2. **Append-only is law**: no module in app/ deletes or
+     bulk-updates ledger rows; both mutation plants caught; the
+     seven-kind vocabulary closed and enforced — the guard IS the
+     spec until the door exists, and `app/stewardship.py`'s
+     vocabulary must equal it the moment it lands.
+  3. **THE KEY-STABILITY PRECONDITION** over a REAL computed inbox
+     (an unreviewed DIRECT_CONTRADICTION, a pending candidate
+     revision, an uncovered candidate, a no-evaluation warning): 5
+     computed exceptions, byte-identical ids across 3 recomputes,
+     four key grammars, keys derived from the governed facts that
+     produce them (`inbox-item-v1`).
+  4. **THE EXISTENCE SENTINEL + D2**: all seven decision kinds
+     written to the ledger in the ratified event shape (raw at WS1 —
+     the door does not exist); the computed queue IDENTICAL with
+     decisions present vs absent; the compile-gate verdict unchanged
+     (THE SILENT VETO refused: the risk-accepted HIGH still blocks);
+     severity unchanged; the planted existence filter caught.
+  5. **THE KNOWLEDGE FINGERPRINT**: every governed table
+     byte-identical through 7 stewardship writes (only the ledger
+     grew); every decision carries the deciding human's identity
+     fact and validates against the spec on its ledger bytes.
+  6. **STRUCTURAL AGENT REFUSAL, door-aware**: no AGENT-permitted
+     role carries `assets:review` (AGENT_CONSUMER = {mcp:consume},
+     frozen); the MCP gateway is stewardship-silent ([PMD] holds);
+     the route manifest matches its guard (87 — the door does not
+     exist yet); the part detects a stewardship route dynamically
+     and live-refuses an AGENT bearer on it the moment WS2 mounts
+     one — **the guard is waiting for the door, zero edits needed**.
+
+**Regression at the gate**: Guard 7 green; full harness
+**75/75** green (the guard auto-discovered as the 75th suite);
+route manifest digest unchanged (87 — no door yet); MCP frozen at 9;
+D24 at 28/305.
+
+**THE GATE (per WS0): user ratification of the guard evidence and the
+key ruling as proven is now requested. WS2 (the one route + the queue
+join, on Opus per the recorded routing) starts only on ratification.**
