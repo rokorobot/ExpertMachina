@@ -444,3 +444,32 @@ vehicle) and the v1.2.0 live-SharePoint scan.
 **THE GATE: THE COMMERCIAL VERDICT (ruling 11) — the user reads the
 exported diagnosis as the procurement/finance owner. The milestone
 closes on that verdict or it does not close.**
+
+### THE COMMERCIAL VERDICT: PASSED (2026-07-07, user-ratified)
+
+**The gate ruling (user, verbatim):**
+
+> Verdict: YES — commercially passed.
+>
+> As the procurement/finance owner, I would put this renegotiation brief
+> in front of the CFO because it satisfies the exact product promise:
+>
+> - every money/date/percentage claim is either verbatim-cited or
+>   declared as allowed clock arithmetic;
+> - the only computed value is the 75-day renewal window from the
+>   declared as_of;
+> - the 7% increase remains verbatim;
+> - "one fifth" stays non-numeric text and is not converted into 20%;
+> - missing certification is supplier-named and refusal-backed;
+> - performance, spend, savings, market rate, and invoice claims are
+>   explicitly excluded;
+> - the workbench produces DERIVED candidates only through the governed
+>   proposal/approval valve, matching the registry's rule that findings
+>   become knowledge only after human approval.
+>
+> v1.8 WS3 is ratified.
+
+**Verdict: v1.8.0 WS3 PASSED. THE MILESTONE CLOSES.** The Procurement
+Document Intelligence Workbench is the third commercial workbench:
+every number verbatim, every window computed on the declared clock,
+document-grounded or refused, and never an invented number.
