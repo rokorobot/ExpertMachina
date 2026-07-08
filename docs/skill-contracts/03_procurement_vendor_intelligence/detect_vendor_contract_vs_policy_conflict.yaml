@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_vendor_contract_vs_policy_conflict
 workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
-status: SEQUENCED
+status: CONSOLIDATED
+consolidated_into: detect_vendor_policy_conflict
+ratified_path: workbench/procurement_intelligence/skills/detect_vendor_policy_conflict.yaml
 boundary_tags: [now]
 pattern: conflict
 purpose: >

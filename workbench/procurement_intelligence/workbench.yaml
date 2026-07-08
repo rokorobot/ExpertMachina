@@ -1,0 +1,82 @@
+# The Procurement Document Intelligence Workbench manifest (v1.8.0)
+# Canonical workbench #3 - the THIRD commercial workbench in the
+# ratified sequence. Convention, not constitution: this manifest
+# governs the reference runner; its claims travel in proposal
+# frontmatter, recorded verbatim at the gate, verified where governed
+# records permit, never obeyed.
+workbench: procurement_intelligence
+canonical_number: 3
+status: ACTIVE
+version: 1
+milestone: v1.8
+purpose: >
+  Diagnose vendor contracts from governed documents: renewal exposure,
+  price-increase clauses, supplier certification gaps, vendor-vs-policy
+  conflicts, and extracted vendor terms. Document-governed slice only
+  (D27): no invoices, POs, payments, spend data, supplier performance
+  records, or any transactional inference.
+sensitivity_posture: >
+  THE INVENTED NUMBER is the cardinal sin. The workbench may quote
+  clause numbers, percentages, dates, notice periods, and money figures
+  only when verbatim present in governed evidence, and may compute date
+  windows only from verbatim-extracted dates at the declared as_of
+  clock. It must never estimate spend, infer market rates, convert
+  paraphrased quantities into numeric values, round, extrapolate,
+  normalize, or invent figures, treat synthesis as governed numeric
+  fact, or guess unparseable dates. Verbatim, computed-on-the-declared-
+  clock, or refused.
+forbidden_vocabulary:
+  # swept over every finding statement byte at the WS2 gate
+  - "we estimate"
+  - "approximately"
+  - "roughly"
+  - "around "
+  - "market rate"
+  - "market price"
+  - "likely costs"
+  - "should cost"
+  - "projected spend"
+  - "estimated spend"
+  - "estimated saving"
+  - "we assume"
+  - "equivalent to"
+  - "which equals"
+  - "converts to"
+domain_scope: procurement
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+declared_clock: >
+  as_of and window_days are DECLARED run parameters recorded verbatim
+  in every window finding - wall-clock is never sampled; a run without
+  as_of is refused. A persistent renewal calendar or recurrence tracker
+  is refused (the v1.8 WS0 ruling 4; the two-state-machine drift D1
+  names).
+skills:
+  - extract_vendor_terms
+  - detect_renewal_window
+  - detect_price_increase_clauses
+  - identify_missing_supplier_certifications
+  - detect_vendor_policy_conflict
+  - prepare_renegotiation_brief
+schema_posture: >
+  Zero schema, zero backend change, zero new endpoints, MCP tools, or
+  UI areas. The D24 snapshot holds at 28 tables / 305 columns.
+refused_until_minted:
+  operational_evidence: invoice/PO/payment reconciliation, supplier
+    performance, spend inference, usage-vs-license comparison, and
+    every transactional question
+  exception_stewardship: owner assignment, owner gaps, routing, and
+    stewardship decisions (identify_owner_gaps stays gated)
+sequenced_deliberately:
+  cross_document_counting: detect_single_supplier_dependency and
+    propose_vendor_consolidation - dependency/consolidation claims need
+    their own cross-document counting evidence rule; a claim built on
+    incomplete corpus coverage is a silent overclaim (the v1.8 WS0
+    ruling 3)

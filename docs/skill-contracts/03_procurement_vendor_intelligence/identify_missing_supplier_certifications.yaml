@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: identify_missing_supplier_certifications
 workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
-status: SEQUENCED
+status: ACTIVE
+ratified_path: workbench/procurement_intelligence/skills/identify_missing_supplier_certifications.yaml
 boundary_tags: [now]
 pattern: missing_evidence
 purpose: >

@@ -1,0 +1,54 @@
+skill_id: prepare_renegotiation_brief
+workbench: procurement_intelligence
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+purpose: >
+  Produce an evidence-backed renegotiation brief for a named vendor:
+  what the governed corpus documents, with known / expiring-or-moving /
+  missing / unverified clearly separated. The brief is preparation
+  material for humans entering a negotiation - it is never a
+  negotiation position, never a savings estimate, and never enters
+  knowledge.
+sections:
+  # the four mandatory sections - THE INVENTED NUMBER posture made
+  # structural. Nothing moves between buckets without governed evidence.
+  - known: approved terms with citations (asset ids + verbatim excerpts)
+  - expiring_or_moving: in-window renewal findings and price-adjustment
+      clauses (verbatim; window arithmetic only, at the declared as_of)
+  - missing: certification/evidence questions the corpus reproducibly
+      refuses (cited by requirement excerpt)
+  - unverified: what the contracts CLAIM but no door can evidence -
+      declared as unverified, never asserted; this bucket IS the
+      overclaiming guard
+allowed_inputs:
+  - approved knowledge in the procurement scope
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+  - market rates, benchmarks, spend estimates ([OE] + the cardinal sin)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every statement cited to governed assets; every number verbatim from
+  its excerpt; window figures = date arithmetic at the declared as_of
+  only; DERIVED facts cited as DERIVED; narrative framing declared
+  SYNTHESIS_INFERRED. No savings estimate, no target price, no
+  negotiation demand.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A brief for humans (written to 07_agent_workspaces) - NOT a proposal,
+  never written to /08_proposals, never enters knowledge. The four
+  sections always present, even when empty (an empty "missing" section
+  is itself information).
+human_approval_requirement: >
+  None required - the output never enters knowledge. If a human wants
+  brief content to become knowledge, they author it as an ordinary
+  document (PRIMARY) or an agent proposes it through the valve.
+audit_event: >
+  MCP calls audited per call; package consumption is locally
+  verifiable.
+refusal_conditions:
+  - the vendor has no approved coverage at all - the brief says so
+    rather than composing an unsupported narrative
+  - a target price, savings estimate, or negotiation position is
+    requested -> refuse; the brief prepares humans, it never negotiates

@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: extract_vendor_terms
 workbench: procurement_vendor_intelligence   # 3. Procurement & Vendor Intelligence Workbench
-status: SEQUENCED
+status: ACTIVE
+ratified_path: workbench/procurement_intelligence/skills/extract_vendor_terms.yaml
 boundary_tags: [now]
 pattern: extract
 purpose: >
