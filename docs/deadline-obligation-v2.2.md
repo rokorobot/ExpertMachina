@@ -251,3 +251,82 @@ dated sentence, the recorded extractor discipline):
 **Harness: 81/81 green (7:51)** — the five shipped suites that pin
 the 12-document corpus untouched and green; Guard 7 untouched; route
 manifest 88; MCP 9. **No runner was built** (the WS sequence holds).
+
+---
+
+## WS2 — the runner extension + THE DIAGNOSIS PROOF (2026-07-08)
+
+**The extension** (`workbench/compliance_obligation/runner.py` — the
+first post-ship edit of a shipped runner, Guard 5 sweeping it with
+zero edits): ACTIVE_SKILLS 6→9; the extension kinds in their OWN map
+(`EXTENSION_FINDING_KINDS` — the shipped acceptance suite derives its
+kind→skill pins from `FINDING_KINDS`, which stays exactly the five);
+four new declared-convention parsers (pattern/list/rules, the
+double-escape convention); narrator templates + proposed actions for
+the four extension kinds; Walk 6 (deadlines: verbatim date →
+declared-clock arithmetic; in-window findings only; BEFORE_AS_OF and
+OUTSIDE as declared arithmetic skips; unparseable dates refused
+declared; vague markers → DEADLINE_AMBIGUITY, never dated;
+event-anchored durations → declared skips, see the interpretation
+below); Walk 7 (recurrence: verbatim markers/intervals, never
+expanded; vague periodicity → RECURRENCE_AMBIGUITY); the calendar
+brief (07-confined snapshot, three mandatory sections with the
+declared-absence note, the declared clock pair printed verbatim,
+persistence refused in its own bytes); an extension posture sweep (the
+contract `forbidden_vocabulary` — THE PRESUMED COMPLETION — over every
+extension statement and the brief). `workbench/common.py` UNCHANGED a
+FIFTH time.
+
+**THE ENGAGEMENT RULE (the WS2 composition ruling, flagged for
+ratification):** the extension engages at the declared clock PAIR
+(as_of + window_days). A bundle sweep without window_days gets THREE
+DECLARED SKIPS (never silent, never defaulted) and produces the exact
+v1.7 shape — no extension kinds, one workspace file. A TARGETED
+request (narrower than the bundle) for a window-requiring skill
+without a window is refused LOUDLY; a targeted recurrence request
+runs (its contract is clock-free). Gates refuse FIRST — a gated [OE]
+request in any composition names the unminted realm before any
+parameter check.
+
+**Contract amendments made during WS2 (flagged for ratification;
+contracts drive runtime, so the declared rules had to live in the
+contract, not the runner):** `deadline_class_rules` added to
+detect_obligation_deadlines (the v1.7 source_type_rules shape;
+first-match, otherwise → generic); `renews on` added to its
+marker_pattern (the register's renewal phrasing); 
+`ambiguous_periodicity_markers` added to extract_recurrence_rules.
+**One recorded interpretation:** an event-anchored duration ("within
+72 hours OF BECOMING AWARE") is concrete but not computable at a
+declared clock — the ratified evidence rules require a verbatim DATED
+excerpt for a DEADLINE finding, so these are declared skips, neither
+findings nor ambiguity.
+
+**THE DIAGNOSIS PROOF** (`backend/test_deadline_workbench.py`, the
+82nd suite, seven parts): Guard 5 sweep (8 modules, zero edits); 14
+documents + ONE accepted DERIVED register-style clause fixture
+packaged; THE DIAGNOSIS engaged — byte-identical re-runs, 43 findings
+(2 dated incl. **THE HARVEST: the DERIVED register fact cited BY ID,
+"DERIVED" in the citation, 2026-10-20 → 35 days at the declared
+clock**; the certification plant 2026-11-30 → 76 days,
+certification_expiry; 3 DEADLINE_AMBIGUITY flagged date-free; 9
+RECURRENCE_RULE verbatim), writes confined to 08+07, past dates as
+declared arithmetic skips, THE INVENTED DATE swept on the proposal
+bytes (every date verbatim in a cited governed source); THE WINDOW
+RE-DECLARATION (window 30: both dated findings leave as declared
+OUTSIDE skips; the clock-free kinds hold — a new clock is a new
+diagnosis, never an update); THE CALENDAR BRIEF (declared clock
+verbatim, three sections, never a proposal, zero conduct vocabulary);
+the live refusals (targeted window refusal loud; [OE] named live;
+THE V1.7 SHAPE preserved; ZERO STEWARDSHIP_DECISION events); the
+structural closers (route manifest 88 frozen digest, the nine MCP
+tools, D24 byte-identical 28/305).
+
+**Two honest WS2 fixes recorded:** the first full-harness run failed
+the two shipped v1.7 suites — (1) the window check originally ran
+before the gate check and treated bundle membership as a targeted
+request (fixed: gates first, targeted-only loud refusal), and (2) the
+acceptance suite derives its pins from FINDING_KINDS dynamically
+(fixed: the extension map). Both fixes are in the runner, not the
+shipped suites — **the v1.7 suites pass byte-untouched**.
+
+**Harness: 82/82 green (8:04).** No PR, no merge, no tag, no release.

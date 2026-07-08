@@ -28,7 +28,7 @@ deadline_convention:
   # the declared markers this skill reads from governed content; an
   # obligation sentence with a deadline-context marker but no
   # parseable concrete anchor is the AMBIGUITY finding, never a date.
-  marker_pattern: "(valid until|expires on|terminates on|due by|due on|no later than|dated) (\\d{4}-\\d{2}-\\d{2})"
+  marker_pattern: "(valid until|expires on|terminates on|renews on|due by|due on|no later than|dated) (\\d{4}-\\d{2}-\\d{2})"
   duration_pattern: "(within|at least|no later than) (\\d+) (hours|days|business days|calendar days|months) (of|before|after)"
   deadline_context_markers:
     - "deadline"
@@ -47,6 +47,16 @@ deadline_convention:
     - "within a reasonable period"
     - "as soon as practicable"
     - "without undue delay"
+  deadline_class_rules:
+    # deterministic first-match over the excerpt (the declared rule
+    # order IS the contract; the v1.7 source_type_rules pattern) -
+    # generic is the honest floor, never a guess at meaning
+    - contains "certificate" or "certification" -> certification_expiry
+    - contains "notify" or "notification" or "report" -> reporting
+    - contains "notice" -> notice
+    - contains "renew" or "renewal" or "terminates" or "expires" -> renewal
+    - contains "payment" or "invoice" or "pay " -> payment
+    - otherwise -> generic
   window_rule: >
     in-window if and only if as_of <= date <= (as_of + window_days).
     as_of and window_days are DECLARED run parameters recorded

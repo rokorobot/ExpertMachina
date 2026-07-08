@@ -26,6 +26,13 @@ recurrence_convention:
     - "every calendar year"
     - "each quarter"
   explicit_interval_pattern: "every (\\d+) (days|weeks|months|years)"
+  ambiguous_periodicity_markers:
+    # vague periodicity - RECURRENCE_AMBIGUITY, quoted verbatim, never
+    # normalized into a period
+    - "periodically"
+    - "on a regular basis"
+    - "from time to time"
+    - "at regular intervals"
   ambiguity_rule: >
     a recurrence-context sentence whose periodicity cannot be quoted
     verbatim from one of the declared markers or the explicit interval

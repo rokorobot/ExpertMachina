@@ -60,6 +60,14 @@ ACTIVE_SKILLS = (
     "detect_undocumented_obligation_owner",
     "detect_conflicting_compliance_statements",
     "prepare_audit_readiness_pack",
+    # the v2.2 extension (docs/deadline-obligation-v2.2.md) - the former
+    # deferred deadline family. The deadline skill and the calendar brief
+    # ENGAGE at the extension's declared clock pair (as_of + window_days);
+    # a bundle sweep that declares no window_days gets a declared skip per
+    # skill - never a silent drop, never a defaulted window.
+    "detect_obligation_deadlines",
+    "extract_recurrence_rules",
+    "prepare_obligation_calendar_brief",
 )
 
 FINDING_KINDS = {
@@ -68,6 +76,17 @@ FINDING_KINDS = {
     "identify_outdated_policies": ("OUTDATED_POLICY", "REVISION_BACKED"),
     "detect_undocumented_obligation_owner": ("UNDOCUMENTED_OBLIGATION_OWNER", "REFUSAL_BACKED"),
     "detect_conflicting_compliance_statements": ("CONFLICTING_COMPLIANCE_STATEMENTS", "CONFLICT_BACKED"),
+}
+
+# v2.2: the extension kinds live in their OWN map - the shipped v1.7
+# acceptance suite derives its kind->skill pins from FINDING_KINDS and
+# must keep deriving exactly the shipped five (its runs are unengaged);
+# the extension engages at the declared clock pair and proves its kinds
+# in its own suites. Each extension skill also emits its declared
+# AMBIGUITY kind (flagged, never dated/normalized) - set in its walk.
+EXTENSION_FINDING_KINDS = {
+    "detect_obligation_deadlines": ("OBLIGATION_DEADLINE", "EXCERPT_BACKED"),
+    "extract_recurrence_rules": ("RECURRENCE_RULE", "EXCERPT_BACKED"),
 }
 
 REFUSAL_MARKER = "INSUFFICIENT EVIDENCE"
@@ -220,6 +239,72 @@ def parse_review_marker(path):
     return re.compile(pattern)
 
 
+def parse_declared_pattern(path, block_key, pattern_key):
+    """v2.2: a quoted, possibly wrapped regex declared under a convention
+    block - the same double-escape convention as parse_review_marker.
+    The contract declares it; the runner obeys it; nothing is hardcoded."""
+    raw, capturing = [], False
+    for line in _block(_read_lines(path), block_key):
+        stripped = line.strip()
+        if stripped.startswith(f"{pattern_key}:"):
+            raw.append(stripped.split(":", 1)[1].strip())
+            capturing = not raw[-1].endswith('"')
+        elif capturing:
+            raw.append(stripped)
+            if stripped.endswith('"'):
+                capturing = False
+    pattern = " ".join(raw).strip().strip('"').replace("\\\\", "\\")
+    if not pattern:
+        raise RuntimeError(f"{path}: {block_key} declares no {pattern_key}")
+    return re.compile(pattern)
+
+
+def parse_nested_quoted_list(path, block_key, list_key):
+    """v2.2: `- "value"` entries under a nested `list_key:` inside a
+    convention block."""
+    values, taking = [], False
+    for line in _block(_read_lines(path), block_key):
+        stripped = line.strip()
+        if stripped.startswith(f"{list_key}:"):
+            taking = True
+            continue
+        if taking:
+            if stripped.startswith("- "):
+                values.append(stripped[2:].strip().strip('"'))
+            elif stripped and not stripped.startswith("#"):
+                break
+    if not values:
+        raise RuntimeError(f"{path}: {block_key} declares no {list_key}")
+    return values
+
+
+def parse_nested_rule_lines(path, block_key, rules_key):
+    """v2.2: declared first-match rules nested inside a convention block
+    (the parse_rule_lines shape, one level down)."""
+    rules, default = [], None
+    for line in _block(_read_lines(path), block_key):
+        stripped = line.strip()
+        if not stripped.startswith("- ") or "->" not in stripped:
+            continue
+        lhs, target = stripped[2:].rsplit("->", 1)
+        target = target.strip()
+        needles = re.findall(r'"([^"]+)"', lhs)
+        if needles:
+            rules.append((tuple(needles), target))
+        elif "otherwise" in lhs:
+            default = target
+    if default is None:
+        raise RuntimeError(f"{path}: {rules_key} declares no otherwise-default")
+    return rules, default
+
+
+def _date_ordinal(y, m, d):
+    """Deterministic day count (proleptic Gregorian) - stdlib datetime is
+    allowed at the doors; arithmetic only, never the wall clock."""
+    import datetime
+    return datetime.date(y, m, d).toordinal()
+
+
 def parse_forbidden_vocabulary(manifest_path):
     return [v.lower() for v in parse_quoted_list(manifest_path,
                                                  "forbidden_vocabulary")]
@@ -290,6 +375,36 @@ def default_narrator(finding):
                 f"\"{finding['excerpt_a']}\" while {finding['cite_b']} states "
                 f"\"{finding['excerpt_b']}\". Until a human reconciles them, "
                 f"the governed corpus carries both statements.")
+    if kind == "OBLIGATION_DEADLINE":
+        return (f"A governed document states an explicit dated obligation "
+                f"({finding['cite']}, class {finding['deadline_class']}): "
+                f"\"{finding['excerpt']}\". The verbatim date "
+                f"{finding['date']} is {finding['days_until']} day(s) from "
+                f"the declared as_of {finding['as_of']} (window "
+                f"{finding['window_days']} days) - declared-clock arithmetic "
+                f"over the verbatim date only. This states what the document "
+                f"requires and when; it says nothing about what has "
+                f"happened.")
+    if kind == "DEADLINE_AMBIGUITY":
+        return (f"A governed document states an explicit duty whose time "
+                f"language is not a date ({finding['cite']}): "
+                f"\"{finding['excerpt']}\" - the vague marker "
+                f"\"{finding['vague_marker']}\" is quoted exactly as written "
+                f"and is NEVER converted to a date. Flagged for human "
+                f"review; documentation status only.")
+    if kind == "RECURRENCE_RULE":
+        return (f"A governed document states a recurring duty "
+                f"({finding['cite']}): \"{finding['excerpt']}\" - the "
+                f"recurrence language \"{finding['matched_marker']}\" is "
+                f"quoted verbatim as a rule. The rule is never expanded "
+                f"into future occurrences, and nothing here says whether "
+                f"any occurrence happened.")
+    if kind == "RECURRENCE_AMBIGUITY":
+        return (f"A governed document states a recurring duty whose "
+                f"periodicity is vague ({finding['cite']}): "
+                f"\"{finding['excerpt']}\" - \"{finding['vague_marker']}\" "
+                f"is quoted exactly as written and is never normalized "
+                f"into a period. Flagged for human review.")
     return f"Finding of kind {kind}."
 
 
@@ -316,6 +431,26 @@ PROPOSED_ACTIONS = {
         "A human reconciles the two statements through the governed revision "
         "workflow, or dismisses the conflict with a recorded reason - the "
         "workbench never picks the surviving statement."),
+    "OBLIGATION_DEADLINE": (
+        "Schedule the human review of the dated obligation: accept it as a "
+        "DERIVED deadline fact or reject it with a recorded reason. The "
+        "workbench never notifies, assigns, or tracks - an accepted "
+        "deadline fact is a document fact, NOT a stewardship DUE_DATE_SET "
+        "decision, and never becomes one."),
+    "DEADLINE_AMBIGUITY": (
+        "A human decides what the vague time language should mean - the "
+        "workbench flags it verbatim and never converts it to a date. "
+        "Tightening the document's language is document work through the "
+        "governed pipeline."),
+    "RECURRENCE_RULE": (
+        "Review the verbatim recurrence rule at the human gate: accept it "
+        "as a DERIVED recurring-duty fact or reject it with a recorded "
+        "reason. The rule is never expanded into occurrences and nothing "
+        "is scheduled."),
+    "RECURRENCE_AMBIGUITY": (
+        "A human decides what the vague periodicity should mean - the "
+        "workbench flags it verbatim and never normalizes it into a "
+        "period."),
 }
 
 
@@ -360,15 +495,20 @@ def _proposal_document(finding, agent_principal, binding_id, package_hash,
 
 
 def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
-                   binding_id, graph_client, as_of,
+                   binding_id, graph_client, as_of, window_days=None,
                    domain_prefix="compliance", answerer=None, narrator=None,
                    backend_dir=None, skills_dir=None, manifest_path=None,
                    requested_skills=None, pack_topic="incident response",
                    workbench_name="compliance-obligation"):
-    """The six ratified skills over the doors, at a DECLARED as_of. Returns
-    a run summary: proposal paths (one per finding), the audit-readiness
-    pack path, the findings, and what was skipped with the refusing
-    reason."""
+    """The nine ratified skills over the doors, at a DECLARED as_of.
+    The v2.2 deadline extension engages at the declared clock PAIR
+    (as_of + window_days): with no window_days declared, the deadline
+    skill and the calendar brief are refused as DECLARED SKIPS (the
+    window is never defaulted), and an EXPLICIT request for either
+    without a window is refused loudly. Returns a run summary: proposal
+    paths (one per finding), the audit-readiness pack path, the calendar
+    brief path (None when not engaged), the findings, and what was
+    skipped with the refusing reason."""
     # The declared clock: as_of is a run parameter, never wall-clock.
     if not as_of or not re.fullmatch(r"\d{4}-\d{2}-\d{2}", str(as_of)):
         raise RuntimeError(
@@ -377,8 +517,32 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
             "never sampled.")
     as_of_tuple = tuple(int(p) for p in str(as_of).split("-"))
 
+    # v2.2: the extension's second declared parameter. Never defaulted,
+    # never sampled - a declared integer number of days or nothing.
+    if window_days is not None and (not isinstance(window_days, int)
+                                    or window_days <= 0):
+        raise RuntimeError(
+            "detect_obligation_deadlines refuses: window_days must be a "
+            "declared positive integer - the window is a declared "
+            "parameter, never defaulted.")
     for skill_id in (requested_skills or ACTIVE_SKILLS):
         require_ungated(skill_id)   # ruling 3: gated skills refused live
+
+    # A TARGETED request (a narrower list than the bundle) for a
+    # window-requiring skill without a declared window is refused loudly;
+    # a bundle sweep records the same refusal as a declared skip below.
+    explicit_requests = set(requested_skills or ())
+    bundle_sweep = (requested_skills is None
+                    or set(ACTIVE_SKILLS) <= explicit_requests)
+    if not bundle_sweep:
+        for needs_window in ("detect_obligation_deadlines",
+                             "prepare_obligation_calendar_brief"):
+            if needs_window in explicit_requests and window_days is None:
+                raise RuntimeError(
+                    f"{needs_window} refuses: no window_days declared for "
+                    f"the run - the window is a declared parameter, never "
+                    f"defaulted (never sample the clock, never default "
+                    f"the window).")
 
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
@@ -723,6 +887,183 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
             ],
         })
 
+    # ---- Walks 6+7 (v2.2): the deadline extension -------------------------
+    # Engaged at the declared clock pair; conventions PARSED from the
+    # ratified contract bytes, never hardcoded. Nothing below persists
+    # anything: a deadline is a finding computed at the declared as_of
+    # (D32 - decisions persist; existence never does).
+    ddl_path = contracts["detect_obligation_deadlines"]["path"]
+    rec_path = contracts["extract_recurrence_rules"]["path"]
+    date_re = parse_declared_pattern(ddl_path, "deadline_convention",
+                                     "marker_pattern")
+    duration_re = parse_declared_pattern(ddl_path, "deadline_convention",
+                                         "duration_pattern")
+    vague_markers = parse_nested_quoted_list(ddl_path, "deadline_convention",
+                                             "vague_time_markers")
+    class_rules = parse_nested_rule_lines(ddl_path, "deadline_convention",
+                                          "deadline_class_rules")
+    ddl_forbidden = parse_quoted_list(ddl_path, "forbidden_vocabulary")
+    recurrence_markers = parse_nested_quoted_list(
+        rec_path, "recurrence_convention", "recurrence_markers")
+    interval_re = parse_declared_pattern(rec_path, "recurrence_convention",
+                                         "explicit_interval_pattern")
+    vague_periodicity = parse_nested_quoted_list(
+        rec_path, "recurrence_convention", "ambiguous_periodicity_markers")
+
+    def check_extension_posture(text):
+        lowered = text.lower()
+        for phrase in ddl_forbidden:
+            if phrase in lowered:
+                raise RuntimeError(
+                    f"THE PRESUMED COMPLETION: forbidden vocabulary "
+                    f"{phrase!r} in extension output - the workbench knows "
+                    f"what documents require and when, never what happened.")
+
+    engaged = window_days is not None
+    as_ord = _date_ordinal(*as_of_tuple)
+
+    skill = "detect_obligation_deadlines"
+    if engaged:
+        kind, basis = EXTENSION_FINDING_KINDS[skill]
+        for entry in entries:
+            content = _norm(entry.get("content"))
+            lowered = content.lower()
+            date_hits = list(date_re.finditer(content))
+            for m in date_hits:
+                y, mo, d = (int(p) for p in m.group(2).split("-"))
+                try:
+                    days_until = _date_ordinal(y, mo, d) - as_ord
+                except ValueError:
+                    skipped.append({"skill": skill, "reason":
+                        f"{_cite(entry)}: date {m.group(2)!r} does not "
+                        f"parse as a real calendar date - refused, "
+                        f"declared, never guessed"})
+                    continue
+                deadline_class = apply_rules(*class_rules, content)
+                if days_until < 0:
+                    skipped.append({"skill": skill, "reason":
+                        f"{_cite(entry)}: verbatim date {m.group(2)} is "
+                        f"{-days_until} day(s) before the declared as_of "
+                        f"{as_of} - an arithmetic fact only, never a "
+                        f"conduct claim (no finding)"})
+                    continue
+                if days_until > window_days:
+                    skipped.append({"skill": skill, "reason":
+                        f"{_cite(entry)}: verbatim date {m.group(2)} is "
+                        f"outside the declared {window_days}-day window of "
+                        f"{as_of} - a covered control, no finding"})
+                    continue
+                finding = {
+                    "skill": skill, "finding_kind": kind,
+                    "evidence_basis": basis,
+                    "asset_id": entry["asset_id"], "cite": _cite(entry),
+                    "excerpt": _excerpt(content),
+                    "deadline_class": deadline_class,
+                    "date": m.group(2), "as_of": str(as_of),
+                    "window_days": window_days, "days_until": days_until,
+                    "cited_assets": [entry["asset_id"]],
+                    "evidence_lines": [
+                        f"Dated excerpt (verbatim): {_cite(entry)} - "
+                        f"\"{_excerpt(content)}\"",
+                        f"Verbatim date: {m.group(2)} (marker "
+                        f"\"{m.group(1)}\", the declared marker_pattern)",
+                        f"Declared clock: as_of {as_of}, window "
+                        f"{window_days} days - recorded verbatim, never "
+                        f"wall-clock",
+                        f"Window arithmetic: {days_until} day(s) until the "
+                        f"date - deterministic arithmetic over the "
+                        f"verbatim date, the ONLY computed value",
+                    ],
+                }
+                add_finding(finding)
+                check_extension_posture(finding["statement"])
+            if not date_hits:
+                vague_hits = [mk for mk in vague_markers if mk in lowered]
+                if vague_hits:
+                    finding = {
+                        "skill": skill, "finding_kind": "DEADLINE_AMBIGUITY",
+                        "evidence_basis": basis,
+                        "asset_id": entry["asset_id"], "cite": _cite(entry),
+                        "excerpt": _excerpt(content),
+                        "vague_marker": vague_hits[0],
+                        "cited_assets": [entry["asset_id"]],
+                        "evidence_lines": [
+                            f"Duty excerpt (verbatim): {_cite(entry)} - "
+                            f"\"{_excerpt(content)}\"",
+                            f"Vague time language: \"{vague_hits[0]}\" "
+                            f"(a declared vague_time_marker) - flagged "
+                            f"exactly as written, NEVER converted to a "
+                            f"date (THE INVENTED DATE, refused)",
+                        ],
+                    }
+                    add_finding(finding)
+                    check_extension_posture(finding["statement"])
+                elif duration_re.search(content):
+                    skipped.append({"skill": skill, "reason":
+                        f"{_cite(entry)}: a concrete duration anchored to "
+                        f"an event, not a date - a window is computable "
+                        f"only from a verbatim date at the declared clock; "
+                        f"declared, never guessed"})
+    else:
+        skipped.append({"skill": skill, "reason":
+            "no window_days declared for the run - the deadline extension "
+            "engages at the declared clock pair (as_of + window_days); "
+            "the window is never defaulted"})
+
+    skill = "extract_recurrence_rules"
+    if engaged or (not bundle_sweep and skill in explicit_requests):
+        kind, basis = EXTENSION_FINDING_KINDS[skill]
+        for entry in entries:
+            content = _norm(entry.get("content"))
+            lowered = content.lower()
+            matched = next((mk for mk in recurrence_markers
+                            if mk in lowered), None)
+            interval = interval_re.search(lowered)
+            if matched or interval:
+                finding = {
+                    "skill": skill, "finding_kind": kind,
+                    "evidence_basis": basis,
+                    "asset_id": entry["asset_id"], "cite": _cite(entry),
+                    "excerpt": _excerpt(content),
+                    "matched_marker": matched or interval.group(0),
+                    "cited_assets": [entry["asset_id"]],
+                    "evidence_lines": [
+                        f"Recurrence excerpt (verbatim): {_cite(entry)} - "
+                        f"\"{_excerpt(content)}\"",
+                        f"Matched declared marker: "
+                        f"\"{matched or interval.group(0)}\" - the rule "
+                        f"travels verbatim and is NEVER expanded into "
+                        f"future occurrences (the never_expand_rule)",
+                    ],
+                }
+                add_finding(finding)
+                check_extension_posture(finding["statement"])
+                continue
+            vague_hit = next((mk for mk in vague_periodicity
+                              if mk in lowered), None)
+            if vague_hit:
+                finding = {
+                    "skill": skill, "finding_kind": "RECURRENCE_AMBIGUITY",
+                    "evidence_basis": basis,
+                    "asset_id": entry["asset_id"], "cite": _cite(entry),
+                    "excerpt": _excerpt(content), "vague_marker": vague_hit,
+                    "cited_assets": [entry["asset_id"]],
+                    "evidence_lines": [
+                        f"Recurring-duty excerpt (verbatim): "
+                        f"{_cite(entry)} - \"{_excerpt(content)}\"",
+                        f"Vague periodicity: \"{vague_hit}\" (a declared "
+                        f"ambiguous_periodicity_marker) - quoted exactly, "
+                        f"never normalized into a period",
+                    ],
+                }
+                add_finding(finding)
+                check_extension_posture(finding["statement"])
+    else:
+        skipped.append({"skill": skill, "reason":
+            "the deadline extension is not engaged for this run (no "
+            "window_days declared) - request the skill explicitly or "
+            "declare the window; nothing is dropped silently"})
+
     # ---- One proposal document per finding -------------------------------
     proposal_paths = []
     for finding in findings:
@@ -790,7 +1131,75 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
     pack_path = _write(workspace_dir, f"{workbench_name}-audit-readiness-pack",
                        "\n".join(pack_lines))
 
+    # ---- The obligation-calendar brief (v2.2, assist - never a proposal,
+    # never persisted state). THE COMPUTED CALENDAR made visible: a
+    # snapshot projection of governed facts at the declared clock pair;
+    # delete it and nothing is lost; re-run at the same clock and the
+    # bytes are identical. Not engaged -> declared skip (never silent).
+    brief_path = None
+    if engaged:
+        dated = [f for f in findings
+                 if f["finding_kind"] == "OBLIGATION_DEADLINE"]
+        recurring = [f for f in findings
+                     if f["finding_kind"] == "RECURRENCE_RULE"]
+        flagged = [f for f in findings
+                   if f["finding_kind"] in ("DEADLINE_AMBIGUITY",
+                                            "RECURRENCE_AMBIGUITY")]
+        absent = ("- (none in this run at the declared clock - an empty "
+                  "section is itself information)")
+        brief_lines = [
+            "# Obligation-calendar brief",
+            "",
+            f"Declared clock: as_of {as_of} - window {window_days} days.",
+            "Internal assist output (prepare_obligation_calendar_brief,",
+            "[assist, synth]). NOT a proposal: this brief never enters",
+            "knowledge and is never persisted as calendar state - it is a",
+            "point-in-time projection of governed facts at the declared",
+            "clock. It states what documents require and when; it says",
+            "nothing about what has happened. Narrative framing:",
+            "SYNTHESIS_INFERRED.",
+            "",
+            "## Dated (explicit deadlines in the declared window)",
+            "",
+        ]
+        brief_lines += [
+            f"- {f['cite']} [{f['deadline_class']}]: \"{f['excerpt']}\" -> "
+            f"{f['date']}, {f['days_until']} day(s) from as_of "
+            f"(arithmetic over the verbatim date only)"
+            for f in dated] or [absent]
+        brief_lines += ["", "## Recurring (verbatim rules - never expanded "
+                            "into occurrences)", ""]
+        brief_lines += [
+            f"- {f['cite']}: \"{f['excerpt']}\" (marker "
+            f"\"{f['matched_marker']}\", verbatim)"
+            for f in recurring] or [absent]
+        brief_lines += ["", "## Flagged (vague or missing time language - "
+                            "quoted, never dated)", ""]
+        brief_lines += [
+            f"- {f['cite']}: \"{f['excerpt']}\" (vague: "
+            f"\"{f['vague_marker']}\")"
+            for f in flagged] or [absent]
+        brief_lines += [
+            "",
+            "Persistence, scheduling, reminders, and notification are "
+            "refused by contract - the calendar is computed, never kept.",
+            "",
+        ]
+        brief_content = "\n".join(brief_lines)
+        check_extension_posture(brief_content)
+        brief_path = _write(workspace_dir,
+                            f"{workbench_name}-obligation-calendar-brief",
+                            brief_content)
+    else:
+        skipped.append({"skill": "prepare_obligation_calendar_brief",
+                        "reason": "no window_days declared for the run - "
+                                  "the snapshot brief requires the declared "
+                                  "clock pair; a persistent calendar is "
+                                  "refused always"})
+
     return {"proposals": sorted(proposal_paths), "pack": pack_path,
+            "brief": brief_path,
             "findings": findings, "skipped": skipped,
             "exclusions": exclusions, "as_of": str(as_of),
+            "window_days": window_days,
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}
