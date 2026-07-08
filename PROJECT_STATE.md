@@ -4,20 +4,27 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-08 · current version **v1.9.0** (the Executive
-Operations Briefing Workbench — the FIRST cross-workbench consumer,
-canonical #1: six ratified skill contracts driving the runner at
-runtime, THE BRIEFING PROOF executed as the named distinctive WS3
-stage, THE COMMERCIAL VERDICT passed by the CEO reader; the briefing
-consumes its own human-accepted evidence gap; ZERO door growth — the
-nine frozen MCP tools + the `.empkg` were the entire visibility
-budget; all four workstreams user-ratified end to end in one
-milestone) · branch `main` · tag `v1.9.0` = `a9ded83`; tag `v1.8.0` =
-`4bb0033`; checkpoint tag `post-audit-hardening` still at `c2179c2`
-(the v1.7 release commit) per the standing release ruling — v1.9
-shipped purely as a new workbench bundle, no audit-hardening surface
-touched (`frontend/` and `backend/app/` byte-identical to v1.8) ·
-register through D31 (**still no D32, deliberately**) ·
+**Snapshot:** 2026-07-08 · current version **v2.0.0** (Risk & Exception
+Stewardship — the [ES] MINTING milestone, a LAW milestone not a
+catalog bundle: D32 ratified — "the exception never becomes a row; the
+human decisions about it do"; the SEVENTH permanent guard family
+(`test_exception_stewardship_guard.py`) built and adversarially
+self-proven BEFORE the stewardship door existed, its door-aware part
+activating live with zero guard edits the moment the route was
+mounted; ONE new route, the route manifest's FIRST ratified 87→88
+amendment; THE STEWARDSHIP PROOF (the row test, the ledger-alone
+reconstruction, the vanishing test across three exception species)
+executed as the named distinctive WS3 stage; THE COMMERCIAL VERDICT
+passed by the governance officer; zero schema change through a LAW
+milestone — D24 held at 28/305; all four workstreams user-ratified
+end to end in one milestone) · branch `main` · tag `v2.0.0` =
+`caa6d73`; tag `v1.9.0` = `a9ded83`; tag `v1.8.0` = `4bb0033`;
+checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
+release commit) per the standing release ruling — v2.0 shipped as one
+new route + one new module, no audit-hardening surface touched
+(`frontend/` and `backend/app/` are otherwise byte-identical to v1.9;
+route count is the one ratified exception) · **D32 minted — the
+register moves to D1–D32, deliberately no further law reserved** ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
 backend/test_*.py, the nightly full-model NLI workflow, structured
@@ -186,6 +193,45 @@ briefing cites it `[DERIVED, origin: executive-briefing]` and reports
 it in what-changed. THE COMMERCIAL VERDICT (the user as the CEO)
 closed the milestone; the in-browser before/after (308 held/2 accepted
 → 307/3 live, zero console errors) is the recorded release evidence.
+v2.0.0 mints Exception Stewardship (D32) — a LAW milestone, not a
+catalog bundle: **the exception never becomes a row; the human
+decisions about it do.** Exception existence stays computed from
+governed facts at read time, always (the Governance Inbox, unchanged);
+what persists is the human stewardship decision — an append-only,
+identity-backed `STEWARDSHIP_DECISION` AuditEvent keyed to the
+inbox's computed exception identity (`inbox-item-v1`). Seven ratified
+kinds (ACKNOWLEDGED, RISK_ACCEPTED, DISMISSED, ESCALATED,
+OWNER_ASSIGNED, DUE_DATE_SET, CLEARED); latest-per-kind wins; overdue
+is COMPUTED at read, never stored. **Guard 7** (the SEVENTH permanent
+guard family) was built and adversarially self-proven BEFORE the
+stewardship door existed — THE ROW SENTINEL, THE EXISTENCE SENTINEL
+(the computed queue identical with decisions present vs absent),
+append-only, structural AGENT refusal, the knowledge fingerprint —
+and its door-aware part activated live the moment the one route
+(`POST /api/projects/{id}/stewardship`) was mounted, with ZERO guard
+edits. That route is the route manifest's FIRST ratified 87→88
+amendment, digest re-frozen in the same commit. The Governance Inbox
+is the JOIN: each item is annotated with its stewardship state AFTER
+existence, severity, and bucket are computed from governed facts alone
+— a risk-accepted HIGH stays HIGH and still blocks the compile gate
+(THE SILENT VETO refused). **THE STEWARDSHIP PROOF** (the named
+distinctive WS3 stage) proved THE ROW TEST (the queue byte-identical
+with every annotation stripped; the knowledge fingerprint unchanged;
+a fresh projection render stays fresh through 9 ledger decisions), THE
+LEDGER-ALONE RECONSTRUCTION (an independent from-scratch re-derivation
+from raw AuditEvents equals the module's join exactly), THE OVERDUE
+SUPERSESSION (a later DUE_DATE_SET wins, overdue recomputes, stored
+nowhere), and THE VANISHING TEST across three exception species (a
+reviewed conflict, an approved candidate, a regenerated render each
+leave the computed queue while their decision history endures,
+reconstructable from the ledger alone). MCP stays frozen at 9 tools
+(agent visibility of stewardship is the unminted [PMD] question); D24
+holds at 28 tables / 305 columns through the entire law milestone.
+THE COMMERCIAL VERDICT (the user as the governance officer) closed the
+milestone; the in-browser before/after (0 stewarded → 2 stewarded
+live, the HIGH conflict wearing RISK ACCEPTED/OWNER ASSIGNED/DUE DATE
+SET/the computed OVERDUE chip while staying HIGH and blocking, zero
+console errors) is the recorded release evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -377,7 +423,8 @@ ruling **D22** (Expert Agent Binding — a binding, never a runtime);
 | `revisions.py` | strictly-linear revision workflow; `run_post_approval_rescan` background task |
 | `trust.py` | 5-component trust score, weights renormalized over measured components |
 | `evaluation.py` | benchmark runs (background) on BOTH channels (run_type LIVE/PACKAGE), persists **ClaimVerdict** rows, `coverage_trend` (LIVE-only), `package_model_comparison` (computed) |
-| `governance_inbox.py` | computed inbox + readiness (NO work-item table by design); **v1.2.1 WS4 (D26)**: ingestion exceptions projected from ledger + current facts — five kinds (TIER2_CONTRADICTION_HELD / SOURCE_AUTHORITY_HELD / TIER2_UNVERIFIED / NOT_COVERED / UNCLASSIFIED), most-specific-wins, one severity function loud on unknown kinds, never HIGH (D2), no dismiss; **v1.3.0 WS1 (D28)**: PROJECTION_STALE items (LOW, CAN_WAIT — "stale", never "wrong"; leaves on regeneration alone) |
+| `governance_inbox.py` | computed inbox + readiness (NO work-item table by design); **v1.2.1 WS4 (D26)**: ingestion exceptions projected from ledger + current facts — five kinds (TIER2_CONTRADICTION_HELD / SOURCE_AUTHORITY_HELD / TIER2_UNVERIFIED / NOT_COVERED / UNCLASSIFIED), most-specific-wins, one severity function loud on unknown kinds, never HIGH (D2), no dismiss; **v1.3.0 WS1 (D28)**: PROJECTION_STALE items (LOW, CAN_WAIT — "stale", never "wrong"; leaves on regeneration alone); **v2.0.0 (D32)**: THE QUEUE IS THE JOIN — every item annotated with its stewardship state (`stewardship.stewardship_for`) AFTER existence/severity/bucket are computed; a `stewarded` summary count; the annotation is strip-safe (Guard 7 asserts stripping it reproduces the pre-stewardship queue byte-for-byte) |
+| `stewardship.py` | **v2.0.0 (D32): Exception Stewardship** — the ONE module naming `STEWARDSHIP_DECISION`; the seven-kind closed vocabulary (ACKNOWLEDGED/RISK_ACCEPTED/DISMISSED/ESCALATED/OWNER_ASSIGNED/DUE_DATE_SET/CLEARED, pinned against Guard 7); `record_decision` — identity-backed append-only write through `app.audit.log_audit_event`, constructs no AuditEvent directly, mutates/deletes nothing; `stewardship_for` — the read-time join (latest-per-(key,kind), CLEARED removes a kind, overdue COMPUTED against the read clock, never stored). Reached from ONE route, `POST /api/projects/{id}/stewardship` (`insights.py`, `require_perm assets:review`) — the route manifest's first ratified 87→88 amendment |
 | `consumption_inbox.py` | **v1.1.1 WS2**: computed consumption inbox — nine ratified drift/hygiene conditions over packages/selections/runs/bindings/identity; ONE shared severity function; pure projection, no dismiss (D24) |
 | `binding_lineage.py` | **v1.1.1 WS3**: server-composed binding lineage — backwards to source documents, sideways into identity; every hop resolves or is declared missing (D12); warnings ARE the inbox items |
 | `package_builder.py` | .empkg compiler: manifest hash chain, clearance filtering |
@@ -579,6 +626,12 @@ engine", or "agent wrote a fact".
 | WS2 | `7bea282` | the Executive Briefing runner on common.py (ZERO shared-module edits; the `BriefingGraphClient` adapter over the frozen `get_trust_score`) + THE DIAGNOSIS PROOF (73rd suite, eight parts, first run) |
 | WS3 | `666ee18`+`84e0827` | THE MILESTONE GATE (74th suite, eight stages) + THE BRIEFING PROOF (182 sourced lines, DERIVED origins named, sentinels/vocabulary on bytes, boundary truthfulness verbatim, the covered question traceless, 13 refusals live, zero door growth) + composition (the briefing consumes its own accepted gap) + THE COMMERCIAL VERDICT PASSED (the CEO reader) + the in-browser before/after (308→307 held, 2→3 accepted DERIVED, zero console errors) |
 | **v1.9.0** | PR #19 `a9ded83` (tag v1.9.0) | the first cross-workbench consumer — zero door growth (route manifest byte-identical, MCP frozen at 9 tools); D24 held 28/305; harness 74/74 |
+| — | PR #20 `5d8ed60` | release: v1.9.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| WS0 | `5eb9940` (part of `feat/v20-exception-stewardship`) | v2.0 scoping ratified — D32 "the exception never becomes a row; the human decisions about it do"; the ledger-only shape; the inbox-item-v1 exception key; the seven-kind closed vocabulary; the route manifest 87→88 amendment allowance |
+| WS1 | `0458dee` | D32 minted in docs/DECISIONS.md + registry [ES] HUMAN_SURFACE annotations; Guard 7 (`test_exception_stewardship_guard.py`, the SEVENTH permanent guard family) built and adversarially self-proven BEFORE the door — THE ROW SENTINEL (3 plants caught), append-only-as-law (2 plants), THE KEY-STABILITY PRECONDITION (real inbox, 4 key grammars), THE EXISTENCE SENTINEL (all 7 kinds; queue identical present vs absent; risk-accepted HIGH still blocks), THE KNOWLEDGE FINGERPRINT, door-aware structural AGENT refusal (75th suite) |
+| WS2 | `65a7d68` | `app/stewardship.py` (the ratified vocabulary + the ledger-only write + the read-time join) + ONE route `POST /api/projects/{id}/stewardship` (`assets:review`; AGENT 403; phantom key 404) + the Governance Inbox join + the route manifest re-frozen 87→88 (digest `d8d4eaa5…`, the FIRST ratified T2.4 amendment, same commit as the door) + THE DOOR PROOF (`test_stewardship_workbench.py`, 76th suite, seven parts end to end over HTTP) |
+| WS3 | `573c741`+`75f9ade` | THE MILESTONE GATE + THE STEWARDSHIP PROOF (`test_stewardship_acceptance.py`, 77th suite, eight stages first run: every exception species incl. a held proposal via the vault lane + a stale render; THE ROW TEST; THE LEDGER-ALONE RECONSTRUCTION; THE OVERDUE SUPERSESSION; THE SILENT VETO refused; THE VANISHING TEST across 3 species) + the Governance Inbox stewardship controls (badges/OVERDUE/filter) + THE COMMERCIAL VERDICT PASSED (the governance officer) + the in-browser before/after (0→2 stewarded, HIGH stays blocking, zero console errors) |
+| **v2.0.0** | PR #21 `caa6d73` (tag v2.0.0) | the [ES] minting milestone — D32 ratified, the SEVENTH permanent guard family, zero schema through a LAW milestone; route manifest 88 (first ratified amendment); MCP frozen at 9 tools; D24 held 28/305; harness 77/77 |
 
 ## How to run
 
@@ -738,8 +791,23 @@ engine", or "agent wrote a fact".
   the gateway's exclusions verbatim, the covered question traceless,
   the briefing consuming its own accepted gap; `EM_COMMERCIAL_ARTIFACT_DIR`
   exports the briefing pack for the CEO reader).
+  **v2.0.0 exception-stewardship suites (in CI):**
+  `test_exception_stewardship_guard.py` (Guard 7, the SEVENTH
+  permanent guard family, built and self-proven BEFORE the door —
+  THE ROW SENTINEL, append-only-as-law, THE KEY-STABILITY
+  PRECONDITION over a real inbox, THE EXISTENCE SENTINEL, THE
+  KNOWLEDGE FINGERPRINT, door-aware structural AGENT refusal — six
+  plants, all caught), `test_stewardship_workbench.py` (WS2 THE DOOR
+  PROOF — all seven decision kinds through the ONE route over HTTP;
+  the vocabulary/guard refusals; the queue byte-identical stripped;
+  THE VANISHING TEST first proven), `test_stewardship_acceptance.py`
+  (WS3 THE MILESTONE GATE + THE STEWARDSHIP PROOF — every exception
+  species incl. a held proposal via the vault lane + a stale render;
+  THE LEDGER-ALONE RECONSTRUCTION; THE OVERDUE SUPERSESSION; THE
+  VANISHING TEST across three species; every decision HUMAN
+  identity-backed).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (74 suites as of v1.9.0; keeping one out requires an explicit
+  (77 suites as of v2.0.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -942,30 +1010,56 @@ diagnostic run (PENDING, no key — a narrated briefing over real
 governed facts is this workbench's vehicle) and the v1.2.0
 live-SharePoint scan.
 
-**NEXT: the sellable trio is complete and the first cross-workbench
-consumer has shipped.** Per the ratified catalog's full-inventory
-scoping: **v2.0 Risk & Exception Stewardship** (the [ES] minting
-milestone — its own scoping session, likely the seventh guard family,
-the ruled shape "the exception never becomes a row; the human
-decisions about it do") is next.
-Contract Intelligence (catalog #16, the shared extraction engine) is
-now EARNABLE — two consumers exist (Compliance + Procurement). Also on
-the table: the three named decisions when their pressure arrives (the
-Operational Evidence Realm, Exception Stewardship, the Pipeline
-Metadata Door — the deferred deadline family unlocks after [ES]), the
-two honest slots above, and the standing backlog (SSO/SAML/SCIM; OS
-keystore/KMS; Confluence/Drive providers; Gemini/open-model adapters;
-**D23 — deferred through nine milestones**; embedding index inside
-.empkg; the remaining T3.x polish — main.py unused-import prune,
-Pydantic model_config, _iso dedup, N+1 citation batching; ruff/
-Dockerfile/pytest-cov/frontend tests). The narrative: v1.2→v1.5 built
-the substrate; v1.6 proved a business reader pays attention; v1.7
-proved the pattern repeats; v1.8 proved the pattern industrializes (a
-third workbench, zero common.py edits, numbers verbatim); **v1.9
-proves the pattern composes — the first consumer that reads what other
-workbenches produced, cited every sentence or declared its boundary,
-and consumed its own human-accepted finding, all with ZERO door
-growth (the nine frozen tools + the .empkg were the whole budget).**
+**v2.0.0 DELIVERED (2026-07-08) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/exception-stewardship-v2.0.md). The [ES] MINTING milestone — a
+LAW milestone, not a catalog bundle — in four user-ratified gates: WS0
+the rulings (D32's text, the ledger-only shape, the inbox-item-v1
+exception key, the seven-kind closed vocabulary, the queue-is-the-join
+with D2 severity honesty, the 87→88 route-manifest amendment
+allowance); WS1 D32 minted in the register + Guard 7 (the SEVENTH
+permanent guard family) built and adversarially self-proven BEFORE the
+door existed — THE ROW SENTINEL, append-only-as-law, THE
+KEY-STABILITY PRECONDITION over a real inbox, THE EXISTENCE SENTINEL
+(the computed queue identical with decisions present vs absent), THE
+KNOWLEDGE FINGERPRINT, and door-aware structural AGENT refusal that
+activated live with **zero guard edits** the moment WS2 mounted the
+route; WS2 `app/stewardship.py` + the ONE route + the Governance Inbox
+join + the route manifest's **first ratified 87→88 amendment**
+(digest re-frozen in the same commit); WS3 THE MILESTONE GATE + **THE
+STEWARDSHIP PROOF** (THE ROW TEST, THE LEDGER-ALONE RECONSTRUCTION,
+THE OVERDUE SUPERSESSION, THE SILENT VETO refused, THE VANISHING TEST
+across three exception species) + the operator surface (badges,
+per-item decision control, the STEWARDED filter) + THE COMMERCIAL
+VERDICT (the governance officer) + the in-browser before/after. Zero
+schema through the entire law milestone — D24 held at 28/305; MCP
+untouched at 9 tools (agent visibility of stewardship is the unminted
+[PMD] question). The honest slots carried: the real-model diagnostic
+run (there is no runner in this milestone) and the v1.2.0
+live-SharePoint scan.
+
+**NEXT: the sellable trio, the first cross-workbench consumer, and the
+[ES] minting law have all shipped.** Contract Intelligence (catalog
+#16, the shared extraction engine) is now EARNABLE — two consumer
+workbenches exist (Compliance + Procurement). Also on the table: the
+two remaining named decisions when their pressure arrives (the
+Operational Evidence Realm [OE], the Pipeline Metadata Door [PMD] —
+the deferred deadline-extraction family, `track_explicit_deadlines` /
+`track_recurrence_rules`, now UNLOCKED for its own scoping session
+after [ES]), the honest slots above, and the standing backlog
+(SSO/SAML/SCIM; OS keystore/KMS; Confluence/Drive providers;
+Gemini/open-model adapters; **D23 — deferred through ten milestones**;
+embedding index inside .empkg; the remaining T3.x polish — main.py
+unused-import prune, Pydantic model_config, _iso dedup, N+1 citation
+batching; ruff/Dockerfile/pytest-cov/frontend tests). The narrative:
+v1.2→v1.5 built the substrate; v1.6 proved a business reader pays
+attention; v1.7 proved the pattern repeats; v1.8 proved the pattern
+industrializes; v1.9 proved the pattern composes (the first consumer
+that reads what other workbenches produced); **v2.0 proves the
+platform can mint a new LAW without becoming a second truth system —
+the exception stays computed, only the human ruling about it persists,
+and a permanent guard proved that boundary before the door existed to
+tempt it.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
@@ -998,6 +1092,11 @@ explicit register supersession, never configuration). Any new VAULT
 renderer spec is confined by the D31 floor: managed folders only inside
 the 01–06 window, the untouchable folders (00_system / 07_agent_workspaces
 / 08_proposals) outside every render path, EM_VAULT_DIR and the untouchable
-names confined to projections/engine.py within app/. Six permanent guard
+names confined to projections/engine.py within app/. Any new
+stewardship decision kind must be added to `app/stewardship.py`'s
+`STEWARDSHIP_KINDS` AND to Guard 7's pinned spec in the same commit —
+the guard asserts the two are structurally equal, so a silent
+vocabulary drift fails loudly. Seven permanent guard
 families now stand in CI: D24 schema, D25 custody, D26 automation, D28
-projection, D29/D30 authorship, D31 render ingress.
+projection, D29/D30 authorship, D31 render ingress, D32 exception
+stewardship.

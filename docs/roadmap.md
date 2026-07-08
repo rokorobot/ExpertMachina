@@ -35,6 +35,7 @@
 | v1.7.0 | the Compliance & Obligation Workbench (second commercial workbench, catalog #9; `workbench/common.py` — the catalog's first reuse moment; THE COMPOSITION PROOF — registry rule 6 live for the first time) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the audit-facing reader); 48 CI suites; 28/305 held; honest slots carry |
 | v1.8.0 | the Procurement Document Intelligence Workbench (third commercial workbench, catalog #3; THE INVENTED NUMBER posture; THE CLAUSE ARITHMETIC PROOF; `workbench/common.py` with ZERO shared-module edits) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the procurement/finance owner); 71 CI suites; 28/305 held; the sellable trio complete |
 | v1.9.0 | the Executive Operations Briefing Workbench (the FIRST cross-workbench consumer, canonical #1; THE UNSOURCED SENTENCE posture; THE BRIEFING PROOF; the runner-local `BriefingGraphClient` adapter over the frozen `get_trust_score`; ZERO door growth) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CEO reader); 74 CI suites; 28/305 held; the briefing consumes its own human-accepted evidence gap; honest slots carry |
+| v2.0.0 | Risk & Exception Stewardship (the [ES] MINTING milestone; D32 — "the exception never becomes a row; the human decisions about it do"; the SEVENTH permanent guard family; the route manifest's first ratified 87→88 amendment) | ✅ Completed (July 2026, D32 ratified) — all gates PASSED incl. THE COMMERCIAL VERDICT (the governance officer); 77 CI suites; 28/305 held; zero schema through a LAW milestone; THE STEWARDSHIP PROOF (row test, ledger-alone reconstruction, vanishing test across three species) |
 
 ---
 
@@ -907,12 +908,79 @@ you").
   2→3 accepted, zero console errors). **No new law, a fourth time: no
   D32, no seventh guard family** — Guard 5 swept the runner with zero
   edits.
-- **NEXT: v2.0 Risk & Exception Stewardship** (the [ES] minting
-  milestone — its own scoping session, likely the seventh guard
-  family, the ruled shape "the exception never becomes a row; the
-  human decisions about it do"). Honest slots carry: the real-model
-  diagnostic run (a narrated briefing over real governed facts is the
-  natural vehicle) and the v1.2.0 live-SharePoint scan.
+- **The [ES] minting milestone shipped as v2.0.0** (below).
+
+## v2.0.0 — Risk & Exception Stewardship, the [ES] minting milestone (Completed)
+
+**A LAW milestone, not a catalog bundle (2026-07-08; build contract +
+all gate records: [exception-stewardship-v2.0.md](exception-stewardship-v2.0.md)).**
+Catalog #15 is Layer 1 PLATFORM — its computed half already shipped as
+EM itself (the Governance Inbox + the Operations Proposal Pipeline);
+this milestone ships its HUMAN half. The product claim proven:
+*humans can steward the computed exception queue — acknowledge,
+accept risk, dismiss with reason, escalate, assign an owner, set a due
+date — as durable, identity-backed, append-only governed decisions,
+while exception existence remains computed from governed facts at
+read time, always.*
+
+- **D32 — Exception Stewardship (ratified)**: *the exception never
+  becomes a row; the human decisions about it do.* The fourth
+  guard-backed law to open a new milestone door (after
+  D25/D26/D29-D30/D31). Ledger-only shape: append-only
+  `STEWARDSHIP_DECISION` AuditEvents keyed to the Governance Inbox's
+  computed exception identity (`inbox-item-v1`) — no exception table,
+  no StewardshipDecision table, D24 held at 28/305 through a LAW
+  milestone. Seven-kind closed vocabulary: ACKNOWLEDGED,
+  RISK_ACCEPTED, DISMISSED, ESCALATED, OWNER_ASSIGNED, DUE_DATE_SET,
+  CLEARED — latest-per-kind wins; overdue is COMPUTED at read, never
+  stored.
+- **Guard 7** (`test_exception_stewardship_guard.py`), the SEVENTH
+  permanent guard family, built and adversarially self-proven BEFORE
+  the stewardship door existed: THE ROW SENTINEL, THE EXISTENCE
+  SENTINEL (the computed queue identical with decisions present vs
+  absent), append-only, structural AGENT refusal, the knowledge
+  fingerprint. Its door-aware part activated live the moment WS2
+  mounted the route — zero guard edits needed.
+- **ONE route, ONE amendment**: `POST /api/projects/{id}/stewardship`
+  (`require_perm assets:review`; AGENT refused 403; a phantom key
+  404). The route manifest's FIRST ratified use of the T2.4 amendment
+  path — 87→88, digest re-frozen in the same commit that mounted the
+  door. MCP untouched at 9 tools (agent visibility of stewardship is
+  the unminted [PMD] question). The Governance Inbox is the JOIN:
+  each item annotated with its stewardship state after existence,
+  severity, and bucket are computed from governed facts alone — a
+  risk-accepted HIGH stays HIGH and still blocks the compile gate
+  (THE SILENT VETO refused).
+- **THE STEWARDSHIP PROOF (the distinctive WS3 stage)**: THE ROW TEST
+  (the queue byte-identical with every stewardship annotation
+  stripped; the knowledge fingerprint unchanged; a fresh projection
+  render stays fresh through 9 ledger decisions); THE LEDGER-ALONE
+  RECONSTRUCTION (an independent from-scratch re-derivation from raw
+  AuditEvents equals the module's join exactly); THE OVERDUE
+  SUPERSESSION (a later DUE_DATE_SET wins, overdue recomputes, stored
+  nowhere); THE VANISHING TEST across three exception species (a
+  reviewed conflict, an approved candidate, a regenerated render each
+  leave the computed queue while their decision history endures,
+  reconstructable from the ledger alone).
+- **The gates**: Guard 7 (75th suite, before the door), THE DOOR PROOF
+  (76th suite, end to end over HTTP), THE MILESTONE GATE (77th suite,
+  every exception species seeded through real machinery including a
+  held proposal via the vault lane and a stale render via
+  recompose-and-compare), and the in-browser before/after (0→2
+  stewarded live through the new Governance Inbox controls, the HIGH
+  conflict wearing RISK ACCEPTED/OWNER ASSIGNED/DUE DATE SET/the
+  computed OVERDUE chip while staying HIGH and blocking, zero console
+  errors). THE COMMERCIAL VERDICT (the governance officer): *"would
+  you run your weekly exception review from this queue — every
+  decision durable and attributable, every exception honest about
+  whether it still exists, and nothing tracked twice?"* — RATIFIED.
+- **NEXT**: Contract Intelligence (catalog #16, the shared extraction
+  engine) is earnable — two consumer workbenches exist. The three
+  named-not-minted decisions ([OE] Operational Evidence Realm, [PMD]
+  Pipeline Metadata Door) remain unminted; their own pressure, their
+  own scoping sessions. Honest slots carry: the real-model diagnostic
+  run and the v1.2.0 live-SharePoint scan (neither is this milestone's
+  vehicle — there is no runner).
 
 ## Future Direction
 
