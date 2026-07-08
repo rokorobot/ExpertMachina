@@ -1,3 +1,5 @@
+import re
+
 from sqlalchemy.orm import Session
 
 from app import database as db
@@ -27,6 +29,16 @@ from app import proposals
 
 def _iso(dt):
     return dt.isoformat() if dt else None
+
+
+# Workbench-of-origin, derived at read time from the proposal filename
+# convention "{workbench}-{skill_id}-{12hex}.md" (workbench names are
+# hyphen-joined, skill_ids carry underscores) - the same zero-new-machinery
+# derivation the v1.9 briefing ruled and uses. Convention, not
+# constitution: a filename that does not match attributes to no
+# workbench, declared as such, never guessed.
+_WORKBENCH_PROPOSAL_RE = re.compile(
+    r"^([a-z][a-z-]*?)-([a-z][a-z_]*)-[0-9a-f]{12}\.md$")
 
 
 def build_operations(session: Session, project_id: int) -> dict:
@@ -70,6 +82,7 @@ def build_operations(session: Session, project_id: int) -> dict:
 
     pipeline = []
     proposal_stats = {}  # agent principal name -> counters
+    workbench_stats = {}  # workbench-of-origin (filename-derived) -> counters
     for doc_id in sorted(doc_connector):
         document = session.query(db.Document).filter(
             db.Document.id == doc_id).first()
@@ -83,12 +96,17 @@ def build_operations(session: Session, project_id: int) -> dict:
         accepted = [a for a in assets if a.status == "APPROVED"]
         agent_name = ((verdict.get("verified") or {}).get("agent_principal")
                       or verdict["claimed"].get("agent_principal"))
+        origin = _WORKBENCH_PROPOSAL_RE.match(document.filename or "")
+        workbench = origin.group(1) if origin else None
+        skill_id = origin.group(2) if origin else None
         pipeline.append({
             "document_id": doc_id,
             "filename": document.filename,
             "connector_id": doc_connector[doc_id],
             "ingested_at": _iso(document.created_at),
             "agent_principal": agent_name,
+            "workbench": workbench,   # filename-derived origin, or None
+            "skill_id": skill_id,
             "provenance": verdict,  # recomputed, verbatim claims included
             "candidates": [{
                 "asset_id": a.id,
@@ -110,6 +128,32 @@ def build_operations(session: Session, project_id: int) -> dict:
             1 for a in accepted if a.source_class == "DERIVED")
         if not verdict["provenance_verified"]:
             stats["unverified_documents"] += 1
+        if workbench:
+            wb = workbench_stats.setdefault(workbench, {
+                "workbench": workbench, "proposal_documents": 0,
+                "held_candidates": 0, "accepted_derived": 0,
+                "unverified_documents": 0, "skills": set(),
+                "last_ingested_at": None,
+            })
+            wb["proposal_documents"] += 1
+            wb["held_candidates"] += len(held)
+            wb["accepted_derived"] += sum(
+                1 for a in accepted if a.source_class == "DERIVED")
+            if not verdict["provenance_verified"]:
+                wb["unverified_documents"] += 1
+            if skill_id:
+                wb["skills"].add(skill_id)
+            ingested = _iso(document.created_at)
+            if ingested and (wb["last_ingested_at"] is None
+                             or ingested > wb["last_ingested_at"]):
+                wb["last_ingested_at"] = ingested
+
+    # Deterministic order + sets flattened so identical facts yield an
+    # identical projection (the D24 purity check compares whole payloads).
+    workbenches = [
+        {**workbench_stats[name], "skills": sorted(workbench_stats[name]["skills"])}
+        for name in sorted(workbench_stats)
+    ]
 
     # ---- The agents: every AGENT principal, its bindings, and what it
     # has proposed. Registry + governed facts only.
@@ -147,6 +191,10 @@ def build_operations(session: Session, project_id: int) -> dict:
         "agents": agents,
         "pipeline": pipeline,
         "lanes": lanes,
+        # Workbench-of-origin activity, derived from proposal filenames at
+        # read time (the v1.9 convention) - which workbench bundles have
+        # actually proposed, what skills fired, what the gate did with it.
+        "workbenches": workbenches,
         # Declared, never silent (D12): proposals whose provenance names
         # no resolvable agent still count somewhere visible.
         "unattributed_proposals": unattributed,
@@ -154,6 +202,7 @@ def build_operations(session: Session, project_id: int) -> dict:
             "agents": len(agents),
             "active_agents": sum(1 for a in agents if a["active"]),
             "lanes": len(lanes),
+            "workbenches": len(workbenches),
             "proposal_documents": len(pipeline),
             "held_candidates": sum(p["held_count"] for p in pipeline),
             "accepted_derived": sum(

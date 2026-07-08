@@ -117,6 +117,17 @@ def main():
                            binding_id=999999,
                            package_hash=package.package_hash)
                + "All exit interviews must be archived in a Postgres database server.\n")
+    # A proposal following the workbench filename convention
+    # "{workbench}-{skill_id}-{12hex}.md" (the v1.9 workbench-of-origin
+    # ruling) - the projection must attribute it; the legacy filenames
+    # above must attribute to no workbench, declared, never guessed.
+    write_file(lane_folder,
+               "customer-operations-detect_promise_conflicts-0123456789ab.md",
+               frontmatter(em_proposal=1,
+                           agent_principal="onboarding-diagnostic",
+                           binding_id=binding.id,
+                           package_hash=package.package_hash)
+               + "All support refunds must be approved by the duty manager.\n")
     run_scan(session, lane)
 
     reviewer = test_support.governed_actor(session, "GateReviewer")
@@ -141,10 +152,12 @@ def main():
     assert lane_entry["last_scan"] is not None
     assert lane_entry["last_scan"]["status"] == "COMPLETED"
 
-    assert len(view["pipeline"]) == 2
+    assert len(view["pipeline"]) == 3
     by_file = {p["filename"]: p for p in view["pipeline"]}
     good = by_file["finding-good.md"]
     forged = by_file["finding-forged.md"]
+    conventional = by_file[
+        "customer-operations-detect_promise_conflicts-0123456789ab.md"]
     assert good["provenance"]["provenance_verified"] is True
     assert good["agent_principal"] == "onboarding-diagnostic"
     assert good["accepted_count"] == 1
@@ -158,24 +171,42 @@ def main():
     assert all(c["source_class"] == "DERIVED"
                for p in view["pipeline"] for c in p["candidates"])
 
+    # Workbench-of-origin: filename-derived, declared or None.
+    assert good["workbench"] is None and good["skill_id"] is None
+    assert forged["workbench"] is None
+    assert conventional["workbench"] == "customer-operations"
+    assert conventional["skill_id"] == "detect_promise_conflicts"
+    assert conventional["provenance"]["provenance_verified"] is True
+    assert len(view["workbenches"]) == 1
+    wb = view["workbenches"][0]
+    assert wb["workbench"] == "customer-operations"
+    assert wb["proposal_documents"] == 1
+    assert wb["held_candidates"] >= 1
+    assert wb["accepted_derived"] == 0
+    assert wb["unverified_documents"] == 0
+    assert wb["skills"] == ["detect_promise_conflicts"]
+    assert wb["last_ingested_at"] is not None
+
     agent_entry = next(a for a in view["agents"]
                        if a["name"] == "onboarding-diagnostic")
     assert agent_entry["bindings"] == 1
     assert agent_entry["latest_binding"]["binding_id"] == binding.id
     assert agent_entry["latest_binding"]["package_hash"] == package.package_hash
     stats = agent_entry["proposals"]
-    assert stats["proposal_documents"] == 2
+    assert stats["proposal_documents"] == 3
     assert stats["accepted_derived"] == 1
     assert stats["unverified_documents"] == 1
     assert stats["held_candidates"] == view["summary"]["held_candidates"]
 
     summary = view["summary"]
-    assert summary["proposal_documents"] == 2
+    assert summary["proposal_documents"] == 3
     assert summary["accepted_derived"] == 1
     assert summary["unverified_documents"] == 1
     assert summary["lanes"] == 1 and summary["agents"] == 1
-    print(f"Part 1 passed: 1 lane, 2 pipeline documents (1 verified w/ "
-          f"accepted DERIVED, 1 forged held), agent attributed with "
+    assert summary["workbenches"] == 1
+    print(f"Part 1 passed: 1 lane, 3 pipeline documents (1 verified w/ "
+          f"accepted DERIVED, 1 forged held, 1 workbench-attributed by "
+          f"filename convention), agent attributed with "
           f"binding {binding.id}.")
 
     # ------------------------------------------------------------ Part 2
@@ -207,7 +238,8 @@ def main():
         r = client.get(f"/api/projects/{project.id}/operations", headers=READER)
         assert r.status_code == 200, r.text
         body = r.json()
-        assert body["summary"]["proposal_documents"] == 2
+        assert body["summary"]["proposal_documents"] == 3
+        assert body["summary"]["workbenches"] == 1
         assert body["pipeline"][0]["provenance"]["claimed"] is not None
         r = client.get("/api/projects/999999/operations", headers=READER)
         assert r.status_code == 404
