@@ -373,3 +373,92 @@ D24 at 28/305.
 **THE GATE (per WS0): user ratification of the guard evidence and the
 key ruling as proven is now requested. WS2 (the one route + the queue
 join, on Opus per the recorded routing) starts only on ratification.**
+
+**WS1 RATIFICATION: PASSED (2026-07-08, user-ratified)** — D32 minted,
+the registry annotations, and Guard 7 accepted as the permanent proof
+boundary before the door. WS2 proceeded on the recorded Opus routing.
+
+### WS2 — The stewardship door + the queue join: evidence recorded, gate pending ratification (2026-07-08)
+
+Delivered:
+- **`backend/app/stewardship.py`** — the ONE module that names the
+  event type. The ratified seven-kind `STEWARDSHIP_KINDS` (equal to
+  Guard 7's pinned spec — the guard asserts it structurally);
+  `validate_decision` (the closed vocabulary, required fields, the
+  YYYY-MM-DD check, CLEARED naming a ruled kind); `record_decision`
+  (identity-backed append-only write through `app.audit.log_audit_event`
+  — constructs no AuditEvent directly, mutates/deletes nothing); the
+  read-time join `stewardship_for` (latest-per-(key,kind) with CLEARED
+  removing a kind, overdue COMPUTED against the read clock, never
+  stored).
+- **The one route** — `POST /api/projects/{project_id}/stewardship`
+  (the contract's declared path), `require_perm("assets:review")` (a
+  governance-review act; HUMAN reviewers only — the AGENT role holds
+  only `mcp:consume`, refused 403). It validates the exception is
+  present in the CURRENT computed queue (a phantom key is 404), records
+  the exception's TYPE from the computed truth (never client-trusted),
+  maps a vocabulary refusal to 400, and echoes the decision + refreshed
+  stewardship state.
+- **The Governance Inbox join** — `governance_inbox.build_inbox`
+  annotates each item with `stewardship` (None when unstewarded) AFTER
+  existence/severity/bucket/ordering are computed from governed facts
+  alone; a `stewarded` count joins the summary. Guard 7's existence
+  sentinel already anticipated the `stewardship` key by name — the join
+  is strip-safe by construction.
+- **The route-manifest amendment** — `test_route_manifest.py` re-frozen
+  87 → 88 with digest `d8d4eaa5…`, carrying an AMENDMENT LOG entry (the
+  first ratified use of the T2.4 path), IN THE SAME COMMIT that mounts
+  the door.
+
+**THE DOOR PROOF** (`backend/test_stewardship_workbench.py`, the 76th
+suite — seven parts green, end to end over HTTP):
+1. The door exists — exactly ONE new route (88 total, digest re-frozen,
+   `require_perm:assets:review`); MCP still 9 tools; D24 at 28/305.
+2. The computed queue BEFORE stewardship — a HIGH DIRECT_CONTRADICTION
+   blocking the compile gate + an ingestion exception; every item
+   unstewarded.
+3. A human writes all SEVEN kinds through the door (incl. a CLEARED
+   undo of an ESCALATED) — 7 append-only ledger events.
+4. Vocabulary + guards at the door: invalid kind / missing reason /
+   missing owner label / bad date / bad clears_kind all 400; a phantom
+   key 404; an AGENT bearer 403 (the live door, re-proving Guard 7).
+5. **THE QUEUE IS THE JOIN**: the inbox is byte-identical with every
+   `stewardship` annotation stripped (existence never moves); the
+   annotations are correct (overdue computed from a past due_date;
+   ESCALATED removed by CLEARED); the HIGH stays HIGH and the compile
+   gate verdict is unchanged (THE SILENT VETO refused).
+6. Append-only + the knowledge fingerprint: every governed KNOWLEDGE
+   table byte-identical through all writes (auth/ledger bookkeeping
+   excluded — Guard 7 Part 5 owns the rigorous whole-table proof); 7
+   identity-backed events; CLEARED is a new row, not an edit.
+7. **THE VANISHING TEST**: a human dismisses the conflict → the HIGH
+   exception leaves the active computed queue while its full 4-decision
+   history remains reconstructable from the ledger alone.
+
+**Regression at the gate**: Guard 7 green (its door-aware part now
+live-refuses an AGENT 403 on the mounted route); Guard 5 green (the new
+route swept by its dynamic write-route grid, zero guard edits);
+route-manifest guard green at 88; full harness **76/76**; MCP frozen at
+9; D24 at 28/305.
+
+**Honest slots / compromises (recorded):** (1) the route validates that
+the exception is currently present before recording — a decision keys
+to a live exception; a fact fixed between queue-load and click yields a
+404 (honest: you cannot steward what no longer exists). (2) The
+HTTP-level knowledge fingerprint excludes auth/ledger bookkeeping
+(credential `last_used_at`, lazily-minted identity facts, the principal
+registry) because authenticated requests legitimately churn them; the
+RIGOROUS whole-table-except-ledger fingerprint is Guard 7 Part 5, run
+without HTTP auth churn. Neither is a law compromise — both are honest
+scoping of what each layer proves.
+
+**WS3 has not started.** No PR opened, nothing merged, nothing tagged,
+no schema migration, no exception/stewardship table, no MCP tool, no
+agent-visible stewardship.
+
+**THE GATE (per WS0): user ratification of the stewardship surface —
+the one route, the ledger-only implementation, the inbox join, the
+87→88 amendment, and Guard 7 live after the door — is now requested.
+WS3 (THE STEWARDSHIP PROOF + the browser proof + the governance-officer
+verdict, on Fable per the recorded routing) starts only on
+ratification.**
