@@ -654,6 +654,35 @@ export interface TrustScore {
   components: TrustComponent[];
 }
 
+// v2.0 (D32): one recorded human stewardship decision - an append-only
+// STEWARDSHIP_DECISION ledger event, echoed by the join. Never a row.
+export interface StewardshipDecision {
+  decision_id: number;
+  kind: string;
+  exception_key: string;
+  exception_type: string;
+  decided_by: string;
+  identity_fact_id: number | null;
+  decided_at: string | null;
+  reason?: string;
+  escalated_to?: string;
+  owner_label?: string;
+  owner_principal_id?: number | null;
+  due_date?: string;
+  clears_kind?: string;
+}
+
+// v2.0 (D32): the current stewardship state of one computed exception -
+// latest decision per kind (CLEARED removes the kind it names), overdue
+// COMPUTED at read time, never stored. The queue is the join: this
+// annotation never changes existence, severity, bucket, or the gate.
+export interface StewardshipState {
+  active: Record<string, StewardshipDecision>;
+  history_count: number;
+  overdue?: boolean;
+  due_date?: string;
+}
+
 export interface GovernanceInboxItem {
   id: string;
   type: 'CONFLICT' | 'REVISION' | 'GOVERNANCE_WARNING';
@@ -674,6 +703,7 @@ export interface GovernanceInboxItem {
   deep_link: string;
   created_at: string | null;
   resolved_at: string | null;
+  stewardship?: StewardshipState | null; // v2.0 (D32): annotation only
 }
 
 export interface GovernanceGateConflictRef {
@@ -748,6 +778,7 @@ export interface GovernanceInbox {
     high_severity: number;
     blocked_expert_models: number;
     total_expert_models: number;
+    stewarded?: number; // v2.0 (D32): items carrying a human decision
   };
   items: GovernanceInboxItem[];
   readiness: GovernanceReadiness[];
@@ -881,6 +912,14 @@ interface AppState {
   governanceInbox: GovernanceInbox | null;
   governanceInboxLoading: boolean;
   fetchGovernanceInbox: (projectId: number) => Promise<void>;
+  // v2.0 (D32): the ONE stewardship write - an append-only, identity-backed
+  // decision keyed to the computed exception identity. Returns an error
+  // string (the door's refusal, verbatim) or null on success.
+  recordStewardship: (projectId: number, payload: {
+    exception_key: string; kind: string; reason?: string;
+    escalated_to?: string; owner_label?: string; due_date?: string;
+    clears_kind?: string;
+  }) => Promise<string | null>;
   reviewClaimVerdict: (verdictId: number, comment: string) => Promise<void>;
 
   // v1.3 (D28): render history is a ledger projection (PROJECTION_RENDERED
@@ -1392,6 +1431,25 @@ export const useAppStore = create<AppState>((set, get) => ({
       set({ governanceInbox: data, governanceInboxLoading: false });
     } catch (err) {
       set({ error: err instanceof Error ? err.message : String(err), governanceInboxLoading: false });
+    }
+  },
+
+  recordStewardship: async (projectId, payload) => {
+    try {
+      const res = await apiFetch(`${API_BASE}/projects/${projectId}/stewardship`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      if (!res.ok) {
+        const detail = (await res.json().catch(() => null))?.detail;
+        return typeof detail === 'string' ? detail : `Stewardship refused (${res.status})`;
+      }
+      // the queue is the join: refresh so the annotation reflects the ledger
+      await get().fetchGovernanceInbox(projectId);
+      return null;
+    } catch (err) {
+      return err instanceof Error ? err.message : String(err);
     }
   },
 

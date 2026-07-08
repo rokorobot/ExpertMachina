@@ -462,3 +462,87 @@ the one route, the ledger-only implementation, the inbox join, the
 WS3 (THE STEWARDSHIP PROOF + the browser proof + the governance-officer
 verdict, on Fable per the recorded routing) starts only on
 ratification.**
+
+**WS2 RATIFICATION: PASSED (2026-07-08, user-ratified)** — the one
+route at `assets:review` with the live AGENT 403, the 87→88 amendment
+with its recorded reason, the ledger-only append-only write model, the
+read-time join (queue truth stays computed), the closed vocabulary
+pinned against Guard 7, the phantom-404 / invalid-400 refusals, the
+gate honesty (risk-accepted HIGH still blocks), THE VANISHING TEST,
+and 76/76 accepted. The fingerprint caveat accepted as honest layer
+scoping (Guard 7 owns the rigorous whole-table proof). WS3 opened on
+Fable per the recorded routing.
+
+### WS3 — THE MILESTONE GATE + THE STEWARDSHIP PROOF: evidence recorded, THE COMMERCIAL VERDICT pending (2026-07-08)
+
+`backend/test_stewardship_acceptance.py` (the 77th suite) — eight
+stages, all green on the first full run; full harness **77/77**
+(476s):
+
+1. **Every species, computed, unstewarded**: an unreviewed
+DIRECT_CONTRADICTION (HIGH, blocking the gate), a pending candidate
+revision, an uncovered CANDIDATE, a no-evaluation warning, and a HELD
+PROPOSAL with unverifiable synthesis provenance through the real vault
+lane; the fresh graph render NOT stale.
+2. The reviewer stewards the FULL vocabulary THROUGH THE DOOR: 9
+decisions, all seven kinds, five exceptions, four species — over HTTP.
+3. **THE ROW TEST**: the queue byte-identical with every annotation
+stripped; the knowledge fingerprint unchanged; no exception-shaped
+table (D24 at 28/305); **the render still fresh after 9 ledger
+decisions** (stewardship never dirties a projection).
+4. **THE LEDGER-ALONE RECONSTRUCTION**: an independent from-scratch
+re-derivation of the state from raw AuditEvents equals the module's
+join exactly; CLEARED emptied the proposal's active state while its
+history stands; **THE OVERDUE SUPERSESSION** — overdue TRUE under a
+past due date, recomputed FALSE under a superseding later
+DUE_DATE_SET, stored nowhere.
+5. **THE SILENT VETO refused**: severity and the compile-gate verdict
+unmoved by risk acceptance; an AGENT bearer 403 on the door.
+6. A governed fact change makes the render stale; the stale item takes
+a decision like any exception.
+7. **THE VANISHING TEST, three species**: the reviewed conflict, the
+approved candidate, and the regenerated render each leave the computed
+queue while their 7 decisions remain reconstructable from the ledger
+alone — history outlives existence.
+8. THE CLOSING LINES: route manifest at exactly 88 (the one ratified
+amendment); MCP at 9; D24 at 28/305; **every decision on the ledger
+carries a HUMAN identity fact**.
+
+**The operator surface (the contract's planned Governance Inbox
+controls — delivered at WS3, recorded honestly):** per-item
+stewardship badges (active kinds, owner label, due date, the computed
+OVERDUE chip, the ledger decision count), a per-item decision control
+(the seven-kind selector + kind-driven required inputs + Record
+decision → the ONE POST), and the ALL/UNSTEWARDED/STEWARDED
+presentation filter. `tsc --noEmit` clean; presentation only — the
+door validates, the UI never decides.
+
+**The in-browser before/after (recorded 2026-07-08): PASSED.** Seeded
+throwaway DB (the `backend/.ui-gate-db` pattern, seed_v20, this
+branch's code): login as a governed GOVERNANCE_REVIEWER
+(`exec_reviewer`); Governance Inbox BEFORE — 6 computed exceptions
+across 5 species, **0 stewarded**, no badges; FOUR live decisions
+through the new controls (RISK_ACCEPTED with reason, OWNER_ASSIGNED
+"Records Management", DUE_DATE_SET 2020-01-01, DISMISSED with reason —
+each the pre-existing ONE POST) → AFTER — **2 stewarded**; the
+conflict wearing RISK ACCEPTED · OWNER ASSIGNED · DUE DATE SET · the
+COMPUTED **OVERDUE** chip · "4 decisions on the ledger" while staying
+**HIGH and "Blocks compile gate"** (THE SILENT VETO refused,
+browser-visible); a double-submitted OWNER_ASSIGNED absorbed by
+latest-per-kind exactly as ruled (one badge, honest history count);
+the STEWARDED/UNSTEWARDED filters partitioning 2/4; zero console
+errors, zero warnings; the only non-2xx request is the pre-login
+session-restore probe (401 by design).
+
+**Honest slots (recorded):** the screenshot rasterizer times out in
+this preview environment (as at the v1.9 gate) — the browser evidence
+is the text/DOM record above, per the standing pattern. The real-model
+diagnostic run and the v1.2.0 live-SharePoint scan carry unchanged
+(neither is this milestone's vehicle — there is no runner).
+
+**THE GATE: THE COMMERCIAL VERDICT (ruling 9) — the user answers as
+the GOVERNANCE OFFICER.** The question, verbatim: *"As the governance
+officer: would you run your weekly exception review from this queue —
+every decision durable and attributable, every exception honest about
+whether it still exists, and nothing tracked twice?"* The milestone
+closes on that verdict or it does not close.
