@@ -762,48 +762,58 @@ deadline-extraction family elsewhere in this registry UNLOCKS after
 
 ---
 
-## 16. Contract Intelligence Workbench — FUTURE (the shared engine)
+## 16. Contract Intelligence Workbench — **ACTIVE (v2.1)** (the shared engine)
 
 Purpose: contract extraction, obligation mapping, clause risk,
 renewal intelligence, and contract-to-policy comparison across
 customer/vendor/partner contracts. Boundary note: potentially the
 strongest shared engine — it feeds Procurement (3), Compliance (9),
 Customer Success (6), Finance (2), and the Executive briefing (1).
+**Ratified at the v2.1 WS0 gate** (docs/contract-intelligence-v2.1.md):
+the ACTIVE set is THREE skills — the fifteen extract_* subtasks
+consolidate into ONE `extract_contract_clauses` engine with a pinned,
+closed fifteen-class `clause_class` taxonomy (the 15→1 consolidation,
+ratified); THE REGISTER DISTINCTION rules that verbatim structure
+extraction may become governed DERIVED fact through the valve while
+narrative synthesis never does.
 
-1. `summarize_contract` [assist]
-2. `extract_parties` [now]
-3. `extract_effective_date` [now]
-4. `extract_expiry_date` [now]
-5. `extract_renewal_terms` [now]
-6. `extract_termination_terms` [now]
-7. `extract_payment_terms` [now]
-8. `extract_sla_terms` [now]
-9. `extract_reporting_obligations` [now]
-10. `extract_certification_obligations` [now]
-11. `extract_notification_obligations` [now]
-12. `extract_data_access_clauses` [now]
-13. `extract_confidentiality_obligations` [now]
-14. `extract_liability_indemnity_clauses` [now]
-15. `extract_audit_rights` [now]
-16. `extract_approval_requirements` [now]
-17. `detect_missing_contract_metadata` [now]
-18. `detect_conflicting_contract_clauses` [now]
-19. `compare_contract_vs_internal_policy` [now]
-20. `compare_customer_contract_vs_support_sop` [now]
-21. `compare_vendor_contract_vs_procurement_policy` [now]
-22. `detect_auto_renewal_risk` [now]
-23. `detect_price_increase_risk` [now — clause-level]
-24. `detect_contract_owner_gaps` [ES]
-25. `prepare_contract_review_brief` [assist]
-26. `prepare_renewal_decision_brief` [assist]
-27. `prepare_negotiation_points` [assist, synth]
-28. `generate_obligation_candidates_for_compliance` [now — feeds workbench 9 through the valve]
-29. `generate_vendor_intelligence_for_procurement` [now — feeds workbench 3]
-30. `generate_customer_obligation_inputs_for_cs` [now — feeds workbench 6]
+1. `summarize_contract` [assist — CONSOLIDATED → prepare_contract_review_brief (v2.1)]
+2. `extract_parties` [now — CONSOLIDATED → extract_contract_clauses (the `parties` clause_class)]
+3. `extract_effective_date` [now — CONSOLIDATED → extract_contract_clauses (`effective_date`)]
+4. `extract_expiry_date` [now — CONSOLIDATED → extract_contract_clauses (`expiry_date`)]
+5. `extract_renewal_terms` [now — CONSOLIDATED → extract_contract_clauses (`renewal`)]
+6. `extract_termination_terms` [now — CONSOLIDATED → extract_contract_clauses (`termination`)]
+7. `extract_payment_terms` [now — CONSOLIDATED → extract_contract_clauses (`payment`)]
+8. `extract_sla_terms` [now — CONSOLIDATED → extract_contract_clauses (`sla`)]
+9. `extract_reporting_obligations` [now — CONSOLIDATED → extract_contract_clauses (`reporting_obligation`)]
+10. `extract_certification_obligations` [now — CONSOLIDATED → extract_contract_clauses (`certification_obligation`)]
+11. `extract_notification_obligations` [now — CONSOLIDATED → extract_contract_clauses (`notification_obligation`)]
+12. `extract_data_access_clauses` [now — CONSOLIDATED → extract_contract_clauses (`data_access`)]
+13. `extract_confidentiality_obligations` [now — CONSOLIDATED → extract_contract_clauses (`confidentiality`)]
+14. `extract_liability_indemnity_clauses` [now — CONSOLIDATED → extract_contract_clauses (`liability_indemnity`)]
+15. `extract_audit_rights` [now — CONSOLIDATED → extract_contract_clauses (`audit_rights`)]
+16. `extract_approval_requirements` [now — CONSOLIDATED → extract_contract_clauses (`approval_requirements`)]
+17. `detect_missing_contract_metadata` [now — **ACTIVE (v2.1)**: absence declared per contract under the pinned taxonomy, never a fact about the world]
+18. `detect_conflicting_contract_clauses` [now — SEQUENCED (v2.1 ruling 3): the platform NLI conflict engine owns cross-asset contradiction; same-contract clause conflict needs its own ruling]
+19. `compare_contract_vs_internal_policy` [now — SEQUENCED (v2.1 ruling 3): v1.8 owns the shipped commercial case; a general comparison engine deserves its own evidence rule]
+20. `compare_customer_contract_vs_support_sop` [now — SEQUENCED (v2.1 ruling 3)]
+21. `compare_vendor_contract_vs_procurement_policy` [now — CONSOLIDATED → the shipped v1.8 `detect_vendor_policy_conflict` (the skill lives where its reader lives)]
+22. `detect_auto_renewal_risk` [now — CONSOLIDATED → the shipped v1.8 `detect_renewal_window`]
+23. `detect_price_increase_risk` [now — CONSOLIDATED → the shipped v1.8 `detect_price_increase_clauses`]
+24. `detect_contract_owner_gaps` [ES — stays per-workbench gated exactly as D32's minting ruled]
+25. `prepare_contract_review_brief` [assist — **ACTIVE (v2.1)**: THE REGISTER DISTINCTION — the brief may synthesize for a reader; that synthesis never becomes a fact]
+26. `prepare_renewal_decision_brief` [assist — SEQUENCED (v2.1 ruling 3)]
+27. `prepare_negotiation_points` [assist, synth — SEQUENCED (v2.1 ruling 3): negotiation synthesis is a posture question of its own]
+28. `generate_obligation_candidates_for_compliance` [now — CONSOLIDATED → extract_contract_clauses: the feed IS the engine's accepted output entering packages (v2.1: feeders are milestone behavior, not standalone skills)]
+29. `generate_vendor_intelligence_for_procurement` [now — CONSOLIDATED → extract_contract_clauses]
+30. `generate_customer_obligation_inputs_for_cs` [now — CONSOLIDATED → extract_contract_clauses]
 
 Cross-workbench feeding stays behind the valve: an extraction skill's
 output is a candidate for the consuming workbench's human gate, never
-a shared internal fact store.
+a shared internal fact store. **v2.1 makes this the milestone proof
+itself (THE SHARED ENGINE PROOF): one extraction contract, two
+UNCHANGED consumers (the v1.7 and v1.8 runners with zero edits), zero
+drift by asset id, no shared fact store.**
 
 ---
 
@@ -868,7 +878,7 @@ readers, and sequence markers. Statuses: [now] buildable in its document slice �
 | 3 | Procurement Document Intelligence | [now] | THE CLAUSE ARITHMETIC PROOF — every number/percentage verbatim + cited; only computed values are date windows over verbatim dates at the declared as_of | procurement/finance owner | v1.8 (SELECTED) |
 | 1 | Executive Operations Briefing | [now] (decision queue [gated: PMD]) | THE BRIEFING PROOF — every sentence cited or SYNTHESIS_INFERRED-declared; byte-identical per ledger cursor; zero door growth | CEO | v1.9 (recommended) |
 | 15 | Risk & Exception Stewardship | [gated: ES] (queue [shipped]) | THE STEWARDSHIP PROOF — queue recomputes identically from the ledger; decisions persist as events; no exception row exists | governance officer | v2.0 (the [ES] minting milestone) |
-| 16 | Contract Intelligence | [next: two consumers exist after v1.8] | THE SHARED ENGINE PROOF — one extraction contract, two consumers, zero drift, no shared fact store | general counsel / procurement | v2.1 candidate |
+| 16 | Contract Intelligence | [now] (**v2.1 SELECTED** — scoped at docs/contract-intelligence-v2.1.md) | THE SHARED ENGINE PROOF — one extraction contract, two UNCHANGED consumers, zero drift by asset id, no shared fact store | general counsel / procurement | v2.1 (in flight) |
 | 4 | Sales & Commitments Intelligence | [next: the diagnostic-subject ruling] | THE UNBACKED PROMISE PROOF — the unbacked promise found; the backed one silent; proposal claims never become knowledge | sales director | v2.1 candidate |
 | 6 | Customer Success / Retention | [next] | THE CUSTOM TERMS PROOF — per-customer deviation from standard terms found; conforming customer silent | CS lead | pull-driven |
 | 11 | Project / Delivery Intelligence | [next] | THE SCOPE DRIFT PROOF — contract obligation absent from the plan found from documents alone | delivery lead | pull-driven |

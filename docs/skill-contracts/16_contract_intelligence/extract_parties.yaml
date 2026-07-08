@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: extract_parties
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: extract_contract_clauses
+ratified_path: workbench/contract_intelligence/skills/extract_contract_clauses.yaml
 boundary_tags: [now]
 pattern: extract
 purpose: >

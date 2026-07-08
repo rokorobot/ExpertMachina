@@ -307,3 +307,74 @@ registry promotion, the pinned clause_class vocabulary, the forbidden
 vocabulary, THE EXTRACTION PRECONDITION PROOF — no runner in WS1).
 
 **Verdict: v2.1.0 WS0 PASSED.** WS1 may proceed.
+
+### WS1 — The contracts + the registry promotion + THE EXTRACTION PRECONDITION PROOF: evidence recorded, gate pending ratification (2026-07-08)
+
+Delivered:
+- **The bundle** (`workbench/contract_intelligence/`): the manifest
+  (canonical #16, THE PARAPHRASED CLAUSE posture + the 12-phrase
+  legal-conclusion forbidden vocabulary, the shared-engine ruling, THE
+  REGISTER DISTINCTION in the manifest bytes) + the THREE ratified
+  13-field contracts. `extract_contract_clauses` pins the CLOSED
+  fifteen-class `clause_class` taxonomy in a declared first-match
+  order with two marker regimes (commitment classes need explicit
+  markers; structural classes need a concrete anchor token) and the
+  contract_document_rule; `detect_missing_contract_metadata` declares
+  the required-metadata groups (term_boundary any-of; payment) and
+  ABSENCE_DECLARED honesty; `prepare_contract_review_brief` [assist]
+  carries THE REGISTER DISTINCTION as its operative rule.
+- **The registry promotion**: #16 ACTIVE (v2.1) with all thirty
+  subtasks annotated (the 15→1 engine consolidation; summarize →
+  brief; feeders 28–30 consolidated into the engine — the feed IS its
+  accepted output; 21–23 consolidated → the shipped v1.8 skills, "the
+  skill lives where its reader lives"; 24 stays [ES]-gated per D32;
+  five SEQUENCED). Drafts at exactly **3 ACTIVE / 22 CONSOLIDATED / 5
+  SEQUENCED / 1 FUTURE**, every ratified_path resolving; the global
+  sweep constants moved **23→26 ACTIVE / 18→40 CONSOLIDATED** (the
+  recorded-assertion-edit pattern, fourth occurrence) in
+  test_compliance_corpus.py, test_procurement_corpus.py, and
+  test_executive_fixture.py — all re-run green.
+
+**THE EXTRACTION PRECONDITION PROOF**
+(`backend/test_contract_corpus.py`, the 78th suite — six parts green;
+full harness 78/78):
+1. THE BUNDLE SHAPE: manifest ↔ contracts agree; the taxonomy pinned
+   + closed at 15 in the ratified order; the two regimes partition it;
+   the 16_ drafts at 3/22/5/1.
+2. Both corpora through the real pipeline: 24 documents → 86 PRIMARY
+   facts.
+3. **THE COVERAGE REPORT (empirical, honest)**: the declared rules
+   fire for 7/15 classes over 9 contract documents (12 clause
+   candidates); the load-bearing floor holds (payment, sla,
+   data_access, certification, approval + the term_boundary group).
+   **Declared fixture-uncovered, never papered over**: termination
+   (first-match SHADOWED — this corpus's termination sentences ride
+   under "Term and renewal" headings, so `renewal` legitimately wins),
+   notification_obligation (shadowed by data_access/renewal
+   vocabulary), expiry_date, audit_rights, reporting_obligation,
+   confidentiality, liability_indemnity, parties. **No new corpus is
+   needed for the load-bearing set** (ruling 7 satisfied); the
+   uncovered classes stay in the pinned taxonomy and produce no
+   register entry over this fixture.
+4. The register plants + the valve: 3 register proposals in the
+   ratified shape (the v1.9 filename convention) held DERIVED; 2
+   accepted by a human with VERIFIED provenance citing their PRIMARY
+   sources; the held plant stays CANDIDATE.
+5. **THE CONSUMER-MARKER PRECONDITION + THE CONVERGENCE (the
+   milestone's premise, proven before any runner)**: the accepted
+   CloudHost-SLA register entry is cited BY ASSET ID by findings of
+   BOTH unchanged consumers — the v1.7 compliance runner
+   (COMPLIANCE_OBLIGATION) and the v1.8 procurement runner
+   (VENDOR_TERM) — zero edits to either; the citation is
+   [DERIVED]-flagged in consumer proposal bytes; origin
+   `contract-intelligence` derivable from provenance; the held plant
+   reaches no package byte and no consumer finding.
+6. NO SHARED FACT STORE: neither consumer's source names the engine
+   (the feed is governed facts alone); the bundle ships NO runner at
+   WS1; route manifest 88 at its ratified digest; MCP 9; D24 28/305.
+
+**THE GATE (per WS0): user ratification of the three contracts, the
+pinned taxonomy (including the declared first-match shadowing), the
+registry promotion, and THE CONVERGENCE evidence is now requested. WS2
+(the runner, on Opus per the recorded routing) starts only on
+ratification.**

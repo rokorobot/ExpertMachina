@@ -1,0 +1,14 @@
+# DRAFT skill contract - the v2.1 consolidation TARGET (the v1.9
+# prepare_executive_briefing precedent): added at the WS1 promotion so
+# the register's engine has a draft-registry entry of its own.
+skill_id: extract_contract_clauses
+workbench: contract_intelligence   # 16. Contract Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/contract_intelligence/skills/extract_contract_clauses.yaml
+boundary_tags: [now]
+pattern: extract_candidates
+purpose: >
+  THE ENGINE: the pinned fifteen-class clause register extraction -
+  consolidates the fifteen extract_* drafts and the three feeder
+  drafts (the feed IS this skill's accepted output entering packages).
+  Ratified at the v2.1 WS0 gate (docs/contract-intelligence-v2.1.md).

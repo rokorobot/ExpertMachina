@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: compare_vendor_contract_vs_procurement_policy
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_vendor_policy_conflict
+ratified_path: workbench/procurement_intelligence/skills/detect_vendor_policy_conflict.yaml
 boundary_tags: [now]
 pattern: compare
 purpose: >
