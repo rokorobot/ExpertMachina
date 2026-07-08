@@ -1,0 +1,133 @@
+skill_id: detect_obligation_deadlines
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: declared-clock-window
+consolidates:
+  # the v2.2 consolidation ruling (WS0 gate, ruling 3): all three
+  # deferred drafts are point-in-time questions over explicit
+  # obligation dates - ONE contract with declared deadline classes and
+  # a declared window at the declared as_of. The v1.7 deadline
+  # deferral is RESOLVED by D32: detection is computed at read time;
+  # nothing here tracks, stores, or reminds.
+  - track_explicit_deadlines
+  - identify_upcoming_obligations_30_60_90
+  - detect_certification_expiry_risk
+purpose: >
+  Detect governed obligations whose EXPLICIT deadline falls inside the
+  declared window of the declared as_of - certification expiry,
+  reporting duties, notice periods, renewal dates, payment dates, and
+  generic dated duties - and flag explicit obligations whose time
+  language is vague or absent. Point-in-time detection ONLY: a re-run
+  at a different declared as_of is a new diagnosis, never an update.
+  No deadline table, no calendar store, no reminder, no work item
+  (D32: decisions persist; existence never does).
+deadline_convention:
+  deadline_classes: [certification_expiry, reporting, notice, renewal,
+                     payment, generic]
+  # the declared markers this skill reads from governed content; an
+  # obligation sentence with a deadline-context marker but no
+  # parseable concrete anchor is the AMBIGUITY finding, never a date.
+  marker_pattern: "(valid until|expires on|terminates on|due by|due on|no later than|dated) (\\d{4}-\\d{2}-\\d{2})"
+  duration_pattern: "(within|at least|no later than) (\\d+) (hours|days|business days|calendar days|months) (of|before|after)"
+  deadline_context_markers:
+    - "deadline"
+    - "due"
+    - "expires"
+    - "expiry"
+    - "valid until"
+    - "notice"
+    - "no later than"
+    - "within"
+  vague_time_markers:
+    # these markers NEVER become dates - they qualify the sentence for
+    # DEADLINE_AMBIGUITY, exactly as written, flagged not dated
+    - "promptly"
+    - "in a timely manner"
+    - "within a reasonable period"
+    - "as soon as practicable"
+    - "without undue delay"
+  window_rule: >
+    in-window if and only if as_of <= date <= (as_of + window_days).
+    as_of and window_days are DECLARED run parameters recorded
+    verbatim in every finding - never wall-clock, never defaulted.
+    A deadline date strictly before as_of may be reported only as
+    that arithmetic fact ("date D is before the declared as_of") -
+    never as a conduct claim (THE PRESUMED COMPLETION, refused).
+register_harvest: >
+  THE HARVEST (WS0 ruling 5): accepted DERIVED clause-register facts
+  from the Contract Intelligence engine (v2.1) are first-class inputs,
+  cited BY governed asset id like any approved fact - their
+  concrete-token rule already guarantees the date or duration anchor.
+  The register is read through the same doors; nothing is
+  re-extracted, nothing is fetched from the engine's files.
+allowed_inputs:
+  - the compiled expert package at binding clearance (explicit dated
+    obligation statements in approved facts, PRIMARY or DERIVED -
+    including accepted clause-register facts, cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional or
+    operational records (until [OE])
+  - wall-clock time (as_of is declared, never sampled)
+  - inferred, fiscal-relative, extrapolated, or guessed dates
+    (THE INVENTED DATE, the cardinal sin)
+  - vague time language converted to concrete dates
+  - completion, breach, or compliance status of any obligation
+    (THE PRESUMED COMPLETION - the workbench knows what documents
+    require and when, never what happened)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A DEADLINE finding requires the verbatim dated excerpt (asset id +
+  quote), the declared as_of and window_days recorded verbatim, and
+  the computed window verdict - the ONLY computed values are
+  deterministic date arithmetic over the verbatim-extracted date (the
+  v1.8 CLAUSE ARITHMETIC discipline, unchanged). An AMBIGUITY finding
+  requires the verbatim excerpt whose deadline context carries a
+  vague_time_marker or no parseable anchor - it never carries a date.
+  A date outside the window produces NO finding (declared). An
+  unparseable date is REFUSED, declared - never guessed.
+  evidence_basis: EXCERPT_BACKED.
+forbidden_vocabulary:
+  # THE PRESUMED COMPLETION sweep - none of these may appear in any
+  # finding byte as a claim about conduct
+  - "missed the deadline"
+  - "is overdue on its obligation"
+  - "has complied"
+  - "failed to comply"
+  - "is in breach"
+  - "outstanding obligation"
+  - "has not yet"
+allowed_finding_kinds: [OBLIGATION_DEADLINE, DEADLINE_AMBIGUITY]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the verbatim excerpt (asset id
+  + quote), the deadline class, the declared as_of + window_days, the
+  computed days-until figure (date arithmetic only) for DEADLINE
+  findings or the vague marker quoted verbatim for AMBIGUITY findings,
+  proposed action (schedule the human review - the workbench never
+  notifies, assigns, or tracks).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+  An accepted deadline fact is a document fact - it is NOT a
+  DUE_DATE_SET stewardship decision and never becomes one (the
+  NON-CONFLATION ruling; Guard 7 territory is untouched).
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - no as_of or window_days declared for the run -> refuse (never
+    sample the clock, never default the window)
+  - a deadline-context sentence with no parseable anchor and no vague
+    marker -> refuse that question, declared (never guess)
+  - the date is outside the declared window (no finding - a covered
+    control)
+  - a persistent calendar, reminder, or tracking request -> refuse
+    (the v1.8 refusal carries; the calendar is computed, never kept)
+  - an obligation completion/status question -> refuse, naming the
+    Operational Evidence Realm (unminted)
+question_frames:
+  - "Which governed obligations carry an explicit deadline inside the declared window?"
+  - "Which certification validity dates fall inside the declared window?"
+  - "Which explicit obligations state no concrete deadline?"

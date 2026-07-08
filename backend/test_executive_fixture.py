@@ -97,8 +97,8 @@ Q_GAP_2 = ("Which approved document states the board quorum required "
 Q_COVERED = ("Was the annual incident response plan test completed "
              "and the test report retained for audit review?")
 
-RATIFIED_ACTIVE = 26     # +3 contract-intelligence (v2.1 WS1 promotion)
-RATIFIED_CONSOLIDATED = 40   # +22 contract-intelligence consolidations (v2.1)
+RATIFIED_ACTIVE = 29     # +3 contract-intelligence (v2.1) +3 deadline-obligation (v2.2)
+RATIFIED_CONSOLIDATED = 44   # +22 contract-intelligence (v2.1) +4 deadline-obligation (v2.2)
 REQUIRED_FIELDS = (
     "skill_id:", "workbench:", "status:", "boundary_tags:", "purpose:",
     "allowed_inputs:", "forbidden_inputs:", "evidence_rules:",

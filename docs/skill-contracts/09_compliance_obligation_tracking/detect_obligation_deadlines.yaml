@@ -1,0 +1,38 @@
+# Skill contract minted at the v2.2 scoping session (the Deadline &
+# Obligation Intelligence extension - docs/deadline-obligation-v2.2.md,
+# WS0 ruling 3) and ratified into workbench/compliance_obligation/skills/
+# (registry rule 1). The consolidating successor entries of the former
+# deferred deadline family; the binding contract is the ratified file.
+skill_id: detect_obligation_deadlines
+workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
+status: ACTIVE
+ratified_path: workbench/compliance_obligation/skills/detect_obligation_deadlines.yaml
+boundary_tags: [now]
+pattern: deadline
+purpose: >
+  Detect explicit obligation deadlines inside the declared window at the declared as_of.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); explicit dates, durations, and
+  recurrence language inside governed sources - including accepted
+  clause-register facts (v2.1), cited by governed asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  transactional or operational records (until [OE]); wall-clock time;
+  inferred/extrapolated/guessed dates (THE INVENTED DATE);
+  completion or breach status (THE PRESUMED COMPLETION); other
+  skills' pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: verbatim
+  excerpts only; declared as_of + window_days recorded verbatim;
+  arithmetic only over verbatim dates; vague language flagged, never
+  dated; recurrence never expanded. evidence_basis: EXCERPT_BACKED.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - no declared clock/window -> refuse
+  - unparseable or vague anchors -> flagged or refused, never guessed
+  - persistence/tracking/notification -> refuse (the computed
+    calendar is a projection, never a store)
+  - operational status questions -> refuse, naming [OE]

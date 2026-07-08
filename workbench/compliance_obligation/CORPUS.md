@@ -55,3 +55,30 @@ wall-clock. The suites pin `as_of = 2026-06-01`:
 - The composition proof (WS3) re-enters accepted COMPLIANCE_OBLIGATION
   facts and re-runs `detect_missing_evidence` over the recompiled
   package — second-generation findings cite DERIVED evidence.
+
+---
+
+## The v2.2 extension corpus (`corpus_deadline/`) — the deadline plants
+
+**The WS1 corpus-gap ruling (2026-07-08, recorded in
+docs/deadline-obligation-v2.2.md):** the 12-document corpus above
+proved EMPIRICALLY insufficient for two v2.2 preconditions — it
+contains zero vague-time-language instances (THE AMBIGUITY PROOF had
+no material) and no explicit certification validity date. Per WS0
+ruling 10 the gap was stated and the user ratified a SEPARATE
+extension folder so the five shipped suites' 12-document assertions
+stay byte-untouched. Only the v2.2 suites ingest `corpus_deadline/`
+(a second connector in the same project).
+
+| Document | Plants |
+|---|---|
+| `certification-validity-notice.md` | **D1 (certification_expiry, dated)**: "valid until 2026-11-30" — the explicit certificate expiry date (marker_pattern material). **D2 (notice window)**: "must be scheduled at least 90 days before the certificate expiry date" — duration_pattern material anchored to an explicit date. |
+| `vendor-notification-guideline.md` | **A1–A3 (THE AMBIGUITY plants, deliberately date-free)**: "promptly" (incident notification), "within a reasonable period" (record archival), "in a timely manner" (escalation contact) — three explicit duties whose time language must yield DEADLINE_AMBIGUITY and NEVER a date. The document contains no parseable date anywhere, by design. |
+
+Covered WITHOUT plants (recorded so nobody re-plants what exists):
+recurrence material lives in the main corpus ("the annual ISO 27001
+surveillance audit", annual training, quarterly reviews); the
+notice/renewal dated material and THE HARVEST material live in the
+procurement corpus agreements ("terminates on 2026-08-15 … at least
+60 days before"); the relative reporting window lives in the DPA
+("within 72 hours").

@@ -175,3 +175,79 @@ extended runner; Guard 6 holds the vault seam; Guard 7 holds the
 stewardship boundary (Ruling 7). EM never launches the workbench
 (D22). Language rulings per Ruling 4 and the standing D29/D30
 provenance discipline.
+
+---
+
+## WS1 — the contracts, the promotion, and THE PRECONDITION PROOF (2026-07-08)
+
+**The corpus-gap ruling (mid-WS1, user-ratified):** the existing
+corpora proved EMPIRICALLY insufficient on exactly two preconditions —
+zero vague-time-language instances anywhere (THE AMBIGUITY PROOF had
+no material) and no explicit certification validity date. Per WS0
+ruling 10 the gap was stated and the user ratified the **extension
+folder**: `workbench/compliance_obligation/corpus_deadline/` (2 plant
+documents, plant map appended to CORPUS.md) that ONLY the v2.2 suites
+ingest — the five shipped suites' 12-document assertions stay
+byte-untouched. Recorded alongside: what was NOT planted because it
+already exists (recurrence in the compliance corpus; the dated
+notice/renewal + THE HARVEST anchors in the procurement agreements;
+the 72-hour reporting window in the DPA).
+
+**The three ratified contracts**
+(`workbench/compliance_obligation/skills/`):
+`detect_obligation_deadlines.yaml` (declared-clock-window; the CLOSED
+six-class `deadline_classes`; `marker_pattern` + `duration_pattern` +
+`vague_time_markers` declared in the bytes (runner-convention
+double-escape); `register_harvest` names the v2.1 register as
+first-class input BY asset id; the `forbidden_vocabulary` = THE
+PRESUMED COMPLETION sweep; OBLIGATION_DEADLINE + DEADLINE_AMBIGUITY),
+`extract_recurrence_rules.yaml` (verbatim markers + explicit interval
+pattern; `never_expand_rule`; RECURRENCE_RULE + RECURRENCE_AMBIGUITY),
+`prepare_obligation_calendar_brief.yaml` ([assist, synth]; the three
+mandatory sections; 07-confined; the v1.8 persistent-calendar refusal
+carried verbatim).
+
+**The promotion:** the four deferred drafts → CONSOLIDATED with
+`consolidated_into` + resolving `ratified_path` (6, 17, 18 →
+`detect_obligation_deadlines`; 7 → `extract_recurrence_rules`); three
+new ACTIVE draft entries minted; the registry #9 deferral block
+records the RESOLUTION by name; the manifest grows to nine declared
+skills and replaces `deferred_deliberately` with
+`deferral_resolved_v22`. Global sweep constants re-pinned **26→29
+ACTIVE / 40→44 CONSOLIDATED** across test_compliance_corpus /
+test_procurement_corpus / test_executive_fixture (test_contract_corpus
+pins only its own 16_ folder — untouched); the compliance sweep's
+deferral tracker now asserts the four former-deferred drafts are
+CONSOLIDATED (keyed on "the v2.2 promotion"), and the per-bundle
+manifest agreement moves to (compliance, 9).
+
+**THE PRECONDITION PROOF** (`backend/test_deadline_corpus.py`, the
+81st suite, six parts, green on the first full run after two honest
+fixes — the assist contract's wrapped-line assertion normalized, and
+the certification plant reworded to carry an obligation marker in the
+dated sentence, the recorded extractor discipline):
+1. THE BUNDLE SHAPE — manifest + 9 ratified contracts agree; every
+   binding convention declared on the bytes; **the runner deliberately
+   does not know the v2.2 skills yet** (contracts before runtime).
+2. 26 documents (12 compliance UNTOUCHED + 2 corpus_deadline + 12
+   procurement) → 96 approved PRIMARY facts through the real pipeline.
+3. THE DEADLINE MATERIAL REPORT — the contract's OWN parsed patterns
+   fire on real facts: 5 dated facts incl. both anchors (2026-11-30
+   certification, 2026-08-15 MSA), the 90-days + 72-hours duration
+   material, recurrence in 8 facts, and the 3 vague-language facts
+   each with ZERO parseable dates.
+4. THE WINDOW ARITHMETIC — declared as_of 2026-09-15 + 90d:
+   IN_WINDOW / BEFORE_AS_OF (arithmetic only, never conduct) /
+   OUTSIDE; byte-identical on re-run; zero conduct vocabulary
+   anywhere in the material.
+5. THE HARVEST precondition — the dated agreement clause is an
+   approved fact citable BY governed asset id; the v2.1 taxonomy
+   (parsed from ITS bytes) classifies it; no engine file read, nothing
+   re-extracted.
+6. THE NON-CONFLATION + zero-surface closers — ZERO
+   STEWARDSHIP_DECISION events; D24 at exactly 28/305; no route,
+   table, tool, guard, or law needed anywhere.
+
+**Harness: 81/81 green (7:51)** — the five shipped suites that pin
+the 12-document corpus untouched and green; Guard 7 untouched; route
+manifest 88; MCP 9. **No runner was built** (the WS sequence holds).

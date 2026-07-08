@@ -5,7 +5,12 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: track_explicit_deadlines
 workbench: compliance_obligation_tracking   # 9. Compliance / Obligation Tracking Workbench
-status: SEQUENCED (deliberately deferred to after the [ES] scoping - the v1.7 deadline deferral)
+status: CONSOLIDATED
+consolidated_into: detect_obligation_deadlines
+ratified_path: workbench/compliance_obligation/skills/detect_obligation_deadlines.yaml
+# the v1.7 deferral RESOLVED at the v2.2 promotion (docs/deadline-obligation-v2.2.md,
+# WS0 ruling 3): the tracking verb died at scoping - detection is computed at a
+# declared clock; nothing persists but human decisions (D32).
 boundary_tags: [now]
 pattern: deadline
 purpose: >

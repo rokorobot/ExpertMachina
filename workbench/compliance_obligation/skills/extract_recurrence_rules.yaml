@@ -1,0 +1,81 @@
+skill_id: extract_recurrence_rules
+workbench: compliance_obligation
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: extract-candidates
+consolidates:
+  # the v2.2 consolidation ruling (WS0 gate, ruling 3): the deferred
+  # tracking draft is ratified as EXTRACTION - the recurrence rule is
+  # quoted verbatim as a governed statement; it is never expanded into
+  # generated concrete occurrences and nothing tracks anything.
+  - track_recurrence_rules
+purpose: >
+  Extract explicit recurrence language from governed obligations -
+  "annually", "quarterly", "every N months", "each calendar year",
+  "within N days of quarter end" - VERBATIM, as a quoted fact about
+  what the document requires. A recurrence rule is a rule, not a
+  calendar: it is NEVER expanded into a list of future dates, and
+  ambiguous periodicity is flagged, never assumed.
+recurrence_convention:
+  recurrence_markers:
+    - "annually"
+    - "annual"
+    - "quarterly"
+    - "monthly"
+    - "each calendar year"
+    - "every calendar year"
+    - "each quarter"
+  explicit_interval_pattern: "every (\\d+) (days|weeks|months|years)"
+  ambiguity_rule: >
+    a recurrence-context sentence whose periodicity cannot be quoted
+    verbatim from one of the declared markers or the explicit interval
+    pattern ("periodically", "on a regular basis", "from time to
+    time") is RECURRENCE_AMBIGUITY - flagged exactly as written,
+    never normalized into a period.
+  never_expand_rule: >
+    no finding, brief, or proposal may enumerate computed future
+    occurrences of a recurrence rule. The rule travels verbatim; any
+    point-in-time window question belongs to
+    detect_obligation_deadlines over EXPLICIT dates only.
+allowed_inputs:
+  - the compiled expert package at binding clearance (explicit
+    recurrence statements in approved facts, PRIMARY or DERIVED -
+    including accepted clause-register facts, cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional or
+    operational records (until [OE])
+  - generated occurrence lists or projected future dates
+    (THE INVENTED DATE, the cardinal sin)
+  - whether any past occurrence actually happened
+    (THE PRESUMED COMPLETION)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires the verbatim recurrence excerpt (asset id +
+  quote) and the declared marker or interval it matched. An AMBIGUITY
+  finding quotes the vague periodicity verbatim and carries no
+  normalized period. Nothing is computed; nothing is expanded.
+  evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: [RECURRENCE_RULE, RECURRENCE_AMBIGUITY]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims; body = the verbatim recurrence excerpt
+  (asset id + quote), the matched marker or interval verbatim,
+  proposed action (record the rule as governed knowledge - never a
+  schedule, never a reminder).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - the periodicity cannot be quoted verbatim from a declared marker
+    or the explicit interval pattern -> RECURRENCE_AMBIGUITY, never a
+    normalized period
+  - expansion into future occurrences is requested -> refuse (the
+    never_expand_rule; the v1.8 persistent-calendar refusal carries)
+  - a completion/status question about past occurrences -> refuse,
+    naming the Operational Evidence Realm (unminted)
+question_frames:
+  - "Which governed obligations recur, in the document's own words?"
+  - "Which recurring duties state no verbatim periodicity?"
