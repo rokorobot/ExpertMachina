@@ -1054,8 +1054,9 @@ new door, table, or law.*
   deferred deadline-extraction family, `track_explicit_deadlines` /
   `track_recurrence_rules`, UNLOCKED since [ES]) await their own
   pressure and scoping session. Honest slots carry: the real-model
-  diagnostic run and the v1.2.0 live-SharePoint scan (neither is this
-  milestone's vehicle — there is no runner).
+  diagnostic run (a narrated clause extraction over a real contract is
+  a strong vehicle when a key exists) and the v1.2.0 live-SharePoint
+  scan.
 
 ## Future Direction
 

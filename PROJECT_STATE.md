@@ -27,11 +27,11 @@ branch `main` · tag `v2.1.0` = `2938286` (merge commit
 `29382864e568185b962c219d4b6d96ca499fc48a`); tag `v2.0.0` =
 `caa6d73`; tag `v1.9.0` = `a9ded83`; tag `v1.8.0` = `4bb0033`;
 checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
-release commit) per the standing release ruling — v2.0 shipped as one
-new route + one new module, no audit-hardening surface touched
-(`frontend/` and `backend/app/` are otherwise byte-identical to v1.9;
-route count is the one ratified exception) · **D32 minted — the
-register moves to D1–D32, deliberately no further law reserved** ·
+release commit) per the standing release ruling — v2.1 shipped as one
+workbench bundle directory + three test suites, no audit-hardening
+surface touched (`frontend/` and `backend/app/` are byte-identical to
+v2.0; route manifest unchanged at 88) · **D32 minted — the
+register stays at D1–D32, deliberately no further law reserved** ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
 backend/test_*.py, the nightly full-model NLI workflow, structured
