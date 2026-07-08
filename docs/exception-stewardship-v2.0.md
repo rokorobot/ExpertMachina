@@ -546,3 +546,20 @@ officer: would you run your weekly exception review from this queue —
 every decision durable and attributable, every exception honest about
 whether it still exists, and nothing tracked twice?"* The milestone
 closes on that verdict or it does not close.
+
+### THE COMMERCIAL VERDICT: PASSED (2026-07-08, user-ratified)
+
+**The gate ruling (user, verbatim):**
+
+> v2.0 WS3 — RATIFIED. The important thing is not that stewardship
+> exists — it is that stewardship does not become a second truth
+> system. That proof is now in place.
+
+**Verdict: v2.0.0 WS3 PASSED. THE MILESTONE CLOSES.** Risk & Exception
+Stewardship mints D32 — the fourth guard-backed law to open a new
+milestone door (after D25/D26/D29-D30/D31): the exception never
+becomes a row; the human decisions about it do. THE ROW TEST, THE
+LEDGER-ALONE RECONSTRUCTION, and THE VANISHING TEST close the loop
+THE STEWARDSHIP PROOF opened — a queue that annotates without ever
+becoming a parallel truth. Zero schema; the route manifest's first
+ratified 87→88 amendment; MCP untouched at 9; D24 held at 28/305.
