@@ -393,3 +393,54 @@ WS1 corpus proof; unchanged).
 Procurement workbench is now requested. WS3 (the milestone gate + THE
 CLAUSE ARITHMETIC PROOF stage + the commercial verdict) starts only on
 ratification.**
+
+### WS3 — THE MILESTONE GATE + THE CLAUSE ARITHMETIC PROOF: evidence recorded, THE COMMERCIAL VERDICT pending (2026-07-07)
+
+`backend/test_procurement_acceptance.py` (the 71st suite) — nine
+stages, all green; full harness 71/71:
+
+1–2. The 12-document corpus through the real pipeline (36 PRIMARY
+facts human-approved into the `procurement` domain, the EXECUTIVE memo
+seeded above package clearance); INTERNAL package + real AGENT binding.
+3–4. THE DIAGNOSIS through the doors at the declared clock (11
+proposals, all five kinds); the valve holding 66 candidates DERIVED
+under a global permissive Tier-1 policy AND a live approve-everything
+Tier-2 engine.
+5. A human accepts one finding per kind — 5 APPROVED DERIVED facts,
+every approval event quoting VERIFIED synthesis provenance.
+6. **THE CLAUSE ARITHMETIC PROOF (the distinctive v1.8 stage): 13
+numbers across every Finding statement, each traceable to a
+verbatim-cited clause or the declared clock arithmetic** (citation ids
+excluded as governed identifiers); "one fifth" stayed text with no
+digit; "20%" in no written byte; the unparseable date refused,
+declared; the noisy numbers in no proposal; window positive (days-until
+75) and negative both correct with the auto-renewal 60-day facet;
+supplier-named certification coverage (DataFlow missing / SecureStore
+covered); the vendor-policy conflict both directions; NO calendar
+artifact anywhere + the persistent-calendar request refused live;
+[OE]/[ES]/SEQUENCED refused live naming the decision.
+7. Composition standing: the 5 accepted DERIVED facts traveled into
+the recompiled package (pending proposals structurally absent); 5
+second-generation findings cite DERIVED evidence, flagged [DERIVED] in
+the proposal bytes.
+8. The vault before/after: all 5 accepted findings as marked DERIVED
+notes, visibly non-canonical; the untouchable floor held.
+9. THE CLOSING LINES: every approval event non-AGENT; every APPROVED
+DERIVED fact human-reviewed; 85 files sentinel-clean; **D24 at exactly
+28 tables / 305 columns**.
+
+**The in-browser before/after (recorded 2026-07-07): PASSED.** Seeded
+throwaway DB (the `.ui-gate-db` pattern, this branch's code, seed_v18):
+login as a governed GOVERNANCE_REVIEWER; Operations BEFORE — 11
+proposals, 66 held DERIVED, 0 accepted; ONE live **Accept as DERIVED**
+(the pre-existing review PATCH) → AFTER — 65 held, **1 accepted
+DERIVED**; zero console errors/warnings; the only non-2xx request is
+the pre-login session-restore probe (401 by design — the login gate).
+
+**The honest slots carry:** the ONE real-model diagnostic run (PENDING,
+no provider key; the renegotiation brief is this workbench's natural
+vehicle) and the v1.2.0 live-SharePoint scan.
+
+**THE GATE: THE COMMERCIAL VERDICT (ruling 11) — the user reads the
+exported diagnosis as the procurement/finance owner. The milestone
+closes on that verdict or it does not close.**
