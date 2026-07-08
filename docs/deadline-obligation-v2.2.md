@@ -330,3 +330,110 @@ acceptance suite derives its pins from FINDING_KINDS dynamically
 shipped suites — **the v1.7 suites pass byte-untouched**.
 
 **Harness: 82/82 green (8:04).** No PR, no merge, no tag, no release.
+
+---
+
+## WS3 — THE MILESTONE GATE + the four named proofs: evidence recorded, THE COMMERCIAL VERDICT pending (2026-07-08)
+
+**THE MILESTONE GATE** (`backend/test_deadline_acceptance.py`, the
+83rd suite, ten stages, green): 26 documents → 96 human-approved
+PRIMARY facts → INTERNAL package + real AGENT binding → **THE REAL
+REGISTER CHAIN** (the v2.1 engine proposed 147 register candidates,
+ALL held DERIVED under a live permissive Tier-1 + approve-everything
+Tier-2; the human accepted the dated termination clause → the DERIVED
+register fact) → the recompiled package → the extended runner ENGAGED
+at the declared clock pair (2026-07-10 + 60d, 51 findings).
+
+**THE HARVEST PROOF**: the deadline finding cites the register fact
+BY governed asset id (2026-08-15 → 36 days, declared arithmetic); the
+chain resolves finding → register (DERIVED, cited AS DERIVED) →
+PRIMARY #62 (cloudhost-master-services-agreement.md); the clause
+lives in approved knowledge EXACTLY TWICE (PRIMARY + register); the
+diagnosis wrote NOTHING governed. **The fingerprint ruling recorded
+openly**: the governed-knowledge byte fingerprint excludes three
+OPERATIONAL-EVIDENCE tables that grow on ANY authenticated read BY
+LAW — the audit ledger (every MCP call is a ledger event), the
+credentials table (token-use stamps), and identity_facts (D20: every
+authenticated resolution is identity-fact evidence). None is
+knowledge; everything else is byte-identical across every run.
+
+**THE COMPUTED CALENDAR** (the deferral's answer): all 52 computed
+outputs deleted → ZERO governed change; the same declared clock
+reproduced every byte (content-hash names identical); a re-declared
+clock (window 30) changed ONLY the legitimately computed fields — the
+dated findings left as declared OUTSIDE skips, the clock-free
+proposals byte-identical. *The calendar is a projection of governed
+facts at a declared clock, never a state machine.*
+
+**THE AMBIGUITY PROOF, on the bytes**: the three vague duties flagged
+verbatim and never dated; 14 flagged/recurrence proposals swept —
+every date in every such proposal is verbatim in its cited governed
+source; no recurrence expanded.
+
+**The valve + the human gate**: 305 candidates held DERIVED (never
+auto-approved); provenance verified against the governed binding; the
+human accepted ONE deadline finding → APPROVED, still DERIVED.
+
+**THE NON-CONFLATION PROOF**: zero STEWARDSHIP_DECISION events from
+every runner/valve/acceptance step; a real human DUE_DATE_SET decision
+recorded on a computed inbox exception co-exists with the accepted
+deadline fact — the decision in the ledger alone (D24 byte-identical,
+no table), the fact in governed knowledge, neither becoming the
+other; Guard 7 green and untouched in the harness; the [OE] status
+question refused live naming the unminted realm; [PMD] equally
+unneeded — no metadata ingress anywhere in the gate.
+
+**The structural closers**: route manifest 88 (frozen digest); the
+nine MCP tools; D24 byte-identical at 28/305; no route/table/tool/
+guard/law anywhere in the milestone.
+
+**Harness: 83/83 green (8:49).**
+
+**The in-browser before/after (the recorded recipe: seeded throwaway
+DB running the REAL machinery — engine → lane → human accept →
+recompile → engaged extension → lane):** the Operations **Workbench
+Catalog** card for Compliance & Obligation showing **51 proposals /
+305 held / 0 accepted / 6 skills fired** (the extension skills among
+them, named in the chips); the Proposal Pipeline origin chips
+("Compliance & Obligation · detect_obligation_deadlines") and the
+per-workbench filter live; the harvest proposal wearing **PROVENANCE
+VERIFIED** and **"cites 1 governed asset(s) (1 DERIVED —
+second-generation synthesis)"** — the register citation visible in
+the browser; ONE live **Accept as DERIVED** → the card updates to
+**304 held / 1 accepted DERIVED**, the accepted item still DERIVED
+and provenance-visible; the calendar brief ABSENT from the pipeline
+(07-confined, assist-only, never knowledge); **zero console
+errors/warnings — the only non-2xx request is the known pre-login
+session-restore 401.** The screenshot rasterizer times out in this
+preview environment (as at every gate since v1.9) — the DOM/text
+record above is the browser evidence, per the standing pattern.
+
+**Limitations, stated:** the deadline classes payment/notice are
+exercised only through the register/duration species on the existing
+corpora (declared at WS1 — the coverage report records what fires);
+recurrence-ambiguity has no corpus instance (the mechanism is
+contract-declared and runner-implemented; zero hits recorded
+honestly); the operational-evidence half of every deadline question
+("did it happen?") is refused by design until [OE] is someday minted.
+The honest slots carry: the ONE real-model diagnostic run (no
+provider key) and the v1.2.0 live-SharePoint scan.
+
+**THE GATE: THE COMMERCIAL VERDICT — the user answers as the
+compliance/obligation owner.** The question, verbatim: *"Would you
+let this computed obligation calendar support a weekly
+compliance/procurement review — every deadline source-cited, every
+vague obligation flagged, every recurrence declared, and no claim
+that the work was completed unless a separate governed operational
+evidence realm is someday minted?"* The milestone closes on that
+verdict or it does not close.
+
+**THE VERDICT: PASSED (2026-07-08).** The user, answering as the
+compliance/obligation owner, answered YES: the computed obligation
+calendar is accepted as the support for a weekly
+compliance/procurement review — every deadline source-cited, every
+vague obligation flagged, every recurrence declared, and no claim
+anywhere that the work was completed (the operational-evidence half
+stays honestly behind the unminted [OE] realm). The verdict was given
+against the full WS3 evidence record above, limitations stated and
+standing. THE MILESTONE GATE IS CLOSED; v2.2 Deadline & Obligation
+Intelligence ships as v2.2.0.
