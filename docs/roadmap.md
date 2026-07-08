@@ -34,6 +34,7 @@
 | v1.6.0 | Workbench Catalog v1 — the Customer Operations Workbench (the first commercial Operations Workbench; the 16-workbench catalog + master skill registry; NO new law, NO new guard, deliberately) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT ("useful, bounded, worth acting on"); 44 CI suites; 28/305 held; real-model slot honestly pending |
 | v1.7.0 | the Compliance & Obligation Workbench (second commercial workbench, catalog #9; `workbench/common.py` — the catalog's first reuse moment; THE COMPOSITION PROOF — registry rule 6 live for the first time) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the audit-facing reader); 48 CI suites; 28/305 held; honest slots carry |
 | v1.8.0 | the Procurement Document Intelligence Workbench (third commercial workbench, catalog #3; THE INVENTED NUMBER posture; THE CLAUSE ARITHMETIC PROOF; `workbench/common.py` with ZERO shared-module edits) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the procurement/finance owner); 71 CI suites; 28/305 held; the sellable trio complete |
+| v1.9.0 | the Executive Operations Briefing Workbench (the FIRST cross-workbench consumer, canonical #1; THE UNSOURCED SENTENCE posture; THE BRIEFING PROOF; the runner-local `BriefingGraphClient` adapter over the frozen `get_trust_score`; ZERO door growth) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CEO reader); 74 CI suites; 28/305 held; the briefing consumes its own human-accepted evidence gap; honest slots carry |
 
 ---
 
@@ -846,12 +847,72 @@ six-finding diagnosis a Customer Operations manager accepted as
   a distinctive named proof, and a passed Commercial Verdict; see
   [compliance-workbench-v1.7.md](compliance-workbench-v1.7.md) and
   [procurement-workbench-v1.8.md](procurement-workbench-v1.8.md).
-  **NEXT: v1.9 Executive Operations Briefing** (the first
-  cross-workbench consumer, zero door growth), then **v2.0 Risk &
-  Exception Stewardship** (the [ES] minting milestone, its own
-  scoping session). Contract Intelligence (catalog #16) is now
-  earnable — two consumer workbenches exist. Honest slots carry: the
-  real-model diagnostic run and the live SharePoint scan.
+  **The first cross-workbench consumer shipped as v1.9.0** (below).
+  Contract Intelligence (catalog #16) is now earnable — two consumer
+  workbenches exist. Honest slots carry: the real-model diagnostic run
+  and the live SharePoint scan.
+
+## v1.9.0 — the Executive Operations Briefing Workbench (Completed)
+
+**The first cross-workbench consumer (2026-07-08; build contract +
+all gate records:
+[executive-briefing-v1.9.md](executive-briefing-v1.9.md)).** The
+product claim proven: *ExpertMachina can compose the governed state
+the sellable trio produced into a leadership briefing where every
+sentence is cited, clocked, or declared synthesis, and the briefing
+states exactly what it cannot see* — closed by THE COMMERCIAL VERDICT
+on the CEO's question ("trustworthy enough to replace a status
+meeting, bounded enough that you know exactly what it will not tell
+you").
+
+- **A consumer, never a subsystem, with ZERO door growth**: the
+  visibility budget is the nine frozen MCP tools + the `.empkg`, end
+  to end. The runner (`workbench/executive_briefing/`, six ratified
+  contracts driving it at runtime) reads accepted findings with
+  `source_class` + workbench-of-origin (derived from
+  `provenance.source_document`), conflicts, trust components,
+  revisions since the declared `since`, and the unknowns (declared
+  question frames through `consume()` — refusals ARE the gaps). The
+  runner-local `BriefingGraphClient` is a recorded adapter over the
+  EXISTING frozen `get_trust_score` tool — a subclass, not a new door;
+  `workbench/common.py` is unchanged a third time.
+- **THE UNSOURCED SENTENCE (the cardinal sin)** + its twin FALSE
+  COMPLETENESS: every briefing sentence carries a governed citation,
+  is the declared clock, or sits inside an explicitly framed section
+  (SYNTHESIS_INFERRED / the mandatory "What this briefing cannot see"
+  boundary); the manifest's 12-phrase forbidden vocabulary is refused
+  on every written byte. Read-compose summaries never re-enter
+  knowledge (circular derivation, refused); exactly one skill proposes
+  — `generate_unknowns_evidence_gaps_report` emits
+  EXECUTIVE_EVIDENCE_GAP findings, because a documented gap is
+  genuinely new information.
+- **THE BRIEFING PROOF (the distinctive WS3 stage)**: an independent
+  test-side sentence sweep (182 cited-section lines each carrying a
+  governed token); every DERIVED citation origin-named; byte-identical
+  regeneration at the declared clock; THE PENDING-PROPOSAL SENTINEL +
+  the EXECUTIVE sentinels absent from every written and packaged byte;
+  the boundary section quotes the gateway's exclusion counts VERBATIM;
+  a COVERED question leaves no gap, no proposal, no byte; 13 refusals
+  live; route-manifest digest byte-identical, MCP frozen at 9 tools,
+  D24 at 28/305.
+- **The gates**: THE CROSS-WORKBENCH FIXTURE + THE FIXTURE PROOF (both
+  trio corpora in one project, origins derivable, the pending sentinel
+  bounded — before any runner), THE DIAGNOSIS PROOF, THE MILESTONE
+  GATE (the valve under a permissive Tier-1 + live approve-everything
+  Tier-2; ONE human acceptance with verified provenance; **the
+  briefing consuming its own accepted gap** — the next briefing cites
+  it [DERIVED, origin: executive-briefing]; the vault before/after;
+  closing at 28/305), and the in-browser before/after (Accept-as-
+  DERIVED of the executive evidence-gap finding live, 308→307 held /
+  2→3 accepted, zero console errors). **No new law, a fourth time: no
+  D32, no seventh guard family** — Guard 5 swept the runner with zero
+  edits.
+- **NEXT: v2.0 Risk & Exception Stewardship** (the [ES] minting
+  milestone — its own scoping session, likely the seventh guard
+  family, the ruled shape "the exception never becomes a row; the
+  human decisions about it do"). Honest slots carry: the real-model
+  diagnostic run (a narrated briefing over real governed facts is the
+  natural vehicle) and the v1.2.0 live-SharePoint scan.
 
 ## Future Direction
 

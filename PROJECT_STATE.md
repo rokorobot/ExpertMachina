@@ -4,16 +4,19 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-07 · current version **v1.8.0** (the Procurement
-Document Intelligence Workbench — the THIRD commercial workbench,
-canonical catalog #3: six ratified skill contracts driving the runner
-at runtime, THE CLAUSE ARITHMETIC PROOF executed as the named
-distinctive WS3 stage, THE COMMERCIAL VERDICT passed by the
-procurement/finance owner; all four workstreams user-ratified end to
-end in one milestone) · branch `main` · tag `v1.8.0` = `4bb0033`;
-checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
-release commit) per the user's v1.8 release ruling — v1.8 shipped
-purely as a new workbench bundle, no audit-hardening surface touched ·
+**Snapshot:** 2026-07-08 · current version **v1.9.0** (the Executive
+Operations Briefing Workbench — the FIRST cross-workbench consumer,
+canonical #1: six ratified skill contracts driving the runner at
+runtime, THE BRIEFING PROOF executed as the named distinctive WS3
+stage, THE COMMERCIAL VERDICT passed by the CEO reader; the briefing
+consumes its own human-accepted evidence gap; ZERO door growth — the
+nine frozen MCP tools + the `.empkg` were the entire visibility
+budget; all four workstreams user-ratified end to end in one
+milestone) · branch `main` · tag `v1.9.0` = `a9ded83`; tag `v1.8.0` =
+`4bb0033`; checkpoint tag `post-audit-hardening` still at `c2179c2`
+(the v1.7 release commit) per the standing release ruling — v1.9
+shipped purely as a new workbench bundle, no audit-hardening surface
+touched (`frontend/` and `backend/app/` byte-identical to v1.8) ·
 register through D31 (**still no D32, deliberately**) ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
 + the release log below): pytest harness auto-discovery over every
@@ -152,6 +155,37 @@ proved unchanged on a third workbench. THE COMMERCIAL VERDICT (the
 user as the procurement/finance owner) closed the milestone; the
 in-browser before/after (66 held/0 accepted → 65/1 live, zero console
 errors) is the recorded release evidence.
+v1.9.0 delivers the FIRST cross-workbench consumer (Executive
+Operations Briefing, canonical #1): it reads the governed state the
+sellable trio produced and composes a leadership briefing with **ZERO
+door growth** — the nine frozen MCP tools + the `.empkg` are the
+entire visibility budget. Six ratified contracts DRIVE the runner
+(the executive question frames, the origin convention, the section
+list, the boundary declarations, and the forbidden vocabulary all
+parsed from the YAMLs). **THE UNSOURCED SENTENCE is the cardinal
+sin**: every briefing sentence is governed-cited, the declared clock
+(as_of/since, never wall-clock), or inside an explicitly framed
+section (SYNTHESIS_INFERRED / the mandatory "What this briefing cannot
+see" boundary); its twin FALSE COMPLETENESS is refused by the boundary
+section + the 12-phrase forbidden vocabulary on every written byte.
+Read-compose summaries never re-enter knowledge (circular derivation,
+refused by ruling); exactly one skill proposes
+(`generate_unknowns_evidence_gaps_report` → EXECUTIVE_EVIDENCE_GAP,
+because a documented gap is genuinely new information). The
+runner-local `BriefingGraphClient` is an adapter over the EXISTING
+frozen `get_trust_score` tool (a subclass, not a new door);
+`workbench/common.py` is unchanged a third time. **THE BRIEFING PROOF**
+(the named distinctive WS3 stage) swept 182 cited-section lines each
+carrying a governed token, every DERIVED citation origin-named, the
+pending + EXECUTIVE sentinels absent from every written and packaged
+byte, the boundary quoting the gateway's exclusion counts verbatim,
+and a covered question leaving no gap/proposal/byte. The distinctive
+v1.9 turn: **the briefing consumes its own human-accepted evidence
+gap** — accept one EXECUTIVE_EVIDENCE_GAP at the valve and the next
+briefing cites it `[DERIVED, origin: executive-briefing]` and reports
+it in what-changed. THE COMMERCIAL VERDICT (the user as the CEO)
+closed the milestone; the in-browser before/after (308 held/2 accepted
+→ 307/3 live, zero console errors) is the recorded release evidence.
 
 **The mission, stated fully (July 2026 strategy sessions): ExpertMachina is a
 two-realm system.** The Knowledge Realm (built, v0.x–v1.1.1) preserves company
@@ -376,6 +410,7 @@ Outside `backend/app/` (deliberately — D29/D22):
 | `workbench/common.py` | **v1.7.0 WS2 (ruling 6): the shared runner plumbing** — the catalog's first reuse moment: door setup, contract loading + ACTIVE gating, the inherited same-subject evidence helpers, the MCP stdio door, content-hashed proposal writing. Stdlib-only, Guard 5-swept. Reuse is by RELATIVE import (`from ..common import …`) — Guard 5 skips relative imports; an absolute `from workbench.common import` trips the doors-only sweep |
 | `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list) + `skills/*.yaml` (six ratified 13-field contracts) + `runner.py` (on common.py; contracts drive runtime — markers/rules/frames/marker_pattern PARSED from the YAMLs; declared as_of clock, refused if absent; gated skills refused live naming the unminted decision; posture enforced pre-write; DERIVED cited as DERIVED) + `corpus/` (12 documents; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/procurement_intelligence/` | **v1.8.0: the third commercial workbench bundle** — `workbench.yaml` (canonical #3, THE INVENTED NUMBER posture + the numeric-overclaim forbidden_vocabulary, the declared clock, the [OE]/[ES]/SEQUENCED lists) + `skills/*.yaml` (six ratified 13-field contracts, incl. the declared `subject_boilerplate_stopwords` evidence-rule refinement) + `runner.py` (on common.py, ZERO shared-module edits; term_class rules/date marker_pattern+auto-renewal+context markers/increase markers/certification requirement+question_template/named policy all PARSED from the YAMLs; date-window arithmetic ONLY from verbatim dates at declared as_of+window_days; the persistent-calendar request refused live) + `corpus/` (12 documents incl. the paraphrase-trap and unparseable-date plants; `CORPUS.md` = the plant map, outside the scanned folder) |
+| `workbench/executive_briefing/` | **v1.9.0: the first cross-workbench consumer** — `workbench.yaml` (canonical #1, THE UNSOURCED SENTENCE posture + the 12-phrase forbidden_vocabulary, the visibility budget, the findings ruling, the [PMD]/[OE]/[ES] gated list) + `skills/*.yaml` (six ratified 13-field contracts: five read-compose [now] + one gap [now] + `prepare_executive_briefing` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits; the executive frames/origin convention/section list/boundary declarations PARSED from the YAMLs; the declared as_of+since clock, refused if absent; THE UNSOURCED SENTENCE enforced pre-write; exactly one EXECUTIVE_EVIDENCE_GAP proposal kind; the runner-local `BriefingGraphClient` = a subclass adapter over the frozen `get_trust_score`, never a new door). No corpus of its own — the input is the governed state the trio produced |
 | `tools/generate_skill_contracts.py` | **v1.6.0: the skill-contract generator** — the master inventory as data (16 workbenches, ~360 subtasks) deterministically emitting one 13-field draft YAML per skill into `docs/skill-contracts/`; drafts are scaffolding, never runtime permission (promotion happens at each workbench's scoping session) |
 | `vault/` | **v1.4.0 WS3: the vault skeleton** — `00_system/agent-contract.md` (the operative contract: valve, lanes, frontmatter spec, deployment discipline) + `bootstrap.py` (stdlib-only, idempotent: creates `00_system` / `07_agent_workspaces` (ungoverned scratch, never scanned) / `08_proposals` (the only agent-writable governed ingress); folders 01–06 reserved for the v1.5 vault renderer) |
 
@@ -538,6 +573,12 @@ engine", or "agent wrote a fact".
 | WS2 | `16f0d76` | the Procurement runner on common.py (ZERO shared-module edits) + THE DIAGNOSIS PROOF (70th suite); the declared `subject_boilerplate_stopwords` evidence-rule refinement |
 | WS3 | `c58fcba`+`699d57b` | THE MILESTONE GATE (71st suite, first full run) + THE CLAUSE ARITHMETIC PROOF (13 statement-numbers, each verbatim-cited or declared-clock arithmetic) + composition standing + THE COMMERCIAL VERDICT PASSED (the procurement/finance owner) + the in-browser before/after (66→65 held, 0→1 accepted DERIVED, zero console errors) |
 | **v1.8.0** | PR #17 `4bb0033` (tag v1.8.0) | the sellable trio complete — customers (v1.6) · risk/compliance (v1.7) · money (v1.8); D24 held 28/305; harness 71/71 |
+| — | PR #18 `21fc3d2` | release: v1.8.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| WS0 | `1ae7de1` (part of `feat/v19-executive-briefing`) | v1.9 scoping ratified — the ACTIVE SIX, THE UNSOURCED SENTENCE posture, THE BRIEFING PROOF named, the cross-workbench fixture model, the findings ruling (only EXECUTIVE_EVIDENCE_GAP proposes), the [PMD]/[OE]/[ES] boundary, ZERO door growth |
+| WS1 | `9c30871` | the six ratified contracts (23 ACTIVE / 18 CONSOLIDATED globally) + THE CROSS-WORKBENCH FIXTURE + THE FIXTURE PROOF (72nd suite) — both trio corpora in one project, origins derivable, the pending sentinel bounded, the clock discriminating, before any runner |
+| WS2 | `7bea282` | the Executive Briefing runner on common.py (ZERO shared-module edits; the `BriefingGraphClient` adapter over the frozen `get_trust_score`) + THE DIAGNOSIS PROOF (73rd suite, eight parts, first run) |
+| WS3 | `666ee18`+`84e0827` | THE MILESTONE GATE (74th suite, eight stages) + THE BRIEFING PROOF (182 sourced lines, DERIVED origins named, sentinels/vocabulary on bytes, boundary truthfulness verbatim, the covered question traceless, 13 refusals live, zero door growth) + composition (the briefing consumes its own accepted gap) + THE COMMERCIAL VERDICT PASSED (the CEO reader) + the in-browser before/after (308→307 held, 2→3 accepted DERIVED, zero console errors) |
+| **v1.9.0** | PR #19 `a9ded83` (tag v1.9.0) | the first cross-workbench consumer — zero door growth (route manifest byte-identical, MCP frozen at 9 tools); D24 held 28/305; harness 74/74 |
 
 ## How to run
 
@@ -682,8 +723,23 @@ engine", or "agent wrote a fact".
   PROOF: every number in every finding statement traceable to a
   verbatim clause or the declared clock; `EM_COMMERCIAL_ARTIFACT_DIR`
   exports the diagnosis for the procurement/finance reader).
+  **v1.9.0 executive-briefing suites (in CI):**
+  `test_executive_fixture.py` (WS1 THE FIXTURE PROOF — the
+  cross-workbench governed state is real, origins derivable from
+  provenance, the pending sentinel bounded on bytes, the declared
+  `since` discriminating, the doors yielding the health signals —
+  before any runner; the draft≠ratified sweep at 23/18),
+  `test_executive_workbench.py` (WS2 THE DIAGNOSIS PROOF — six
+  contracts drive runtime, every sentence sourced, both DERIVED
+  origins named, the pending sentinel absent from every byte, the
+  boundaries refused live, byte-identical at the declared clock),
+  `test_executive_acceptance.py` (WS3 THE MILESTONE GATE + THE
+  BRIEFING PROOF: the independent sentence sweep, the boundary quoting
+  the gateway's exclusions verbatim, the covered question traceless,
+  the briefing consuming its own accepted gap; `EM_COMMERCIAL_ARTIFACT_DIR`
+  exports the briefing pack for the CEO reader).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (71 suites as of v1.8.0; keeping one out requires an explicit
+  (74 suites as of v1.9.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -853,13 +909,45 @@ carried: the real-model diagnostic run (PENDING, no key — the
 renegotiation brief is this workbench's vehicle) and the v1.2.0
 live-SharePoint scan.
 
-**NEXT: the sellable trio is complete.** Per the ratified catalog's
-full-inventory scoping (2026-07-07): **v1.9 Executive Operations
-Briefing** (accepted facts + governance health, zero door growth — the
-first cross-workbench consumer) is recommended next, then **v2.0
-Risk & Exception Stewardship** (the [ES] minting milestone — its own
-scoping session, likely the seventh guard family, the ruled shape "the
-exception never becomes a row; the human decisions about it do").
+**v1.9.0 DELIVERED (2026-07-08) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/executive-briefing-v1.9.md). The FIRST cross-workbench consumer —
+it reads the governed state the sellable trio produced — in four
+user-ratified gates: WS0 the rulings (the ACTIVE SIX, THE UNSOURCED
+SENTENCE posture + FALSE COMPLETENESS twin, THE BRIEFING PROOF named,
+the cross-workbench fixture model, the findings ruling — only
+EXECUTIVE_EVIDENCE_GAP proposes, summaries never re-enter knowledge —
+and the [PMD]/[OE]/[ES] boundary); WS1 the six contracts + THE
+CROSS-WORKBENCH FIXTURE + THE FIXTURE PROOF (both trio corpora in one
+project, origins derivable from provenance, the pending sentinel
+bounded on bytes, the declared `since` discriminating — before any
+runner; the global draft≠ratified sweep at 23 ACTIVE / 18
+CONSOLIDATED); WS2 the runner on `workbench/common.py` with **ZERO
+shared-module edits** (a third industrialization proof; the
+`BriefingGraphClient` adapter over the frozen `get_trust_score`, never
+a new door) + THE DIAGNOSIS PROOF; WS3 THE MILESTONE GATE + **THE
+BRIEFING PROOF** (182 sourced lines, DERIVED origins named, the
+pending + EXECUTIVE sentinels absent from every written/packaged byte,
+the boundary quoting the gateway's exclusions verbatim, the covered
+question traceless, 13 refusals live, zero door growth structural) +
+composition standing (**the briefing consumes its own human-accepted
+evidence gap** — the next briefing cites it `[DERIVED, origin:
+executive-briefing]`) + THE COMMERCIAL VERDICT (the CEO reader) + the
+in-browser before/after. **No new law, a fourth time: no D32, no
+seventh guard family** — Guard 5 swept the runner with zero edits. One
+gate-discovered fix recorded: the empty-note marker is a DECLARED
+ABSENCE source token ("mandatory sections, even when empty" was
+unwritable as built). The honest slots carried: the real-model
+diagnostic run (PENDING, no key — a narrated briefing over real
+governed facts is this workbench's vehicle) and the v1.2.0
+live-SharePoint scan.
+
+**NEXT: the sellable trio is complete and the first cross-workbench
+consumer has shipped.** Per the ratified catalog's full-inventory
+scoping: **v2.0 Risk & Exception Stewardship** (the [ES] minting
+milestone — its own scoping session, likely the seventh guard family,
+the ruled shape "the exception never becomes a row; the human
+decisions about it do") is next.
 Contract Intelligence (catalog #16, the shared extraction engine) is
 now EARNABLE — two consumers exist (Compliance + Procurement). Also on
 the table: the three named decisions when their pressure arrives (the
@@ -867,15 +955,17 @@ Operational Evidence Realm, Exception Stewardship, the Pipeline
 Metadata Door — the deferred deadline family unlocks after [ES]), the
 two honest slots above, and the standing backlog (SSO/SAML/SCIM; OS
 keystore/KMS; Confluence/Drive providers; Gemini/open-model adapters;
-**D23 — deferred through eight milestones**; embedding index inside
+**D23 — deferred through nine milestones**; embedding index inside
 .empkg; the remaining T3.x polish — main.py unused-import prune,
 Pydantic model_config, _iso dedup, N+1 citation batching; ruff/
 Dockerfile/pytest-cov/frontend tests). The narrative: v1.2→v1.5 built
 the substrate; v1.6 proved a business reader pays attention; v1.7
-proved the pattern repeats; **v1.8 proves the pattern industrializes —
-a third workbench, a truly unmodified shared foundation (zero
-common.py edits), and a domain-specific evidence discipline (numbers
-verbatim, windows on the declared clock) layered cleanly on top.**
+proved the pattern repeats; v1.8 proved the pattern industrializes (a
+third workbench, zero common.py edits, numbers verbatim); **v1.9
+proves the pattern composes — the first consumer that reads what other
+workbenches produced, cited every sentence or declared its boundary,
+and consumed its own human-accepted finding, all with ZERO door
+growth (the nine frozen tools + the .empkg were the whole budget).**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody
