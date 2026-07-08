@@ -1,0 +1,46 @@
+skill_id: prepare_contract_review_brief
+workbench: contract_intelligence
+status: ACTIVE
+boundary_tags: [assist]
+base_pattern: assist (per-contract brief)
+consolidates:
+  # summarize_contract folds in (v2.1 WS0 ruling 1): the brief IS the
+  # summary product, composed for a reader.
+  - summarize_contract
+purpose: >
+  Compose a per-contract review brief for a human reader from accepted
+  governed facts: the contract's register entries (clause_class,
+  verbatim excerpt, source), its declared metadata gaps, and any
+  governed conflicts touching its assets. THE REGISTER DISTINCTION
+  (v2.1 WS0, ruled): this brief may SYNTHESIZE for a reader, but that
+  synthesis never becomes a fact - assist output only, never a
+  proposal, never knowledge.
+allowed_inputs:
+  - the compiled expert package at binding clearance (accepted PRIMARY
+    facts and accepted DERIVED register entries, class-visible)
+  - MCP get_conflicts / get_provenance at the AGENT token's clearance
+forbidden_inputs:
+  - pending proposals, held candidates, or any ungated material (PMD)
+  - transactional records (until [OE])
+  - rendered vault notes as authority (D31)
+evidence_rules: >
+  Every clause statement in the brief is the verbatim excerpt with its
+  asset id; every gap is quoted from its accepted gap fact or declared
+  as computed-this-run; synthesis sentences (ordering, emphasis,
+  reading guidance) are framed as the brief's own voice and carry no
+  invented numbers, dates, or legal characterizations (the forbidden
+  vocabulary applies to every written byte).
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  One brief per contract to /07_agent_workspaces - never a proposal,
+  never knowledge (the v1.8 renegotiation-brief shape).
+human_approval_requirement: >
+  None - the output never enters knowledge.
+audit_event: >
+  MCP calls audited per call; package consumption locally verifiable.
+refusal_conditions:
+  - a request to include pending/held material (PMD - refused naming
+    the boundary)
+  - a request for negotiation strategy or legal advice (sequenced
+    [synth] territory and the twin sin, respectively)
+  - a run without a declared as_of

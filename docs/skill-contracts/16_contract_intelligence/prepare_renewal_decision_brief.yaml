@@ -5,7 +5,7 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_renewal_decision_brief
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: SEQUENCED   # v2.1 WS0 ruling 3 - deferred, not gated
 boundary_tags: [assist]
 pattern: assist
 purpose: >

@@ -105,8 +105,8 @@ OVERLAP_THRESHOLD = 6
 REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
-RATIFIED_ACTIVE = 23   # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 (v1.9)
-RATIFIED_CONSOLIDATED = 18   # 8 (v1.7) + 5 (v1.8) + 5 (v1.9)
+RATIFIED_ACTIVE = 26   # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 (v1.9) + 3 (v2.1)
+RATIFIED_CONSOLIDATED = 40   # 8 (v1.7) + 5 (v1.8) + 5 (v1.9) + 22 (v2.1)
 REQUIRED_FIELDS = (
     "skill_id:", "workbench:", "status:", "boundary_tags:", "purpose:",
     "allowed_inputs:", "forbidden_inputs:", "evidence_rules:",

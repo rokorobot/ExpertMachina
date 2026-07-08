@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_price_increase_risk
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_price_increase_clauses
+ratified_path: workbench/procurement_intelligence/skills/detect_price_increase_clauses.yaml
 boundary_tags: [now]
 pattern: finding
 purpose: >

@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_missing_contract_metadata
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: ACTIVE
+ratified_path: workbench/contract_intelligence/skills/detect_missing_contract_metadata.yaml
 boundary_tags: [now]
 pattern: missing_evidence
 purpose: >

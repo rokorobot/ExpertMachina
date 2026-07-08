@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_contract_review_brief
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: ACTIVE
+ratified_path: workbench/contract_intelligence/skills/prepare_contract_review_brief.yaml
 boundary_tags: [assist]
 pattern: assist
 purpose: >

@@ -1,0 +1,95 @@
+# The Contract Intelligence Workbench manifest (v2.1.0)
+# Canonical workbench #16 - THE SHARED ENGINE: one extraction contract
+# whose accepted output is the clause register the OTHER workbenches
+# cite through the valve. The FOURTH commercial workbench, earned by
+# two consumers existing (v1.7 Compliance, v1.8 Procurement).
+# Convention, not constitution.
+workbench: contract_intelligence
+canonical_number: 16
+status: ACTIVE
+version: 1
+milestone: v2.1
+purpose: >
+  Turn contracts the governed pipeline already holds into a clause
+  register - verbatim, class-declared, human-accepted DERIVED facts -
+  that the existing consumer workbenches cite as evidence through the
+  valve. One extraction feeds many readers with zero drift and no
+  shared fact store: the feed IS accepted governed knowledge.
+sensitivity_posture: >
+  THE PARAPHRASED CLAUSE is the cardinal sin: a shared engine
+  amplifies its own distortions into every consumer at once, so every
+  clause fact's statement is the VERBATIM excerpt - parties, dates,
+  amounts, percentages, and notice periods exactly as the contract
+  wrote them (THE INVENTED NUMBER posture inherited whole from v1.8).
+  Extraction adds ONLY declared structure: clause_class, contract,
+  party labels quoted from the text. Its twin is THE LEGAL
+  CONCLUSION: the engine states what the contract SAYS, never what is
+  legally true, enforceable, or advisable. The register distinction
+  (v2.1 WS0, ruled): narrative synthesis of accepted facts may never
+  become a fact; verbatim structure extraction may - through the
+  valve, with the source cited.
+forbidden_vocabulary:
+  # swept over every written byte at the WS2 gate
+  - "is enforceable"
+  - "is unenforceable"
+  - "is legally binding"
+  - "is void"
+  - "breaches"
+  - "violates the law"
+  - "you should sign"
+  - "you should terminate"
+  - "we recommend accepting"
+  - "legal advice"
+  - "this clause is valid"
+  - "this clause is invalid"
+domain_scope: ""   # cross-domain: contracts live in procurement AND compliance
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes: CONTRACT_CLAUSE and CONTRACT_METADATA_GAP proposals to
+    <vault>/08_proposals; the review brief (assist) to
+    <vault>/07_agent_workspaces
+declared_clock: >
+  as_of is a DECLARED run parameter recorded verbatim - wall-clock is
+  never sampled; a run without it is refused.
+skills:
+  - detect_missing_contract_metadata
+  - extract_contract_clauses
+  - prepare_contract_review_brief
+shared_engine_ruling: >
+  The feeder subtasks (registry 28-30) are not runtime skills - they
+  are this milestone's structural property: an accepted clause fact
+  enters packages like any governed fact, and the UNCHANGED consumer
+  workbenches cite it AS DERIVED with origin contract-intelligence.
+  Cross-workbench feeding stays behind the valve, never a shared
+  internal fact store; the runners share no imports beyond
+  workbench/common.py.
+schema_posture: >
+  Zero schema, zero backend change, zero new endpoints, MCP tools, or
+  UI areas. Route manifest stays 88 at its ratified digest; the MCP
+  surface stays 9; D24 holds at 28 tables / 305 columns. No D33; no
+  eighth guard family - a genuine new seam PAUSES the milestone for
+  its own ruling, never a quiet mint.
+refused_until_minted:
+  operational_evidence: pricing-vs-invoice and spend verification (the
+    registry's v2 column for this workbench)
+  pipeline_metadata_door: agent visibility of held candidates or
+    pipeline state
+  exception_stewardship_scope: detect_contract_owner_gaps stays
+    [ES]-gated per-workbench exactly as D32's minting ruled
+sequenced_deliberately:
+  compare_family: compare_contract_vs_internal_policy and
+    compare_customer_contract_vs_support_sop (v1.8 owns the shipped
+    commercial case; a general comparison engine deserves its own
+    evidence rule)
+  clause_conflicts: detect_conflicting_contract_clauses (the platform
+    NLI conflict engine owns cross-asset contradiction; same-contract
+    clause conflict needs its own ruling)
+  synthesis_briefs: prepare_renewal_decision_brief and
+    prepare_negotiation_points (negotiation synthesis is a posture
+    question of its own)

@@ -1,0 +1,133 @@
+skill_id: extract_contract_clauses
+workbench: contract_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: extract-candidates (contract-structure axis)
+consolidates:
+  # the v2.1 WS0 consolidation ruling (ratified): clause extraction
+  # differs only by clause class - ONE contract with a PINNED, CLOSED
+  # clause_class taxonomy; the fifteen absorbed drafts carry
+  # consolidated_into + ratified_path here, and the three feeder
+  # drafts (registry 28-30) consolidate here too because the feed IS
+  # this skill's accepted output entering packages.
+  - extract_parties
+  - extract_effective_date
+  - extract_expiry_date
+  - extract_renewal_terms
+  - extract_termination_terms
+  - extract_payment_terms
+  - extract_sla_terms
+  - extract_reporting_obligations
+  - extract_certification_obligations
+  - extract_notification_obligations
+  - extract_data_access_clauses
+  - extract_confidentiality_obligations
+  - extract_liability_indemnity_clauses
+  - extract_audit_rights
+  - extract_approval_requirements
+  - generate_obligation_candidates_for_compliance
+  - generate_vendor_intelligence_for_procurement
+  - generate_customer_obligation_inputs_for_cs
+purpose: >
+  Extract explicit contract clauses from approved governed contract
+  documents as clause-register candidates for the human gate. Every
+  candidate quotes its excerpt VERBATIM and declares exactly one
+  clause_class from the pinned taxonomy. Extraction states what the
+  contract SAYS - never what is legally true, enforceable, or
+  advisable, and never a paraphrase (THE PARAPHRASED CLAUSE is the
+  cardinal sin; THE LEGAL CONCLUSION its twin). An accepted candidate
+  becomes a DERIVED register entry that any consuming workbench may
+  cite through its own package - the shared engine, behind the valve.
+clause_class_taxonomy:
+  # PINNED and CLOSED (v2.1 WS0 ruling 1): exactly fifteen classes.
+  # Deterministic FIRST-MATCH keyword rules over the excerpt, in this
+  # order (order is part of the ratified contract); a sentence
+  # matching no rule is NOT a clause candidate - extraction refuses,
+  # never guesses. A class is assigned only when the excerpt itself
+  # carries the class's language.
+  - approval_requirements: "written approval" or "prior written"
+  - renewal: "renew"
+  - termination: "terminat"
+  - effective_date: "effective date"
+  - expiry_date: "expires" or "expiry"
+  - sla: "availability", "uptime", or "service level"
+  - data_access: "subprocessor", "personal data", or "data access"
+  - notification_obligation: "notify" or "notice"
+  - certification_obligation: "certificat" or "iso 27001"
+  - audit_rights: "audit"
+  - reporting_obligation: "report"
+  - confidentiality: "confidential"
+  - liability_indemnity: "liabilit", "liable", or "indemn"
+  - payment: "payable", "invoice", "payment", or "fee"
+  - parties: "between" or "agreement with"
+marker_regimes:
+  # Two regimes, declared (the v1.8 explicit-marker discipline,
+  # widened to contract structure):
+  commitment_classes:
+    # these classes are obligations/rights - a candidate must ALSO
+    # carry an explicit commitment marker; never "should", "may
+    # consider", or implied duty
+    classes: [sla, data_access, notification_obligation,
+              certification_obligation, audit_rights,
+              reporting_obligation, confidentiality,
+              liability_indemnity, approval_requirements]
+    explicit_markers: ["must", "shall", "is required to",
+                       "will provide", "holds a current"]
+  structural_classes:
+    # these classes ARE declarative contract structure - the class
+    # keywords plus a concrete token (a date, a number, a duration, or
+    # a named party) qualify the sentence; no commitment verb needed
+    classes: [renewal, termination, effective_date, expiry_date,
+              payment, parties]
+    concrete_token_rule: >
+      the excerpt must contain a date (YYYY-MM-DD), a number, a
+      duration word (days/months/years/anniversary), or a
+      capitalized party name - structure without a concrete anchor is
+      not a clause.
+contract_document_rule: >
+  Extraction walks documents whose title names an agreement
+  ("Agreement", "Addendum", "Schedule", "MSA", "SLA") - the declared
+  contract-document scope; policy and procedure documents are the
+  CONSUMERS' territory, not the register's.
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    contract document content only, per the contract_document_rule)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; transactional records
+    (until [OE])
+  - implied, inferred, or PARAPHRASED clauses (verbatim or nothing)
+  - other skills' pending (ungated) findings
+  - rendered vault notes as authority (D31)
+evidence_rules: >
+  Every candidate quotes its excerpt verbatim and cites the source
+  asset id; every number, date, amount, percentage, and notice period
+  appears exactly as the contract wrote it or not at all (THE INVENTED
+  NUMBER posture, inherited from v1.8); exactly one clause_class from
+  the pinned taxonomy, assigned by the declared first-match rules;
+  party labels are quoted from the text, never resolved against an
+  org chart. evidence_basis: EXCERPT_BACKED.
+allowed_finding_kinds: [CONTRACT_CLAUSE]
+output_format: >
+  One proposal document per clause candidate to /08_proposals with the
+  D30 + catalog frontmatter claims (workbench: contract-intelligence,
+  the clause_class declared in the body, cited_assets naming the
+  source). Accepted candidates are the clause register: DERIVED facts
+  with origin contract-intelligence derivable from
+  provenance.source_document (the v1.9 filename convention).
+human_approval_requirement: >
+  The valve (D29): every clause candidate is a held CANDIDATE until a
+  human accepts it as a DERIVED fact; no policy tier ever applies.
+  Consumers cite ONLY accepted register entries - cross-workbench
+  feeding stays behind the valve (registry rule; v2.1 WS0 ruling 5).
+audit_event: >
+  MCP calls audited; scan/hold/gate events are the ledger trail;
+  approval quotes verified provenance verbatim.
+refusal_conditions:
+  - a sentence matching no pinned clause_class rule (extraction
+    refuses; UNCLASSIFIED is not a register entry)
+  - a commitment-class sentence without an explicit marker
+  - a structural-class sentence without a concrete anchor token
+  - any paraphrase, summary, or legal characterization of a clause
+  - a document outside the contract_document_rule
+  - a run without a declared as_of

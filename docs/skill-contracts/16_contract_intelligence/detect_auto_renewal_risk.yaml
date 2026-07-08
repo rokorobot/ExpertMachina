@@ -5,7 +5,9 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_auto_renewal_risk
 workbench: contract_intelligence   # 16. Contract Intelligence Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_renewal_window
+ratified_path: workbench/procurement_intelligence/skills/detect_renewal_window.yaml
 boundary_tags: [now]
 pattern: deadline
 purpose: >
