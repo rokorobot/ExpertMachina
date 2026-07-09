@@ -1,0 +1,117 @@
+# The Operations / Process Improvement Workbench manifest (v1.0.0)
+# Canonical workbench #8 (Operations / Process Improvement) in the
+# 16-workbench catalog - the SEVENTH commercial bundle and the
+# substrate's consumer through the existing doors only. Convention, not
+# constitution: this manifest governs the runner; its claims travel in
+# proposal frontmatter, recorded verbatim at the gate, verified where
+# governed records permit, never obeyed.
+#
+# THE SPINE (carried verbatim into every gate): the Operations workbench
+# diagnoses governed PROCESS documents - contradictions across process
+# documents, SOP-vs-policy mismatches, undefined handoffs, and outdated
+# process documents. It reports what the documents SAY and where they
+# DISAGREE, MISS a handoff, or are SUPERSEDED. It NEVER asserts what a
+# process actually did, who actually performed a step, or when a step
+# actually ran - that is operational-execution truth ([OE]), refused.
+workbench: operations_process_improvement
+canonical_number: 8
+status: ACTIVE
+version: 1
+milestone: v1.0
+purpose: >
+  Diagnose document-governed process gaps: contradictory instructions
+  across process documents, SOP content that conflicts with a governing
+  policy on declared axes, process steps whose handoff (next owner,
+  trigger, or receiving procedure) is undefined, and process documents
+  that appear superseded or stale by revision-backed evidence. Also
+  compose a cited, visibly NON-AUTHORITATIVE map of the documented
+  process (assist). Document-governed slice only (D27): approved
+  process documents (SOPs, policies, procedures) are the ONLY inputs.
+  This workbench is PROCESS-DOCUMENT intelligence, not process
+  EXECUTION - it never determines what actually happened in a process.
+sensitivity_posture: >
+  THE INVENTED PROCESS is the cardinal sin. Every owner, trigger, step,
+  date, or handoff named in a finding is either quoted verbatim from a
+  cited approved process document, or the finding explicitly reports its
+  ABSENCE (an undefined handoff, a missing receiving procedure) - the
+  workbench NEVER invents an owner, a next step, a trigger, or a date to
+  fill a gap. THE COMPLETED RUN is the twin sin: the workbench NEVER
+  asserts that a process step was actually performed, completed, skipped,
+  or executed by anyone (ran, performed, executed, completed by, was
+  done, was carried out) from any evidence at all - it knows what the
+  documents INSTRUCT, never what actually happened. Document-grounded, or
+  refused.
+the_instruction_execution_distinction: >
+  The boundary is not whether a document describes a step - it is whether
+  the system asserts execution truth. A document SENTENCE about a step
+  ("the IT team provisions the laptop") is a governed INSTRUCTION, in
+  scope. An assertion that a specific step WAS RUN ("the laptop was
+  provisioned on 2026-05-02", "the engineer completed the deployment")
+  is an execution RECORD, [OE], refused.
+forbidden_vocabulary:
+  # swept over every written finding/map byte at the gate - THE
+  # COMPLETED RUN made mechanical; each phrase is an assertion of
+  # execution truth the doors cannot and must not evidence.
+  - "was performed"
+  - "were performed"
+  - "was executed"
+  - "was completed by"
+  - "was carried out"
+  - "actually ran"
+  - "the step ran"
+  - "did complete the"
+  - "log shows"
+  - "audit trail shows"
+  - "ticket was closed on"
+  - "the run completed"
+forbidden_inputs:
+  # the execution/operational classes - refused at runtime, each naming
+  # [OE]; an execution-record document (a run log, a completed ticket,
+  # a timestamped audit entry) is DECLINED as process-gap evidence with
+  # a declared skip - approved-document status never launders an
+  # execution record into a process-document input.
+  - execution logs / run logs
+  - completed tickets as execution records
+  - timestamped audit-trail entries
+  - workflow-engine state / process-mining traces
+  - operational dashboards / metrics exports
+  - any "did the step actually run?" record
+domain_scope: operations_process_improvement
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+skills:
+  - detect_process_contradictions
+  - compare_sop_vs_policy
+  - detect_missing_handoffs
+  - detect_outdated_process_documents
+  - prepare_process_map_projection
+standing_policy: >
+  This workbench is diagnostic/projection-only. It does not mutate
+  canonical SOPs, policies, ownership records, workflow state, or audit
+  state. Findings and suggested improvements re-enter only through the
+  governed proposal lane (vault 08_proposals -> PROPOSAL-lane connector
+  -> CANDIDATE -> human gate -> DERIVED fact). The assist
+  (prepare_process_map_projection) produces a cited, visibly
+  non-authoritative projection - never a source of truth.
+refused_until_minted:
+  operational_evidence: >
+    execution/run-log analysis, process-mining over traces, missing
+    stage-OWNER assignment/routing (identify_missing_process_stage_owner
+    is [ES]), estimated improvement impact (SYNTHESIS_INFERRED), and the
+    valve-synth backlog/proposal generators - refused live, naming the
+    unminted decision
+the_undocumented_handoff: >
+  The distinctive proof: the full diagnosis completes citing only
+  approved process documents, and the forbidden execution inputs are
+  never read - proven structurally (no execution door exists),
+  adversarially (an execution-record fact is DECLINED naming [OE]), and
+  on the bytes (THE COMPLETED RUN sweep). A handoff GAP is reported as an
+  absence with the triggering step cited verbatim - never filled with an
+  invented owner or receiver.

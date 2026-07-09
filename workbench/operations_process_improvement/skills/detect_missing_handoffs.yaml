@@ -1,0 +1,71 @@
+skill_id: detect_missing_handoffs
+workbench: operations_process_improvement
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: missing-evidence
+purpose: >
+  Detect process steps whose HANDOFF is undefined in the documented
+  process: a step that completes (a terminal or hand-off phrase - "is
+  complete", "is then closed out", "is marked X") but the governed
+  corpus does not DOCUMENT the next owner, the trigger, or the receiving
+  procedure for what follows. Absence is a finding, never a fact: this
+  states the governed corpus does not DOCUMENT the handoff, never that a
+  handoff did not actually happen (THE COMPLETED RUN, refused - "did the
+  next team pick it up?" is [OE]).
+handoff_convention:
+  # a step that hands off well carries a handoff marker naming a
+  # RECEIVER or a next action: "hands off to", "routes to", "notifies",
+  # "is routed to", "begins". A step that merely TERMINATES ("is
+  # complete", "is closed", "is closed out", "is marked X") with no
+  # receiver marker and no covering "next step" is a HANDOFF GAP.
+  completion_markers: ["is complete", "is complete after", "is closed",
+                       "is then closed out", "closed out", "is marked",
+                       "marked for", "is updated"]
+  handoff_markers: ["hands off to", "routes to", "is routed to",
+                    "notifies", "hands to", "begins", "handed to",
+                    "escalates to", "passed to"]
+  refusal_marker: "INSUFFICIENT EVIDENCE"
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved process
+    steps, cited by asset id) - the terminal steps they explicitly name
+  - the derived handoff questions, run through package consume() under
+    the packaged answering contract
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - execution logs / run logs / completed tickets / audit-trail
+    entries (until [OE]) - the "did the next team pick it up?" half is
+    exactly [OE]; an execution record is DECLINED, naming [OE]
+  - any claim about whether the undefined handoff actually occurred
+    (THE COMPLETED RUN)
+  - an invented next owner or receiving procedure to fill the gap (THE
+    INVENTED PROCESS) - the gap is reported as an ABSENCE, never filled
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires (a) a verbatim excerpt of the terminal step naming
+  the completion (asset id + quote) that carries NO handoff marker, and
+  (b) a reproducible refusal - the packaged answering contract returns
+  INSUFFICIENT EVIDENCE for the declared handoff question ("who receives
+  the completed step / what is the next owner or procedure?"). A step
+  that DOES name its receiver produces NO finding (declared, a defined
+  handoff). evidence_basis: REFUSAL_BACKED.
+allowed_finding_kinds: [MISSING_HANDOFF]
+output_format: >
+  One proposal per finding to /08_proposals with the D30 + catalog
+  frontmatter claims; body = the terminal-step excerpt (asset id +
+  quote), the reproducible refused handoff question, proposed action
+  (define the next owner / trigger / receiving procedure through the
+  governed pipeline - the workbench never invents the handoff).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - the step DOES name a receiver / next owner (handoff defined) -> no
+    finding, declared
+  - the terminal step cannot be cited verbatim -> refuse (no invented
+    step)
+  - a "did the handoff actually happen?" question -> refuse, naming
+    [OE] (THE COMPLETED RUN)
+question_frame:
+  - "Which documented process steps complete without a defined next owner, trigger, or receiving procedure?"
