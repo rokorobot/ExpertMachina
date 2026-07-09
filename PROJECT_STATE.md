@@ -4,43 +4,54 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-09 · current version **v2.3.0** (Finance & Cost
-Leakage — the FIFTH commercial workbench and the substrate's SECOND
-consumer: *document-governed cost exposure intelligence, not finance
-operations*. The spine: v2.3 diagnoses governed cost exposure from
-approved documents, register facts, and declared-clock windows — it
-does NOT determine transactional financial truth. THE ACTIVE FIVE
-(`detect_cost_exposure` + `compare_terms_vs_finance_policy` +
-`detect_missing_finance_evidence` + `prepare_cost_exposure_scenario`
-[assist] + `prepare_finance_evidence_pack` [assist]); the cardinal
-sins **THE INVENTED MONEY** (verbatim / declared arithmetic / labeled
-estimate — never an invented number) + **THE SETTLED ACCOUNT** (never
-paid/spent/booked/balanced from any evidence); **THE
-INVOICE-SENTENCE DISTINCTION** (a clause ABOUT invoices is evidence;
-an invoice RECORD is [OE]); **THE UNOPENED LEDGER** as the named
-distinctive proof — structural (no transactional door) + adversarial
-(THE INVOICE PLANT declined naming [OE]) + byte-level (the
-SETTLED-ACCOUNT sweep); **THE SECOND HARVEST** — cost-exposure
-findings cite v2.1 register clauses BY governed asset id through the
-REAL chain (finding → DERIVED register → PRIMARY), the catalog's
-first two CROSS-WORKBENCH consolidations (`extract_payment_terms` →
-the v2.1 register; `detect_outdated_finance_policies` → the shipped
-v1.7 contract) intact and no re-extraction path; declared arithmetic
-proven on the bytes (12,000 EUR × 8% = 960.00 EUR); THE COMMERCIAL
-VERDICT passed by the CFO/controller; zero new surface or law — no
-D33, no eighth guard, [OE]/[PMD] still unminted, `workbench/common.py`
-unchanged a SIXTH time; D24 held at 28/305; all four workstreams
-user-ratified end to end in one milestone) ·
-branch `main` · tag `v2.3.0` = `5fd448f` (merge commit
-`5fd448fea6467e998e867ddee51fff580c147263`); tag `v2.2.0` =
+**Snapshot:** 2026-07-09 · current version **v2.4.0** (Customer
+Success Intelligence — the SIXTH commercial workbench and the
+substrate's THIRD consumer: *a governed customer-success preparation
+workbench, not a churn, health, CRM, or retention-prediction engine*.
+The spine: v2.4 diagnoses per-customer term deviation, obligation
+exposure, and coverage gaps from approved documents, register facts,
+and declared-clock windows — never the state, behavior, or future of
+the customer relationship itself. The ratified name drops "Retention".
+THE ACTIVE FOUR + 1 (`detect_customer_term_deviation` +
+`detect_customer_renewal_obligations` + `detect_customer_coverage_gap`
++ `detect_unbacked_customer_health_assumption` +
+`prepare_customer_success_review_brief` [assist, synth]); the cardinal
+sin **THE IMPUTED HEALTH** (never assert relationship state, health,
+satisfaction, adoption, churn risk, or renewal likelihood) + its twin
+**THE HEALTH-SENTENCE DISTINCTION** (a document health claim ≠ license
+to know health; telemetry AS DATA is [OE]); **THE BASELINE DOCTRINE**
+(*no standard baseline, no deviation diagnosis* — never an inferred
+norm); **THE QUOTE FRAME** (the forbidden relationship-state
+vocabulary survives ONLY inside verbatim quoted-claim blockquotes of
+unsupported-assumption findings — quote-frame-aware sweep on every
+written byte); **THE UNREAD CUSTOMER** as the named distinctive proof
+— structural (no operational customer-data door) + adversarial (THE
+HEALTH-SCORE PLANT surfaces only as quoted unsupported assumptions) +
+byte-level (THE IMPUTED HEALTH SWEEP); **THE CUSTOM TERMS PROOF** —
+the deviating customer FOUND on both declared axes, the conforming
+customer SILENT (proven on the proposal bytes); **THE THIRD HARVEST**
+— renewal findings cite v2.1 register clauses BY governed asset id
+through the REAL chain (finding → DERIVED register → PRIMARY), the
+window by declared date arithmetic (2026-09-30 − 60 days = 2026-08-01
+on the bytes); two more CROSS-WORKBENCH consolidations
+(`extract_customer_communication_obligations` → the v2.1 register;
+`detect_outdated_cs_documentation` → the shipped v1.7 contract); THE
+COMMERCIAL VERDICT passed by the CS lead, ratified with explicit
+scope limits recorded verbatim; zero new surface or law — no D33, no
+eighth guard, [OE]/[PMD] still unminted, `workbench/common.py`
+unchanged a SEVENTH time; D24 held at 28/305; all four workstreams
+user-ratified end to end) ·
+branch `main` · tag `v2.4.0` = `1036ef0` (merge commit
+`1036ef00a7e6fc4b7d2e9febf629017055ef4d94`); tag `v2.3.0` =
+`5fd448f`; tag `v2.2.0` =
 `7040cda`; tag `v2.1.0` = `2938286`; tag `v2.0.0` =
 `caa6d73`; tag `v1.9.0` = `a9ded83`; tag `v1.8.0` = `4bb0033`;
 checkpoint tag `post-audit-hardening` still at `c2179c2` (the v1.7
-release commit) per the standing release ruling — v2.3 shipped as a
-NEW bundle (`workbench/finance_cost_leakage/`) + four test suites +
-ONE catalog-card row, no audit-hardening surface touched
-(`backend/app/` byte-identical to v2.2; route manifest unchanged at
-88; `workbench/common.py` unchanged a SIXTH time; the one
+release commit) per the standing release ruling — v2.4 shipped as a
+NEW bundle (`workbench/customer_success_intelligence/`) + three test
+suites + ONE catalog-card row, no audit-hardening surface touched
+(`backend/app/` byte-identical to v2.3; route manifest unchanged at
+88; `workbench/common.py` unchanged a SEVENTH time; the one
 `frontend/` edit is the Operations catalog card) · **D32 minted — the
 register stays at D1–D32, deliberately no further law reserved** ·
 **the 2026-07-07 audit-hardening arc is landed** (docs/audit-2026-07-07.md
@@ -560,6 +571,7 @@ Outside `backend/app/` (deliberately — D29/D22):
 | `workbench/customer_operations/` | **v1.6.0: the first commercial workbench bundle** — `workbench.yaml` (manifest: canonical #5, domain scope, binding expectations) + `skills/*.yaml` (the five ratified 13-field contracts) + `runner.py` (doors only, Guard 5-swept: contracts drive runtime behavior — frames read from the YAMLs, non-ACTIVE refused, refusal-first, evidence-driven kinding via `get_revision_history` content, the declared same-subject / cross-document / subject-token evidence rules; ONE proposal per finding to `/08_proposals`, the assist brief to `/07_agent_workspaces`) + `corpus/` (the 12-document plant corpus; `corpus_seed/` = revision-1 content; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/common.py` | **v1.7.0 WS2 (ruling 6): the shared runner plumbing** — the catalog's first reuse moment: door setup, contract loading + ACTIVE gating, the inherited same-subject evidence helpers, the MCP stdio door, content-hashed proposal writing. Stdlib-only, Guard 5-swept. Reuse is by RELATIVE import (`from ..common import …`) — Guard 5 skips relative imports; an absolute `from workbench.common import` trips the doors-only sweep |
 | `workbench/finance_cost_leakage/` | **v2.3.0: the FIFTH commercial workbench bundle (canonical #2) — the substrate's SECOND consumer** — `workbench.yaml` (the spine, THE INVOICE-SENTENCE DISTINCTION, the SETTLED-ACCOUNT `forbidden_vocabulary`, the named forbidden-input classes, `the_unopened_ledger`) + `skills/*.yaml` (THE ACTIVE FIVE 13-field contracts — `detect_cost_exposure` carries declared `class_markers` / `transactional_record_markers` / `money_value_rule`; `compare_terms_vs_finance_policy` the axes; `detect_missing_finance_evidence` REFUSAL_BACKED; the two [assist] briefs with THE LABELED ESTIMATE) + `runner.py` (on common.py, the SIXTH zero-edit reuse; conventions parsed from the contract bytes; THE INVOICE PLANT declined at runtime naming [OE]; the SETTLED-ACCOUNT sweep on every written byte; declared arithmetic over verbatim values) + `corpus_finance/` (3 ratified plants incl. THE INVOICE PLANT; only v2.3 suites ingest it; plant map in `CORPUS.md`). THE SECOND HARVEST reads v2.1 register + v2.2 window facts BY id; `extract_payment_terms` + `detect_outdated_finance_policies` are CROSS-WORKBENCH CONSOLIDATED (no re-extraction). Document-governed cost EXPOSURE only — never transactional truth ([OE]) |
+| `workbench/customer_success_intelligence/` | **v2.4.0: the SIXTH commercial workbench bundle (canonical #6) — the substrate's THIRD consumer** — `workbench.yaml` (the spine, THE IMPUTED HEALTH posture, THE HEALTH-SENTENCE DISTINCTION, THE BASELINE DOCTRINE, the 15-phrase IMPUTED-HEALTH `forbidden_vocabulary` with THE QUOTE FRAME as the sole exemption, the named forbidden-input classes incl. THE HEALTH-SCORE PLANT, `the_unread_customer`) + `skills/*.yaml` (THE ACTIVE FOUR + 1 contracts — the deviation engine carries declared `baseline_markers`/`deviation_axes`/`axis_value_patterns` and the comparability rule "conformance is SILENCE"; the obligation skill carries THE THIRD HARVEST + the v2.2 window rule; the coverage skill REFUSAL_BACKED with five declared classes; the assumption skill carries the declared markers + `the_quote_frame`; the [assist, synth] brief with seven declared sections) + `runner.py` (on common.py, the SEVENTH zero-edit reuse; conventions parsed from the contract bytes; the quote-frame-aware IMPUTED-HEALTH sweep on every written byte; [OE]/[ES] refused live) + `corpus_customer_success/` (4 ratified plants incl. the load-bearing standard-terms baseline and THE HEALTH-SCORE PLANT; only v2.4 suites ingest it; plant map in `CORPUS.md`). Per-customer document diagnosis only — never the relationship's state ([OE]) |
 | `workbench/compliance_obligation/` | **v1.7.0: the second commercial workbench bundle — EXTENDED at v2.2.0 (the catalog's first shipped-workbench extension)** — `workbench.yaml` (canonical #9, the sensitivity posture + forbidden_vocabulary, the gated list; nine declared skills as of v2.2, `deferral_resolved_v22` recorded) + `skills/*.yaml` (six v1.7 + three v2.2 ratified 13-field contracts — the deadline extension carries its declared marker/duration/vague-marker/class-rule conventions and THE PRESUMED COMPLETION forbidden_vocabulary in the bytes) + `runner.py` (on common.py, unchanged a FIFTH time; contracts drive runtime; the v2.2 extension ENGAGES at the declared clock pair as_of+window_days — unengaged runs are indistinguishable from v1.7, three declared skips; engaged runs compute deadlines/recurrence and the 07-confined calendar brief; gated skills refused live) + `corpus/` (12 documents, untouched) + `corpus_deadline/` (the v2.2 extension corpus, 2 plants — only v2.2 suites ingest it; plant map appended to `CORPUS.md`) |
 | `workbench/procurement_intelligence/` | **v1.8.0: the third commercial workbench bundle** — `workbench.yaml` (canonical #3, THE INVENTED NUMBER posture + the numeric-overclaim forbidden_vocabulary, the declared clock, the [OE]/[ES]/SEQUENCED lists) + `skills/*.yaml` (six ratified 13-field contracts, incl. the declared `subject_boilerplate_stopwords` evidence-rule refinement) + `runner.py` (on common.py, ZERO shared-module edits; term_class rules/date marker_pattern+auto-renewal+context markers/increase markers/certification requirement+question_template/named policy all PARSED from the YAMLs; date-window arithmetic ONLY from verbatim dates at declared as_of+window_days; the persistent-calendar request refused live) + `corpus/` (12 documents incl. the paraphrase-trap and unparseable-date plants; `CORPUS.md` = the plant map, outside the scanned folder) |
 | `workbench/executive_briefing/` | **v1.9.0: the first cross-workbench consumer** — `workbench.yaml` (canonical #1, THE UNSOURCED SENTENCE posture + the 12-phrase forbidden_vocabulary, the visibility budget, the findings ruling, the [PMD]/[OE]/[ES] gated list) + `skills/*.yaml` (six ratified 13-field contracts: five read-compose [now] + one gap [now] + `prepare_executive_briefing` [assist, synth]) + `runner.py` (on common.py, ZERO shared-module edits; the executive frames/origin convention/section list/boundary declarations PARSED from the YAMLs; the declared as_of+since clock, refused if absent; THE UNSOURCED SENTENCE enforced pre-write; exactly one EXECUTIVE_EVIDENCE_GAP proposal kind; the runner-local `BriefingGraphClient` = a subclass adapter over the frozen `get_trust_score`, never a new door). No corpus of its own — the input is the governed state the trio produced |
@@ -759,6 +771,12 @@ engine", or "agent wrote a fact".
 | WS2 | `58b395b` | the runner on common.py (SIXTH zero-edit reuse; conventions parsed from the contract bytes; the `transactional_record_markers` refinement) + THE DIAGNOSIS PROOF (`backend/test_finance_workbench.py`, 85th suite, eight parts incl. THE EXPOSURE ARITHMETIC, THE SECOND HARVEST, THE INVOICE PLANT decline, THE LABELED ESTIMATE) |
 | WS3 | `4a44d4e`+`33c27ac` | THE MILESTONE GATE (`backend/test_finance_acceptance.py`, 86th suite, eleven stages) + THE REAL REGISTER CHAIN + THE SECOND HARVEST PROOF (register cited BY id; consolidation intact) + THE EXPOSURE ARITHMETIC (12,000 EUR × 8% = 960.00 EUR on the bytes) + THE INVENTED MONEY SWEEP + THE UNOPENED LEDGER end-to-end + THE LABELED SCENARIO + the Finance catalog card + THE COMMERCIAL VERDICT PASSED (the CFO/controller) + the in-browser before/after (22 proposals/137 held → 136/1 accepted DERIVED, zero console errors) |
 | **v2.3.0** | PR #29 `5fd448f` (tag v2.3.0) | the fifth commercial workbench — document-governed cost exposure, never transactional truth; zero new surface or law ([OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a sixth time); route manifest 88; MCP frozen at 9 tools; D24 held 28/305; harness 86/86 |
+| — | PR #30 `7c2203b` | release: v2.3.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| WS0 | `e686318` (part of `feat/v24-customer-success-intelligence`) | v2.4 scoping ratified — Customer Success Intelligence (#6, the ratified name drops "Retention"); THE ACTIVE FOUR + 1; THE IMPUTED HEALTH + THE HEALTH-SENTENCE DISTINCTION; THE BASELINE DOCTRINE ("no standard baseline, no deviation diagnosis"); THE HEALTH-SCORE PLANT + THE UNREAD CUSTOMER named; the pre-scope ran on the ratified six-question template; [OE]/[PMD]/[ES] NOT minted |
+| WS1 | `0d92740` | the five ratified contracts + the registry #6 promotion (39 ACTIVE / 73 CONSOLIDATED globally; two more cross-workbench consolidations; draft 4 SEQUENCED/[ES] with the read-only condition) + the user-ratified `corpus_customer_success/` (4 plants incl. the standard-terms baseline and THE HEALTH-SCORE PLANT) + THE PRECONDITION PROOF (`backend/test_customer_success_corpus.py`, 87th suite, six parts, before any runner) |
+| WS2 | `073f430` | the runner on common.py (SEVENTH zero-edit reuse; conventions parsed from the contract bytes; the quote-frame-aware IMPUTED-HEALTH sweep) + THE DIAGNOSIS PROOF (`backend/test_customer_success_workbench.py`, 88th suite, parts A–G incl. Northwind's silence proven on the bytes, THE THIRD HARVEST via a DERIVED register fixture BY ID, the plant quote-framed only) |
+| WS3 | `a70ce25`+`82c603f` | THE MILESTONE GATE (`backend/test_customer_success_acceptance.py`, 89th suite, eleven stages) + THE REAL REGISTER CHAIN (81 held DERIVED despite an approve-everything policy; the accepted clause harvested BY id, action 2026-08-01 by declared arithmetic) + THE CUSTOM TERMS PROOF (Acme both axes; Northwind ZERO deviation findings) + THE IMPUTED HEALTH SWEEP (14 bytes, all quote-framed) + the Customer Success catalog card + THE COMMERCIAL VERDICT PASSED (the CS lead, scope-limited) + the in-browser before/after (raw-name card → full #6/v2.4 card; 62 held/0 accepted → 61/1 accepted DERIVED, zero console errors) |
+| **v2.4.0** | PR #32 `1036ef0` (tag v2.4.0) | the sixth commercial workbench — per-customer document diagnosis, never the relationship's state; zero new surface or law ([OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a seventh time); route manifest 88; MCP frozen at 9 tools; D24 held 28/305; harness 89/89 |
 
 ## How to run
 
@@ -976,8 +994,27 @@ engine", or "agent wrote a fact".
   THE EXPOSURE ARITHMETIC on the bytes, THE INVENTED MONEY SWEEP, THE
   UNOPENED LEDGER end-to-end, THE LABELED SCENARIO; route manifest 88;
   MCP at 9; D24 at exactly 28/305).
+  **v2.4.0 customer-success-intelligence suites (in CI):**
+  `test_customer_success_corpus.py` (WS1 THE PRECONDITION PROOF, 87th
+  suite, six parts — the bundle shape with NO-runner/NO-door
+  assertions; the declared baseline marker + axes firing on real facts
+  with Acme deviating and Northwind conforming ON THE BYTES; the QBR
+  gap real with the covered-escalation contrast; the window arithmetic
+  landing 2026-08-01 IN / 2026-12-31 OUT; the harvest anchor citable
+  BY id; THE HEALTH-SCORE PLANT the ONLY document whose facts carry
+  the IMPUTED-HEALTH vocabulary; the sweep constants move to 39 ACTIVE
+  / 73 CONSOLIDATED), `test_customer_success_workbench.py` (WS2 THE
+  DIAGNOSIS PROOF, 88th suite, parts A–G — all four kinds; Northwind
+  ZERO deviation findings; the vocabulary quote-framed on every
+  written byte; THE THIRD HARVEST BY id; determinism; write
+  confinement; structural non-existence),
+  `test_customer_success_acceptance.py` (WS3 THE MILESTONE GATE, 89th
+  suite, eleven stages — THE REAL REGISTER CHAIN, THE CUSTOM TERMS
+  PROOF, THE IMPUTED HEALTH SWEEP, the valve, the registry/sweep, the
+  catalog row, the closers; route manifest 88; MCP at 9; D24 at
+  exactly 28/305).
   **CI: the pytest harness auto-discovers EVERY backend/test_*.py**
-  (86 suites as of v2.3.0; keeping one out requires an explicit
+  (89 suites as of v2.4.0; keeping one out requires an explicit
   NOT_SUITES entry — model-dependent suites run in nightly-nli.yml),
   plus the named constitutional guard steps (D18/D24/route-manifest/
   D25/D26/D28/D29-D30/D31). `test_support.governed_actor` is the
@@ -1293,19 +1330,61 @@ actually paid, spent, or booked (that is the unminted [OE]). The
 honest slots carried: the real-model diagnostic run and the v1.2.0
 live-SharePoint scan.
 
+**v2.4.0 DELIVERED (2026-07-09) — all gates PASSED incl. THE
+COMMERCIAL VERDICT** (build contract + all gate records:
+docs/customer-success-intelligence-v2.4.md). The SIXTH commercial
+workbench and the substrate's THIRD consumer — *a governed
+customer-success preparation workbench, not a churn, health, CRM, or
+retention-prediction engine* — in four user-ratified gates: WS0 the
+rulings (the ratified name drops "Retention"; THE IMPUTED HEALTH + THE
+HEALTH-SENTENCE DISTINCTION; THE BASELINE DOCTRINE — *no standard
+baseline, no deviation diagnosis*; THE HEALTH-SCORE PLANT + THE UNREAD
+CUSTOMER named; the pre-scope ran on the ratified six-question
+template); WS1 the five ratified contracts + the registry #6 promotion
+(39/73; two more cross-workbench consolidations; the [ES] draft
+SEQUENCED with its read-only condition) + the user-ratified
+`corpus_customer_success/` (4 plants incl. the load-bearing
+standard-terms baseline) + THE PRECONDITION PROOF (87th suite) before
+any runner; WS2 the runner on `common.py` (the SEVENTH zero-edit
+reuse; the quote-frame-aware IMPUTED-HEALTH sweep) + THE DIAGNOSIS
+PROOF (88th suite, A–G); WS3 THE MILESTONE GATE (89th suite, eleven
+stages) + **THE UNREAD CUSTOMER** (structural + adversarial + byte
+level, 14 vocabulary bytes all quote-framed) + **THE CUSTOM TERMS
+PROOF** (Acme deviates on both declared axes; Northwind ZERO deviation
+findings, its conformance recorded and proven on the proposal bytes) +
+**THE THIRD HARVEST PROOF** through the REAL v2.1 register chain (81
+held DERIVED despite an approve-everything policy; the accepted clause
+harvested BY id; action 2026-08-01 by declared date arithmetic on the
+bytes) + the Customer Success catalog card + THE COMMERCIAL VERDICT
+(the CS lead — ratified with explicit scope limits: no CRM, no
+ticket/usage/NPS/telemetry/health-score readers, no churn prediction,
+no ranking, no scoring, no outreach, no operational execution, no
+[OE]/[PMD]/[ES]) + the in-browser before/after (the raw-name card
+gains its #6/v2.4 identity; one live Accept as DERIVED, 62 held/0 →
+61/1). Zero new surface or law — no D33, no eighth guard, [OE]/[PMD]
+still unminted, Guard 7 untouched, `common.py` unchanged a SEVENTH
+time; D24 held at 28/305; route manifest 88; MCP frozen at 9. The
+boundary held: v2.4 diagnoses what the documents PROMISE this customer
+and where coverage is missing — never what the customer is doing,
+feeling, or likely to do (that is the unminted [OE]). The honest slots
+carried: the real-model diagnostic run and the v1.2.0 live-SharePoint
+scan.
+
 **NEXT: the sellable trio, the first cross-workbench consumer, the
 [ES] minting law, the shared extraction engine, the first
-shipped-workbench extension, and document-governed cost exposure have
-all shipped.**
+shipped-workbench extension, document-governed cost exposure, and
+per-customer success intelligence have all shipped.**
 The two remaining named decisions still await their own pressure and
 scoping session (the Operational Evidence Realm [OE] — sharpened to
-one sentence, "did the work happen?", and v2.3 gave it a second crisp
-edge, "what was actually paid/spent/booked?"; the Pipeline Metadata
-Door [PMD]). The deadline-extraction family is DELIVERED (v2.2.0) and
-Finance & Cost Leakage (#2) DELIVERED (v2.3.0). Also on the table: the
-honest slots above, the remaining catalog workbenches, and the standing
+one sentence, "did the work happen?", v2.3's second crisp edge, "what
+was actually paid/spent/booked?", and now v2.4's third, "what is the
+customer doing/feeling/likely to do?"; the Pipeline Metadata Door
+[PMD]). The deadline-extraction family is DELIVERED (v2.2.0), Finance
+& Cost Leakage (#2) DELIVERED (v2.3.0), and Customer Success
+Intelligence (#6) DELIVERED (v2.4.0). Also on the table: the honest
+slots above, the remaining catalog workbenches, and the standing
 backlog (SSO/SAML/SCIM; OS keystore/KMS; Confluence/Drive providers;
-Gemini/open-model adapters; **D23 — deferred through twelve
+Gemini/open-model adapters; **D23 — deferred through thirteen
 milestones**; embedding index inside .empkg; the remaining T3.x
 polish — main.py unused-import prune, Pydantic model_config, _iso
 dedup, N+1 citation batching; ruff/Dockerfile/pytest-cov/frontend
@@ -1318,11 +1397,15 @@ truth system; v2.1 proved the platform can share ONE extraction
 engine across multiple consumer workbenches with zero drift and no
 second fact store; v2.2 proved a shipped workbench can GROW without
 re-opening its law, computing an operational view while refusing to
-become the operational system; **v2.3 proves the substrate compounds —
+become the operational system; v2.3 proved the substrate compounds —
 a new workbench consumes the register AND the calendar to answer "what
-could this cost?" from approved documents alone, while structurally
-refusing every transactional-truth question until an operational
-evidence realm is deliberately minted.**
+could this cost?" from approved documents alone; **v2.4 proves the
+compounding is a PATTERN, not a coincidence — the third consumer in a
+row harvests the same register through the same chain to answer a new
+reader's question ("what did we promise THIS customer?") while
+structurally refusing to know the customer, and the pre-scope →
+WS0 → implementation → named-proofs meta-pattern is now the ratified
+default for every remaining workbench.**
 
 **Backlog unchanged by the arc**: SSO/SAML/SCIM enterprise extensions
 (gate sales, not the product loop); OS keystore/KMS for the custody

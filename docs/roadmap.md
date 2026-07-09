@@ -39,6 +39,7 @@
 | v2.1.0 | Contract Intelligence — the shared engine (catalog #16, the FOURTH commercial workbench; THE PARAPHRASED CLAUSE posture + its twin THE LEGAL CONCLUSION; THE REGISTER DISTINCTION ratified; the 15→1 clause-class consolidation; THE SHARED ENGINE PROOF) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the general counsel / procurement owner); 80 CI suites; 28/305 held; zero new surface or law — no D33, no eighth guard; one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways |
 | v2.2.0 | Deadline & Obligation Intelligence (the catalog's FIRST shipped-workbench EXTENSION — compliance #9's deferred deadline family, unlocked by [ES]; THE INVENTED DATE + THE PRESUMED COMPLETION postures; THE ENGAGEMENT RULE; THE COMPUTED CALENDAR; THE HARVEST of the v2.1 register) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the compliance/obligation owner); 83 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched; the constitutional outcome: a computed compliance calendar, never an operational task tracker |
 | v2.3.0 | Finance & Cost Leakage (the FIFTH commercial workbench, canonical #2, the substrate's SECOND consumer — document-governed cost exposure intelligence; NO INVENTED MONEY + THE SETTLED ACCOUNT; THE INVOICE-SENTENCE DISTINCTION; THE UNOPENED LEDGER; THE SECOND HARVEST of the v2.1 register; the first two CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CFO/controller); 86 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a sixth time; diagnoses what documents could cost, never transactional truth |
+| v2.4.0 | Customer Success Intelligence (the SIXTH commercial workbench, canonical #6, the substrate's THIRD consumer — the per-customer axis; THE IMPUTED HEALTH + THE HEALTH-SENTENCE DISTINCTION; THE BASELINE DOCTRINE; THE QUOTE FRAME; THE UNREAD CUSTOMER; THE CUSTOM TERMS PROOF; THE THIRD HARVEST of the v2.1 register; two more CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CS lead, ratified with explicit scope limits); 89 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a seventh time; diagnoses what documents promise this customer, never the relationship's state |
 
 ---
 
@@ -1295,9 +1296,88 @@ transactional financial truth.*
   deliberately minted?"* — **RATIFIED, YES.**
 - **NEXT**: [OE] gained a second crisp edge from v2.3 — *"what was
   actually paid, spent, or booked?"* — alongside v2.2's *"did the work
-  happen?"*; both await [OE]'s own scoping session. The remaining
-  catalog workbenches and the standing backlog carry on. Honest slots:
-  the real-model diagnostic run and the v1.2.0 live-SharePoint scan.
+  happen?"*; both await [OE]'s own scoping session. **Customer Success
+  Intelligence shipped as v2.4.0** (below).
+
+## v2.4.0 — Customer Success Intelligence, the per-customer axis (Completed)
+
+**The SIXTH commercial workbench and the substrate's THIRD consumer
+(2026-07-09; build contract + all gate records:
+[customer-success-intelligence-v2.4.md](customer-success-intelligence-v2.4.md)).**
+The product claim proven: *a CS lead preparing a QBR or renewal can
+put a governed per-customer diagnosis in front of their team — this
+customer's cited terms, deviations from the approved standard,
+renewal/communication windows on a declared clock, coverage gaps, and
+the unsupported health claims our own documents carry — without the
+platform ever asserting what the customer is doing, feeling, or likely
+to do.* The spine, carried into every gate: *v2.4 diagnoses
+per-customer term deviation, obligation exposure, and coverage gaps
+from approved documents, register facts, and declared-clock windows —
+never the state, behavior, or future of the customer relationship
+itself.* The ratified name drops "Retention" — the workbench predicts
+nothing.
+
+- **THE ACTIVE FOUR + 1**
+  (`workbench/customer_success_intelligence/`):
+  `detect_customer_term_deviation` (declared baseline markers + axes +
+  value patterns; conformance is SILENCE),
+  `detect_customer_renewal_obligations` (THE THIRD HARVEST + the v2.2
+  declared-clock window rule; obligations and windows, never
+  likelihood), `detect_customer_coverage_gap` (REFUSAL_BACKED, five
+  declared classes), `detect_unbacked_customer_health_assumption`
+  (THE QUOTE FRAME; never adjudicated),
+  `prepare_customer_success_review_brief` [assist, synth].
+- **THE IMPUTED HEALTH + THE HEALTH-SENTENCE DISTINCTION (the cardinal
+  sin + its twin)**: the runner never asserts relationship state,
+  health, satisfaction, adoption, churn risk, or renewal likelihood; a
+  document CONTAINING a health claim does not authorize knowing
+  customer health — telemetry AS DATA is [OE]. **THE BASELINE
+  DOCTRINE**: no standard baseline, no deviation diagnosis — never an
+  inferred norm.
+- **THE UNREAD CUSTOMER (the distinctive proof)** — structural (no
+  operational customer-data door), adversarial (THE HEALTH-SCORE PLANT
+  surfaces ONLY as quoted unsupported assumptions), byte-level (the
+  quote-frame-aware IMPUTED-HEALTH sweep: 14 vocabulary bytes in the
+  gate run, every one inside a "> " quoted-claim blockquote).
+- **THE CUSTOM TERMS PROOF** — Acme Industrial deviates on both
+  declared axes (weekly/two-business-day reporting vs monthly/five;
+  sixty-day notice vs ninety); **Northwind Logistics produces ZERO
+  deviation findings**, its conformance recorded as skips and proven
+  on the proposal bytes — a diagnosis, not a report generator.
+- **THE THIRD HARVEST** — renewal findings cite v2.1 register clauses
+  BY governed asset id through the REAL chain (the engine held 81
+  candidates DERIVED despite an approve-everything policy — D29; the
+  human-accepted clause harvested with action 2026-08-01 = 2026-09-30
+  − 60 days by declared date arithmetic on the bytes); two more
+  CROSS-WORKBENCH consolidations
+  (`extract_customer_communication_obligations` → the v2.1 register;
+  `detect_outdated_cs_documentation` → the shipped v1.7 contract).
+- **The gates**: THE PRECONDITION PROOF (87th suite, before any
+  runner; the user-ratified `corpus_customer_success/` extension
+  folder for the four proven gaps incl. the load-bearing
+  standard-terms baseline), THE DIAGNOSIS PROOF (88th, parts A–G),
+  THE MILESTONE GATE (89th, eleven stages), the Customer Success
+  catalog card, and the in-browser before/after (the raw-name card
+  gains its #6/v2.4 identity; one live Accept as DERIVED, 62 held/0
+  accepted → 61/1, zero console errors). THE COMMERCIAL VERDICT (the
+  CS lead): *"would you put this governed customer-success diagnosis
+  in front of your team — knowing it shows only cited
+  customer-specific terms, deviations from approved standards,
+  renewal/communication windows, and coverage gaps, while refusing to
+  tell you whether the customer is healthy, satisfied, active, likely
+  to renew, or at risk unless an operational evidence realm is
+  deliberately minted?"* — **RATIFIED**, with the scope limits
+  recorded verbatim in the build contract (no CRM, no
+  ticket/usage/NPS/telemetry/health-score readers, no churn
+  prediction, no ranking, no scoring, no outreach, no operational
+  execution, no [OE]/[PMD]/[ES]).
+- **NEXT**: [OE] now has three crisp edges — v2.2's *"did the work
+  happen?"*, v2.3's *"what was actually paid/spent/booked?"*, and
+  v2.4's *"what is the customer doing/feeling/likely to do?"* — all
+  awaiting [OE]'s own scoping session. The pre-scope → WS0 →
+  implementation → named-proofs meta-pattern is the ratified default
+  for every remaining catalog workbench. Honest slots: the real-model
+  diagnostic run and the v1.2.0 live-SharePoint scan.
 
 ## Future Direction
 
