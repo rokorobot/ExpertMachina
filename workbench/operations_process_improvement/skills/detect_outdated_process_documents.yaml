@@ -1,0 +1,74 @@
+skill_id: detect_outdated_process_documents
+workbench: operations_process_improvement
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: outdated-guidance
+purpose: >
+  Detect process documents that appear superseded or stale by
+  REVISION-BACKED evidence: an SOP whose rule a newer approved policy
+  explicitly supersedes, guidance aligned with a superseded revision
+  while a newer approved revision exists, or a document overdue by its
+  OWN declared review interval. Never age alone: a document is not stale
+  because it is old, only because a newer governed document supersedes
+  it or its own declared review cadence has lapsed against a declared
+  clock. This states the document is SUPERSEDED or OVERDUE; it never
+  asserts a process actually stopped following it (THE COMPLETED RUN,
+  refused).
+staleness_convention:
+  # the two revision-backed staleness signals; age alone is never one.
+  supersession_markers: ["supersedes", "superseded by", "replaces",
+                         "this policy supersedes", "prohibited"]
+  # a document declaring its own review cadence carries a review-interval
+  # marker AND a last-review date; overdue iff (last_review +
+  # interval_months) < as_of, with as_of a DECLARED run parameter,
+  # never wall-clock.
+  review_interval_markers: ["reviewed at least once every",
+                            "must be reviewed", "review cadence",
+                            "last review was recorded on"]
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved process
+    documents + their supersession notices + their declared review
+    intervals, cited by asset id)
+  - MCP get_revision_history chains for assets in scope
+  - a DECLARED as_of run parameter (for the review-interval verdict),
+    recorded verbatim, never wall-clock
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - execution logs / run logs / completed tickets (until [OE]) - an
+    execution record is DECLINED, naming [OE]
+  - document age as evidence (age alone proves nothing)
+  - wall-clock time (as_of is declared, never sampled)
+  - any claim that a process actually stopped following the document
+    (THE COMPLETED RUN)
+  - an invented supersession or review date to fill a gap (THE INVENTED
+    PROCESS)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires revision-chain evidence: a supersession
+  classification, an explicit supersession notice in a newer approved
+  document naming the superseded document (cross-document), guidance
+  aligned with a superseded revision while a newer approved revision
+  exists, OR a document overdue by its OWN declared review interval
+  measured against the DECLARED as_of. Never age alone. evidence_basis:
+  REVISION_BACKED.
+allowed_finding_kinds: [OUTDATED_PROCESS_DOCUMENT]
+output_format: >
+  One proposal per finding to /08_proposals with the D30 + catalog
+  frontmatter claims; body = the outdated document (asset id + excerpt),
+  the newer approved supersession/revision or the overdue-interval
+  evidence (last review + interval + as_of verdict), proposed action
+  (revise or retire the document through the governed workflow).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - staleness cannot be established from governed supersession,
+    revision, or self-declared review-cycle evidence -> no finding
+  - a review-interval verdict requested with no declared as_of ->
+    refuse (as_of is declared, never sampled)
+  - a "did the process stop following it?" question -> refuse, naming
+    [OE] (THE COMPLETED RUN)
+question_frame:
+  - "Which approved process documents are superseded or overdue by revision-backed evidence?"

@@ -1,0 +1,76 @@
+skill_id: compare_sop_vs_policy
+workbench: operations_process_improvement
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: contradictory-guidance
+purpose: >
+  Detect where an approved SOP conflicts with its governing policy on a
+  declared axis: an approval-authority mismatch, an approval-timing
+  mismatch, or a control-requirement mismatch. Both sides are governed
+  documents - a policy-side rule and an SOP-side procedure that
+  disagree on the SAME declared axis (e.g. the policy requires Change
+  Advisory Board approval while the SOP allows a single team lead to
+  approve). It states that two approved DOCUMENTS disagree - never that
+  a change was actually deployed outside policy (THE COMPLETED RUN,
+  refused).
+comparison_convention:
+  comparison_axes: [approval_authority, approval_timing, control_requirement]
+  # a mismatch requires a verbatim rule from the POLICY-side document
+  # (it carries policy markers - "must be approved by", "may not",
+  # "prohibited", "at least") and a verbatim procedure from the SOP-side
+  # document that disagree on the SAME declared axis. The policy side
+  # and the SOP side are DIFFERENT source documents (cross-document).
+  axis_markers:
+    approval_authority: ["approved by", "authority of", "sign-off",
+                         "single approver", "alone", "advisory board"]
+    approval_timing: ["within", "at least", "business day",
+                      "business days", "before it is deployed"]
+    control_requirement: ["prohibited", "must not", "may not",
+                          "required", "mandatory", "shared"]
+  policy_markers: ["must be approved by", "may not", "must not",
+                   "prohibited", "no production change", "at least"]
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved SOP
+    procedures AND approved governing-policy statements, PRIMARY or
+    DERIVED, cited by asset id)
+  - MCP get_conflicts / get_domain_subgraph at the AGENT token's
+    clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - execution logs / run logs / completed tickets / audit-trail
+    entries (until [OE]) - an execution record is DECLINED, naming [OE]
+  - any claim that a change/step actually breached the policy (THE
+    COMPLETED RUN) - the finding is document-vs-document only
+  - an invented owner, control, or authority to fill a gap (THE
+    INVENTED PROCESS)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires the verbatim policy-side excerpt (asset id +
+  quote), the verbatim SOP-side excerpt (asset id + quote), the
+  declared axis on which they disagree, and a CROSS-DOCUMENT pair (the
+  two sides are from different source documents). No axis, no finding;
+  only one governed side, no finding. evidence_basis: CONFLICT_BACKED
+  (falls back to EXCERPT_BACKED when both sides are explicit but not a
+  governed CONFLICTS_WITH pair).
+allowed_finding_kinds: [SOP_POLICY_MISMATCH]
+output_format: >
+  One proposal per finding to /08_proposals with the D30 + catalog
+  frontmatter claims; body = the two verbatim excerpts (both asset
+  ids), the comparison axis, proposed action (reconcile the SOP with
+  the governing policy through the governed workflow - the workbench
+  never amends either).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - only one side is governed (no policy-side or no SOP-side statement)
+    -> refuse, declared (never assume the missing side)
+  - the disagreement is not on a declared axis -> NEEDS_REVIEW
+  - the two statements are from the SAME document -> not an
+    SOP-vs-policy mismatch, deferred
+  - an execution record offered as the "actual" side -> decline,
+    naming [OE]
+question_frame:
+  - "Which approved SOP procedures disagree with their governing policy on a declared axis?"

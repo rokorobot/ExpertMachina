@@ -1,0 +1,72 @@
+skill_id: detect_process_contradictions
+workbench: operations_process_improvement
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: contradictory-guidance
+purpose: >
+  Detect contradictory instructions ACROSS process documents: two
+  approved process documents (SOP, policy, or procedure) that instruct
+  the same subject differently - a doc-vs-doc conflict on a shared
+  subject (e.g. one document says access is approved within 2 business
+  days, another within 5). The finding names the two verbatim
+  statements and the subject on which they disagree. It states that two
+  approved DOCUMENTS disagree - never that a process actually ran one
+  way or the other (THE COMPLETED RUN, refused).
+conflict_convention:
+  # a cross-document contradiction requires the two statements to share
+  # SUBJECT MATTER, not merely parallel timeframe structure ("within N
+  # days") - the inherited same-subject rule (>= 2 shared subject
+  # tokens: alphabetic, length >= 4, excluding the timeframe and
+  # governance vocabulary). A same-document pair is intra-document
+  # ordering, deferred, never a contradiction finding.
+  same_subject_minimum: 2
+  cross_document_required: true
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved process
+    documents, PRIMARY or DERIVED, cited by asset id)
+  - MCP get_conflicts / get_domain_subgraph at the AGENT token's
+    clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - execution logs / run logs / completed tickets / audit-trail
+    entries / process-mining traces (until [OE]) - an execution record
+    is DECLINED, naming [OE]
+  - any claim that a process actually ran, was performed, or completed
+    one way (THE COMPLETED RUN) - the finding is document-vs-document
+    only
+  - an invented owner, step, trigger, or date to fill a gap (THE
+    INVENTED PROCESS)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires the two verbatim excerpts (both asset ids), a
+  CROSS-DOCUMENT pair (the two statements are from different source
+  documents), and a shared subject (>= 2 shared subject tokens on the
+  declared same-subject rule). A same-document pair or a pair without
+  shared subject is deferred to the governance conflict review,
+  declared, never silently dropped. evidence_basis: CONFLICT_BACKED
+  (falls back to EXCERPT_BACKED when the two sides are both explicit but
+  not a governed CONFLICTS_WITH pair).
+allowed_finding_kinds: [PROCESS_CONTRADICTION]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the two verbatim excerpts (both
+  asset ids), the shared subject, proposed action (reconcile the two
+  documents through the governed revision workflow - the workbench never
+  amends either side).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - only one side is governed (no second document instructs the same
+    subject) -> refuse, declared (never assume the missing side)
+  - the two statements are from the SAME document -> intra-document
+    ordering, deferred to the governance conflict review
+  - no shared subject matter (< 2 shared subject tokens) -> deferred,
+    declared, never silently dropped
+  - an execution record offered as the "actual" side -> decline,
+    naming [OE]
+question_frame:
+  - "Which approved process documents instruct the same subject in contradictory ways?"
