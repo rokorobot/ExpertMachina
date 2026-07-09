@@ -698,8 +698,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
             continue
         if entry["asset_id"] in seen_overdue:
             continue
-        import datetime as _dt
-        last = _dt.date(*(int(p) for p in lm.group(1).split("-")))
+        last = datetime.date(*(int(p) for p in lm.group(1).split("-")))
         interval = int(im.group(1))
         elapsed = _months_between(last, as_of_date)
         if elapsed <= interval:
