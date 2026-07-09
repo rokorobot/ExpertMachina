@@ -27,8 +27,10 @@ contracts and the REAL corpora BEFORE any runner exists
      approved document, is DISTINGUISHABLE: it carries SETTLED-ACCOUNT
      transactional-truth markers no contract clause carries, so the
      runner can decline it naming [OE]; no transactional door exists;
-     the two cross-workbench consolidations resolve; global sweep at
-     34/58; zero stewardship; D24 at exactly 28 tables / 305 columns.
+     the two cross-workbench consolidations resolve; the global sweep
+     holds at the current ratified totals (GLOBAL_SWEEP - moves with
+     each promotion); zero stewardship; D24 at exactly 28 tables /
+     305 columns.
 
 No [OE] operational fact, no [PMD] ingress, no route, no table, no
 tool, no guard, and no law is needed anywhere in this suite - the
@@ -76,6 +78,11 @@ ACTIVE_FIVE = ("detect_cost_exposure", "compare_terms_vs_finance_policy",
                "detect_missing_finance_evidence",
                "prepare_cost_exposure_scenario",
                "prepare_finance_evidence_pack")
+
+# The global registry sweep - moves with each promotion (the v2.2
+# lesson): 34/58 at v2.3, +5 ACTIVE / +15 CONSOLIDATED at the v2.4
+# customer-success-intelligence promotion.
+GLOBAL_SWEEP = (39, 73)
 
 
 def read(path):
@@ -344,7 +351,7 @@ def main():
         assert os.path.isfile(os.path.join(REPO_ROOT, rp))
         assert os.path.basename(rp) == target + ".yaml"
 
-    # Global sweep at 34/58 (the promotion landed).
+    # Global sweep at the ratified totals (moves with each promotion).
     active = consolidated = 0
     for folder, _dirs, files in os.walk(DRAFTS_DIR):
         for name in files:
@@ -356,8 +363,8 @@ def main():
                 active += 1
             elif st and st.group(1) == "CONSOLIDATED":
                 consolidated += 1
-    assert (active, consolidated) == (34, 58), \
-        f"global sweep must be 34/58, got {active}/{consolidated}"
+    assert (active, consolidated) == GLOBAL_SWEEP, \
+        f"global sweep must be {GLOBAL_SWEEP}, got {active}/{consolidated}"
 
     # Zero stewardship; D24 byte-exact.
     assert session.query(db.AuditEvent).filter(
@@ -370,7 +377,8 @@ def main():
     print("Part 6 passed: THE INVOICE PLANT is an approved document but "
           "distinguishable by its SETTLED-ACCOUNT markers (no contract "
           "clause carries them); no transactional door exists; both "
-          "cross-workbench consolidations resolve; global sweep 34/58; "
+          f"cross-workbench consolidations resolve; global sweep "
+          f"{GLOBAL_SWEEP[0]}/{GLOBAL_SWEEP[1]}; "
           "zero stewardship; D24 at exactly 28 tables / 305 columns.")
 
     session.close()

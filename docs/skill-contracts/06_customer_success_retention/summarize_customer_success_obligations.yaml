@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: summarize_customer_success_obligations
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_customer_renewal_obligations
+ratified_path: workbench/customer_success_intelligence/skills/detect_customer_renewal_obligations.yaml
+# the v2.4 consolidation (WS0 ruling 2) - the draft's meaning survives as a declared class/section of the ratified contract
 boundary_tags: [now, assist]
 pattern: assist
 purpose: >

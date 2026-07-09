@@ -1,0 +1,40 @@
+# Skill contract minted at the v2.4 scoping session (Customer Success
+# Intelligence - docs/customer-success-intelligence-v2.4.md, WS0
+# ruling 2) and ratified into
+# workbench/customer_success_intelligence/skills/ (registry rule 1).
+# The consolidating anchor of registry #6's assumption family; THE
+# QUOTE FRAME lives here; the binding contract is the ratified file.
+skill_id: detect_unbacked_customer_health_assumption
+workbench: customer_success_intelligence   # 6. Customer Success Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/customer_success_intelligence/skills/detect_unbacked_customer_health_assumption.yaml
+boundary_tags: [now]
+pattern: extract-candidates (assumption surfacing)
+purpose: >
+  Detect relationship-state claims inside approved documents that
+  carry no governed evidence - surfaced verbatim inside THE QUOTE
+  FRAME as unsupported assumptions, never adjudicated in either
+  direction (adjudication would BE THE IMPUTED HEALTH).
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); approved account-plan / memo /
+  playbook / agreement statements, cited by governed asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  usage/activity/CRM/ticket/NPS records and health-score tables AS
+  DATA (until [OE]) - THE HEALTH-SCORE PLANT surfaces only as a
+  quoted unsupported claim; truth-value adjudication of any claim;
+  customer ranking/scoring; other skills' pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: the
+  declared assumption markers; the quoted claim (asset id + verbatim
+  quote) inside the declared quote frame; the declared
+  no-governed-backing statement naming [OE]. evidence_basis in the
+  ratified file.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - asked whether the claim is true -> refuse, naming [OE] (THE
+    IMPUTED HEALTH cuts both ways)
+  - the claim cites governed evidence -> not unbacked; silence

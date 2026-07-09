@@ -1,0 +1,98 @@
+skill_id: detect_unbacked_customer_health_assumption
+workbench: customer_success_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: extract-candidates (assumption surfacing)
+consolidates:
+  # the v2.4 consolidation ruling (WS0 ruling 2): renamed singular
+  # from the registry draft; the meaning is unchanged.
+  - identify_unbacked_customer_health_assumptions
+purpose: >
+  Detect relationship-state CLAIMS inside approved documents -
+  "adoption is healthy", "churn risk is low", "the customer is
+  satisfied", a health-score figure - that carry NO governed evidence.
+  The claim is surfaced VERBATIM, framed as an unsupported assumption
+  whose subject matter (usage, satisfaction, churn, health) is [OE]
+  territory no governed door can evidence. The skill polices exactly
+  the sin the workbench must never commit: it NEVER asserts whether
+  the claim is TRUE or FALSE (adjudicating it would BE THE IMPUTED
+  HEALTH) - it states only that an approved document carries a
+  relationship-state claim without governed backing.
+assumption_convention:
+  # the declared claim markers this skill reads from governed content
+  # - deliberately the SAME assertion-shaped vocabulary the manifest
+  # forbids in workbench narration: what the workbench may never say,
+  # it must be able to FIND said.
+  assumption_markers: ["health score", "is healthy", "churn risk",
+                       "customer is satisfied", "adoption is",
+                       "usage is", "likely to renew",
+                       "likely to churn", "at risk of churn",
+                       "customer sentiment"]
+  the_quote_frame: >
+    THE HEALTH-SENTENCE DISTINCTION made mechanical: the manifest's
+    forbidden relationship-state vocabulary may appear in this
+    skill's finding bytes ONLY inside the verbatim quoted-claim
+    block, explicitly framed as an unsupported document claim
+    ("the approved document CLAIMS: ..."), never in the workbench's
+    own narration, summary, or proposed action. A health-score table
+    inside an approved document is surfaced the same way - quoted as
+    an unsupported claim, never read as telemetry, never restated as
+    customer truth.
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    account-plan, memo, playbook, and agreement statements, PRIMARY
+    or DERIVED, cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - usage/activity records, CRM exports, tickets, NPS, health-score
+    tables AS DATA, activity feeds, relationship-state metrics -
+    every operational customer record (until [OE]); THE HEALTH-SCORE
+    PLANT surfaces only as a quoted unsupported claim
+  - any adjudication of the claim ("the assumption is wrong",
+    "actually the customer IS healthy") - both directions are THE
+    IMPUTED HEALTH
+  - wall-clock time (declared parameters only)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  An UNBACKED_HEALTH_ASSUMPTION finding requires the verbatim claim
+  excerpt (asset id + quote, inside the declared quote frame), the
+  fired assumption marker, and the declared statement that no
+  governed evidence backs the claim and that its subject matter is
+  [OE] until minted. The skill asserts the claim's PRESENCE and its
+  LACK OF GOVERNED BACKING - never its truth value. evidence_basis:
+  EXCERPT_BACKED (the claim) + REFUSAL_BACKED (the missing backing).
+forbidden_vocabulary:
+  # outside the quote frame, the full manifest sweep applies to this
+  # skill like any other - its OWN narration never asserts
+  # relationship state in either direction
+  - "is healthy"
+  - "churn risk"
+  - "likely to churn"
+  - "likely to renew"
+  - "health score"
+  - "customer is satisfied"
+  - "at risk of churn"
+allowed_finding_kinds: [UNBACKED_HEALTH_ASSUMPTION]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the quoted claim (asset id +
+  verbatim quote, framed "the approved document claims:"), the fired
+  marker, the declared no-governed-backing statement naming [OE],
+  proposed action (the human decides whether to remove, evidence, or
+  govern the claim - the workbench never validates it).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - asked whether the claim is true -> refuse, naming [OE] (THE
+    IMPUTED HEALTH cuts both ways)
+  - the claim cites governed evidence -> not unbacked; stay silent
+  - asked to score, rank, or prioritize customers by their claims ->
+    refuse (ranking implies health knowledge)
+question_frames:
+  - "Which approved documents carry customer relationship-state claims with no governed evidence?"
+  - "Where do our own documents assume customer health the governed corpus cannot back?"

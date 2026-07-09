@@ -1,0 +1,44 @@
+# Skill contract minted at the v2.4 scoping session (Customer Success
+# Intelligence - docs/customer-success-intelligence-v2.4.md, WS0
+# ruling 2) and ratified into
+# workbench/customer_success_intelligence/skills/ (registry rule 1).
+# The consolidating anchor of registry #6's assist family (renamed
+# from prepare_customer_retention_brief - the ratified workbench name
+# drops "Retention"); the binding contract is the ratified file.
+skill_id: prepare_customer_success_review_brief
+workbench: customer_success_intelligence   # 6. Customer Success Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/customer_success_intelligence/skills/prepare_customer_success_review_brief.yaml
+boundary_tags: [assist, synth]
+pattern: assist (cited drafts, no valve implications)
+purpose: >
+  The QBR/renewal preparation brief for a named customer: terms &
+  deviations, windows at the declared clock, coverage gaps,
+  documented escalation rules, quoted unbacked assumptions, and the
+  explicit exclusions/refusals - every statement cited, narrative
+  [synth]-declared, never a finding, never knowledge, never a
+  prediction.
+allowed_inputs: >
+  Approved knowledge in scope + ACCEPTED findings (DERIVED facts -
+  never pending proposals), cited by governed asset id; the MCP read
+  tools at the AGENT token's clearance.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content; pending
+  (ungated) findings; usage/activity/CRM/ticket/NPS/health-score
+  records (until [OE]); customer ranking/scoring; relationship-state
+  assessment of any kind (THE IMPUTED HEALTH has no assist
+  exemption).
+evidence_rules: >
+  See the ratified contract - the binding rules live there: declared
+  sections; every statement cited; quoted assumptions confined to
+  their declared section; the exclusions section names what was
+  refused and why ([OE] named); a topic with no approved coverage is
+  said to have none.
+human_approval_requirement: >
+  None applicable - a consumption output with no valve implications;
+  anything intended to become knowledge is a finding and pays the
+  valve (registry rule 3).
+refusal_conditions:
+  - the topic has no approved coverage -> the brief says so
+  - asked to rank customers or assess the relationship -> refuse,
+    naming [OE] (THE IMPUTED HEALTH)

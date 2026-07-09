@@ -1,0 +1,119 @@
+skill_id: detect_customer_term_deviation
+workbench: customer_success_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: doc-vs-doc comparison
+consolidates:
+  # the v2.4 consolidation ruling (WS0 ruling 2): policy-vs-contract
+  # contradiction is the same comparison engine with a different
+  # declared baseline class - ONE contract with declared baseline
+  # classes preserves the draft's meaning.
+  - detect_cs_policy_vs_contract_contradiction
+purpose: >
+  Detect where a named customer's governed agreement terms DEVIATE
+  from the approved standard terms: the customer clause and the
+  standard clause cited both ways BY asset id, the differing verbatim
+  values quoted, the axis declared. This states what THIS customer's
+  documents promise differently from the approved standard - it NEVER
+  states whether the deviation matters to the relationship, whether
+  the customer is healthy or at risk, or what the customer will do
+  (THE IMPUTED HEALTH, refused).
+deviation_convention:
+  baseline_classes: [standard_terms, cs_policy]
+  # v2.4 activates the standard_terms baseline; cs_policy is the
+  # consolidated draft's declared class over the same engine.
+  # THE BASELINE DOCTRINE (WS0 ruling 3): no standard baseline, no
+  # deviation diagnosis. Baseline facts self-identify on their bytes -
+  # a governed fact is a baseline fact iff it carries the declared
+  # baseline marker. A missing/empty baseline is a declared refusal;
+  # "standard" is NEVER inferred from industry practice, averages,
+  # prior customers, or training priors.
+  baseline_markers:
+    standard_terms: ["standard terms"]
+    cs_policy: ["customer success policy"]
+  # The customer side: the named customer is a DECLARED run parameter
+  # recorded verbatim; a customer fact is a governed fact naming the
+  # declared customer. No customer parameter -> refuse.
+  customer_rule: >
+    the customer name is a declared run parameter; customer-side facts
+    are approved facts whose content names the declared customer;
+    baseline-side facts are approved facts carrying the declared
+    baseline marker. Facts carrying BOTH are customer-side (a customer
+    agreement may reference the standard terms).
+  deviation_axes:
+    reporting_cadence: ["performance report"]
+    renewal_notice: ["notice"]
+  axis_value_patterns:
+    # deviation exists ONLY when both sides state the same axis with
+    # DIFFERING verbatim values - matched by these declared patterns,
+    # quoted verbatim in the finding, never normalized or converted
+    reporting_cadence: ["monthly", "weekly", "quarterly",
+                        "(two|three|five|ten) business days"]
+    renewal_notice: ["(thirty|sixty|ninety|one hundred twenty) days"]
+  comparability_rule: >
+    a CUSTOMER_TERM_DEVIATION finding requires the SAME declared axis
+    marker on both a baseline fact and a customer fact, with differing
+    declared-pattern values; both sides quoted verbatim and cited BY
+    asset id. A conforming value (identical on both sides) is SILENCE,
+    never a finding. An axis stated on only one side is NOT a
+    deviation (it may be a coverage question, another skill's ground).
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    standard-terms, agreement, policy, and playbook statements,
+    PRIMARY or DERIVED - including accepted register clause facts,
+    cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - usage/activity records, CRM exports, tickets, NPS, health-score
+    tables as data, activity feeds, relationship-state metrics -
+    every operational customer record (until [OE])
+  - an assumed, inferred, or industry-standard baseline (THE BASELINE
+    DOCTRINE - no standard baseline, no deviation diagnosis)
+  - any relationship-state assertion as evidence or output (THE
+    IMPUTED HEALTH)
+  - wall-clock time (declared parameters only)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A CUSTOMER_TERM_DEVIATION finding requires the verbatim customer
+  excerpt (asset id + quote), the verbatim baseline excerpt (asset id
+  + quote), the declared axis, and the two differing declared-pattern
+  values quoted verbatim. Nothing is normalized ("ninety days" is
+  never converted to "90 days"). DERIVED evidence cited as DERIVED.
+  evidence_basis: EXCERPT_BACKED (both sides).
+forbidden_vocabulary:
+  # THE IMPUTED HEALTH sweep - none may appear in any finding byte
+  # (this skill quotes terms, never relationship-state claims, so it
+  # has no quote-frame exemption)
+  - "is healthy"
+  - "churn risk"
+  - "likely to churn"
+  - "likely to renew"
+  - "health score"
+  - "customer is satisfied"
+  - "at risk of churn"
+allowed_finding_kinds: [CUSTOMER_TERM_DEVIATION]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the declared customer, the
+  declared axis, the customer excerpt (asset id + verbatim quote), the
+  baseline excerpt (asset id + verbatim quote), the differing values,
+  proposed action (schedule the human terms review - the workbench
+  never renegotiates, amends, or approves terms).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - no approved fact carries the declared baseline marker -> refuse,
+    declared ("no standard baseline, no deviation diagnosis")
+  - no declared customer parameter -> refuse
+  - the axis fires on one side only -> not a deviation; stay silent
+  - identical values on both sides -> conformance is SILENCE
+  - a relationship-state question ("is this customer at risk?") ->
+    refuse, naming [OE] (THE IMPUTED HEALTH)
+question_frames:
+  - "Where do this customer's governed agreement terms deviate from the approved standard terms?"
+  - "Which customer-specific clauses differ from the standard baseline on a declared axis?"
