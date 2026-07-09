@@ -4,10 +4,10 @@ Approved vendor agreement for datacenter colocation services.
 
 ## Fees
 
-The customer shall pay a monthly colocation fee of 12,000 EUR,
-payable within 30 days of the invoice date. The fee shall increase by
-8% on each anniversary of the effective date, applied to the
-then-current fee.
+The customer shall pay a monthly colocation fee of 12,000 EUR, which
+shall increase by 8% on each anniversary of the effective date,
+applied to the then-current fee. The fee is payable within 30 days of
+the invoice date.
 
 ## Late payment penalty
 

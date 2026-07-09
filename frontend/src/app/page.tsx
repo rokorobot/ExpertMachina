@@ -56,6 +56,7 @@ const WORKBENCH_CATALOG_INFO: Record<string, { title: string; canonical?: number
   'procurement-intelligence': { title: 'Procurement Document Intelligence', canonical: 3, milestone: 'v1.8', posture: 'Every number verbatim; windows computed only on the declared clock' },
   'executive-briefing': { title: 'Executive Operations Briefing', canonical: 1, milestone: 'v1.9', posture: 'Every sentence cited, clocked, or declared synthesis - the boundary states what it cannot see' },
   'contract-intelligence': { title: 'Contract Intelligence', canonical: 16, milestone: 'v2.1', posture: 'The shared engine - verbatim clause register; the paraphrased clause refused' },
+  'finance-cost-leakage': { title: 'Finance & Cost Leakage', canonical: 2, milestone: 'v2.3', posture: 'Document-governed cost exposure, never transactional truth - no invented money, the unopened ledger' },
 };
 
 interface ConsoleCitation {

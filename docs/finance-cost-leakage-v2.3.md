@@ -343,3 +343,105 @@ declares `[a, b, c]`, not dash items).
 **Harness: 85/85 green (9:00).** `common.py` unchanged (sixth reuse);
 no route, no table, no tool, no guard, no law; [OE]/[PMD] refused live
 and unminted. NO UI, NO PR.
+
+---
+
+## WS3 — THE MILESTONE GATE + the catalog card + THE COMMERCIAL VERDICT (2026-07-09)
+
+**THE MILESTONE GATE** (`backend/test_finance_acceptance.py`, the 86th
+suite, eleven stages green): the full commercial loop — corpora →
+INTERNAL package + AGENT binding → **THE REAL REGISTER CHAIN** (the
+v2.1 engine proposed 158 clause candidates, all held DERIVED at the
+valve; a human accepted a fee/price register clause) → recompiled
+package → the finance runner engaged at the declared clock.
+
+- **THE SECOND HARVEST PROOF**: an exposure finding cites the accepted
+  DERIVED register fact BY id ([DERIVED] on the cite);
+  `extract_payment_terms` is CONSOLIDATED into the v2.1 register and
+  v2.3 carries NO payment-term re-extraction path (asserted:
+  not in ACTIVE_SKILLS, the draft is CONSOLIDATED, no skill file
+  re-implements it) — the cross-workbench consolidation is intact and
+  proven through the real chain, not a fixture.
+- **THE EXPOSURE ARITHMETIC**: `12,000 EUR x 8% = 960.00 EUR
+  (declared arithmetic over verbatim values only)` on the finding
+  bytes — the formula stated, over a verbatim base and a verbatim
+  rate from a cited fact.
+- **THE INVENTED MONEY SWEEP**: every money token in every exposure
+  finding is verbatim in a cited source OR in the finding's declared
+  arithmetic (nothing invented); the SETTLED-ACCOUNT dictionary
+  catches a synthetic "the payment cleared / actual cost was"
+  violation and spares the legitimate conditional "not paid by its
+  due date" clause (THE INVOICE-SENTENCE DISTINCTION).
+- **THE UNOPENED LEDGER end-to-end**: structural (only `runner.py` in
+  the bundle; no transactional door/reader); adversarial (THE INVOICE
+  PLANT document ingested, no plant fact became a finding);
+  byte-level (zero SETTLED-ACCOUNT vocabulary on any written byte);
+  and the diagnosis wrote NOTHING governed (the knowledge-table
+  fingerprint byte-identical, the three operational-evidence tables
+  excluded by the v2.2 ruling).
+- **THE LABELED SCENARIO**: the scenario brief wears "[ESTIMATE,
+  non-authoritative]" in-unit, 07-confined, never a proposal.
+- **The valve + human gate**: exposure proposals held DERIVED,
+  provenance verified, one accepted → APPROVED, still DERIVED.
+- **The closers**: route manifest 88 (frozen digest), the nine MCP
+  tools, D24 byte-identical at 28/305.
+
+**The catalog card**: ONE `WORKBENCH_CATALOG_INFO` row added to the
+Operations Workbench Catalog (`frontend/src/app/page.tsx`) — Finance &
+Cost Leakage, canonical #2, v2.3, posture "Document-governed cost
+exposure, never transactional truth". No UI beyond the existing
+catalog mechanism.
+
+**The in-browser before/after (the recorded recipe; seeded throwaway
+DB running the REAL chain — engine → lane → human accept → recompile →
+finance runner → lane):** the Operations **Workbench Catalog** shows
+the **Finance & Cost Leakage** card (#2, v2.3) with **22 proposals /
+137 held / 0 accepted / 3 skills fired** (detect_cost_exposure,
+compare_terms_vs_finance_policy, detect_missing_finance_evidence in the
+chips); the Proposal Pipeline origin chips and per-workbench filter
+live; a finance exposure proposal wearing **PROVENANCE VERIFIED** and
+**"cites N governed asset(s)"**; ONE live **Accept as DERIVED** → the
+card updates to **136 held / 1 accepted DERIVED**, the accepted item
+still DERIVED; zero console errors/warnings — the only non-2xx is the
+known pre-login 401. The screenshot rasterizer times out in this
+environment (as since v1.9) — the DOM/text record is the browser
+evidence, per the standing pattern.
+
+**Two honest WS3 fixes recorded:** the datacenter fee clause was
+reworded to keep the currency base and the rate in ONE sentence (so a
+REAL PRIMARY/register fact carries declared-arithmetic material —
+extraction splits by sentence; WS1/WS2 finance suites re-run green,
+unaffected); and the "wrote nothing governed" fingerprint check was
+bracketed tightly around the diagnosis run (Stage 4), not across the
+later valve-ingestion stages.
+
+**Harness: 86/86 green (9:39).** `common.py` unchanged (sixth reuse);
+no route, no table, no tool, no guard, no law; [OE]/[PMD] refused live
+and unminted; Guard 7 untouched; the shipped suites byte-untouched.
+
+## THE COMMERCIAL VERDICT — the finance reader (CFO / controller)
+
+**What v2.3 can safely sell in v1:** a governed cost-exposure
+diagnosis workbench over approved contracts, finance policies, the
+v2.1 clause register, and v2.2 deadline/calendar windows — every
+figure quoted verbatim from an approved document or computed by
+declared arithmetic you can check, every vague or projected figure
+labeled a non-authoritative estimate, every exposure window on a
+declared clock, and every finding a human-gated DERIVED proposal.
+
+**What v2.3 explicitly does NOT sell:** it is not accounts payable,
+accounts receivable, procurement execution, ERP reconciliation,
+accounting truth, invoice status, payment status, or spend analytics.
+It never states what was actually paid, spent, booked, or balanced;
+those questions are declined, naming the (unminted) Operational
+Evidence Realm.
+
+**THE GATE: THE COMMERCIAL VERDICT — the user answers as CFO /
+controller.** The question, verbatim: *"Would you put this governed
+cost-exposure diagnosis in front of your monthly finance review —
+every figure quoted from an approved document or computed by declared
+arithmetic you can check, every estimate labeled as an estimate, every
+exposure window on a declared clock — knowing it will never tell you
+what was actually paid, spent, or booked until an operational evidence
+realm is deliberately minted?"* The milestone closes on that verdict
+or it does not close.
