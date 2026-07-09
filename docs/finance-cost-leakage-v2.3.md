@@ -445,3 +445,13 @@ exposure window on a declared clock — knowing it will never tell you
 what was actually paid, spent, or booked until an operational evidence
 realm is deliberately minted?"* The milestone closes on that verdict
 or it does not close.
+
+**THE VERDICT: PASSED (2026-07-09).** The user, answering as CFO /
+controller, answered YES: the governed cost-exposure diagnosis is
+accepted for the monthly finance review — every figure verbatim or
+declared arithmetic, every estimate labeled, every window on a
+declared clock, and no claim of actual paid/spent/booked truth until
+an operational evidence realm is deliberately minted. The verdict was
+given against the full WS3 evidence record above, limitations stated
+and standing. THE MILESTONE GATE IS CLOSED; v2.3 Finance & Cost
+Leakage ships as v2.3.0.
