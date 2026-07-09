@@ -57,6 +57,7 @@ const WORKBENCH_CATALOG_INFO: Record<string, { title: string; canonical?: number
   'executive-briefing': { title: 'Executive Operations Briefing', canonical: 1, milestone: 'v1.9', posture: 'Every sentence cited, clocked, or declared synthesis - the boundary states what it cannot see' },
   'contract-intelligence': { title: 'Contract Intelligence', canonical: 16, milestone: 'v2.1', posture: 'The shared engine - verbatim clause register; the paraphrased clause refused' },
   'finance-cost-leakage': { title: 'Finance & Cost Leakage', canonical: 2, milestone: 'v2.3', posture: 'Document-governed cost exposure, never transactional truth - no invented money, the unopened ledger' },
+  'customer-success-intelligence': { title: 'Customer Success Intelligence', canonical: 6, milestone: 'v2.4', posture: 'Per-customer term deviations, renewal windows, coverage gaps, and quoted unsupported assumptions - evidence-backed; the imputed health refused, the unread customer' },
 };
 
 interface ConsoleCitation {
