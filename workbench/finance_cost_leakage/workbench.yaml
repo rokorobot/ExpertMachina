@@ -1,0 +1,125 @@
+# The Finance & Cost Leakage Workbench manifest (v2.3.0)
+# Canonical workbench #2 in the 16-workbench catalog - the FIFTH
+# commercial workbench and the substrate's SECOND consumer (after the
+# v2.2 deadline extension). Convention, not constitution: this manifest
+# governs the reference runner; its claims travel in proposal
+# frontmatter, recorded verbatim at the gate, verified where governed
+# records permit, never obeyed.
+#
+# THE SPINE (carried verbatim into every gate): v2.3 diagnoses governed
+# cost exposure from approved documents, register facts, and
+# declared-clock windows. It does NOT determine transactional financial
+# truth.
+workbench: finance_cost_leakage
+canonical_number: 2
+status: ACTIVE
+version: 1
+milestone: v2.3
+purpose: >
+  Diagnose document-governed cost exposure: contract cost terms vs.
+  finance policy, fee/penalty/renewal/notice/surcharge/escalation
+  exposure stated in approved documents, register-fed exposure
+  windows, declared-clock cost windows, missing finance evidence, and
+  labeled cost-exposure scenarios. Document-governed slice only:
+  approved documents, register facts (v2.1), and calendar windows
+  (v2.2) are the ONLY inputs. This workbench is cost EXPOSURE
+  intelligence, not finance OPERATIONS.
+sensitivity_posture: >
+  THE INVENTED MONEY is the cardinal sin. Every money value is either
+  quoted verbatim from an approved document/register fact (cited by
+  asset id), produced by DECLARED arithmetic from cited verbatim
+  values at a declared clock (the formula stated in the finding), or
+  labeled explicitly as a non-authoritative exposure estimate/scenario
+  confined to [assist, synth]. The workbench NEVER presents an
+  invented, inferred, approximated, or scenario value as governed
+  financial fact. THE SETTLED ACCOUNT is the twin sin: the workbench
+  NEVER asserts transactional truth (paid, spent, booked, balanced,
+  processed, issued, cleared) from any evidence at all - it knows what
+  documents OBLIGATE and what they COULD cost, never what actually
+  happened. Document-grounded, or refused.
+the_invoice_sentence_distinction: >
+  The boundary is not whether a document contains the word "invoice"
+  - it is whether the system asserts transactional truth. A document
+  SENTENCE about invoice terms ("payable within 21 days") is governed
+  evidence, in scope. An invoice AS A RECORD, and any assertion that a
+  specific invoice was paid/issued/processed, is [OE], refused.
+forbidden_vocabulary:
+  # swept over every written finding/brief byte at the WS2/WS3 gates -
+  # THE SETTLED ACCOUNT made mechanical; each phrase is an assertion of
+  # transactional truth the doors cannot and must not evidence
+  - "was paid"
+  - "were paid"
+  - "was not paid"
+  - "paid late"
+  - "actually spent"
+  - "actual spend was"
+  - "actual cost was"
+  - "the balance is"
+  - "ledger shows"
+  - "erp shows"
+  - "invoice was processed"
+  - "invoice was issued"
+  - "payment cleared"
+  - "payment failed"
+  - "overdrawn"
+  - "booked to"
+  - "posted to the ledger"
+forbidden_inputs:
+  # the transactional/operational classes - refused at runtime, each
+  # naming [OE]; THE INVOICE PLANT (an invoice-shaped document ingested
+  # through the pipeline) is DECLINED as exposure evidence with a
+  # declared skip - approved-document status never launders a
+  # transactional record into an exposure input
+  - invoices as transactional records
+  - purchase orders as operational records
+  - payments and payment status
+  - bank status
+  - ERP balances
+  - accounting-ledger state
+  - actual-spend records
+  - receivables / payables state
+  - any "did it happen?" record
+domain_scope: finance
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+skills:
+  - detect_cost_exposure
+  - compare_terms_vs_finance_policy
+  - detect_missing_finance_evidence
+  - prepare_cost_exposure_scenario
+  - prepare_finance_evidence_pack
+the_second_harvest: >
+  v2.3 is the substrate's SECOND consumer. detect_cost_exposure reads
+  accepted v2.1 register clause facts (payment/renewal/fee terms) and
+  v2.2-computed deadline/renewal windows as first-class inputs, cited
+  BY governed asset id - nothing is re-extracted. draft 1
+  (extract_payment_terms) is CONSOLIDATED into the v2.1 register and
+  draft 15 (detect_outdated_finance_policies) into the shipped v1.7
+  identify_outdated_policies: the first two CROSS-WORKBENCH
+  consolidations in the catalog.
+refused_until_minted:
+  operational_evidence: >
+    invoice/PO/payment/ERP/ledger/bank analysis and every "did it
+    happen?" question (draft-2 Future-[OE] family:
+    detect_duplicate_invoices, compare_po_vs_invoices,
+    detect_unusual_cost_increases, flag_overdue_receivables,
+    detect_budget_overrun_from_accounting,
+    detect_payment_terms_not_followed) - refused live, naming [OE]
+  exception_stewardship: >
+    finance obligation owner assignment/routing
+    (identify_missing_finance_obligation_owner) - detection may be a
+    future [now] skill; assignment is [ES]
+the_unopened_ledger: >
+  The distinctive proof: the full diagnosis completes citing only
+  approved documents + register facts BY id + calendar windows at the
+  declared clock, and the forbidden transactional inputs are never
+  read - proven structurally (no transactional door exists),
+  adversarially (THE INVOICE PLANT declined, [OE] named), and on the
+  bytes (THE SETTLED ACCOUNT sweep).

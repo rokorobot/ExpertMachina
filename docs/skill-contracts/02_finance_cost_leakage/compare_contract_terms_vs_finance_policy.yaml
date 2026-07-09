@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: compare_contract_terms_vs_finance_policy
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: compare_terms_vs_finance_policy
+ratified_path: workbench/finance_cost_leakage/skills/compare_terms_vs_finance_policy.yaml
+# the ratified comparison contract (WS0 ruling 2)
 boundary_tags: [now]
 pattern: compare
 purpose: >

@@ -1,0 +1,72 @@
+skill_id: prepare_cost_exposure_scenario
+workbench: finance_cost_leakage
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+consolidates:
+  # WS0 ruling 2: draft 8 (prepare_cfo_cost_reduction_scenario)
+  # renamed - THE LABELED-ESTIMATE discipline lives here.
+  - prepare_cfo_cost_reduction_scenario
+purpose: >
+  Produce a point-in-time cost-exposure scenario brief for a finance
+  reader: the governed exposures, and - clearly labeled as
+  non-authoritative estimates - what they COULD cost under stated
+  assumptions. A snapshot for planning, never a finding, never
+  knowledge, never a governed number. THE LABELED-ESTIMATE discipline:
+  every estimated figure carries its non-authoritative label IN THE
+  SAME OUTPUT UNIT as the number, and every scenario states its
+  assumptions verbatim.
+estimate_convention:
+  # the money-doctrine tiers made structural for the assist output:
+  estimate_label: "[ESTIMATE, non-authoritative]"
+  label_rule: >
+    a governed figure (tier 1 verbatim, or tier 2 declared arithmetic
+    over verbatim values) is printed with its citation; ANY other
+    figure - a projection, a rounded total, a scenario sum - is
+    printed with the estimate_label adjacent in the same line/unit and
+    its assumptions stated. An estimate figure without its label is a
+    contract violation swept pre-write (THE INVENTED MONEY).
+sections:
+  # the three mandatory sections; an empty section carries its
+  # declared-absence note (the v1.9 empty-note discipline)
+  - governed_exposures: the accepted/known exposures, each with the
+      verbatim excerpt (asset id + quote) and any governed figure cited
+  - scenarios: labeled non-authoritative estimates under stated
+      assumptions - every figure wears the estimate_label
+  - assumptions: the assumptions each scenario rests on, stated
+      verbatim, and what governed evidence would replace the estimate
+allowed_inputs:
+  - approved knowledge in the finance scope (PRIMARY or DERIVED -
+    including accepted register facts, cited by asset id)
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - invoices / POs / payments / bank / ERP / ledger / actual-spend
+    records (until [OE]); THE INVOICE PLANT declined, naming [OE]
+  - any claim of actual spend/payment/balance (THE SETTLED ACCOUNT)
+  - an estimate figure without its non-authoritative label presented
+    as governed fact (THE INVENTED MONEY)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every governed figure cites its asset; every estimated figure wears
+  the estimate_label in-unit and states its assumptions. Narrative
+  framing declared SYNTHESIS_INFERRED. DERIVED facts cited as DERIVED.
+  No SETTLED ACCOUNT vocabulary.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A brief for humans written to 07_agent_workspaces (ungoverned
+  scratch, never scanned) - NOT a proposal, never written to
+  /08_proposals, never re-enters knowledge (circular derivation
+  refused). The declared as_of prints in the header verbatim.
+human_approval_requirement: >
+  None applies - the brief proposes nothing and never enters
+  knowledge; the valve is not in its path by design.
+audit_event: >
+  MCP calls audited per call; the brief itself is scratch, not evidence.
+refusal_conditions:
+  - an estimate figure without its non-authoritative label -> refuse
+    pre-write (THE INVENTED MONEY)
+  - a request to state actual spend/payment/balance -> refuse, naming
+    [OE] (THE SETTLED ACCOUNT)
+  - persistence / scheduling / a kept cost calendar -> refuse (the
+    v2.2 persistent-calendar refusal carries)

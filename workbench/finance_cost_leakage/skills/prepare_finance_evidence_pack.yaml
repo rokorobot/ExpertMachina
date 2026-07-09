@@ -1,0 +1,61 @@
+skill_id: prepare_finance_evidence_pack
+workbench: finance_cost_leakage
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+absorbs:
+  # WS0 ruling 2: draft 12 is the ratified assist; it absorbs draft 11
+  # (generate_monthly_finance_exception_report) as a declared section -
+  # a governed-findings summary is a section of the pack, not a
+  # separate skill.
+  - generate_monthly_finance_exception_report
+purpose: >
+  Produce an evidence-backed finance pack for a named cost/exposure
+  topic: what the governed corpus documents, with
+  known / exposed / conflicting / estimated clearly separated. The
+  pack is preparation material for a finance reader - never a finance
+  conclusion, never an accounting statement, and never knowledge.
+sections:
+  # the four mandatory buckets - the sensitivity posture made
+  # structural. Nothing moves between buckets without governed
+  # evidence for the move; the "estimated" bucket is the ONLY place a
+  # non-governed figure may appear, and only with its label.
+  - known: approved cost/term statements with citations (asset ids + excerpts)
+  - exposed: accepted COST_EXPOSURE / FINANCE_POLICY_MISMATCH /
+      MISSING_FINANCE_EVIDENCE findings (DERIVED facts), cited as DERIVED
+  - conflicting: governed CONFLICTS_WITH pairs in the finance scope
+      (cited by relationship + both assets)
+  - estimated: labeled non-authoritative estimates only, each with the
+      "[ESTIMATE, non-authoritative]" label in-unit - never asserted
+      as governed fact
+allowed_inputs:
+  - approved knowledge in the finance scope
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - invoices / POs / payments / bank / ERP / ledger / actual-spend
+    records (until [OE]); THE INVOICE PLANT declined, naming [OE]
+  - any accounting/spend/payment "actuals" (THE SETTLED ACCOUNT)
+  - unlabeled estimates presented as governed fact (THE INVENTED MONEY)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every statement cited to governed assets; conflicts and gaps
+  referenced by their governed evidence; DERIVED facts cited as
+  DERIVED; every estimated figure labeled in-unit; narrative framing
+  declared SYNTHESIS_INFERRED. No generated accounting conclusion, no
+  actual-spend figure, no SETTLED ACCOUNT vocabulary.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A pack for humans (written to 07_agent_workspaces or handed to the
+  caller) - NOT a proposal, never written to /08_proposals, never
+  re-enters knowledge. The four buckets always present; an empty
+  bucket carries its declared-absence note.
+human_approval_requirement: >
+  None applies - the pack proposes nothing and never enters knowledge.
+audit_event: >
+  MCP calls audited per call; the pack itself is scratch, not evidence.
+refusal_conditions:
+  - a figure in any bucket but "estimated" that is not governed ->
+    refuse (THE INVENTED MONEY)
+  - a request for accounting/spend actuals -> refuse, naming [OE]
+    (THE SETTLED ACCOUNT)

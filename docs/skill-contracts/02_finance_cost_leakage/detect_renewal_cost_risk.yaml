@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_renewal_cost_risk
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_cost_exposure
+ratified_path: workbench/finance_cost_leakage/skills/detect_cost_exposure.yaml
+# the renewal_cost exposure class of detect_cost_exposure (WS0 ruling 2)
 boundary_tags: [now]
 pattern: deadline
 purpose: >

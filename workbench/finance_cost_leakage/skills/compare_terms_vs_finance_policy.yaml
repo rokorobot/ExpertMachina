@@ -1,0 +1,80 @@
+skill_id: compare_terms_vs_finance_policy
+workbench: finance_cost_leakage
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: contradictory-guidance
+consolidates:
+  # WS0 ruling 2: three registry #2 drafts are all "an approved
+  # contract term disagrees with an approved finance policy" over
+  # declared comparison axes - ONE contract.
+  - compare_contract_terms_vs_finance_policy
+  - identify_budget_policy_conflicts
+  - identify_payment_term_mismatch_risk
+purpose: >
+  Detect where an approved contract/document cost term conflicts with
+  an approved finance policy: payment-term mismatches, spend-threshold
+  breaches stated in documents, and pricing-discipline conflicts. Both
+  sides are governed documents; the finding names the two verbatim
+  statements and the axis on which they disagree. It states that two
+  approved DOCUMENTS disagree - never that a payment was actually made
+  outside policy (THE SETTLED ACCOUNT, refused).
+comparison_convention:
+  comparison_axes: [payment_terms, spend_thresholds, pricing_discipline]
+  # a mismatch requires a verbatim term from a contract-side document
+  # and a verbatim rule from a policy-side document that disagree on
+  # the SAME declared axis; numeric comparison is over verbatim values
+  # only (e.g. "payable within 60 days" vs "at least 45 days" -> a
+  # payment_terms mismatch, the two figures quoted, never a computed
+  # penalty).
+  axis_markers:
+    payment_terms: ["payable within", "net ", "days of the invoice",
+                    "payment terms", "days from the invoice"]
+    spend_thresholds: ["approval", "threshold", "authori",
+                       "sign-off", "exceeding", "up to"]
+    pricing_discipline: ["discount", "price schedule", "then-current",
+                         "list price", "rate card"]
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    contract terms AND approved finance-policy statements, PRIMARY or
+    DERIVED - including accepted register facts, cited by asset id)
+  - MCP get_conflicts / get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - invoices / POs / payments / bank / ERP / ledger / actual-spend
+    records (until [OE]); THE INVOICE PLANT declined, naming [OE]
+  - any claim that a payment/spend actually breached policy (THE
+    SETTLED ACCOUNT) - the finding is document-vs-document only
+  - inferred money values presented as governed fact (THE INVENTED MONEY)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A finding requires the verbatim contract-side excerpt (asset id +
+  quote), the verbatim policy-side excerpt (asset id + quote), and
+  the declared axis on which they disagree; any numbers are verbatim
+  from the two cited facts. No axis, no finding. evidence_basis:
+  CONFLICT_BACKED (falls back to EXCERPT_BACKED when the two sides are
+  both explicit but not a governed CONFLICTS_WITH pair).
+forbidden_vocabulary:
+  - "was paid"
+  - "actually spent"
+  - "the balance is"
+  - "invoice was processed"
+allowed_finding_kinds: [FINANCE_POLICY_MISMATCH]
+output_format: >
+  One proposal per finding to /08_proposals with the D30 + catalog
+  frontmatter claims; body = the two verbatim excerpts (both asset
+  ids), the comparison axis, the verbatim figures on each side,
+  proposed action (reconcile the contract term with the policy through
+  the governed workflow - the workbench never amends either).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - only one side is governed (no policy-side or no contract-side
+    statement) -> refuse, declared (never assume the missing side)
+  - the disagreement is not on a declared axis -> NEEDS_REVIEW
+  - a transactional record offered as the "actual" side -> decline,
+    naming [OE]
+question_frames:
+  - "Which approved contract cost terms disagree with an approved finance policy?"

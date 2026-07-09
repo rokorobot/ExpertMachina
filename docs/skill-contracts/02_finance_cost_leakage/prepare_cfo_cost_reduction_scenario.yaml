@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_cfo_cost_reduction_scenario
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: prepare_cost_exposure_scenario
+ratified_path: workbench/finance_cost_leakage/skills/prepare_cost_exposure_scenario.yaml
+# renamed to prepare_cost_exposure_scenario - THE LABELED-ESTIMATE discipline (WS0 ruling 2)
 boundary_tags: [assist, synth]
 pattern: assist
 purpose: >

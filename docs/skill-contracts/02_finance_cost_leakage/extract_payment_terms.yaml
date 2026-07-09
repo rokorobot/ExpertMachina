@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: extract_payment_terms
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: extract_contract_clauses
+ratified_path: workbench/contract_intelligence/skills/extract_contract_clauses.yaml
+# the FIRST cross-workbench consolidation (WS0 ruling 2): payment/fee/renewal term extraction is the v2.1 shared register - nothing re-extracts
 boundary_tags: [now]
 pattern: extract
 purpose: >
