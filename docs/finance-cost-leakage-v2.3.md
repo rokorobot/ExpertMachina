@@ -271,3 +271,75 @@ term, which is exactly THE INVOICE-SENTENCE DISTINCTION working).
 **Harness: 84/84 green (9:23).** NO runner, NO UI, NO PR. The
 doctrine wording is intact: NO INVENTED MONEY, THE SETTLED ACCOUNT,
 THE INVOICE-SENTENCE DISTINCTION, THE UNOPENED LEDGER.
+
+---
+
+## WS2 — the runner + THE DIAGNOSIS PROOF (2026-07-09)
+
+**The runner** (`workbench/finance_cost_leakage/runner.py`, on
+`common.py` — the SIXTH zero-edit reuse; `common.py` unchanged): THE
+ACTIVE FIVE with all conventions PARSED from the contract bytes
+(class_markers, transactional_record_markers, comparison axis_markers,
+requirement_classes, the estimate_label). Three finding walks —
+`detect_cost_exposure` (exposure classes + declared arithmetic + the
+dated-window facet + THE SECOND HARVEST + THE INVOICE PLANT decline),
+`compare_terms_vs_finance_policy` (payment-terms floor comparison,
+document-vs-document), `detect_missing_finance_evidence`
+(REFUSAL_BACKED spend-approval) — plus the two assist briefs
+(`prepare_cost_exposure_scenario` with THE LABELED ESTIMATE,
+`prepare_finance_evidence_pack`). THE SETTLED ACCOUNT sweep
+(`check_posture`) runs over every finding statement AND every brief
+byte before write.
+
+**One WS2 contract refinement (flagged, precedented by v2.2):**
+`transactional_record_markers` added to `detect_cost_exposure.yaml`
+(invoice number / remit to / amount due / bill to / purchase order
+number) — the runtime key for THE INVOICE PLANT decline. It identifies
+a RECORD by structure, never the word "invoice" — THE
+INVOICE-SENTENCE DISTINCTION holds.
+
+**THE DIAGNOSIS PROOF** (`backend/test_finance_workbench.py`, the 85th
+suite, eight parts green): Guard 5 sweep (9 modules, zero edits); 15
+docs + a DERIVED register fixture + THE INVOICE PLANT fixture
+packaged; THE DIAGNOSIS (all three finding kinds fire; byte-identical
+re-runs; writes confined to 08+07); **THE EXPOSURE ARITHMETIC** —
+`12,000 EUR x 8% = 960.00 EUR` by declared arithmetic over verbatim
+values, on the finding bytes; **THE SECOND HARVEST** — an exposure
+finding cites the DERIVED register fact BY id, tagged [DERIVED]; **THE
+UNOPENED LEDGER** — THE INVOICE PLANT declined with a declared [OE]
+skip and never a finding, while the legitimate "not paid by its due
+date" penalty CLAUSE survives as a penalty_fee exposure (THE
+INVOICE-SENTENCE DISTINCTION), and zero SETTLED-ACCOUNT vocabulary
+appears on any written byte; **THE LABELED ESTIMATE** — the scenario
+brief is 07-confined, assist-only, wearing "[ESTIMATE,
+non-authoritative]" in-unit; the closers (route manifest 88, the nine
+MCP tools, D24 28/305).
+
+**How THE INVOICE PLANT decline works:** the runner's
+`is_transactional_record` returns true when a fact carries any
+declared `transactional_record_markers` OR any SETTLED-ACCOUNT
+forbidden phrase; such facts are declined with a declared [OE] skip in
+`skipped`, never classified or emitted — the decline is at the
+record/document level, not the word "invoice".
+
+**How THE SETTLED ACCOUNT sweep avoids false positives:** the
+forbidden vocabulary is transactional-truth ASSERTIONS ("was paid",
+"payment cleared", "posted to the ledger"), never the conditional
+contract phrase "not paid by its due date". The proof asserts BOTH
+directions — the plant declined AND the penalty clause surviving as a
+finding.
+
+**Two honest WS2 fixes recorded:** the COST_EXPOSURE narrator's own
+boilerplate ("never what was paid or spent") tripped its own sweep —
+reworded to "never any actual outlay or settlement" (the sweep has
+real teeth, even on the runner's own prose); and the WS1 precondition
+suite's transient "no runner exists yet" assertion was softened to the
+DURABLE claim "the bundle carries only the runner, never a
+transactional-reader module" (a point-in-time WS1 truth in a permanent
+CI suite, correctly updated once WS2 built the runner). The
+requirement_classes inline-list parser was added (the contract
+declares `[a, b, c]`, not dash items).
+
+**Harness: 85/85 green (9:00).** `common.py` unchanged (sixth reuse);
+no route, no table, no tool, no guard, no law; [OE]/[PMD] refused live
+and unminted. NO UI, NO PR.

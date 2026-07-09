@@ -38,6 +38,19 @@ exposure_convention:
               "non-refundable", "evergreen", "true-up"]
     pricing_review: ["subject to review", "may be revised",
                      "at the discretion", "then-current"]
+  transactional_record_markers:
+    # THE UNOPENED LEDGER decline (WS2 refinement): a fact carrying any
+    # of these is a TRANSACTIONAL RECORD (an invoice/PO/statement), not
+    # a contract clause - DECLINED as an exposure input, declared,
+    # naming [OE]. These identify a RECORD by structure; they are NOT
+    # the word "invoice" (a clause "payable within 21 days of the
+    # invoice date" carries none of them) - THE INVOICE-SENTENCE
+    # DISTINCTION holds.
+    - "invoice number"
+    - "remit to"
+    - "amount due"
+    - "bill to"
+    - "purchase order number"
   # THE MONEY DOCTRINE (WS0 ruling 3), on the bytes of every finding:
   money_value_rule: >
     every money value is (1) VERBATIM from a cited approved

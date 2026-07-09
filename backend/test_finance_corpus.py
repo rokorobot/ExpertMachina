@@ -156,11 +156,14 @@ def main():
     assert sorted(declared) == sorted(ACTIVE_FIVE), "manifest disagrees"
     assert "canonical_number: 2" in manifest
 
-    # Contracts before runtime: NO runner, NO UI, NO transactional door.
-    assert not os.path.isfile(os.path.join(WB_DIR, "runner.py")), \
-        "WS1 must not build the runner"
-    py_files = [f for f in os.listdir(WB_DIR) if f.endswith(".py")]
-    assert py_files == [], f"the bundle carries no python yet: {py_files}"
+    # The bundle carries ONLY the runner - never an operational connector,
+    # invoice/PO/ERP/ledger/bank reader, or UI module. (At WS1 this set was
+    # empty; WS2 adds runner.py. The DURABLE precondition - the one this
+    # permanent suite guards forever - is that no transactional-reader
+    # module ever appears in the bundle.)
+    py_files = set(f for f in os.listdir(WB_DIR) if f.endswith(".py"))
+    assert py_files <= {"runner.py"}, \
+        f"the bundle carries only the runner, never a reader: {py_files}"
 
     # The binding conventions are declared, not implied.
     ddl = read(os.path.join(SKILLS_DIR, "detect_cost_exposure.yaml"))
