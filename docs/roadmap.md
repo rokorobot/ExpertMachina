@@ -38,6 +38,7 @@
 | v2.0.0 | Risk & Exception Stewardship (the [ES] MINTING milestone; D32 — "the exception never becomes a row; the human decisions about it do"; the SEVENTH permanent guard family; the route manifest's first ratified 87→88 amendment) | ✅ Completed (July 2026, D32 ratified) — all gates PASSED incl. THE COMMERCIAL VERDICT (the governance officer); 77 CI suites; 28/305 held; zero schema through a LAW milestone; THE STEWARDSHIP PROOF (row test, ledger-alone reconstruction, vanishing test across three species) |
 | v2.1.0 | Contract Intelligence — the shared engine (catalog #16, the FOURTH commercial workbench; THE PARAPHRASED CLAUSE posture + its twin THE LEGAL CONCLUSION; THE REGISTER DISTINCTION ratified; the 15→1 clause-class consolidation; THE SHARED ENGINE PROOF) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the general counsel / procurement owner); 80 CI suites; 28/305 held; zero new surface or law — no D33, no eighth guard; one extraction contract, two UNCHANGED consumers citing the register BY ID, NO SHARED FACT STORE proven three ways |
 | v2.2.0 | Deadline & Obligation Intelligence (the catalog's FIRST shipped-workbench EXTENSION — compliance #9's deferred deadline family, unlocked by [ES]; THE INVENTED DATE + THE PRESUMED COMPLETION postures; THE ENGAGEMENT RULE; THE COMPUTED CALENDAR; THE HARVEST of the v2.1 register) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the compliance/obligation owner); 83 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched; the constitutional outcome: a computed compliance calendar, never an operational task tracker |
+| v2.3.0 | Finance & Cost Leakage (the FIFTH commercial workbench, canonical #2, the substrate's SECOND consumer — document-governed cost exposure intelligence; NO INVENTED MONEY + THE SETTLED ACCOUNT; THE INVOICE-SENTENCE DISTINCTION; THE UNOPENED LEDGER; THE SECOND HARVEST of the v2.1 register; the first two CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CFO/controller); 86 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a sixth time; diagnoses what documents could cost, never transactional truth |
 
 ---
 
@@ -1238,8 +1239,65 @@ task tracker.*
   evidence realm is someday minted?"* — **RATIFIED, YES.**
 - **NEXT**: [OE] and [PMD] remain the two named-not-minted decisions
   — v2.2 sharpened [OE]'s boundary to one sentence: *"did the work
-  happen?"*. Honest slots carry: the real-model diagnostic run and
-  the v1.2.0 live-SharePoint scan.
+  happen?"*. **Finance & Cost Leakage shipped as v2.3.0** (below).
+
+## v2.3.0 — Finance & Cost Leakage, document-governed cost exposure (Completed)
+
+**The FIFTH commercial workbench and the substrate's SECOND consumer
+(2026-07-09; build contract + all gate records:
+[finance-cost-leakage-v2.3.md](finance-cost-leakage-v2.3.md)).** The
+product claim proven: *a compliance/finance reader can run a monthly
+cost-exposure review from approved contracts, finance policies, the
+v2.1 clause register, and v2.2 deadline windows — every figure
+verbatim or declared arithmetic, every estimate labeled, every window
+on a declared clock — without the platform ever determining
+transactional financial truth.* The spine, carried into every gate:
+*v2.3 diagnoses governed cost exposure from approved documents,
+register facts, and declared-clock windows; it does not determine
+transactional financial truth.*
+
+- **THE ACTIVE FIVE** (`workbench/finance_cost_leakage/`):
+  `detect_cost_exposure` (declared exposure classes; declared
+  arithmetic over verbatim values), `compare_terms_vs_finance_policy`
+  (document-vs-document on declared axes),
+  `detect_missing_finance_evidence` (REFUSAL_BACKED),
+  `prepare_cost_exposure_scenario` [assist, synth] (THE LABELED
+  ESTIMATE), `prepare_finance_evidence_pack` [assist].
+- **NO INVENTED MONEY + THE SETTLED ACCOUNT (the cardinal sins)**:
+  every money value is verbatim, declared arithmetic (the formula
+  stated), or a labeled non-authoritative estimate; the runner never
+  asserts paid/spent/booked/balanced. **THE INVOICE-SENTENCE
+  DISTINCTION**: a clause ABOUT invoices is governed evidence; an
+  invoice RECORD is [OE].
+- **THE UNOPENED LEDGER (the distinctive proof)** — structural (no
+  transactional door), adversarial (THE INVOICE PLANT declined naming
+  [OE]), byte-level (the SETTLED-ACCOUNT sweep on every written byte).
+- **THE SECOND HARVEST** — cost-exposure findings cite v2.1 register
+  clauses BY governed asset id through the REAL chain (finding →
+  DERIVED register → PRIMARY); the catalog's first two CROSS-WORKBENCH
+  consolidations (`extract_payment_terms` → the v2.1 register;
+  `detect_outdated_finance_policies` → the shipped v1.7 contract)
+  intact, with no re-extraction path.
+- **THE EXPOSURE ARITHMETIC**: `12,000 EUR × 8% = 960.00 EUR
+  (declared arithmetic over verbatim values only)` on the finding
+  bytes.
+- **The gates**: THE PRECONDITION PROOF (84th suite, before any
+  runner; the user-ratified `corpus_finance/` extension folder for the
+  three proven gaps), THE DIAGNOSIS PROOF (85th), THE MILESTONE GATE
+  (86th, eleven stages), the Finance catalog card, and the in-browser
+  before/after (22 proposals / 137 held → 136 / 1 accepted DERIVED,
+  zero console errors). THE COMMERCIAL VERDICT (the CFO/controller):
+  *"would you put this governed cost-exposure diagnosis in front of
+  your monthly finance review — every figure quoted or computed by
+  declared arithmetic, every estimate labeled, every window on a
+  declared clock — knowing it will never tell you what was actually
+  paid, spent, or booked until an operational evidence realm is
+  deliberately minted?"* — **RATIFIED, YES.**
+- **NEXT**: [OE] gained a second crisp edge from v2.3 — *"what was
+  actually paid, spent, or booked?"* — alongside v2.2's *"did the work
+  happen?"*; both await [OE]'s own scoping session. The remaining
+  catalog workbenches and the standing backlog carry on. Honest slots:
+  the real-model diagnostic run and the v1.2.0 live-SharePoint scan.
 
 ## Future Direction
 
