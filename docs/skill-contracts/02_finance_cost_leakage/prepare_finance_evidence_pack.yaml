@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: prepare_finance_evidence_pack
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: ACTIVE
+ratified_path: workbench/finance_cost_leakage/skills/prepare_finance_evidence_pack.yaml
 boundary_tags: [assist]
 pattern: assist
 purpose: >

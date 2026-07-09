@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: identify_finance_policy_coverage_gaps
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_missing_finance_evidence
+ratified_path: workbench/finance_cost_leakage/skills/detect_missing_finance_evidence.yaml
+# the policy_coverage requirement class of detect_missing_finance_evidence (WS0 ruling 2)
 boundary_tags: [now]
 pattern: coverage
 purpose: >

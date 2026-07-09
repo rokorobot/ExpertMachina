@@ -1,0 +1,129 @@
+skill_id: detect_cost_exposure
+workbench: finance_cost_leakage
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: declared-clock-window
+consolidates:
+  # the v2.3 consolidation ruling (WS0 ruling 2): four registry #2
+  # drafts are all clause-level cost-exposure questions over approved
+  # document / register facts - ONE contract with declared exposure
+  # classes preserves each draft's meaning as a declared class.
+  - detect_contract_price_increases
+  - detect_renewal_cost_risk
+  - detect_pricing_clauses_requiring_review
+  - identify_leakage_clauses
+purpose: >
+  Detect governed COST EXPOSURE stated in approved documents and
+  accepted register facts: price-increase and escalation clauses,
+  renewal/auto-renewal cost risk, penalty/fee/surcharge terms, and
+  pricing clauses requiring review - each as a declared exposure with
+  its verbatim excerpt and, where the document states the figures,
+  declared-formula arithmetic at a declared clock. This states what a
+  contract COULD cost and WHEN exposure falls due; it NEVER states
+  what was actually spent, paid, or booked (THE SETTLED ACCOUNT,
+  refused).
+exposure_convention:
+  exposure_classes: [price_increase, renewal_cost, penalty_fee,
+                     leakage, pricing_review]
+  # the declared markers this skill reads from governed content; a
+  # class marker with no verbatim figure is a QUALITATIVE exposure
+  # (declared, no number), never an invented one.
+  class_markers:
+    price_increase: ["increase", "increases by", "escalat", "uplift",
+                     "rises by", "adjusted by"]
+    renewal_cost: ["renew", "renewal", "auto-renew", "automatically renew"]
+    penalty_fee: ["penalty", "late fee", "late payment", "surcharge",
+                  "interest", "liquidated damages"]
+    leakage: ["minimum commitment", "unused", "take-or-pay",
+              "non-refundable", "evergreen", "true-up"]
+    pricing_review: ["subject to review", "may be revised",
+                     "at the discretion", "then-current"]
+  # THE MONEY DOCTRINE (WS0 ruling 3), on the bytes of every finding:
+  money_value_rule: >
+    every money value is (1) VERBATIM from a cited approved
+    document/register fact, (2) DECLARED ARITHMETIC - the formula
+    stated verbatim in the finding, computed over cited verbatim
+    values and declared clock parameters (the v1.8 CLAUSE ARITHMETIC
+    lineage; "one fifth" is quoted, never converted to "20%"), or it
+    does not appear as a governed number at all. A percentage stated
+    verbatim ("increases by 7%") may be reported verbatim; applying it
+    to a cited base amount is declared arithmetic ONLY when the base
+    is itself verbatim in a cited fact - otherwise the exposure is
+    reported qualitatively (the class + the verbatim rate), never as a
+    computed currency figure.
+  window_rule: >
+    where an exposure has an explicit or register/calendar-supplied
+    date, in-window iff as_of <= date <= (as_of + window_days); as_of
+    and window_days are DECLARED run parameters recorded verbatim,
+    never wall-clock, never defaulted. A dateless exposure is reported
+    without a window (declared), never with a guessed one.
+the_second_harvest: >
+  Accepted v2.1 register clause facts (payment/renewal/fee/notice
+  terms) and v2.2-computed deadline/renewal windows are first-class
+  inputs, cited BY governed asset id like any approved fact - their
+  concrete-token rule already guarantees the figure or date anchor.
+  Nothing is re-extracted; no engine file is read.
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    document cost/fee/renewal statements, PRIMARY or DERIVED -
+    including accepted register clause facts, cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - invoices / POs / payments / bank status / ERP balances /
+    accounting-ledger state / actual-spend / receivables-payables
+    records - every transactional or operational record (until [OE])
+  - THE INVOICE PLANT: an invoice-shaped document is DECLINED as
+    exposure evidence, declared, naming [OE] (approved-document status
+    never launders a transactional record into an exposure input)
+  - wall-clock time (as_of is declared, never sampled)
+  - inferred / extrapolated / approximated / scenario money values
+    presented as governed fact (THE INVENTED MONEY)
+  - any claim of actual spend / payment / balance / booking /
+    completion (THE SETTLED ACCOUNT)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A COST_EXPOSURE finding requires the verbatim excerpt (asset id +
+  quote), the declared exposure_class, and - only where the document
+  states figures/dates - the declared arithmetic (formula verbatim)
+  and the declared-clock window verdict. The ONLY computed values are
+  deterministic arithmetic over verbatim figures/dates. A dateless or
+  figureless exposure is reported qualitatively. evidence_basis:
+  EXCERPT_BACKED.
+forbidden_vocabulary:
+  # THE SETTLED ACCOUNT sweep - none may appear in any finding byte
+  - "was paid"
+  - "actually spent"
+  - "actual cost was"
+  - "the balance is"
+  - "invoice was processed"
+  - "payment cleared"
+  - "posted to the ledger"
+allowed_finding_kinds: [COST_EXPOSURE]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the verbatim excerpt (asset
+  id + quote), the exposure_class, the verbatim figures/rate, any
+  declared-formula arithmetic + declared as_of/window_days, proposed
+  action (schedule the human cost review - the workbench never
+  renegotiates, pays, or books).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - a class marker with no verbatim figure -> qualitative exposure,
+    never an invented number
+  - a currency figure not verbatim in a cited fact and not declared
+    arithmetic over verbatim values -> refuse the number (THE
+    INVENTED MONEY)
+  - an invoice/PO/payment/ERP/ledger record offered as input ->
+    decline, declared, naming [OE] (THE INVOICE PLANT)
+  - an actual spend/payment/balance question -> refuse, naming [OE]
+    (THE SETTLED ACCOUNT)
+  - no as_of/window_days for a dated-window question -> refuse
+question_frames:
+  - "Which governed contract clauses state a cost increase, penalty, or leakage exposure?"
+  - "Which renewal or pricing clauses carry cost exposure inside the declared window?"

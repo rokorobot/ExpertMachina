@@ -190,3 +190,84 @@ knowledge. Every gate re-runs the D25 sweep and closes on the D24
 snapshot. Guard 5 sweeps the new bundle the moment it exists; Guard
 6 holds the vault seam; Guard 7 holds stewardship. EM never launches
 the workbench (D22). Language per Ruling 3/5 and D29/D30.
+
+---
+
+## WS1 — the contracts, the promotion, and THE PRECONDITION PROOF (2026-07-09)
+
+**The corpus-gap stop (mid-WS1, user-ratified):** the scan proved the
+existing corpora carry real exposure material (the procurement
+payment-terms 21/60 vs ≥45 mismatch; percentage escalators; the
+paraphrase trap; late-payment language) but three gaps were real: no
+finance-policy document with spend thresholds, no clean
+penalty/surcharge clause with a verbatim rate and no verbatim
+currency amount for arithmetic, and no invoice-shaped record (THE
+INVOICE PLANT is adversarial — it cannot exist by accident). The user
+ratified **`corpus_finance/`** (the v2.2 extension-folder pattern; only
+v2.3 suites ingest it): `finance-policy.md` (5,000/50,000 EUR
+approval tiers, a ≥30-day payment floor, the >10% renewal
+re-approval), `datacenter-colocation-agreement.md` (12,000 EUR/month
+verbatim fee, the 8% escalator, the 1.5%/month late surcharge, the
+120,000 EUR minimum-commitment/true-up leakage clause, the 90-day
+auto-renewal), and `vendor-invoice-4471.md` (**THE INVOICE PLANT** —
+a transactional record carrying SETTLED-ACCOUNT vocabulary, planted
+to be DECLINED). Plant map in `workbench/finance_cost_leakage/CORPUS.md`.
+
+**The five ratified contracts**
+(`workbench/finance_cost_leakage/skills/`): `detect_cost_exposure`
+(declared exposure_classes + class_markers + money_value_rule +
+window_rule + the_second_harvest + forbidden_vocabulary — NO INVENTED
+MONEY in the bytes), `compare_terms_vs_finance_policy` (declared
+comparison_axes + axis_markers; document-vs-document only),
+`detect_missing_finance_evidence` (REFUSAL_BACKED; declared
+requirement classes; the "did it happen?" half refused naming [OE]),
+`prepare_cost_exposure_scenario` ([assist, synth]; the
+estimate_label "[ESTIMATE, non-authoritative]" IN-UNIT — THE
+LABELED-ESTIMATE discipline), `prepare_finance_evidence_pack`
+(known/exposed/conflicting/estimated; absorbs the monthly exception
+report as a declared section). The manifest carries the spine
+verbatim, THE INVOICE-SENTENCE DISTINCTION, the SETTLED-ACCOUNT
+forbidden_vocabulary, the named forbidden-input classes, and
+the_unopened_ledger declaration.
+
+**The promotion:** registry #2 → 5 ACTIVE / 14 CONSOLIDATED / 7
+FUTURE ([ES]+the six [OE]); **the catalog's first two CROSS-WORKBENCH
+consolidations** (`extract_payment_terms` → the v2.1 register;
+`detect_outdated_finance_policies` → the shipped v1.7
+`identify_outdated_policies`) — **the sweep's
+basename(ratified_path)==consolidated_into assertion handles
+cross-workbench targets unchanged** (it compares filenames, not
+directories; both paths resolve; NO doctrine weakening was needed).
+Global sweep constants re-pinned **29→34 ACTIVE / 44→58 CONSOLIDATED**
+across the three pinning suites.
+
+**THE PRECONDITION PROOF** (`backend/test_finance_corpus.py`, the
+84th suite, six parts green): THE BUNDLE SHAPE (manifest + 5
+contracts agree; **NO runner, NO UI, NO transactional door** — the
+doors block and every allowed_inputs swept for transactional terms;
+THE INVOICE PLANT declared); 15 documents (12 procurement UNTOUCHED +
+3 corpus_finance) → 55 approved PRIMARY facts; THE EXPOSURE MATERIAL
+REPORT (the contract's OWN parsed class_markers fire:
+price_increase 7 / renewal_cost 10 / penalty_fee 2 / leakage 2; 5
+currency + 5 percentage facts); THE POLICY-COMPARISON precondition
+(both sides of every declared axis are approved facts); THE SECOND
+HARVEST precondition (a dated register-class clause citable BY id;
+the v2.1 taxonomy classifies it); THE UNOPENED LEDGER precondition
+(the plant is ingested as a document but SEPARABLE — it carries
+transactional-truth markers while ZERO approved facts carry any
+SETTLED-ACCOUNT vocabulary, so the WS2 sweep has teeth; the two
+cross-workbench consolidations resolve; global sweep 34/58; zero
+stewardship events; D24 at exactly 28/305).
+
+**Two honest WS1 fixes recorded:** the colocation plant's fee sentence
+needed a trigger word in the dated/priced sentence (the recorded
+extractor discipline), and the invoice-plant separability check moved
+from fact-level to document-level + byte-level (the plant's
+transactional sentences correctly do NOT extract — the pipeline
+itself refuses non-obligation prose; the one "paid" fact is the
+legitimate penalty CLAUSE "not paid by its due date", a conditional
+term, which is exactly THE INVOICE-SENTENCE DISTINCTION working).
+
+**Harness: 84/84 green (9:23).** NO runner, NO UI, NO PR. The
+doctrine wording is intact: NO INVENTED MONEY, THE SETTLED ACCOUNT,
+THE INVOICE-SENTENCE DISTINCTION, THE UNOPENED LEDGER.

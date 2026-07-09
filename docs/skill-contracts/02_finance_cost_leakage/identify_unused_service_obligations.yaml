@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: identify_unused_service_obligations
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_missing_finance_evidence
+ratified_path: workbench/finance_cost_leakage/skills/detect_missing_finance_evidence.yaml
+# the service_obligation requirement class of detect_missing_finance_evidence - document-bound half only (WS0 ruling 2)
 boundary_tags: [now]
 pattern: finding
 purpose: >

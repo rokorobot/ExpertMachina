@@ -1,0 +1,40 @@
+# Skill contract minted at the v2.3 scoping session (Finance & Cost
+# Leakage - docs/finance-cost-leakage-v2.3.md, WS0 ruling 2) and
+# ratified into workbench/finance_cost_leakage/skills/ (registry rule
+# 1). The consolidating anchor of registry #2's cost-exposure family;
+# the binding contract is the ratified file.
+skill_id: detect_missing_finance_evidence
+workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
+status: ACTIVE
+ratified_path: workbench/finance_cost_leakage/skills/detect_missing_finance_evidence.yaml
+boundary_tags: [now]
+pattern: missing-evidence
+purpose: >
+  Detect governed finance requirements (spend approval, service obligation, policy coverage) with no approved covering evidence - REFUSAL_BACKED; absence is a finding, never a fact.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); approved document cost/fee/policy
+  statements, accepted register facts (v2.1) and calendar windows
+  (v2.2), cited by governed asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content; invoices,
+  POs, payments, bank status, ERP balances, ledger state,
+  actual-spend records - every transactional/operational record
+  (until [OE]); THE INVOICE PLANT declined naming [OE]; inferred or
+  scenario money as governed fact (THE INVENTED MONEY); actual
+  spend/payment/balance claims (THE SETTLED ACCOUNT); other skills'
+  pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: money is
+  verbatim / declared arithmetic / labeled estimate only; every
+  finding cites governed evidence by asset id; DERIVED cited as
+  DERIVED. evidence_basis in the ratified file.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - a money value not verbatim and not declared arithmetic -> refuse
+    the number (THE INVENTED MONEY)
+  - a transactional record offered as input -> decline, naming [OE]
+  - an actual spend/payment/balance question -> refuse, naming [OE]
+    (THE SETTLED ACCOUNT)

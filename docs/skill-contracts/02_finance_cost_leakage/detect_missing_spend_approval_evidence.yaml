@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_missing_spend_approval_evidence
 workbench: finance_cost_leakage   # 2. Finance & Cost Leakage Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_missing_finance_evidence
+ratified_path: workbench/finance_cost_leakage/skills/detect_missing_finance_evidence.yaml
+# the spend_approval requirement class of detect_missing_finance_evidence (WS0 ruling 2)
 boundary_tags: [now]
 pattern: missing_evidence
 purpose: >

@@ -160,36 +160,61 @@ exposure.
 
 ---
 
-## 2. Finance & Cost Leakage Workbench — document-bound until [OE]
+## 2. Finance & Cost Leakage Workbench — SHIPPED as v2.3.0 (document-bound; the transactional half stays [OE])
 
-Purpose: detect cost leakage and finance exceptions; v1 stays
+Purpose: diagnose document-governed cost EXPOSURE; v1 stays
 document-bound. The agent never changes canonical accounting data —
-it creates findings.
+it creates findings. **Ratified at the v2.3 WS0 gate**
+(docs/finance-cost-leakage-v2.3.md): *v2.3 diagnoses governed cost
+exposure from approved documents, register facts, and declared-clock
+windows — it does NOT determine transactional financial truth.* The
+ACTIVE set is FIVE consolidating skills; the sixteen subtasks below
+map to them (two by the catalog's first CROSS-WORKBENCH
+consolidations), the six Future-[OE] drafts stay FUTURE, and #16
+stays [ES]-gated.
 
-1. `extract_payment_terms` [now]
-2. `compare_contract_terms_vs_finance_policy` [now]
-3. `detect_contract_price_increases` [now — clause-level]
-4. `detect_renewal_cost_risk` [now — renewal/auto-renewal clauses]
-5. `identify_unused_service_obligations` [now — from contracts]
-6. `detect_missing_spend_approval_evidence` [now]
-7. `identify_budget_policy_conflicts` [now]
-8. `prepare_cfo_cost_reduction_scenario` [assist, synth]
-9. `detect_pricing_clauses_requiring_review` [now]
-10. `identify_payment_term_mismatch_risk` [now]
-11. `generate_monthly_finance_exception_report` [now — over governed findings]
-12. `prepare_finance_evidence_pack` [assist]
-13. `identify_leakage_clauses` [now]
-14. `identify_finance_policy_coverage_gaps` [now]
-15. `detect_outdated_finance_policies` [now]
-16. `identify_missing_finance_obligation_owner` [ES]
+**THE ACTIVE FIVE** (`workbench/finance_cost_leakage/skills/`):
+`detect_cost_exposure` [now], `compare_terms_vs_finance_policy`
+[now], `detect_missing_finance_evidence` [now],
+`prepare_cost_exposure_scenario` [assist, synth],
+`prepare_finance_evidence_pack` [assist].
+
+1. `extract_payment_terms` [now — **CONSOLIDATED → v2.1 register `extract_contract_clauses` (the FIRST cross-workbench consolidation; nothing re-extracts)**]
+2. `compare_contract_terms_vs_finance_policy` [now — CONSOLIDATED → compare_terms_vs_finance_policy]
+3. `detect_contract_price_increases` [now — CONSOLIDATED → detect_cost_exposure (price_increase class)]
+4. `detect_renewal_cost_risk` [now — CONSOLIDATED → detect_cost_exposure (renewal_cost class)]
+5. `identify_unused_service_obligations` [now — CONSOLIDATED → detect_missing_finance_evidence (service_obligation, document-bound half only)]
+6. `detect_missing_spend_approval_evidence` [now — CONSOLIDATED → detect_missing_finance_evidence (spend_approval class)]
+7. `identify_budget_policy_conflicts` [now — CONSOLIDATED → compare_terms_vs_finance_policy (spend_thresholds axis)]
+8. `prepare_cfo_cost_reduction_scenario` [assist, synth — CONSOLIDATED → prepare_cost_exposure_scenario (renamed; THE LABELED-ESTIMATE discipline)]
+9. `detect_pricing_clauses_requiring_review` [now — CONSOLIDATED → detect_cost_exposure (pricing_review class)]
+10. `identify_payment_term_mismatch_risk` [now — CONSOLIDATED → compare_terms_vs_finance_policy (payment_terms axis)]
+11. `generate_monthly_finance_exception_report` [now — CONSOLIDATED → prepare_finance_evidence_pack (a declared section)]
+12. `prepare_finance_evidence_pack` [assist — **ACTIVE (v2.3)**; known/exposed/conflicting/estimated separated]
+13. `identify_leakage_clauses` [now — CONSOLIDATED → detect_cost_exposure (leakage class)]
+14. `identify_finance_policy_coverage_gaps` [now — CONSOLIDATED → detect_missing_finance_evidence (policy_coverage class)]
+15. `detect_outdated_finance_policies` [now — **CONSOLIDATED → v1.7 `identify_outdated_policies` (cross-workbench; same mechanism, domain-scoped to finance)**]
+16. `identify_missing_finance_obligation_owner` [ES — detection may be a future [now] skill; assignment is [ES]]
+
+Plus the five v2.3-minted ACTIVE skills named above:
+**`detect_cost_exposure`** (consolidates 3+4+9+13; declared
+exposure_classes; NO INVENTED MONEY on the bytes; THE SECOND
+HARVEST — reads v2.1 register + v2.2 windows BY id),
+**`compare_terms_vs_finance_policy`** (2+7+10; declared comparison
+axes; document-vs-document only), **`detect_missing_finance_evidence`**
+(5+6+14; REFUSAL_BACKED), **`prepare_cost_exposure_scenario`** (8),
+**`prepare_finance_evidence_pack`** (12 + absorbs 11).
 
 Future [OE]: `detect_duplicate_invoices` · `compare_po_vs_invoices` ·
 `detect_unusual_cost_increases` · `flag_overdue_receivables` ·
 `detect_budget_overrun_from_accounting` ·
-`detect_payment_terms_not_followed`.
+`detect_payment_terms_not_followed` — exactly the transactional-truth
+questions the sensitivity posture refuses today (THE SETTLED ACCOUNT).
 
 Boundary note: invoice, PO, payment, and accounting-ledger analysis
-belongs behind the future Operational Evidence decision.
+belongs behind the future Operational Evidence decision. **THE
+INVOICE-SENTENCE DISTINCTION** (v2.3 WS0): a document statement ABOUT
+invoices is governed evidence; an invoice AS A RECORD is [OE].
 
 ---
 
