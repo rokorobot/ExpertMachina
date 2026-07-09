@@ -255,3 +255,148 @@ knowledge. Every gate re-runs the D25 sweep and closes on the D24
 snapshot. Guard 5 sweeps the new bundle the moment it exists; Guard 6
 holds the vault seam; Guard 7 holds stewardship. EM never launches
 the workbench (D22). Language per Rulings 1/3/5 and D29/D30.
+
+---
+
+## WS1 — the contracts, the promotion, and THE PRECONDITION PROOF (2026-07-09; commit `0d92740`)
+
+**The corpus-gap stop (mid-WS1, user-ratified):** the scan proved the
+customer-operations corpus carries real material (the brochure's QBR
+PROMISE with no QBR procedure anywhere — the gap is real in the
+shipped corpus; `support-escalation-procedure.md` as the COVERED
+contrast; the MSA template's standard values) but four gaps were real:
+no governed standard-terms document whose facts SELF-IDENTIFY on their
+bytes, no deviating named-customer agreement, no conforming
+named-customer agreement (the silence half of THE CUSTOM TERMS PROOF),
+and no HEALTH-SCORE PLANT (adversarial — it cannot exist by accident).
+The user ratified **`corpus_customer_success/`** (the v2.2/v2.3
+extension pattern; only v2.4 suites ingest it):
+`customer-success-standard-terms.md` (every axis sentence carries
+"standard terms" + an extraction trigger), `acme-service-agreement.md`
+(weekly/two-business-day reporting, sixty-day notice, term ends
+2026-09-30, a QBR obligation, escalations deferred to the approved
+procedure), `northwind-service-agreement.md` (conforms on both axes;
+term ends 2027-03-31, outside the window), and `acme-account-plan.md`
+(**THE HEALTH-SCORE PLANT** — a health-score table + assertion-shaped
+relationship-state claims with no governed evidence). Plant map in
+`workbench/customer_success_intelligence/CORPUS.md`.
+
+**The five ratified contracts**
+(`workbench/customer_success_intelligence/skills/`): the deviation
+engine (declared baseline markers / axes / value patterns; conformance
+is SILENCE), the obligation skill (THE THIRD HARVEST + the v2.2
+window rule), the coverage-gap skill (five declared classes,
+REFUSAL_BACKED), the assumption skill (declared markers + **THE QUOTE
+FRAME** — what the workbench may never say, it must be able to FIND
+said), and the [assist, synth] review brief (seven declared sections,
+07-confined). **The promotion:** registry #6 → **Customer Success
+Intelligence — ACTIVE (v2.4)**; 5 ACTIVE / 15 CONSOLIDATED (draft 9 →
+the v2.1 register; draft 11 → the shipped v1.7
+`identify_outdated_policies` — the v2.3 cross-workbench mechanism
+unchanged) / draft 4 SEQUENCED/[ES] with the read-only condition on
+its bytes / the six [OE] drafts FUTURE. **Global sweep 34/58 → 39/73**
+(pins updated in the four shipped suites — including a hidden literal
+58 in `test_compliance_corpus.py`, found by running, not grepping).
+**THE PRECONDITION PROOF** (`backend/test_customer_success_corpus.py`,
+the 87th suite, six parts) proved every deviation / coverage / window
+/ harvest-anchor / separability precondition on approved facts BEFORE
+any runner existed. Harness 86/86 → **87/87**.
+
+## WS2 — the runner and THE DIAGNOSIS PROOF (2026-07-09; commit `073f430`)
+
+**The runner** (`workbench/customer_success_intelligence/runner.py`,
+the SEVENTH zero-edit reuse of `common.py` — git shows exactly two new
+files): four finding walks + the assist brief; every declared
+convention read from the ratified contract bytes, never hardcoded; the
+IMPUTED-HEALTH vocabulary swept QUOTE-FRAME-AWARE over every written
+byte (a line beginning "> " — verbatim quoted document material — is
+the SOLE exemption); the [OE]/[ES] family refused live naming the
+unminted decision; deterministic content-hash writes. **THE DIAGNOSIS
+PROOF** (`backend/test_customer_success_workbench.py`, the 88th suite,
+parts A–G): all four kinds fire (Acme deviates on BOTH axes; the QBR
+gap; 4 quote-framed assumption findings); **Northwind produces ZERO
+deviation findings** — proven from the runner output AND the proposal
+bytes, its conformance recorded as skips on both axes; the vocabulary
+appears on 14 bytes, every one inside a quoted-claim blockquote; the
+DERIVED register fixture cited BY id in-window; byte-identical
+re-runs; writes confined to 08/07; no CRM/usage/ticket/NPS/
+health-score/ranking/churn path exists. **The recorded WS2 lesson:**
+the quote-frame sweep caught the runner's OWN narrator boilerplate
+("...is likely to renew" in a boundary disclaimer) — the v2.3
+word-your-templates lesson, live again. Harness **88/88**.
+
+## WS3 — THE MILESTONE GATE, the catalog card, and the browser record (2026-07-09; commit `a70ce25`)
+
+**THE MILESTONE GATE**
+(`backend/test_customer_success_acceptance.py`, the 89th suite, 11
+stages — the full commercial loop): the REAL register chain (the v2.1
+engine produced 81 register candidates, ALL held DERIVED despite an
+approve-everything policy — D29; a human accepted the dated Acme
+renewal clause, which names its PRIMARY source) → the recompiled
+package → the diagnosis (all four kinds; **wrote nothing governed**,
+fingerprint-bracketed tightly around the run) → **THE THIRD HARVEST**
+(the register clause cited BY id [DERIVED], action 2026-08-01 by
+declared arithmetic on the bytes) → **THE CUSTOM TERMS PROOF**
+(Acme deviates on both axes; Northwind ZERO deviation findings, two
+conformance skips, no deviation proposal names it) → **THE IMPUTED
+HEALTH SWEEP** (14 vocabulary bytes, every one quote-framed; plant
+facts yield ONLY assumption findings; the dictionary catches "the
+customer is satisfied and churn risk is low" and spares "expresses
+dissatisfaction") → the valve (62 held DERIVED, provenance verified,
+one accepted, still DERIVED) → the registry/sweep (39/73, no
+accidental promotion) → the catalog row (EXACTLY ONE; wording claims
+no CRM/churn/telemetry/ranking/NPS/outreach/scoring) → the closers
+(route manifest 88 frozen, the nine MCP tools, **D24 byte-identical at
+28/305**).
+
+**The catalog card**: ONE `WORKBENCH_CATALOG_INFO` row
+(`frontend/src/app/page.tsx`) — Customer Success Intelligence,
+canonical #6, v2.4, posture "Per-customer term deviations, renewal
+windows, coverage gaps, and quoted unsupported assumptions -
+evidence-backed; the imputed health refused, the unread customer".
+No UI beyond the existing catalog mechanism; cards stay filters,
+never launchers (D22).
+
+**The in-browser before/after (the recorded recipe; seeded throwaway
+DB running the REAL chain):** BEFORE — the workbench renders by its
+raw name with NO title/#6/v2.4/posture (the map's honest
+unknown-origin behavior), activity visible (9 proposals / 62 held / 0
+accepted). AFTER — the full **Customer Success Intelligence** card
+(#6, v2.4) with the posture line; ONE live **Accept as DERIVED** → the
+card updates to **61 held / 1 accepted DERIVED**; zero console
+errors/warnings; the only non-2xx the known pre-login 401. The
+screenshot rasterizer times out in this environment (standing
+pattern) — the DOM/text record is the browser evidence. **Two WS3
+environment lessons recorded:** turbopack mangles junction paths (run
+the frontend from a REAL second worktree; junction only the backend),
+and React-controlled login inputs need native-setter + input events
+(fill alone never reaches React state).
+
+**Harness: 89/89 green (9:34).** `common.py` unchanged (seventh
+reuse); no route, no table, no tool, no guard, no law; [OE]/[PMD]
+refused live; Guard 7 untouched; the D24 snapshot byte-identical at
+28/305 through all three workstreams.
+
+## THE COMMERCIAL VERDICT — PASSED (user-ratified, 2026-07-09)
+
+The Ruling-6 question was put to the user as the CS lead, verbatim,
+and answered: **"Ratified."** — *"I ratify v2.4 Customer Success
+Intelligence as commercially fit to release as a governed
+customer-success diagnosis workbench for CS leads preparing QBRs or
+renewals."*
+
+**The ratification is specifically limited to the proven scope:**
+cited customer-specific terms; deviations from approved customer
+standards; renewal and communication windows; coverage gaps;
+unsupported customer-health assumptions shown only inside the quote
+frame; the customer success review brief as a governed assist
+artifact.
+
+**The ratification does NOT authorize:** CRM integration; ticket /
+usage / NPS / telemetry / health-score readers; churn prediction;
+customer ranking; health scoring; automated customer outreach;
+operational execution; [OE], [PMD], or [ES] implementation. Every
+future extension pays its own scoping session.
+
+The verdict is human-ratified only — the agent recorded it and could
+not certify it.
