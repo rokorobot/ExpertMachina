@@ -1,0 +1,98 @@
+skill_id: prepare_customer_success_review_brief
+workbench: customer_success_intelligence
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist (cited drafts, no valve implications)
+consolidates:
+  # the v2.4 consolidation ruling (WS0 ruling 2): the five assist /
+  # narrative drafts are declared SECTIONS of ONE reader-facing brief
+  # - prepare_customer_retention_brief is RENAMED here (the ratified
+  # workbench name drops "Retention"; the brief predicts nothing),
+  # and prepare_internal_customer_risk_briefing is absorbed WITHOUT
+  # its risk framing (no risk scoring exists - its surviving meaning
+  # is the assumptions/gaps sections).
+  - prepare_customer_retention_brief
+  - identify_strategic_customer_escalation_rules
+  - generate_customer_success_evidence_pack
+  - prepare_renewal_readiness_checklist
+  - prepare_internal_customer_risk_briefing
+purpose: >
+  Prepare the QBR/renewal preparation brief for a named customer: the
+  customer's governed terms and deviations, renewal and communication
+  windows at the declared clock, coverage gaps, escalation rules as
+  documented, unbacked assumptions (quoted), and the explicit
+  exclusions and refusals - every statement cited, narrative framing
+  declared [synth]. A brief for humans preparing the conversation -
+  never a finding, never knowledge, never a prediction of what the
+  customer will do.
+brief_sections:
+  # declared sections; the consolidated drafts survive as sections
+  - "Customer terms & deviations"        # the deviation findings, cited
+  - "Renewal & communication windows"    # declared-clock, formula verbatim
+  - "Coverage gaps"                      # refusal-backed, cited
+  - "Escalation rules as documented"     # identify_strategic_customer_escalation_rules
+  - "Renewal readiness checklist"        # prepare_renewal_readiness_checklist - each item cite-backed
+  - "Unbacked assumptions (quoted)"      # the quote frame; claims never adjudicated
+  - "Exclusions & refusals"              # what was NOT said and why, [OE] named
+allowed_inputs:
+  - approved knowledge in scope (the compiled expert package at
+    binding clearance) + ACCEPTED findings (DERIVED facts - never
+    pending proposals), cited by asset id
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content; other skills' pending
+    (ungated) findings
+  - usage/activity records, CRM exports, tickets, NPS, health-score
+    tables as data, relationship-state metrics (until [OE])
+  - customer ranking, scoring, or prioritization in any form
+  - renewal likelihood, churn risk, health, satisfaction, sentiment -
+    THE IMPUTED HEALTH has no assist exemption: the brief NARRATES
+    governed facts and quoted assumptions, it never assesses the
+    relationship
+  - wall-clock time (declared parameters only)
+evidence_rules: >
+  Every statement cited by asset id (DERIVED as DERIVED);
+  deviations/gaps/windows referenced by their governed evidence;
+  every window carries its declared as_of/window_days and formula;
+  quoted assumptions stay inside the quote frame; narrative framing
+  declared [synth] in-unit; the exclusions section names what the
+  workbench refused to say and why ([OE] named). A topic with no
+  approved coverage is SAID to have no coverage - never composed
+  around.
+forbidden_vocabulary:
+  # the manifest sweep applies to the brief's OWN narration; quoted
+  # assumption material lives only in its declared quoted section
+  - "is healthy"
+  - "churn risk"
+  - "likely to churn"
+  - "likely to renew"
+  - "will churn"
+  - "will renew"
+  - "health score"
+  - "customer is satisfied"
+  - "renewal probability"
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  ONE brief per declared customer to the agent workspace
+  (<vault>/07_agent_workspaces/...) - NEVER written to /08_proposals,
+  never a proposal, never enters knowledge. Sections as declared
+  above; [synth] declared in-unit on narrative framing; every cited
+  asset id resolvable.
+human_approval_requirement: >
+  None applicable - the brief is a consumption output with no valve
+  implications; anything intended to become knowledge is a finding
+  and pays the valve (registry rule 3).
+audit_event: >
+  MCP calls audited per call; the brief's existence is workspace
+  content, volatile by design (D31 - delete everything, lose
+  nothing).
+refusal_conditions:
+  - the topic has no approved coverage -> the brief SAYS so rather
+    than composing an unsupported narrative
+  - asked to rank customers or assess the relationship -> refuse,
+    naming [OE] (THE IMPUTED HEALTH)
+  - asked to include pending (ungated) findings -> refuse (accepted
+    DERIVED facts only)
+question_frames:
+  - "Prepare the QBR/renewal brief for this named customer from governed evidence."
+  - "What should the CS lead read before the renewal conversation - cited, bounded, refusals named?"

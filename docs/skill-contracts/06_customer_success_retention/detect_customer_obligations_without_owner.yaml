@@ -5,7 +5,8 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_customer_obligations_without_owner
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: SEQUENCED
+# WS0 ruling 4a (v2.4): SEQUENCED/[ES] - may become ACTIVE at a later session ONLY as pure read-only consumption of ratified v2.0 OWNER_ASSIGNED stewardship decisions, introducing no new ownership, staffing, assignment, or execution state
 boundary_tags: [ES]
 pattern: stewardship
 purpose: >

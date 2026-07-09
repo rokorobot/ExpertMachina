@@ -1,0 +1,106 @@
+skill_id: detect_customer_renewal_obligations
+workbench: customer_success_intelligence
+status: ACTIVE
+boundary_tags: [now]
+base_pattern: declared-clock-window
+consolidates:
+  # the v2.4 consolidation ruling (WS0 ruling 2): the obligation
+  # summary and the renewal-obligation identification are one
+  # per-customer obligation surface over the same declared clock.
+  - summarize_customer_success_obligations
+  - identify_customer_renewal_obligations
+purpose: >
+  Detect a named customer's renewal, notice, reporting, and
+  communication OBLIGATIONS as stated in approved documents and
+  accepted register facts: what falls due, on which explicit date or
+  date rule, and whether it lands inside the declared-clock window.
+  This states what the documents OBLIGATE and WHEN - it NEVER states
+  whether the customer will renew, wants to renew, or is likely to
+  renew (renewal LIKELIHOOD is THE IMPUTED HEALTH, refused; only
+  renewal obligations and windows exist here).
+the_third_harvest: >
+  Accepted v2.1 register clause facts (renewal / sla /
+  notification_obligation / reporting_obligation classes) are
+  first-class inputs, cited BY governed asset id like any approved
+  fact - their concrete-token rule already guarantees the date or
+  cadence anchor. Nothing is re-extracted; no engine file is read;
+  the REAL chain holds (finding -> DERIVED register fact -> PRIMARY
+  contract, exactly two governed copies).
+obligation_convention:
+  obligation_markers: ["renew", "notice", "performance report",
+                       "quarterly business review", "notified"]
+  customer_rule: >
+    the customer name is a declared run parameter recorded verbatim;
+    an obligation fact is an approved fact naming the declared
+    customer (or a register clause fact whose source contract names
+    the customer), carrying a declared obligation marker.
+  window_rule: >
+    where an obligation carries an explicit date (or an explicit
+    date + explicit notice period, e.g. "ends on 2026-09-30 ...
+    notice at least sixty days before"), the actionable date is
+    computed by DECLARED date arithmetic with the formula stated in
+    the finding (the v2.2 lineage); in-window iff as_of <= date <=
+    (as_of + window_days); as_of and window_days are DECLARED run
+    parameters recorded verbatim, never wall-clock, never defaulted.
+    A dateless obligation is reported without a window (declared),
+    never with a guessed one - THE INVENTED DATE is refused.
+allowed_inputs:
+  - the compiled expert package at binding clearance (approved
+    agreement/policy obligation statements, PRIMARY or DERIVED -
+    including accepted v2.1 register clause facts, cited by asset id)
+  - MCP get_domain_subgraph at the AGENT token's clearance
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - usage/activity records, CRM exports, tickets, NPS, health-score
+    tables as data, relationship-state metrics - every operational
+    customer record (until [OE])
+  - renewal LIKELIHOOD in any form - probability, propensity,
+    prediction, ranking (THE IMPUTED HEALTH)
+  - wall-clock time (as_of is declared, never sampled)
+  - inferred, presumed, or extrapolated dates (THE INVENTED DATE)
+  - any assertion that an obligation WAS met or NOT met (the
+    completion question is [OE] - the v2.2 PRESUMED COMPLETION
+    lineage)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  A CUSTOMER_RENEWAL_OBLIGATION finding requires the verbatim excerpt
+  (asset id + quote), the declared customer, the explicit date or
+  date rule quoted verbatim, and - only where a window verdict is
+  stated - the declared date arithmetic (formula verbatim) and the
+  declared as_of/window_days. The ONLY computed values are
+  deterministic date arithmetic over verbatim dates at the declared
+  clock. DERIVED register facts cited as DERIVED. evidence_basis:
+  EXCERPT_BACKED.
+forbidden_vocabulary:
+  - "likely to renew"
+  - "will renew"
+  - "renewal probability"
+  - "is healthy"
+  - "churn risk"
+  - "at risk of churn"
+allowed_finding_kinds: [CUSTOMER_RENEWAL_OBLIGATION]
+output_format: >
+  One proposal document per finding to /08_proposals with the D30 +
+  catalog frontmatter claims (workbench, skill, skill_version,
+  finding_kind, evidence_basis); body = the declared customer, the
+  verbatim excerpt (asset id + quote, DERIVED as DERIVED), the
+  explicit date/date rule, any declared date arithmetic + declared
+  as_of/window_days + the window verdict, proposed action (schedule
+  the human renewal preparation - the workbench never renews,
+  notifies, or contacts the customer).
+human_approval_requirement: >
+  The valve (D29): held CANDIDATE until a human accepts as DERIVED.
+audit_event: >
+  MCP calls audited; scan/hold/gate events; approval quotes verified
+  provenance verbatim.
+refusal_conditions:
+  - no declared customer parameter -> refuse
+  - no as_of/window_days for a window question -> refuse
+  - a date not verbatim in a cited fact and not declared arithmetic
+    over verbatim dates -> refuse the date (THE INVENTED DATE)
+  - "will they renew?" / "how likely is renewal?" -> refuse, naming
+    [OE] (THE IMPUTED HEALTH)
+  - "did they meet the obligation?" -> refuse, naming [OE]
+question_frames:
+  - "Which of this customer's renewal and communication obligations fall due inside the declared window?"
+  - "What do the governed documents obligate for this customer, and on which explicit dates?"

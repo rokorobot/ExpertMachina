@@ -114,7 +114,7 @@ OVERLAP_THRESHOLD = 6
 REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
-RATIFIED_ACTIVE = 34  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9) + 3 contract-intelligence (v2.1) + 3 deadline-obligation (v2.2) + 5 finance-cost-leakage (v2.3 WS1 promotion)
+RATIFIED_ACTIVE = 39  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9) + 3 contract-intelligence (v2.1) + 3 deadline-obligation (v2.2) + 5 finance-cost-leakage (v2.3) + 5 customer-success-intelligence (v2.4 WS1 promotion)
 
 
 def norm(text):
@@ -504,8 +504,8 @@ def main():
                     f"{name}: the former deadline family must be CONSOLIDATED (v2.2)"
     assert len(active) == RATIFIED_ACTIVE, \
         f"expected exactly {RATIFIED_ACTIVE} ACTIVE drafts, got {sorted(active)}"
-    assert len(consolidated) == 58, \
-        f"expected the 58 consolidated drafts (8 v1.7 + 5 v1.8 + 5 v1.9 + 22 v2.1 + 4 v2.2 + 14 v2.3), got {sorted(consolidated)}"
+    assert len(consolidated) == 73, \
+        f"expected the 73 consolidated drafts (8 v1.7 + 5 v1.8 + 5 v1.9 + 22 v2.1 + 4 v2.2 + 14 v2.3 + 15 v2.4), got {sorted(consolidated)}"
     assert sorted(deferred) == ["detect_certification_expiry_risk.yaml",
                                 "identify_upcoming_obligations_30_60_90.yaml",
                                 "track_explicit_deadlines.yaml",

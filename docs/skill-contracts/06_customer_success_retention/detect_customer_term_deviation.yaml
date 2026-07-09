@@ -1,0 +1,41 @@
+# Skill contract minted at the v2.4 scoping session (Customer Success
+# Intelligence - docs/customer-success-intelligence-v2.4.md, WS0
+# ruling 2) and ratified into
+# workbench/customer_success_intelligence/skills/ (registry rule 1).
+# The consolidating anchor of registry #6's deviation family; the
+# binding contract is the ratified file.
+skill_id: detect_customer_term_deviation
+workbench: customer_success_intelligence   # 6. Customer Success Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/customer_success_intelligence/skills/detect_customer_term_deviation.yaml
+boundary_tags: [now]
+pattern: doc-vs-doc comparison
+purpose: >
+  Detect where a named customer's governed agreement terms deviate
+  from the approved standard terms - both sides cited BY asset id,
+  values quoted verbatim, the axis declared. Conformance is SILENCE.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); approved standard-terms / agreement /
+  policy statements, accepted register facts (v2.1), cited by
+  governed asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  usage/activity/CRM/ticket/NPS/health-score records - every
+  operational customer record (until [OE]); an assumed or inferred
+  baseline (THE BASELINE DOCTRINE: no standard baseline, no deviation
+  diagnosis); relationship-state assertions (THE IMPUTED HEALTH);
+  other skills' pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: baseline
+  facts self-identify by the declared marker; deviation requires the
+  same declared axis on both sides with differing declared-pattern
+  values, both quoted verbatim and cited by id; nothing normalized.
+  evidence_basis in the ratified file.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - no approved standard-terms baseline in scope -> refuse, declared
+  - a relationship-state question -> refuse, naming [OE] (THE
+    IMPUTED HEALTH)

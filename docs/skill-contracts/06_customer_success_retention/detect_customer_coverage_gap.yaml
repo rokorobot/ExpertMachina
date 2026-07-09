@@ -1,0 +1,39 @@
+# Skill contract minted at the v2.4 scoping session (Customer Success
+# Intelligence - docs/customer-success-intelligence-v2.4.md, WS0
+# ruling 2) and ratified into
+# workbench/customer_success_intelligence/skills/ (registry rule 1).
+# The consolidating anchor of registry #6's coverage family; the
+# binding contract is the ratified file.
+skill_id: detect_customer_coverage_gap
+workbench: customer_success_intelligence   # 6. Customer Success Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/customer_success_intelligence/skills/detect_customer_coverage_gap.yaml
+boundary_tags: [now]
+pattern: coverage-gap (refusal-backed)
+purpose: >
+  Detect documented customer promises/obligations with no approved
+  covering playbook, QBR procedure, escalation path, delivery
+  process, or commitment evidence - absence is a finding, never a
+  fact (REFUSAL_BACKED). A covered obligation is SILENCE.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); approved promise / obligation /
+  procedure / playbook statements, cited by governed asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  usage/activity/CRM/ticket/NPS/health-score records (until [OE]);
+  gap-to-relationship-state inference ("therefore at risk" - THE
+  IMPUTED HEALTH); delivery/completion claims ([OE]); other skills'
+  pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: declared
+  coverage classes with declared obligation markers; the gap exists
+  only when the governed corpus offers no covering material; the
+  refusal is the evidence. evidence_basis in the ratified file.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - the obligation is implied rather than explicit -> NEEDS_REVIEW
+  - covering material exists -> silence
+  - "is the customer harmed by the gap?" -> refuse, naming [OE]

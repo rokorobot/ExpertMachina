@@ -1,0 +1,43 @@
+# Skill contract minted at the v2.4 scoping session (Customer Success
+# Intelligence - docs/customer-success-intelligence-v2.4.md, WS0
+# ruling 2) and ratified into
+# workbench/customer_success_intelligence/skills/ (registry rule 1).
+# The consolidating anchor of registry #6's obligation family; THE
+# THIRD HARVEST lives here; the binding contract is the ratified file.
+skill_id: detect_customer_renewal_obligations
+workbench: customer_success_intelligence   # 6. Customer Success Intelligence Workbench
+status: ACTIVE
+ratified_path: workbench/customer_success_intelligence/skills/detect_customer_renewal_obligations.yaml
+boundary_tags: [now]
+pattern: declared-clock-window
+purpose: >
+  Detect a named customer's renewal/notice/reporting/communication
+  obligations with explicit dates or date rules, windowed at the
+  declared clock (v2.2 lineage); v2.1 register clauses harvested BY
+  id (THE THIRD HARVEST). Obligations and windows ONLY - never
+  renewal likelihood.
+allowed_inputs: >
+  The four doors (.empkg at binding clearance; the MCP read tools at
+  the AGENT token's clearance); approved agreement/policy obligation
+  statements, accepted v2.1 register clause facts, cited by governed
+  asset id.
+forbidden_inputs: >
+  Ungoverned sources; unapproved/candidate/held content;
+  usage/activity/CRM/ticket/NPS/health-score records (until [OE]);
+  wall-clock time (as_of declared); inferred dates (THE INVENTED
+  DATE); renewal likelihood/probability/prediction (THE IMPUTED
+  HEALTH); obligation-completion claims ([OE]); other skills'
+  pending (ungated) findings.
+evidence_rules: >
+  See the ratified contract - the binding rules live there: explicit
+  dates quoted verbatim; window verdicts by declared date arithmetic
+  with the formula on the bytes; dateless obligations reported
+  without a window; DERIVED cited as DERIVED. evidence_basis in the
+  ratified file.
+human_approval_requirement: >
+  The valve (D29) for finding skills; the assist brief never enters
+  knowledge and proposes nothing.
+refusal_conditions:
+  - a date not verbatim and not declared arithmetic -> refuse (THE
+    INVENTED DATE)
+  - "will they renew?" -> refuse, naming [OE] (THE IMPUTED HEALTH)

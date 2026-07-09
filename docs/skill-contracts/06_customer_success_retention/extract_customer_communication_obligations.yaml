@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: extract_customer_communication_obligations
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: extract_contract_clauses
+ratified_path: workbench/contract_intelligence/skills/extract_contract_clauses.yaml
+# cross-workbench (WS0 ruling 2): communication/notification/reporting obligation extraction is the v2.1 shared register - nothing re-extracts
 boundary_tags: [now]
 pattern: extract
 purpose: >

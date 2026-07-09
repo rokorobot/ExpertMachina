@@ -1,0 +1,151 @@
+# The Customer Success Intelligence Workbench manifest (v2.4)
+# Canonical workbench #6 in the 16-workbench catalog - the SIXTH
+# commercial workbench and the substrate's THIRD consumer (after the
+# v2.2 deadline extension and the v2.3 finance workbench). The ratified
+# name is Customer Success Intelligence - NEVER "Retention": the
+# workbench predicts nothing. Convention, not constitution: this
+# manifest governs the reference runner; its claims travel in proposal
+# frontmatter, recorded verbatim at the gate, verified where governed
+# records permit, never obeyed.
+#
+# THE SPINE (carried verbatim into every gate): v2.4 diagnoses
+# per-customer term deviation, obligation exposure, and coverage gaps
+# from approved documents, register facts, and declared-clock windows -
+# NEVER the state, behavior, or future of the customer relationship
+# itself.
+workbench: customer_success_intelligence
+canonical_number: 6
+status: ACTIVE
+version: 1
+milestone: v2.4
+purpose: >
+  Diagnose document-governed customer-success exposure on the
+  PER-CUSTOMER axis: what did we promise THIS named customer, where do
+  the customer's governed terms deviate from the approved standard
+  terms, which renewal and communication obligations fall due inside a
+  declared-clock window, which documented obligations have no approved
+  playbook / QBR procedure / escalation coverage, and which
+  relationship-state claims inside approved documents carry no
+  governed evidence. Document-governed slice only: approved documents,
+  register facts (v2.1), and declared-clock windows (v2.2) are the
+  ONLY inputs. This workbench is customer-success PREPARATION
+  intelligence, not a churn, health, CRM, or retention-prediction
+  engine.
+sensitivity_posture: >
+  THE IMPUTED HEALTH is the cardinal sin: presenting the state,
+  behavior, sentiment, satisfaction, adoption, churn risk, renewal
+  likelihood, or future of a customer relationship as a governed fact
+  from documents. The workbench knows terms, obligations, windows, and
+  gaps; it does NOT know the customer. It never ranks or scores
+  customers (ranking implies health knowledge), never states renewal
+  LIKELIHOOD (only renewal obligations and windows), and never
+  adjudicates whether a documented health claim is true - at most it
+  surfaces the claim verbatim as an UNSUPPORTED ASSUMPTION.
+  Document-grounded, or refused.
+the_health_sentence_distinction: >
+  A clause, playbook sentence, account-plan statement, or
+  customer-success assumption inside an approved document is document
+  EVIDENCE, in scope. Usage records, CRM exports, tickets, NPS,
+  health-score tables AS DATA, activity feeds, and relationship-state
+  metrics are [OE], refused. A document CONTAINING a health claim does
+  not authorize the workbench to know customer health -
+  approved-document status never launders telemetry into relationship
+  knowledge.
+the_baseline_doctrine: >
+  No standard baseline, no deviation diagnosis. Deviation is
+  computable ONLY against a governed, approved standard-terms
+  document, cited by asset id on both sides. The workbench never
+  infers "standard" from industry practice, averages, prior customers,
+  common sense, or training priors - a missing baseline is a declared
+  refusal, never a guessed norm.
+forbidden_vocabulary:
+  # THE IMPUTED HEALTH sweep - swept over every written finding/brief
+  # byte at the WS2/WS3 gates. Each phrase is a relationship-state
+  # ASSERTION the doors cannot and must not evidence. THE QUOTE FRAME
+  # is the ONLY exemption: a phrase may appear inside the verbatim
+  # quoted-claim block of an UNBACKED_HEALTH_ASSUMPTION finding, framed
+  # as an unsupported document claim - never in the workbench's own
+  # narration. (Assertion-shaped on purpose: "customer is satisfied"
+  # never false-positives on a complaint procedure's "expresses
+  # dissatisfaction".)
+  - "is healthy"
+  - "churn risk"
+  - "likely to churn"
+  - "likely to renew"
+  - "will churn"
+  - "will renew"
+  - "at risk of churn"
+  - "health score"
+  - "customer is satisfied"
+  - "customer sentiment"
+  - "usage is declining"
+  - "usage has declined"
+  - "adoption is high"
+  - "adoption is low"
+  - "renewal probability"
+forbidden_inputs:
+  # the operational/relationship-state classes - refused at runtime,
+  # each naming [OE]; THE HEALTH-SCORE PLANT (an account plan carrying
+  # a health-score table, ingested through the pipeline) may surface
+  # ONLY as an unsupported-assumption finding quoting the claim
+  # verbatim - it is never read AS telemetry and never yields a
+  # relationship-state finding
+  - usage and activity records
+  - CRM exports and CRM state
+  - support tickets as records
+  - NPS and survey results
+  - health-score tables as data
+  - activity feeds and product telemetry
+  - revenue / ARR-at-risk records
+  - relationship-state metrics of any kind
+  - person-level facts about customer contacts
+  - any "what is the customer doing / feeling / likely to do?" question
+domain_scope: customer_success
+binding_expectations:
+  principal_kind: AGENT
+  clearance: INTERNAL
+  binding: an active ExpertAgentBinding whose package hash is claimed
+    per proposal and verified against governed records at the gate
+doors:
+  - .empkg via app.package_consumer (hash-chain verified, clearance-filtered)
+  - MCP gateway as a real client at the AGENT token's clearance
+  - file writes to <vault>/08_proposals ONLY (one proposal per finding)
+skills:
+  - detect_customer_term_deviation
+  - detect_customer_renewal_obligations
+  - detect_customer_coverage_gap
+  - detect_unbacked_customer_health_assumption
+  - prepare_customer_success_review_brief
+the_third_harvest: >
+  v2.4 is the substrate's THIRD consumer. detect_customer_renewal_obligations
+  reads accepted v2.1 register clause facts (renewal / sla /
+  notification_obligation / reporting_obligation classes) and
+  v2.2-pattern declared-clock windows as first-class inputs, cited BY
+  governed asset id - nothing is re-extracted. draft 9
+  (extract_customer_communication_obligations) is CONSOLIDATED into
+  the v2.1 register and draft 11 (detect_outdated_cs_documentation)
+  into the shipped v1.7 identify_outdated_policies - the v2.3
+  cross-workbench mechanism, unchanged.
+refused_until_minted:
+  operational_evidence: >
+    usage/activity/ticket/NPS/CRM/churn/health analysis and every
+    "what is the customer doing or feeling?" question (the draft-6
+    Future-[OE] family: detect_declining_activity, detect_low_usage,
+    detect_unresolved_customer_issues, score_customer_risk,
+    cluster_recurring_complaints, identify_churn_signals) - refused
+    live, naming [OE]
+  exception_stewardship: >
+    customer obligation owner assignment/routing
+    (detect_customer_obligations_without_owner) - SEQUENCED/[ES]; it
+    may become ACTIVE at a later session ONLY as pure read-only
+    consumption of already-ratified v2.0 OWNER_ASSIGNED stewardship
+    decisions, introducing no new ownership, staffing, assignment, or
+    execution state
+the_unread_customer: >
+  The distinctive proof: the full per-customer diagnosis completes
+  citing only approved documents + register facts BY id +
+  declared-clock windows, and no operational customer-data door exists
+  - proven structurally (no door), adversarially (THE HEALTH-SCORE
+  PLANT surfaces only as an unsupported assumption, [OE] named), and
+  on the bytes (THE IMPUTED HEALTH sweep: relationship-state
+  vocabulary survives only inside verbatim-quoted unsupported claims).

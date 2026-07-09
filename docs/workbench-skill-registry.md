@@ -414,31 +414,73 @@ not ACTIVE) until a corpus carries enough procedural material.
 
 ---
 
-## 6. Customer Success / Retention Workbench — FUTURE (split at the WS0 gate)
+## 6. Customer Success Intelligence Workbench — ACTIVE (v2.4) (the ratified name drops "Retention")
 
-Purpose: customer obligations, retention risks, renewal needs, and
-customer-success actions from governed knowledge.
+Purpose: per-customer term deviation, obligation exposure, and
+coverage gaps from governed knowledge. **Ratified at the v2.4 WS0
+gate** (docs\customer-success-intelligence-v2.4.md): *v2.4 diagnoses
+per-customer term deviation, obligation exposure, and coverage gaps
+from approved documents, register facts, and declared-clock windows —
+never the state, behavior, or future of the customer relationship
+itself.* The ratified name is **Customer Success Intelligence** —
+"Retention" implies churn probability, health, sentiment, renewal
+odds — all [OE], all refused (THE IMPUTED HEALTH is the cardinal sin;
+THE HEALTH-SENTENCE DISTINCTION is its twin; THE BASELINE DOCTRINE:
+no standard baseline, no deviation diagnosis). The ACTIVE set is FOUR
+finding skills + ONE assist brief; the sixteen subtasks below map to
+them (two by the v2.3 cross-workbench mechanism), the six Future-[OE]
+drafts stay FUTURE, and #4 stays SEQUENCED/[ES].
 
-1. `summarize_customer_success_obligations` [now]
-2. `identify_customer_renewal_obligations` [now — deadline pattern]
-3. `detect_missing_customer_success_playbooks` [now — coverage-gap pattern]
-4. `detect_customer_obligations_without_owner` [ES]
-5. `detect_cs_policy_vs_contract_contradiction` [now]
-6. `prepare_customer_retention_brief` [assist]
-7. `identify_unbacked_promised_outcomes` [now — promise vs delivery process, doc-vs-doc]
-8. `detect_missing_qbr_reporting_procedure` [now]
-9. `extract_customer_communication_obligations` [now]
-10. `identify_strategic_customer_escalation_rules` [now]
-11. `detect_outdated_cs_documentation` [now]
-12. `generate_customer_success_evidence_pack` [assist]
-13. `prepare_renewal_readiness_checklist` [assist]
-14. `detect_missing_service_commitment_evidence` [now — missing-evidence pattern]
-15. `identify_unbacked_customer_health_assumptions` [now]
-16. `prepare_internal_customer_risk_briefing` [assist, synth]
+**THE ACTIVE FOUR + 1** (`workbench\customer_success_intelligence\skills\`):
+`detect_customer_term_deviation` [now],
+`detect_customer_renewal_obligations` [now],
+`detect_customer_coverage_gap` [now],
+`detect_unbacked_customer_health_assumption` [now],
+`prepare_customer_success_review_brief` [assist, synth].
+
+1. `summarize_customer_success_obligations` [now — CONSOLIDATED → detect_customer_renewal_obligations (the per-customer obligation surface)]
+2. `identify_customer_renewal_obligations` [now — CONSOLIDATED → detect_customer_renewal_obligations (renamed; the v2.2 declared-clock window rule)]
+3. `detect_missing_customer_success_playbooks` [now — CONSOLIDATED → detect_customer_coverage_gap (playbook class)]
+4. `detect_customer_obligations_without_owner` [ES — **SEQUENCED/[ES]** (WS0 ruling 4a): may become ACTIVE only as pure read-only consumption of ratified v2.0 OWNER_ASSIGNED decisions, introducing no ownership/staffing/assignment/execution state]
+5. `detect_cs_policy_vs_contract_contradiction` [now — CONSOLIDATED → detect_customer_term_deviation (the cs_policy baseline class)]
+6. `prepare_customer_retention_brief` [assist — CONSOLIDATED → prepare_customer_success_review_brief (renamed; the brief predicts nothing)]
+7. `identify_unbacked_promised_outcomes` [now — CONSOLIDATED → detect_customer_coverage_gap (delivery_process class)]
+8. `detect_missing_qbr_reporting_procedure` [now — CONSOLIDATED → detect_customer_coverage_gap (qbr_procedure class)]
+9. `extract_customer_communication_obligations` [now — **CONSOLIDATED → v2.1 register `extract_contract_clauses` (cross-workbench; notification_obligation / reporting_obligation classes — nothing re-extracts)**]
+10. `identify_strategic_customer_escalation_rules` [now — CONSOLIDATED → prepare_customer_success_review_brief (the "Escalation rules as documented" section)]
+11. `detect_outdated_cs_documentation` [now — **CONSOLIDATED → v1.7 `identify_outdated_policies` (cross-workbench; same mechanism, domain-scoped to customer success)**]
+12. `generate_customer_success_evidence_pack` [assist — CONSOLIDATED → prepare_customer_success_review_brief (the evidence-pack sections)]
+13. `prepare_renewal_readiness_checklist` [assist — CONSOLIDATED → prepare_customer_success_review_brief (the "Renewal readiness checklist" section)]
+14. `detect_missing_service_commitment_evidence` [now — CONSOLIDATED → detect_customer_coverage_gap (service_commitment_evidence class)]
+15. `identify_unbacked_customer_health_assumptions` [now — CONSOLIDATED → detect_unbacked_customer_health_assumption (renamed singular; THE QUOTE FRAME — claims surfaced verbatim, never adjudicated)]
+16. `prepare_internal_customer_risk_briefing` [assist, synth — CONSOLIDATED → prepare_customer_success_review_brief (absorbed WITHOUT its risk framing — no risk scoring exists; the assumptions/gaps sections are its surviving meaning)]
+
+Plus the five v2.4-minted ACTIVE skills named above:
+**`detect_customer_term_deviation`** (consolidates 5; declared
+baseline classes + deviation axes; THE BASELINE DOCTRINE — no
+standard baseline, no deviation diagnosis; conformance is SILENCE),
+**`detect_customer_renewal_obligations`** (1+2; THE THIRD HARVEST —
+reads v2.1 register clauses BY id + v2.2 declared-clock windows;
+renewal obligations and windows ONLY, never likelihood),
+**`detect_customer_coverage_gap`** (3+7+8+14; REFUSAL_BACKED;
+declared coverage classes), **`detect_unbacked_customer_health_assumption`**
+(15; THE QUOTE FRAME; never adjudicates),
+**`prepare_customer_success_review_brief`** (6+10+12+13+16; declared
+sections; [OE] named in the exclusions).
 
 Future [OE]: `detect_declining_activity` · `detect_low_usage` ·
 `detect_unresolved_customer_issues` · `score_customer_risk` [synth] ·
-`cluster_recurring_complaints` · `identify_churn_signals`.
+`cluster_recurring_complaints` · `identify_churn_signals` — exactly
+the relationship-state questions the sensitivity posture refuses
+today (THE IMPUTED HEALTH).
+
+Boundary note: usage, activity, ticket, NPS, CRM, churn, and
+health-score analysis belongs behind the future Operational Evidence
+decision. **THE HEALTH-SENTENCE DISTINCTION** (v2.4 WS0): a document
+statement ABOUT the relationship is governed evidence a finding may
+QUOTE as an unsupported assumption; telemetry AS DATA is [OE] — a
+document containing a health claim does not authorize the workbench
+to know customer health.
 
 ---
 

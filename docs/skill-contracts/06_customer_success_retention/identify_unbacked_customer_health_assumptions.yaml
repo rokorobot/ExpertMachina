@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: identify_unbacked_customer_health_assumptions
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_unbacked_customer_health_assumption
+ratified_path: workbench/customer_success_intelligence/skills/detect_unbacked_customer_health_assumption.yaml
+# the v2.4 consolidation (WS0 ruling 2) - the draft's meaning survives as a declared class/section of the ratified contract
 boundary_tags: [now]
 pattern: finding
 purpose: >

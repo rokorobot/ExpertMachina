@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_outdated_cs_documentation
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: identify_outdated_policies
+ratified_path: workbench/compliance_obligation/skills/identify_outdated_policies.yaml
+# cross-workbench (WS0 ruling 2): same mechanism as the shipped v1.7 skill, domain-scoped to customer success at runtime
 boundary_tags: [now]
 pattern: revision
 purpose: >

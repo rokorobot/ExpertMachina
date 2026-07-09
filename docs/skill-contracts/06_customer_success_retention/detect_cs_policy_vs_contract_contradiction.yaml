@@ -5,7 +5,10 @@
 # workbench/<name>/skills/ (registry rule 1).
 skill_id: detect_cs_policy_vs_contract_contradiction
 workbench: customer_success_retention   # 6. Customer Success / Retention Workbench
-status: FUTURE
+status: CONSOLIDATED
+consolidated_into: detect_customer_term_deviation
+ratified_path: workbench/customer_success_intelligence/skills/detect_customer_term_deviation.yaml
+# the v2.4 consolidation (WS0 ruling 2) - the draft's meaning survives as a declared class/section of the ratified contract
 boundary_tags: [now]
 pattern: conflict
 purpose: >
