@@ -34,7 +34,7 @@ qdrant-client==1.9.1
 # connectors/framework.py _extract_text - previously undeclared)
 python-docx==1.2.0
 # 6.13.2 -> 6.13.3 (T2.2 security bump): GHSA-jm82-fx9c-mx94, patch release.
-pypdf==6.13.3
+pypdf==6.21.4
 
 # llama-index (core + vector-stores-qdrant + embeddings-openai + llms-openai)
 # SHED at T2.6 (docs/t26-llama-index-inventory.md): it was thin legacy
@@ -47,7 +47,7 @@ pypdf==6.13.3
 # requirements-nli.txt at T2.5 - opt-in model runtime, not base.
 
 # MCP Agent Gateway (MVP 0.9 - read-only transport over Governance Contract v1)
-mcp==1.27.2
+mcp==1.30.0
 
 # Provider adapters behind the D19 resolver (v1.1 WS1, package_consumer arc).
 # openai was previously transitive via llama-index-llms-openai; pinned
@@ -59,7 +59,7 @@ anthropic==0.109.1
 # Credential custody layer (v1.2.0 WS0, D25): envelope encryption of
 # outbound secrets under EM_SECRET_KEY. Previously transitive; pinned
 # explicitly now that app/custody.py imports Fernet directly.
-cryptography==48.0.1
+cryptography==50.0.0
 
 # Governed schema migrations (audit T2.3, Alembic migration spine -
 # docs/t23-alembic-inventory.md). Retires the hand-rolled
