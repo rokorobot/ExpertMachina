@@ -387,7 +387,7 @@ Accepted at the gate, verbatim in substance:
 the compliance corpus, CORPUS.md, and
 `backend/test_compliance_corpus.py`.
 
-### WS1 — The Contracts, the Corpus, and THE CORPUS PROOF: evidence recorded, gate pending ratification
+### WS1 — The Contracts, the Corpus, and THE CORPUS PROOF: CLOSED (2026-07-07, by the WS2 ratification)
 
 Deliverables: the ratified bundle
 (`workbench/compliance_obligation/workbench.yaml` + the six contracts
@@ -487,6 +487,9 @@ exactly 28 tables / 305 columns.
 
 **THE GATE (per WS0): user ratification of the corpus as realistic
 and the six contracts as the declared product is now requested.**
+
+*(Closed 2026-07-07: the WS2 ruling below accepts the WS1 corpus and
+the six contracts as the declared product — see its closing note.)*
 
 ### WS2 — `common.py` + the Runner + THE DIAGNOSIS PROOF: RATIFIED (2026-07-07, user-ratified)
 
