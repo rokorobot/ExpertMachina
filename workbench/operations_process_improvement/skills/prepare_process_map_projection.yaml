@@ -1,0 +1,73 @@
+skill_id: prepare_process_map_projection
+workbench: operations_process_improvement
+status: ACTIVE
+boundary_tags: [assist, synth]
+base_pattern: assist
+purpose: >
+  Compose a cited, visibly NON-AUTHORITATIVE map of the documented
+  process for an operations reader: the process steps as the governed
+  documents state them, in the order the documents state, each cited to
+  its source asset. A projection for orientation, never a finding, never
+  knowledge, never a source of truth. THE PROJECTION DISCIPLINE: every
+  step in the map carries its verbatim citation (asset id + quote) and
+  the whole map wears its non-authoritative label; where the documents
+  do not state an ordering or an owner, the map says so ("not
+  documented") rather than inventing one.
+projection_convention:
+  # the map is a PROJECTION over governed documents, never another
+  # source of truth (profile rule 4). Every rendered step is a governed
+  # citation; a gap is rendered as a declared absence, never filled.
+  projection_label: "[PROCESS MAP, non-authoritative projection]"
+  label_rule: >
+    a step drawn verbatim from a cited governed document is printed with
+    its citation (asset id + quote); ANY ordering, owner, or transition
+    the documents do NOT state is printed as "not documented in the
+    governed corpus" - never inferred, never invented. The whole map
+    carries the projection_label in its header. An unlabeled map, or a
+    step presented as authoritative fact, is a contract violation swept
+    pre-write (THE INVENTED PROCESS).
+sections:
+  # the mandatory sections; an empty section carries its declared-absence
+  # note.
+  - documented_steps: the process steps each with the verbatim excerpt
+      (asset id + quote), in the documents' stated order
+  - undocumented_transitions: transitions/owners the documents do NOT
+      state, printed as declared absences - never inferred
+allowed_inputs:
+  - approved knowledge in the operations scope (PRIMARY or DERIVED,
+    cited by asset id)
+  - ACCEPTED findings (DERIVED facts) - never pending proposals
+forbidden_inputs:
+  - ungoverned sources; candidate/held content
+  - execution logs / run logs / completed tickets / process-mining
+    traces (until [OE]) - an execution record is DECLINED, naming [OE]
+  - any claim of actual execution / completion (THE COMPLETED RUN)
+  - an inferred step, owner, ordering, or transition presented as
+    governed fact (THE INVENTED PROCESS)
+  - other skills' pending (ungated) findings
+evidence_rules: >
+  Every documented step cites its asset; every ordering/owner the
+  documents do not state is printed as a declared absence; the whole map
+  wears the projection_label in-header. Narrative framing declared
+  SYNTHESIS_INFERRED. DERIVED facts cited as DERIVED. No COMPLETED RUN
+  vocabulary. The map is never a finding and never enters knowledge.
+allowed_finding_kinds: []   # assist output - never a finding
+output_format: >
+  A process-map brief for humans written to 07_agent_workspaces
+  (ungoverned scratch, never scanned) - NOT a proposal, never written to
+  /08_proposals, never re-enters knowledge (circular derivation
+  refused). The projection_label prints in the header verbatim.
+human_approval_requirement: >
+  None applies - the map proposes nothing and never enters knowledge;
+  the valve is not in its path by design.
+audit_event: >
+  MCP calls audited per call; the map itself is scratch, not evidence.
+refusal_conditions:
+  - a step/owner/ordering without a governing citation presented as
+    fact -> refuse pre-write (THE INVENTED PROCESS)
+  - a request to state actual execution/completion -> refuse, naming
+    [OE] (THE COMPLETED RUN)
+  - persistence / scheduling / a kept live process registry -> refuse
+    (the map is scratch, never a maintained source of truth)
+question_frame:
+  - "What does the governed corpus document as the process, step by step, and where is it silent?"
