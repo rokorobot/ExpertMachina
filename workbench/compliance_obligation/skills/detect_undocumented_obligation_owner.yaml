@@ -19,13 +19,15 @@ question_frame:
   # each frame = the obligation it rests on + the owner question
   # asked through consume(). Refusal-first cuts both ways: an
   # obligation whose owner question the corpus answers produces NO
-  # finding (the covered control).
+  # finding (the covered control). Sharpened 2026-10-31 (user-ratified):
+  # the frame asks for the named INTERNAL role or team - a contracting
+  # party ("the processor must notify") is not a documented owner.
   - obligation_trigger: "personal data breach"
-    question: "Who is responsible for sending personal data breach
-      notifications?"
+    question: "Which named internal role or team is responsible for
+      sending personal data breach notifications?"
   - obligation_trigger: "ISO 27001 surveillance audit"
-    question: "Who is responsible for coordinating the annual ISO
-      27001 surveillance audit?"
+    question: "Which named internal role or team is responsible for
+      coordinating the annual ISO 27001 surveillance audit?"
 allowed_inputs:
   - the compiled expert package at binding clearance (explicit
     obligation statements and any owner-naming statements)
