@@ -14,8 +14,11 @@ allowed_inputs:
 question_frame:
   - "What is the approved procedure for producing the monthly service
      performance report?"
-  - "Who is responsible for delivering the monthly service performance
-     report, and by when?"
+  # owner frame sharpened 2026-10-31 (user-ratified, real-model run
+  # evidence): asks for the named INTERNAL role or team - the
+  # contracting party ("the provider shall deliver") is not an owner.
+  - "Which named internal role or team is responsible for delivering
+     the monthly service performance report?"
 forbidden_inputs:
   - ungoverned sources; candidate/held content; transactional records
   - implied or inferred obligations

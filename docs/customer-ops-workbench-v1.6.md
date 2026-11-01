@@ -922,3 +922,39 @@ the owner frame in `detect_sla_obligation_gap` to ask which named
 internal role or team owns delivery; re-check the v1.7
 `detect_undocumented_obligation_owner` frames for the same
 party-vs-internal-owner ambiguity.
+
+### Owner-frame sharpening + real-model rerun (2026-10-31, user-ratified edit; evidence recorded)
+
+**The ratified edit:** the owner frames now ask for the **named internal
+role or team** — a contracting party ("the provider shall deliver", "the
+processor must notify") is not a documented owner.
+- `detect_sla_obligation_gap` (v1.6): "Which named internal role or team
+  is responsible for delivering the monthly service performance report?"
+  ("by when" dropped — the deadline is not the gap; the MSA answers it).
+- `detect_undocumented_obligation_owner` (v1.7): both frames re-worded the
+  same way. The v1.7 gap plant (P4, "The processor must notify…") carried
+  the identical party-vs-owner ambiguity; the covered control (P4c, "The
+  Compliance Officer is responsible…") names an internal role, so it stays
+  answered. Test constants in `test_compliance_corpus.py` /
+  `test_compliance_workbench.py` updated to the new frames (the suites
+  assert frames verbatim).
+- CI unchanged: customer-ops gate 6 proposals; compliance 20 proposals,
+  byte-identical, THE COMPOSITION PROOF green; the six affected suites
+  green.
+
+**Real-model rerun (ANTHROPIC / claude-opus-5-5, same path):** the
+sharpened owner frame is **refused** — "assigns the obligation to 'the
+provider' as a party, not to any named internal role or team" (cites 14)
+→ **both P4 SLA_OBLIGATION_GAP findings now surface**, matching CI.
+
+**New divergence (FOLLOW-UP, not ratified, not fixed):** 5 proposals
+again — the playbook frame "Which approved playbook governs enterprise
+refund exception handling?" flipped between runs (run 1: finding; run 2:
+skipped as answered). Both answers say the same thing (the playbook is
+named by reference; its steps are not in the package). Cause: the runner
+counts a refusal when `INSUFFICIENT EVIDENCE` appears **anywhere** in the
+answer (run 1 mentioned it in a limitations note; run 2 did not). Two
+candidate rulings for later: (a) sharpen the playbook frame the same way
+("…approved playbook document, and what are its steps?"); (b) require the
+refusal marker as the answer's leading line under the packaged answering
+contract. Either is a contract/runner change needing ratification.

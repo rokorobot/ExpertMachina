@@ -94,9 +94,10 @@ Q_TRAIN_GAP = ("Which approved record shows the completed security "
                "awareness training summary for the latest cycle?")
 Q_IR_COVERED = ("Was the annual incident response plan test completed "
                 "and the test report retained for audit review?")
-Q_OWNER_GAP = "Who is responsible for sending personal data breach notifications?"
-Q_OWNER_COVERED = ("Who is responsible for coordinating the annual ISO "
-                   "27001 surveillance audit?")
+Q_OWNER_GAP = ("Which named internal role or team is responsible for "
+               "sending personal data breach notifications?")
+Q_OWNER_COVERED = ("Which named internal role or team is responsible for "
+                   "coordinating the annual ISO 27001 surveillance audit?")
 
 
 def run_scan(session, connector):
