@@ -52,8 +52,9 @@ jobs:
       # and took nltk (PYSEC-2026-597, a llama-index transitive) with it. If
       # this step ever finds something, it fails - add an ignore here only
       # with a reason and a review-by date (T2.2 custody rule).
-      # (torch CVE-2025-3000 is NLI-only - gated in the nightly's own
-      # pip-audit over requirements-nli.lock, not here.)
+      # (The NLI lock is gated in the nightly's own pip-audit over
+      # requirements-nli.lock - also zero findings, no ignores, since
+      # torch 2.15.0.)
       - name: Dependency audit (pip-audit)
         run: |
           pip install pip-audit
