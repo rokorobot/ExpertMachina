@@ -18,6 +18,6 @@
 -r requirements.txt
 
 # ~GB of model runtime - the reason this is opt-in (M-DEP-2).
-torch==2.12.0
+torch==2.15.0
 transformers==5.11.0
 sentencepiece==0.2.1
