@@ -4,7 +4,36 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-07-09 · current version **v2.4.0** (Customer
+**Snapshot:** 2026-11-01 · current version **v2.4.1** — a maintenance
++ evidence release on top of v2.4.0; **no new law, no schema change
+(28/305 held), no new guard family, 92 CI suites green.** What it
+carries: **(1) the ONE real-model diagnostic run, executed** (the v1.4
+WS4 / v1.6 WS3 honest slot): Anthropic claude-opus-5-5 via the audited
+D19 CONFIG tier (one `LLM_CONFIG_UPDATED` event), real `consume()`, the
+real stdio MCP door, EXECUTIVE sentinel absent — the real-model refusal
+is evidenced; narration stayed deterministic (no real narrator exists
+behind the seam), so the PROCESS_INCONSISTENCY real proof stays open;
+**(2) three ratified question-frame sharpenings the real model
+exposed** — owner frames ask for the *named internal role or team*
+(`detect_sla_obligation_gap`, `detect_undocumented_obligation_owner`;
+a contracting party is not a documented owner) and the playbook frame
+asks for the playbook's *steps* (`detect_missing_support_playbook`;
+the documents name it, its content is absent); **(3) dependency
+custody restored** — the base AND NLI locks audit at ZERO findings
+with ZERO ignores (9 base bumps incl. cryptography 50, mcp 1.30 on
+1.x, pypdf 6.21; torch 2.12→2.15 clears setuptools<82 and retires the
+overdue CVE-2025-3000 ignore; both nightly model suites pass on the
+real NLI model). **Merged but NOT released as a milestone:** the
+Operations / Process Improvement workbench (catalog #8, PR #31, built
+and gated in the AgenticTeam repo) — present in the tree, **pending
+its commercial verdict in this repo**; it is not counted as a
+delivered commercial workbench until then. **Open:** the structured
+refusal scoping proposal (PR #40, for ratification — real models
+paraphrase refusals, ~1 in 8 runs; a lexical rule cannot catch it);
+the OpenAI real-model run (blocked: account has no API credit); the
+v1.2.0 live-SharePoint scan.
+
+**Previous snapshot:** 2026-07-09 · **v2.4.0** (Customer
 Success Intelligence — the SIXTH commercial workbench and the
 substrate's THIRD consumer: *a governed customer-success preparation
 workbench, not a churn, health, CRM, or retention-prediction engine*.
@@ -777,6 +806,15 @@ engine", or "agent wrote a fact".
 | WS2 | `073f430` | the runner on common.py (SEVENTH zero-edit reuse; conventions parsed from the contract bytes; the quote-frame-aware IMPUTED-HEALTH sweep) + THE DIAGNOSIS PROOF (`backend/test_customer_success_workbench.py`, 88th suite, parts A–G incl. Northwind's silence proven on the bytes, THE THIRD HARVEST via a DERIVED register fixture BY ID, the plant quote-framed only) |
 | WS3 | `a70ce25`+`82c603f` | THE MILESTONE GATE (`backend/test_customer_success_acceptance.py`, 89th suite, eleven stages) + THE REAL REGISTER CHAIN (81 held DERIVED despite an approve-everything policy; the accepted clause harvested BY id, action 2026-08-01 by declared arithmetic) + THE CUSTOM TERMS PROOF (Acme both axes; Northwind ZERO deviation findings) + THE IMPUTED HEALTH SWEEP (14 bytes, all quote-framed) + the Customer Success catalog card + THE COMMERCIAL VERDICT PASSED (the CS lead, scope-limited) + the in-browser before/after (raw-name card → full #6/v2.4 card; 62 held/0 accepted → 61/1 accepted DERIVED, zero console errors) |
 | **v2.4.0** | PR #32 `1036ef0` (tag v2.4.0) | the sixth commercial workbench — per-customer document diagnosis, never the relationship's state; zero new surface or law ([OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a seventh time); route manifest 88; MCP frozen at 9 tools; D24 held 28/305; harness 89/89 |
+| — | PR #33 `cae424d` | release: v2.4.0 PROJECT_STATE + roadmap regeneration (docs-only) |
+| — | PR #31 `d475838` | the Operations / Process Improvement workbench (catalog #8) — built + gated in the AgenticTeam repo; 3 suites (92 total); **merged, pending its commercial verdict here — not a released milestone** |
+| — | PR #34 `4d5366a` | docs: the v1.7 WS1 gate heading marked CLOSED (the WS2 ratification already closed it) |
+| — | PR #35 `fc1c27d` | THE ONE REAL-MODEL DIAGNOSTIC RUN — evidence appended to the v1.4 WS4 / v1.6 WS3 records |
+| — | PR #36 `3760670` | owner frames ask for the named internal role or team (user-ratified; v1.6 + v1.7 contracts) |
+| — | PR #37 `4e7cbed` | dependency audit cleared: 9 base-lock bumps (+ filelock in the NLI lock) |
+| — | PR #38 `e8b20d3` | torch 2.15.0: NLI lock at zero findings / zero ignores; CVE-2025-3000 ignore retired |
+| — | PR #39 `11fcaf2` | the playbook frame asks for the playbook's steps (user-ratified, option a) |
+| **v2.4.1** | (tag v2.4.1) | maintenance + evidence release: the real-model slot executed, three frame sharpenings, dependency custody restored; no new law, 28/305 held, 92 suites |
 
 ## How to run
 
@@ -1374,6 +1412,15 @@ scan.
 [ES] minting law, the shared extraction engine, the first
 shipped-workbench extension, document-governed cost exposure, and
 per-customer success intelligence have all shipped.**
+**v2.4.1 (2026-11-01) status of the honest slots:** the ONE real-model
+diagnostic run is **EXECUTED** (Anthropic; evidence in
+docs/customer-ops-workbench-v1.6.md, "Post-release honest-slot
+evidence"); the real-model *narrator* and the OpenAI run remain open;
+the live-SharePoint scan is unchanged. **Proposed next law:** the
+Structured Refusal (docs/scoping-structured-refusal.md, PR #40 —
+`consume()` returns `answer_status`; proposed D33; for ratification).
+**Pending verdict:** catalog #8 (Operations / Process Improvement) —
+its own v2.5.0 once the owner reads its findings.
 The two remaining named decisions still await their own pressure and
 scoping session (the Operational Evidence Realm [OE] — sharpened to
 one sentence, "did the work happen?", v2.3's second crisp edge, "what
