@@ -861,3 +861,64 @@ carried.
 **Final verdict: v1.6.0 PASSED.** Release authorized: append this
 record, regenerate PROJECT_STATE.md / roadmap.md / README under D16,
 tag and push v1.6.0.
+
+## Post-release honest-slot evidence: THE ONE REAL-MODEL DIAGNOSTIC RUN (2026-10-31, evidence recorded, ruling requested)
+
+The v1.4 WS4 / v1.6 WS3 honest slot, run once on its named vehicle (the
+customer-ops corpus). Throwaway SQLite DB; no code, contract, schema, or
+guard change.
+
+**The path, end to end, real at every door:**
+- The v1.6 gate's Stage 1–2 choreography verbatim (35 PRIMARY facts
+  approved by a human, the refund-window supersession chain, the
+  refund-authority matrix raised to EXECUTIVE, an INTERNAL package
+  `4c88352a88ae24e4…`, a real AGENT binding). Conflict rows: the gate's
+  declared fixture DETECTED pairs (real-NLI detection remains the WS1
+  gate evidence; torch not installed for this run).
+- **D19 CONFIG tier through the audited route**: `PACKAGE_CONSUMER` set
+  to `ANTHROPIC / claude-opus-5-5` via the settings route function by an
+  ADMIN principal → one `LLM_CONFIG_UPDATED` audit event (old OPENAI/None
+  → new ANTHROPIC/claude-opus-5-5, "model selection only - credentials
+  never stored"); `llm.resolve` → `source: CONFIG`. Key env-based
+  (`ANTHROPIC_API_KEY`), never stored.
+- **The real answerer**: `package_consumer.consume()` → `llm.generate` →
+  the Anthropic adapter — 4 real model calls.
+- **The real graph door**: `StdioMcpGraphClient` → `backend/mcp_server.py`
+  over stdio, authenticated by `EM_AGENT_TOKEN` (the CI gate's in-process
+  substitute replaced).
+
+**Result: 5 proposals (CI: 6), all four kinds; EXECUTIVE sentinel
+`EM-EXEC-SENTINEL-9Q4Z` absent from every written byte.**
+
+| Question (contract frame) | Real model | Outcome |
+|---|---|---|
+| approved procedure for enterprise refund exceptions | refused the procedure: "they don't include the steps" (cites 37, 24, 13…) | MISSING_SUPPORT_PLAYBOOK |
+| which approved playbook governs exception handling | names the playbook by reference only, no steps (cites 37) | MISSING_SUPPORT_PLAYBOOK |
+| approved procedure for the monthly service performance report | `INSUFFICIENT EVIDENCE - …` verbatim packaged refusal (cites 14) | SLA_OBLIGATION_GAP |
+| **who is responsible for delivering the monthly report, and by when** | **answered**: "The provider … within five business days of the end of each calendar month" [asset_id 14] | **no finding** (refusal-first: answered ⇒ no gap) |
+
+**The real-model refusal is now evidenced** — the model emits the
+packaged refusal on cue where the package has no procedure, cites only
+offered asset ids, and does not invent steps.
+
+**The one divergence is a finding about the contract, not the model.**
+Plant P4 (CORPUS.md) means *no internal owner is documented*; the
+`detect_sla_obligation_gap` owner frame asks "Who is responsible…", which
+the MSA literally answers at the contracting-party level ("The provider
+shall deliver…", asset 14). The CI contract-follower refused only because
+of its ≥ 6-token overlap threshold. The real model's answer is
+document-grounded and correct to the question as written; the runner
+honored refusal-first and produced no finding. The plant's intended gap
+is reachable only if the frame asks for the **named internal role or
+team**.
+
+**Scope held honestly:** narration stayed the deterministic
+`default_narrator` — no real-model narrator implementation exists behind
+the seam, so the PROCESS_INCONSISTENCY real proof (ruling 5) remains
+open. This run closes the real-model *answerer/refusal* half of the slot.
+
+**Follow-up (proposed, needs ratification — a contract edit):** sharpen
+the owner frame in `detect_sla_obligation_gap` to ask which named
+internal role or team owns delivery; re-check the v1.7
+`detect_undocumented_obligation_owner` frames for the same
+party-vs-internal-owner ambiguity.

@@ -678,6 +678,13 @@ real-model diagnostic run** — append its evidence here when a provider
 key is available; the workbench's stdio MCP client and D19 synthesis
 path are code-complete.
 
+**Honest-slot evidence (2026-10-31):** the ONE real-model diagnostic run
+was executed on the customer-ops corpus (ANTHROPIC / claude-opus-5-5 via the
+audited D19 CONFIG tier, real `consume()`, real stdio MCP door). The
+real-model refusal is evidenced; narration remained deterministic. Full
+record: docs/customer-ops-workbench-v1.6.md, "Post-release honest-slot
+evidence".
+
 ## Post-release amendment: the Operations area (v1.4.1, user-ratified 2026-07-03)
 
 **The D8 amendment (user product ruling):** a top-level **Operations**
