@@ -15,8 +15,11 @@ question_frame:
   # Situations are derived from explicit policy/contract statements;
   # each derived question names its triggering excerpt.
   - "What is the approved procedure for enterprise refund exceptions?"
-  - "Which approved playbook governs enterprise refund exception
-     handling?"
+  # Sharpened 2026-11-01 (user-ratified, option a): the documents NAME
+  # the playbook, so "which playbook governs" is answerable; the gap
+  # (plant P2) is that its content does not exist - ask for the steps.
+  - "What are the steps of the approved enterprise refund exception
+     playbook?"
 forbidden_inputs:
   - ungoverned sources; candidate/held content; transactional records
   - questions not derived from an explicit governed statement
