@@ -40,6 +40,7 @@
 | v2.2.0 | Deadline & Obligation Intelligence (the catalog's FIRST shipped-workbench EXTENSION — compliance #9's deferred deadline family, unlocked by [ES]; THE INVENTED DATE + THE PRESUMED COMPLETION postures; THE ENGAGEMENT RULE; THE COMPUTED CALENDAR; THE HARVEST of the v2.1 register) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the compliance/obligation owner); 83 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched; the constitutional outcome: a computed compliance calendar, never an operational task tracker |
 | v2.3.0 | Finance & Cost Leakage (the FIFTH commercial workbench, canonical #2, the substrate's SECOND consumer — document-governed cost exposure intelligence; NO INVENTED MONEY + THE SETTLED ACCOUNT; THE INVOICE-SENTENCE DISTINCTION; THE UNOPENED LEDGER; THE SECOND HARVEST of the v2.1 register; the first two CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CFO/controller); 86 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a sixth time; diagnoses what documents could cost, never transactional truth |
 | v2.4.0 | Customer Success Intelligence (the SIXTH commercial workbench, canonical #6, the substrate's THIRD consumer — the per-customer axis; THE IMPUTED HEALTH + THE HEALTH-SENTENCE DISTINCTION; THE BASELINE DOCTRINE; THE QUOTE FRAME; THE UNREAD CUSTOMER; THE CUSTOM TERMS PROOF; THE THIRD HARVEST of the v2.1 register; two more CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CS lead, ratified with explicit scope limits); 89 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a seventh time; diagnoses what documents promise this customer, never the relationship's state |
+| v2.4.1 | Maintenance + evidence (the ONE real-model diagnostic run EXECUTED — Anthropic via the audited D19 CONFIG tier; three ratified question-frame sharpenings it exposed; dependency custody restored — base + NLI locks at zero findings / zero ignores, torch 2.15) | ✅ Completed (November 2026) — no new law, 28/305 held, 92 CI suites; catalog #8 merged but pending its commercial verdict (not counted as delivered) |
 
 ---
 
@@ -1378,6 +1379,32 @@ nothing.
   implementation → named-proofs meta-pattern is the ratified default
   for every remaining catalog workbench. Honest slots: the real-model
   diagnostic run and the v1.2.0 live-SharePoint scan.
+
+## v2.4.1 — Maintenance + evidence (Completed, November 2026)
+
+- **The ONE real-model diagnostic run — EXECUTED.** Customer-ops corpus,
+  Anthropic claude-opus-5-5 via the audited D19 CONFIG tier, real
+  `consume()`, real stdio MCP door; the real-model refusal evidenced,
+  sentinel absent. Narration stayed deterministic — the real-model
+  narrator (PROCESS_INCONSISTENCY's real proof) remains open.
+- **What the real model taught the contracts** (all user-ratified):
+  owner frames ask for the *named internal role or team* (a contracting
+  party is not a documented owner — v1.6 and v1.7 shared the flaw); the
+  playbook frame asks for the playbook's *steps* (the documents name it;
+  its content is the gap). A leading-marker detection rule was tried and
+  dropped on evidence (lost a planted gap 5/5).
+- **Dependency custody restored:** base and NLI locks at zero findings,
+  zero ignores; torch 2.12 → 2.15; both nightly model suites pass on the
+  real NLI model.
+- **Not in this release as a milestone:** catalog #8 (Operations /
+  Process Improvement, PR #31) is in the tree, pending its commercial
+  verdict.
+- **NEXT:** ratify the Structured Refusal scoping
+  (docs/scoping-structured-refusal.md — real models paraphrase refusals
+  ~1 in 8 runs; refusal must become a structured field, not parsed
+  prose; proposed D33); catalog #8's verdict → v2.5.0; [OE]/[PMD] still
+  await their own scoping. Honest slots: the real-model narrator, the
+  OpenAI run (account credit), the live-SharePoint scan.
 
 ## Future Direction
 
