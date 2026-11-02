@@ -190,7 +190,7 @@ proceed.
 
 ## Gate records
 
-### WS1 — the contract, the format rule, the adversarial fixtures: evidence recorded, gate pending ratification
+### WS1 — the contract, the format rule, the adversarial fixtures: RATIFIED (2026-11-02, user)
 
 - **The contract:** `app/package_builder.py` answering policy rule 3
   replaced — every answer begins with `STATUS: ANSWERED | REFUSED |
@@ -231,8 +231,8 @@ proceed.
   hedges PARTIAL on a *covered* control would mint a false finding; the
   ratified "covered controls silent 5/5" (compliance P4c) is the test.
 
-**The gate:** ratify the contract wording, the format rule, and the
-parser semantics; WS2 (the wiring) then begins.
+**Verdict: v2.5.0 WS1 PASSED (2026-11-02, user-ratified).** WS2 (the
+wiring) may proceed.
 
 ## Explicitly out of scope
 
