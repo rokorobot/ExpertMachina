@@ -339,7 +339,11 @@ finding beside its conflict-backed one.
 **Owner ruling on the open question (2026-11-02): option (b)** — the
 answering policy is amended (rule 4): a contradiction is still an
 answer, `STATUS: ANSWERED`, citing both sides; conflicts stay with the
-conflict engine. Confirmation runs recorded below.
+conflict engine. **Confirmation (5 customer-ops runs, same tool):**
+the contested refund-window question is **ANSWERED 5/5** (was PARTIAL
+4/5) — "STATUS: ANSWERED … the governed assets disagree on how many
+days", both figures cited — with 0 findings; all 5 runs PASS (gaps
+5/5, control ANSWERED 5/5, UNDETERMINED 0, no extra findings).
 
 **Verdict: v2.5.0 WS3 PASSED (2026-11-02, user-ratified).**
 

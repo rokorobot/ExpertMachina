@@ -995,3 +995,14 @@ docs/customer-ops-workbench-v1.6.md) — the model gives scoped refusals
 and, once, a refusal with no marker at all; every lexical rule tried
 either missed planted gaps or produced false refusals.
 **Build contract + gate records:** docs/scoping-structured-refusal.md.
+
+Companion rulings (binding, recorded in the build contract):
+- **A contradiction is still an answer** (answering policy rule 4):
+  `STATUS: ANSWERED`, citing both sides — conflicts stay with the
+  conflict engine; the status says only whether the corpus speaks to
+  the question.
+- **UNDETERMINED** (missing/malformed header) is skipped with its
+  reason, never guessed; **legacy** (pre-`empkg-v1.1`) packages keep
+  their compiled contract, read `LEGACY_LEXICAL`, never backfilled.
+- **Evaluation** never claim-judges a PARTIAL or UNDETERMINED answer;
+  both fail the question.
