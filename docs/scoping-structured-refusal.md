@@ -234,7 +234,7 @@ proceed.
 **Verdict: v2.5.0 WS1 PASSED (2026-11-02, user-ratified).** WS2 (the
 wiring) may proceed.
 
-### WS2 — the wiring: evidence recorded, gate pending ratification
+### WS2 — the wiring: RATIFIED (2026-11-02, user — incl. the three WS2 choices)
 
 - **`consume()`** returns `answer_status`, `refused_scope`,
   `status_source`, plus `answer_body` (the answer without its status
@@ -290,9 +290,8 @@ wiring) may proceed.
 evaluation semantics (PARTIAL / UNDETERMINED fail, never judged); the
 executive source token; `answer_body`.
 
-**The gate:** ratify WS2; WS3 (the real-model proof: 5 runs × 2
-corpora, planted gaps 5/5, covered controls silent 5/5,
-UNDETERMINED = 0) then runs.
+**Verdict: v2.5.0 WS2 PASSED (2026-11-02, user-ratified).** WS3 may
+proceed.
 
 ## Explicitly out of scope
 
