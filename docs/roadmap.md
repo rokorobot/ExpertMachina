@@ -41,6 +41,7 @@
 | v2.3.0 | Finance & Cost Leakage (the FIFTH commercial workbench, canonical #2, the substrate's SECOND consumer — document-governed cost exposure intelligence; NO INVENTED MONEY + THE SETTLED ACCOUNT; THE INVOICE-SENTENCE DISTINCTION; THE UNOPENED LEDGER; THE SECOND HARVEST of the v2.1 register; the first two CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CFO/controller); 86 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a sixth time; diagnoses what documents could cost, never transactional truth |
 | v2.4.0 | Customer Success Intelligence (the SIXTH commercial workbench, canonical #6, the substrate's THIRD consumer — the per-customer axis; THE IMPUTED HEALTH + THE HEALTH-SENTENCE DISTINCTION; THE BASELINE DOCTRINE; THE QUOTE FRAME; THE UNREAD CUSTOMER; THE CUSTOM TERMS PROOF; THE THIRD HARVEST of the v2.1 register; two more CROSS-WORKBENCH consolidations) | ✅ Completed (July 2026) — all gates PASSED incl. THE COMMERCIAL VERDICT (the CS lead, ratified with explicit scope limits); 89 CI suites; 28/305 held; zero new surface or law — [OE]/[PMD] unminted, Guard 7 untouched, common.py unchanged a seventh time; diagnoses what documents promise this customer, never the relationship's state |
 | v2.4.1 | Maintenance + evidence (the ONE real-model diagnostic run EXECUTED — Anthropic via the audited D19 CONFIG tier; three ratified question-frame sharpenings it exposed; dependency custody restored — base + NLI locks at zero findings / zero ignores, torch 2.15) | ✅ Completed (November 2026) — no new law, 28/305 held, 92 CI suites; catalog #8 merged but pending its commercial verdict (not counted as delivered) |
+| v2.5.0 | THE STRUCTURED REFUSAL (D33 — a refusal is declared by the model that read the evidence, never inferred from its prose; `empkg-v1.1` status line ANSWERED/REFUSED/PARTIAL; one StatusLedger across six runners; evaluation never judges PARTIAL) | ✅ Completed (November 2026) — WS0–WS3 user-ratified; THE REAL-MODEL PROOF 10/10 (gaps 5/5, covered controls 5/5, UNDETERMINED 0); 93 CI suites; 28/305 held; no new guard family |
 
 ---
 
@@ -1405,6 +1406,27 @@ nothing.
   prose; proposed D33); catalog #8's verdict → v2.5.0; [OE]/[PMD] still
   await their own scoping. Honest slots: the real-model narrator, the
   OpenAI run (account credit), the live-SharePoint scan.
+
+## v2.5.0 — The Structured Refusal, D33 (Completed, November 2026)
+
+- **The law:** a refusal is declared by the model that read the
+  evidence, never inferred from its prose. Every answer begins with
+  `STATUS: ANSWERED | REFUSED | PARTIAL`; PARTIAL carries a
+  `REFUSED_SCOPE:` in the model's own words; a finding fires whenever an
+  answer is not fully ANSWERED; no new finding kinds.
+- **Why:** eight real-model runs (v2.4.1) showed scoped refusals and a
+  marker-less refusal; every lexical rule either missed planted gaps or
+  minted false ones.
+- **What shipped:** `empkg-v1.1`; `parse_answer_status` + consume()
+  status fields; one StatusLedger across six runners; evaluation never
+  claim-judges PARTIAL/UNDETERMINED; legacy packages LEGACY_LEXICAL;
+  contradictions ANSWERED (conflict engine owns them).
+- **Proof:** the per-workbench adversarial proof (13 gaps reproduced
+  under marker-less scoped refusals; none under headless answers) and
+  THE REAL-MODEL PROOF 10/10 on two corpora.
+- **NEXT:** catalog #8's commercial verdict → v2.6.0; [OE]/[PMD]
+  scoping; honest slots: the real-model narrator, the OpenAI run, the
+  live-SharePoint scan.
 
 ## Future Direction
 
