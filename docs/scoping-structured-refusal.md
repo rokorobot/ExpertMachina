@@ -293,6 +293,51 @@ executive source token; `answer_body`.
 **Verdict: v2.5.0 WS2 PASSED (2026-11-02, user-ratified).** WS3 may
 proceed.
 
+### WS3 — THE REAL-MODEL PROOF: evidence recorded, gate pending ratification
+
+**Tool:** `tools/d33_real_model_proof.py` — reuses each corpus's own
+milestone-gate suite for the full governed setup (real pipeline, human
+approvals, an empkg-v1.1 package, a real AGENT binding), runs the
+diagnosis once with the CI contract-follower (the baseline = the planted
+map), then again with `answerer=None` — the runner's real `consume()` —
+with PACKAGE_CONSUMER set to ANTHROPIC / claude-opus-5-5 through the
+audited settings route. **PASS** = the real refusal-backed findings equal
+the baseline's exactly AND UNDETERMINED = 0 AND every question the
+baseline answered is ANSWERED by the real model (status-level silence,
+stricter than finding-level).
+
+**Result (2026-11-02): 10/10 runs PASS.**
+
+| Corpus | Planted gaps found | Covered controls ANSWERED | UNDETERMINED | Extra findings |
+|---|---|---|---|---|
+| customer-ops (4 gaps: P2 ×2, P4 ×2; 1 control) | 5/5 | 5/5 | 0 | 0 |
+| compliance (2 gaps: P2 training summary, P4 breach owner; 2 controls: IR test, P4c ISO owner) | 5/5 | 5/5 (both) | 0 | 0 |
+
+- **50 real calls, 50 valid status headers** (status_source HEADER on
+  every one; no legacy fallback).
+- Before D33 the same model refused the P2 procedure frame 7/8 under the
+  best lexical rule; under D33 every planted gap is found in every run.
+- PARTIAL scopes name the gap in the model's words, e.g. *"The assets do
+  not name any internal role or team … responsible for sending personal
+  data breach notifications"*.
+- **The control-selection correction (found in the trial run):** the
+  workbench suite's refund-window control question is a *planted
+  contradiction* (14 vs 30 days), not a covered fact; the real model
+  rightly declined to answer it fully. The proof uses an uncontested
+  control (the refund payment rule, asset 21) and keeps the refund-window
+  question as a recorded **contested probe**: PARTIAL 4/5, ANSWERED 1/5,
+  **0 findings** — silent only because the SLA walk's must/shall evidence
+  filter dropped it.
+
+**Open question for the owner (not blocking the gate):** the answering
+policy does not say which status a *contradiction* gets (rule 4 only
+says "say so and cite both"). The model chooses PARTIAL; under ruling 3
+a PARTIAL fires a refusal-backed finding whenever the walk's evidence
+filters pass, so a contradiction could surface as a missing-evidence
+finding beside its conflict-backed one.
+
+**The gate:** ratify WS3; then release v2.5.0 (D16 regeneration + tag).
+
 ## Explicitly out of scope
 
 Changing any finding kind, contract, or corpus beyond the fixtures
