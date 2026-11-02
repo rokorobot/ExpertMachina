@@ -196,10 +196,10 @@ def make_answerer(loaded_package):
              for e in sel), key=lambda t: (-t[0], t[1]["asset_id"]))
         if scored and scored[0][0] >= 6:
             best = scored[0][1]
-            text_ = (f"Per the governed evidence (asset_id {best['asset_id']}): "
+            text_ = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {best['asset_id']}): "
                      f"{best.get('content')}")
         else:
-            text_ = ("INSUFFICIENT EVIDENCE - the governed evidence offered "
+            text_ = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered "
                      "does not contain the answer to this question.")
         return {"answer": text_,
                 "cited_asset_ids": [] if "INSUFFICIENT" in text_

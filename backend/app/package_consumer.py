@@ -125,6 +125,82 @@ def _cited_asset_ids(answer: str, offered_ids: set) -> list:
     return sorted(claimed & offered_ids)
 
 
+# --------------------------------------------------------------------------
+# D33 - The Structured Refusal (v2.5.0). A refusal is declared by the model
+# that read the evidence, in a required first status line; it is never
+# inferred from prose. Packages compiled before empkg-v1.1 carry no status
+# rule: they keep their compiled contract and are read by the shipped
+# substring check, labelled LEGACY_LEXICAL (D12 - no backfill).
+
+REFUSAL_MARKER = "INSUFFICIENT EVIDENCE"
+STATUS_FORMATS = ("empkg-v1.1",)
+ANSWER_STATUSES = ("ANSWERED", "REFUSED", "PARTIAL")
+_STATUS_LINE = re.compile(r"^STATUS:\s*([A-Z]+)\s*$", re.IGNORECASE)
+_SCOPE_LINE = re.compile(r"^REFUSED_SCOPE:\s*(\S.*?)\s*$", re.IGNORECASE)
+
+
+def _bare(line: str) -> str:
+    # Markdown dressing a model may add around a line (`**STATUS: X**`,
+    # `# STATUS: X`, `> ...`) is not content; strip it from both ends.
+    return line.strip().strip("*_#>` ").strip()
+
+
+def parse_answer_status(answer: str, package_format: str = None) -> dict:
+    """The status of an answer under its package's answering contract.
+
+    Returns {answer_status, refused_scope, status_source}:
+      - status_source HEADER: an empkg-v1.1 answer whose first non-empty
+        line is `STATUS: ANSWERED|REFUSED|PARTIAL` (PARTIAL additionally
+        requires the next non-empty line `REFUSED_SCOPE: <text>`, carried
+        verbatim);
+      - UNDETERMINED: an empkg-v1.1 answer whose header is missing or
+        malformed - answer_status is UNDETERMINED, never guessed;
+      - LEGACY_LEXICAL: a pre-v1.1 package - REFUSED iff the marker
+        appears in the answer (the shipped rule), else ANSWERED.
+    """
+    text = answer or ""
+    if package_format not in STATUS_FORMATS:
+        return {"answer_status": "REFUSED" if REFUSAL_MARKER in text else "ANSWERED",
+                "refused_scope": None, "status_source": "LEGACY_LEXICAL"}
+    undetermined = {"answer_status": "UNDETERMINED", "refused_scope": None,
+                    "status_source": "UNDETERMINED"}
+    lines = [_bare(l) for l in text.splitlines() if _bare(l)]
+    if not lines:
+        return undetermined
+    m = _STATUS_LINE.match(lines[0])
+    if not m or m.group(1).upper() not in ANSWER_STATUSES:
+        return undetermined
+    status = m.group(1).upper()
+    scope = None
+    if status == "PARTIAL":
+        s = _SCOPE_LINE.match(lines[1]) if len(lines) > 1 else None
+        if not s:
+            return undetermined
+        scope = _bare(s.group(1))  # the model's words, minus markdown dressing
+        if not scope:
+            return undetermined
+    return {"answer_status": status, "refused_scope": scope, "status_source": "HEADER"}
+
+
+def answer_body(answer: str) -> str:
+    """The answer without its D33 status line (and PARTIAL's REFUSED_SCOPE
+    line) - the text a claim verifier may judge. Text without a valid
+    header is returned unchanged."""
+    lines = (answer or "").splitlines()
+    i = 0
+    while i < len(lines) and not _bare(lines[i]):
+        i += 1
+    if i < len(lines) and _STATUS_LINE.match(_bare(lines[i])):
+        i += 1
+        j = i
+        while j < len(lines) and not _bare(lines[j]):
+            j += 1
+        if j < len(lines) and _SCOPE_LINE.match(_bare(lines[j])):
+            i = j + 1
+        return "\n".join(lines[i:]).strip()
+    return answer or ""
+
+
 def consume(package_path: str, question: str, top_k: int = 8,
             session=None, max_tokens: int = 4096) -> dict:
     """Answer a question from a verified Expert Package: verify the hash
@@ -148,8 +224,16 @@ def consume(package_path: str, question: str, top_k: int = 8,
 
     manifest = package["manifest"]
     offered_ids = {entry["asset_id"] for entry in retrieval["selected"]}
+    # D33: the status the answering model declared, read under this
+    # package's compiled contract (LEGACY_LEXICAL for pre-v1.1 packages).
+    status = parse_answer_status(generation["text"], manifest.get("package_format"))
     return {
         "answer": generation["text"],
+        "answer_status": status["answer_status"],
+        "refused_scope": status["refused_scope"],
+        "status_source": status["status_source"],
+        "answer_body": (answer_body(generation["text"])
+                        if status["status_source"] == "HEADER" else generation["text"]),
         "cited_asset_ids": _cited_asset_ids(generation["text"], offered_ids),
         "evidence": [{
             "asset_id": entry["asset_id"],

@@ -112,7 +112,7 @@ REVIEW_RE = re.compile(
     r"review was dated (\d{4})-(\d{2})-(\d{2})")
 
 OVERLAP_THRESHOLD = 6
-REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
+REFUSAL_TEXT = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
 RATIFIED_ACTIVE = 39  # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 executive (v1.9) + 3 contract-intelligence (v2.1) + 3 deadline-obligation (v2.2) + 5 finance-cost-leakage (v2.3) + 5 customer-success-intelligence (v2.4 WS1 promotion)
@@ -431,7 +431,7 @@ def main():
                         key=lambda t: (-t[0], t[1]["asset_id"]))
         if scored and scored[0][0] >= OVERLAP_THRESHOLD:
             _score, e = scored[0]
-            text = (f"Per the governed evidence (asset_id {e['asset_id']}): "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {e['asset_id']}): "
                     f"{e.get('content')}")
         else:
             text = REFUSAL_TEXT

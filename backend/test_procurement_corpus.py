@@ -102,7 +102,7 @@ Q_CERT_COVERED = ("Which approved document holds the current ISO 27001 "
                   "certificate for SecureStore?")
 
 OVERLAP_THRESHOLD = 6
-REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
+REFUSAL_TEXT = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
 RATIFIED_ACTIVE = 39   # 5 (v1.6) + 6 (v1.7) + 6 (v1.8) + 6 (v1.9) + 3 (v2.1) + 3 (v2.2) + 5 (v2.3) + 5 (v2.4)
@@ -346,7 +346,7 @@ def main():
                           or supplier.lower() in (e.get("content") or "").lower())),
                     None)
         if best:
-            text = (f"Per the governed evidence (asset_id "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id "
                     f"{best[1]['asset_id']}): {best[1].get('content')}")
         else:
             text = REFUSAL_TEXT

@@ -4,7 +4,33 @@
 > into a fresh AI session to continue work with full project context.
 > Regenerate at every milestone release.
 
-**Snapshot:** 2026-11-01 · current version **v2.4.1** — a maintenance
+**Snapshot:** 2026-11-02 · current version **v2.5.0** — **THE
+STRUCTURED REFUSAL (D33)**: *a refusal is declared by
+the model that read the evidence, never inferred from its prose.* Every
+answer under the packaged answering contract (now **`empkg-v1.1`**)
+begins with `STATUS: ANSWERED | REFUSED | PARTIAL`; PARTIAL carries a
+`REFUSED_SCOPE:` in the model's own words; a refusal-backed finding
+fires whenever an answer is not fully ANSWERED; a missing/malformed
+header is UNDETERMINED (never guessed); legacy `empkg-v1` packages keep
+their compiled contract (`LEGACY_LEXICAL`, no backfill); a
+contradiction is still ANSWERED (conflicts stay with the conflict
+engine). **Wiring:** `consume()` returns `answer_status` /
+`refused_scope` / `status_source` / `answer_body`; ONE `StatusLedger`
+in `workbench/common.py` across the six refusal-backed runners (no
+runner parses prose; every run reports `answer_status_counts`);
+`evaluation.py` never claim-judges PARTIAL/UNDETERMINED. **Proof:**
+THE D33 ADVERSARIAL PROOF in all six workbench suites (scoped refusals
+with no marker reproduce all 13 refusal-backed gaps; headless answers
+mint none) + **THE REAL-MODEL PROOF 10/10** (Anthropic
+claude-opus-5-5; customer-ops + compliance, planted gaps 5/5, covered
+controls ANSWERED 5/5, UNDETERMINED 0, 50/50 valid headers) + 5/5
+confirmation of the contradiction rule. 93 CI suites; zero schema
+(28/305); no new guard family; D19 unchanged. Build contract + gate
+records: docs/scoping-structured-refusal.md. **Pending:** catalog #8's
+commercial verdict (→ v2.6.0); the real-model narrator; the OpenAI
+run; the live-SharePoint scan.
+
+**Previous snapshot:** 2026-11-01 · **v2.4.1** — a maintenance
 + evidence release on top of v2.4.0; **no new law, no schema change
 (28/305 held), no new guard family, 92 CI suites green.** What it
 carries: **(1) the ONE real-model diagnostic run, executed** (the v1.4
@@ -815,6 +841,12 @@ engine", or "agent wrote a fact".
 | — | PR #38 `e8b20d3` | torch 2.15.0: NLI lock at zero findings / zero ignores; CVE-2025-3000 ignore retired |
 | — | PR #39 `11fcaf2` | the playbook frame asks for the playbook's steps (user-ratified, option a) |
 | **v2.4.1** | (tag v2.4.1) | maintenance + evidence release: the real-model slot executed, three frame sharpenings, dependency custody restored; no new law, 28/305 held, 92 suites |
+| — | PR #41 `4c12500` | release: v2.4.1 PROJECT_STATE + roadmap regeneration (docs-only) |
+| WS0 | PR #40 (`1ac4763`…`bed1864`) | v2.5 scoping ratified — D33 The Structured Refusal (law-level), the status header, PARTIAL semantics, v2.5.0; the five remaining items |
+| WS1 | `213b5eb` | the status-line answering policy + `empkg-v1.1` + `parse_answer_status` + `test_structured_refusal.py` (adversarial fixtures incl. the three recorded real-model shapes) |
+| WS2 | `e00862e` | the wiring: consume() status fields, ONE StatusLedger across six runners, evaluation never judges PARTIAL/UNDETERMINED, CI answerers emit the status, THE D33 ADVERSARIAL PROOF per workbench |
+| WS3 | `37076ea`+ | THE REAL-MODEL PROOF 10/10 (`tools/d33_real_model_proof.py`) + the contradiction rule (ANSWERED 5/5) |
+| **v2.5.0** | PR #40 (tag v2.5.0) | THE STRUCTURED REFUSAL (D33) — refusals declared, never inferred; 93 suites; 28/305 held |
 
 ## How to run
 
@@ -1412,6 +1444,9 @@ scan.
 [ES] minting law, the shared extraction engine, the first
 shipped-workbench extension, document-governed cost exposure, and
 per-customer success intelligence have all shipped.**
+**v2.5.0 (2026-11-02):** D33 The Structured Refusal is SHIPPED (the
+proposed next law below is now law). Next: catalog #8's commercial
+verdict → v2.6.0; [OE]/[PMD] still await their own scoping.
 **v2.4.1 (2026-11-01) status of the honest slots:** the ONE real-model
 diagnostic run is **EXECUTED** (Anthropic; evidence in
 docs/customer-ops-workbench-v1.6.md, "Post-release honest-slot

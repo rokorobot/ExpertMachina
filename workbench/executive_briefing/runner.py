@@ -33,6 +33,10 @@ import os
 import re
 
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     excerpt as _excerpt,
     load_active_contracts,
@@ -162,8 +166,10 @@ def _class(entry):
 # never an unsourced sentence (found at the WS3 gate: the v2-model
 # conflict does not travel to a recompiled model, so the next briefing's
 # conflicts section is legitimately empty).
+# D33 (v2.5): a declared PARTIAL status is the packaged contract's
+# reproducible answer exactly as the refusal marker is - a source token.
 _SOURCE_TOKENS = ("asset ", "conflict ", "trust component", "revision ",
-                  REFUSAL_MARKER, "as_of", "since ", "exclud", "[DERIVED]",
+                  REFUSAL_MARKER, "STATUS: PARTIAL", "as_of", "since ", "exclud", "[DERIVED]",
                   "[PMD]", "[OE]", "[ES]",
                   "an empty section is itself information")
 
@@ -206,6 +212,7 @@ def run_briefing(package_path, vault_dir, project_id, agent_principal,
 
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     expert_model_id = package["manifest"]["expert_model_id"]
     entries = sorted(package["knowledge"], key=lambda e: e["asset_id"])
@@ -294,15 +301,24 @@ def run_briefing(package_path, vault_dir, project_id, agent_principal,
     gap_lines, findings, skipped = [], [], []
     for question in questions:
         result = answerer(question)
-        answer = result.get("answer") or ""
-        if REFUSAL_MARKER not in answer:
+        status = ledger.read(result)
+        if status["answer_status"] == "UNDETERMINED":
+            skipped.append({"skill": "generate_unknowns_evidence_gaps_report", "reason": _undetermined_reason(question)})
+            continue
+        if not _is_gap(status):
             skipped.append({"skill": "generate_unknowns_evidence_gaps_report",
                             "reason": f"the corpus answers \"{question}\" - a "
                                       f"covered control, no gap"})
             continue
+        returned = (REFUSAL_MARKER if status["answer_status"] == "REFUSED"
+                    else f"STATUS: PARTIAL - refused scope, in the answering "
+                         f"model's own words: \"{status['refused_scope']}\"")
+        gap_phrase = (f"{REFUSAL_MARKER} refusal"
+                      if status["answer_status"] == "REFUSED"
+                      else "STATUS: PARTIAL answer")
         gap_lines.append(
             f"- gap: \"{question}\" -> the packaged answering contract "
-            f"returned {REFUSAL_MARKER} (reproducible)")
+            f"returned {returned} (reproducible)")
         findings.append({
             "skill": "generate_unknowns_evidence_gaps_report",
             "finding_kind": "EXECUTIVE_EVIDENCE_GAP",
@@ -310,14 +326,15 @@ def run_briefing(package_path, vault_dir, project_id, agent_principal,
             "cited_assets": [],
             "statement": (f"The governed corpus cannot answer a declared "
                           f"executive question: \"{question}\". The "
-                          f"reproducible {REFUSAL_MARKER} refusal is the gap; "
+                          f"reproducible {gap_phrase} is the gap; "
                           f"this says nothing about whether the answer exists "
                           f"in the world - only that the governed corpus does "
                           f"not hold it."),
             "evidence_lines": [
                 f"Declared executive question (verbatim): \"{question}\"",
-                f"Reproducible refusal: the packaged answering contract "
-                f"returned {REFUSAL_MARKER}",
+                *_status_evidence_lines(question, status,
+                    f"Reproducible refusal: the packaged answering contract "
+                    f"returned {REFUSAL_MARKER}"),
                 "Absence becomes a finding, never a fact.",
             ],
         })
@@ -440,7 +457,8 @@ def run_briefing(package_path, vault_dir, project_id, agent_principal,
             proposals_dir, f"{workbench_name}-{f['skill']}", "\n".join(lines)))
 
     return {"briefing": brief_path, "proposals": sorted(proposal_paths),
-            "findings": findings, "skipped": skipped, "exclusions": exclusions,
+            "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(), "exclusions": exclusions,
             "as_of": str(as_of), "since": str(since),
             "accepted_origins": origins, "unresolved_conflicts": len(unresolved),
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}

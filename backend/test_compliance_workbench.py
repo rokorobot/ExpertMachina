@@ -167,10 +167,10 @@ def make_answerer(loaded_package):
              for e in sel), key=lambda t: (-t[0], t[1]["asset_id"]))
         if scored and scored[0][0] >= 6:
             best = scored[0][1]
-            text = (f"Per the governed evidence (asset_id {best['asset_id']}): "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {best['asset_id']}): "
                     f"{best.get('content')}")
         else:
-            text = ("INSUFFICIENT EVIDENCE - the governed evidence offered "
+            text = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered "
                     "does not contain the answer to this question.")
         return {"answer": text,
                 "cited_asset_ids": [] if "INSUFFICIENT" in text
@@ -323,6 +323,17 @@ def main():
     finally:
         os.environ.pop("EM_AGENT_TOKEN", None)
     first, second = runs
+    # D33 (v2.5 WS2): the adversarial fixtures - scoped refusals with no
+    # marker reproduce every refusal-backed gap; mid-text mentions add none;
+    # headless answers mint none (UNDETERMINED, never guessed).
+    n_d33 = test_support.d33_adversarial_proof(
+        lambda ans, vd: runner.run_diagnostic(
+            package_row.file_path, vd, project.id,
+            agent_principal="compliance-obligation", binding_id=binding.id,
+            graph_client=InProcessGraphClient(), as_of=AS_OF, answerer=ans),
+        answerer, first, agent_token)
+    print(f"D33 adversarial proof passed: {n_d33} refusal-backed findings "
+          "reproduced under scoped refusals; none under headless answers.")
     assert first["as_of"] == AS_OF, "the declared as_of must be recorded"
     assert first["proposals"] == second["proposals"], "paths must be identical"
     assert first["pack"] == second["pack"], "the pack path must be identical"

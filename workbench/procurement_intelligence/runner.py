@@ -42,6 +42,10 @@ import os
 import re
 
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     excerpt as _excerpt,
     overlap as _overlap,
@@ -399,6 +403,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     expert_model_id = package["manifest"]["expert_model_id"]
     knowledge = {e["asset_id"]: e for e in package["knowledge"]}
@@ -615,7 +620,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 "{supplier}", supplier)
             result = answerer(question)
             answer = result.get("answer") or ""
-            covered = (REFUSAL_MARKER not in answer
+            status = ledger.read(result)
+            if status["answer_status"] == "UNDETERMINED":
+                skipped.append({"skill": skill, "reason": _undetermined_reason(question)})
+                continue
+            covered = (not _is_gap(status)
                        and supplier.lower() in _norm(answer).lower())
             if covered:
                 skipped.append({
@@ -637,10 +646,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                     f"\"{_excerpt(_norm(req_entry.get('content')))}\"",
                     f"Supplier in scope (verbatim): {_cite(entry)} - "
                     f"\"{_excerpt(content)}\"",
-                    f"Reproducible refusal: \"{question}\" -> the packaged "
-                    f"answering contract returned INSUFFICIENT EVIDENCE "
-                    f"(SUPPLIER-NAMED COVERAGE: another supplier's certificate "
-                    f"is never evidence)",
+                    *_status_evidence_lines(question, status,
+                        f"Reproducible refusal: \"{question}\" -> the packaged "
+                        f"answering contract returned INSUFFICIENT EVIDENCE "
+                        f"(SUPPLIER-NAMED COVERAGE: another supplier's certificate "
+                        f"is never evidence)"),
                 ],
             })
 
@@ -773,6 +783,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     return {"proposals": sorted(proposal_paths), "brief": brief_path,
             "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(),
             "exclusions": exclusions, "as_of": str(as_of),
             "window_days": window_days,
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}

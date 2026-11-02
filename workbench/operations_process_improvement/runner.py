@@ -52,6 +52,10 @@ import os
 import re
 
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     excerpt as _excerpt,
     subject_tokens as _subject_tokens,
@@ -374,6 +378,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     pc = package_consumer or _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     knowledge = {e["asset_id"]: e for e in package["knowledge"]}
     narrator = narrator or default_narrator
@@ -596,9 +601,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
             continue  # a defined handoff - no finding
         question = (f"Who is the next owner, or what is the receiving "
                     f"procedure, after: \"{_excerpt(content)}\"?")
-        ans = answerer(question)
-        answer_text = (ans.get("answer") if isinstance(ans, dict) else str(ans))
-        if REFUSAL_MARKER not in (answer_text or ""):
+        status = ledger.read(answerer(question))
+        if status["answer_status"] == "UNDETERMINED":
+            skipped.append({"skill": skill, "reason": _undetermined_reason(question)})
+            continue
+        if not _is_gap(status):
             skipped.append({
                 "skill": skill,
                 "reason": f"asset {entry['asset_id']}: the corpus answers the "
@@ -615,7 +622,8 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 f"[{source_doc(entry)}] - \"{_excerpt(content)}\"",
                 f"No handoff marker present (the step names no receiver / "
                 f"next owner)",
-                f"Reproducible refusal: \"{question}\" -> {REFUSAL_MARKER}",
+                *_status_evidence_lines(question, status,
+                    f"Reproducible refusal: \"{question}\" -> {REFUSAL_MARKER}"),
             ],
         })
 
@@ -779,5 +787,6 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     return {"proposals": sorted(proposal_paths), "map": map_path,
             "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(),
             "exclusions": exclusions, "as_of": str(as_of),
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}

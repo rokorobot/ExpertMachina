@@ -42,6 +42,10 @@ import os
 import re
 
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     excerpt as _excerpt,
     overlap as _overlap,
@@ -546,6 +550,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     expert_model_id = package["manifest"]["expert_model_id"]
     knowledge = {e["asset_id"]: e for e in package["knowledge"]}
@@ -804,8 +809,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
         question = frame["question"]
         trigger = frame["trigger"].lower()
         result = answerer(question)
-        answer = result.get("answer") or ""
-        if REFUSAL_MARKER not in answer:
+        status = ledger.read(result)
+        if status["answer_status"] == "UNDETERMINED":
+            skipped.append({"skill": skill, "reason": _undetermined_reason(question)})
+            continue
+        if not _is_gap(status):
             skipped.append({"skill": skill,
                             "reason": f"the corpus answers \"{question}\" - a "
                                       f"covered control, no gap, no finding"})
@@ -834,8 +842,9 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 + "; ".join(f"{_cite(e)} - "
                             f"\"{_excerpt(_norm(e.get('content')))}\""
                             for e in sources),
-                f"Reproducible refusal: \"{question}\" -> the packaged "
-                f"answering contract returned INSUFFICIENT EVIDENCE",
+                *_status_evidence_lines(question, status,
+                    f"Reproducible refusal: \"{question}\" -> the packaged "
+                    f"answering contract returned INSUFFICIENT EVIDENCE"),
                 "Absence becomes a finding, never a fact: the governed "
                 "corpus does not hold the evidence - nothing here verifies "
                 "practice",
@@ -849,8 +858,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
         question = frame["question"]
         trigger = frame["obligation_trigger"].lower()
         result = answerer(question)
-        answer = result.get("answer") or ""
-        if REFUSAL_MARKER not in answer:
+        status = ledger.read(result)
+        if status["answer_status"] == "UNDETERMINED":
+            skipped.append({"skill": skill, "reason": _undetermined_reason(question)})
+            continue
+        if not _is_gap(status):
             skipped.append({"skill": skill,
                             "reason": f"an approved document names the owner - "
                                       f"the corpus answers \"{question}\"; a "
@@ -879,8 +891,9 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 + "; ".join(f"{_cite(e)} - "
                             f"\"{_excerpt(_norm(e.get('content')))}\""
                             for e in sources),
-                f"Reproducible refusal: \"{question}\" -> the packaged "
-                f"answering contract returned INSUFFICIENT EVIDENCE",
+                *_status_evidence_lines(question, status,
+                    f"Reproducible refusal: \"{question}\" -> the packaged "
+                    f"answering contract returned INSUFFICIENT EVIDENCE"),
                 "The governed corpus does not document an owner - naming one "
                 "is human work (the split ruling: detection here, "
                 "assignment [ES]-gated)",
@@ -1200,6 +1213,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
     return {"proposals": sorted(proposal_paths), "pack": pack_path,
             "brief": brief_path,
             "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(),
             "exclusions": exclusions, "as_of": str(as_of),
             "window_days": window_days,
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}

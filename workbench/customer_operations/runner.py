@@ -35,6 +35,10 @@ import re
 # trip the doors-only sweep. Names are aliased to keep the runner body
 # byte-identical (and re-exported as runner attributes for any caller).
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     overlap as _overlap,
     excerpt as _excerpt,
@@ -168,6 +172,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
     the findings, and what was skipped with the refusing reason."""
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)  # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     expert_model_id = package["manifest"]["expert_model_id"]
     knowledge = {e["asset_id"]: e for e in package["knowledge"]}
@@ -317,8 +322,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
         kind, basis = FINDING_KINDS[skill]
         for question in contracts[skill]["questions"]:
             result = answerer(question)
-            answer = result.get("answer") or ""
-            if REFUSAL_MARKER not in answer:
+            status = ledger.read(result)
+            if status["answer_status"] == "UNDETERMINED":
+                skipped.append({"skill": skill, "reason": _undetermined_reason(question)})
+                continue
+            if not _is_gap(status):
                 skipped.append({"skill": skill,
                                 "reason": f"the corpus answers "
                                           f"\"{question}\" - no gap, no finding"})
@@ -356,8 +364,9 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                 "evidence_lines": [
                     f"Triggering governed excerpt: asset {trigger['asset_id']} - "
                     f"\"{_excerpt(trigger.get('content'))}\"",
-                    f"Reproducible refusal: \"{question}\" -> the packaged "
-                    f"answering contract returned INSUFFICIENT EVIDENCE",
+                    *_status_evidence_lines(question, status,
+                        f"Reproducible refusal: \"{question}\" -> the packaged "
+                        f"answering contract returned INSUFFICIENT EVIDENCE"),
                     f"Nearest partial evidence offered by retrieval: assets "
                     f"{', '.join(str(i) for i in partial_ids) or 'none'}",
                 ],
@@ -409,5 +418,6 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     return {"proposals": sorted(proposal_paths), "brief": brief_path,
             "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(),
             "exclusions": exclusions,
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}
