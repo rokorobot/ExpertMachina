@@ -1,4 +1,4 @@
-# Scoping — The Structured Refusal (proposal for ratification)
+# v2.5.0 — The Structured Refusal (D33) — Scoping + Build Contract
 
 > Drafted 2026-11-01 from the real-model diagnostic evidence
 > (docs/customer-ops-workbench-v1.6.md, "Post-release honest-slot
@@ -137,6 +137,41 @@ new guard family.
 - **Mechanism:** envelope (recommended) vs. classifier call.
 - **PARTIAL semantics:** ratify ruling 3 as written, or require PARTIAL
   findings to carry a distinct finding-kind suffix.
+
+## WS0 record
+
+### Owner rulings — RATIFIED (2026-11-02, user)
+
+1. **Law-level: D33, The Structured Refusal** (recorded in
+   docs/DECISIONS.md).
+2. **Mechanism: the status header.** The model that read the evidence
+   states `STATUS: ANSWERED | REFUSED | PARTIAL` in a required first
+   line. No classifier call.
+3. **PARTIAL semantics:** a finding fires whenever the answer is not
+   fully ANSWERED; PARTIAL carries the model's own wording of what it
+   could not answer, verbatim. No new finding kinds.
+4. **Version:** v2.5.0; catalog #8's release becomes v2.6.0.
+
+### Remaining WS0 items — proposed, awaiting the WS0 gate
+
+From the proposed rulings above, not yet ratified:
+- **(4) Malformed or missing header ⇒ UNDETERMINED**: skipped with that
+  reason, never guessed; counted in the run summary.
+- **(5) Legacy packages** keep their compiled contract: the shipped
+  substring rule, labelled `source: LEGACY_LEXICAL`; no backfill (D12).
+- **(6) Package format** `empkg-v1.1` (policy text changes; archive
+  layout does not); WS1 confirms the consumer's format-check rule.
+- **(7) CI answerers emit the status**, plus two adversarial fixtures
+  per refusal-backed workbench (a scoped refusal without the leading
+  marker; an answer with a mid-text marker).
+- **The proof** as defined above (5 real runs × 2 corpora: planted
+  gaps 5/5, covered controls silent 5/5, UNDETERMINED = 0; CI green,
+  gates still 6 / 20 proposals; legacy package consumes; evaluation.py
+  never claim-judges a PARTIAL as a full claim).
+
+**The gate:** ratify the remaining items (or amend them); WS1 then
+begins — the contract amendment + format rule + CI fixtures, before any
+runner change.
 
 ## Explicitly out of scope
 

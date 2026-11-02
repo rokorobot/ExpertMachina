@@ -969,3 +969,29 @@ construction), the knowledge-table fingerprint, D2 severity honesty —
 adversarially self-proven.
 **Evidence:** recorded at the WS gates in
 docs/exception-stewardship-v2.0.md as each is accepted.
+
+## D33 — The Structured Refusal (v2.5 scoping, RATIFIED 2026-11-02)
+> A refusal is declared by the model that read the evidence, never
+> inferred from its prose.
+>
+> Every answer under the packaged answering contract begins with a
+> required status line — `STATUS: ANSWERED | REFUSED | PARTIAL` —
+> stated by the same generation that read the governed evidence.
+> Consumers read the status; they do not parse the answer text to
+> decide whether a refusal happened. No second classifier call sits
+> between the evidence and the finding.
+>
+> A refusal-backed finding fires whenever the answer is not fully
+> ANSWERED. A PARTIAL answer carries the model's own wording of what
+> it could not answer, verbatim, so the human at the gate sees exactly
+> where the gap is. No new finding kinds.
+
+Law-level because it amends the binding answering contract that every
+agent consuming an Expert Package is held to. Ships as **v2.5.0**; the
+catalog #8 release (Operations / Process Improvement) becomes v2.6.0.
+
+**Evidence that motivated it:** eight real-model runs (v2.4.1,
+docs/customer-ops-workbench-v1.6.md) — the model gives scoped refusals
+and, once, a refusal with no marker at all; every lexical rule tried
+either missed planted gaps or produced false refusals.
+**Build contract + gate records:** docs/scoping-structured-refusal.md.
