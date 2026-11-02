@@ -221,6 +221,16 @@ proceed.
 - **Held:** zero schema (28/305), D19 unchanged (no new function), no
   new guard family.
 
+- **Early real-model signal (one run, 4 calls, not the WS3 proof):**
+  Anthropic claude-opus-5-5 on the customer-ops corpus with an
+  empkg-v1.1 package complied **4/4** — a clean `STATUS:` first line and
+  a well-formed `REFUSED_SCOPE:` on every answer; all four planted gaps
+  (both P2 playbook frames, both P4 reporting frames) returned PARTIAL
+  with a scope naming the gap exactly. **Risk named for WS3: PARTIAL
+  inflation** — with "fires whenever not fully ANSWERED", a model that
+  hedges PARTIAL on a *covered* control would mint a false finding; the
+  ratified "covered controls silent 5/5" (compliance P4c) is the test.
+
 **The gate:** ratify the contract wording, the format rule, and the
 parser semantics; WS2 (the wiring) then begins.
 
