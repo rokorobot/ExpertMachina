@@ -208,12 +208,18 @@ class FakePackageConsumer:
         self._package = {
             "package_hash": "opsdiag" + "0" * 57,
             "knowledge": knowledge,
-            "manifest": {"expert_model_id": 1},
+            "manifest": {"expert_model_id": 1, "package_format": "empkg-v1.1"},
         }
         self._answerable = tuple(answerable)
 
     def load_package(self, _path):
         return self._package
+
+    @staticmethod
+    def parse_answer_status(answer, package_format=None):
+        # D33: the fake door reads statuses with the REAL parser.
+        from app.package_consumer import parse_answer_status
+        return parse_answer_status(answer, package_format)
 
     def retrieve(self, package, _topic, top_k=8):
         return {"selected": package["knowledge"][:top_k]}
@@ -221,9 +227,9 @@ class FakePackageConsumer:
     def consume(self, _path, question):
         for needle in self._answerable:
             if needle.lower() in (question or "").lower():
-                return {"answer": "Per the governed evidence: covered.",
+                return {"answer": "STATUS: ANSWERED\nPer the governed evidence: covered.",
                         "cited_asset_ids": [1], "evidence": []}
-        return {"answer": REFUSAL, "cited_asset_ids": [], "evidence": []}
+        return {"answer": "STATUS: REFUSED\n" + REFUSAL, "cited_asset_ids": [], "evidence": []}
 
 
 class FakeGraphClient:
@@ -495,6 +501,37 @@ def test_gated_execution_skill_refused_naming_oe():
         assert False, "a gated [OE] skill must be refused"
     except RuntimeError as e:
         assert "Operational Evidence Realm" in str(e)
+
+
+def test_d33_adversarial_proof():
+    """D33 (v2.5 WS2): scoped refusals with no marker reproduce every
+    refusal-backed gap; headless answers mint none (UNDETERMINED); an
+    answered handoff that merely MENTIONS the marker stays silent."""
+    import test_support
+    knowledge = build_knowledge()
+    fake_pc = FakePackageConsumer(knowledge)
+
+    def rerun(ans, vault):
+        return runner.run_diagnostic(
+            package_path="unused.empkg", vault_dir=vault, project_id=1,
+            agent_principal="operations-agent", binding_id=1,
+            graph_client=FakeGraphClient(), as_of=AS_OF, answerer=ans,
+            package_consumer=fake_pc)
+    first, _vault = run(knowledge)
+    assert test_support.d33_adversarial_proof(rerun, make_answerer(fake_pc), first)
+    covered_pc = FakePackageConsumer(knowledge,
+                                     answerable=("next owner", "receiving procedure"))
+    vault = tempfile.mkdtemp(prefix="em_ops_d33_")
+    os.makedirs(os.path.join(vault, "08_proposals"))
+    os.makedirs(os.path.join(vault, "07_agent_workspaces"))
+    diag = runner.run_diagnostic(
+        package_path="unused.empkg", vault_dir=vault, project_id=1,
+        agent_principal="operations-agent", binding_id=1,
+        graph_client=FakeGraphClient(), as_of=AS_OF,
+        answerer=test_support.adversarial_answerer(make_answerer(covered_pc), "scoped"),
+        package_consumer=covered_pc)
+    assert not of_kind(diag, "MISSING_HANDOFF"), \
+        "an answered handoff that mentions the marker mid-text is no gap"
 
 
 def main():

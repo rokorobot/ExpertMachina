@@ -234,6 +234,66 @@ proceed.
 **Verdict: v2.5.0 WS1 PASSED (2026-11-02, user-ratified).** WS2 (the
 wiring) may proceed.
 
+### WS2 — the wiring: evidence recorded, gate pending ratification
+
+- **`consume()`** returns `answer_status`, `refused_scope`,
+  `status_source`, plus `answer_body` (the answer without its status
+  lines — what a claim verifier may judge).
+- **One ledger, six runners** (`workbench/common.py` `StatusLedger`):
+  customer_operations, compliance_obligation (×2 walks),
+  executive_briefing, finance_cost_leakage, procurement_intelligence,
+  operations_process_improvement. Each reads the status (from the
+  consume() result, or an injected answerer's text through the SAME
+  parser under the package's declared format); REFUSED or PARTIAL fires
+  the finding; UNDETERMINED is skipped with its reason; every run
+  summary carries `answer_status_counts`. No runner tests the marker by
+  substring any more. REFUSED findings keep their evidence line
+  byte-for-byte; PARTIAL findings state "returned STATUS: PARTIAL" and
+  carry the refused scope in the answering model's own words.
+- **`evaluation.py`**: REFUSED → refusal recognized (unchanged);
+  **PARTIAL and UNDETERMINED are never claim-judged** — recorded as
+  `verification_status` PARTIAL / UNDETERMINED, coverage 0, the question
+  fails (neither the full answer nor the full refusal a benchmark
+  expects; an UNDETERMINED answer broke the binding contract); ANSWERED
+  is judged on `answer_body`, never the status line; legacy packages keep
+  this path's own `startswith` rule.
+- **CI answerers emit the status line**: 44 answers across 22 suites,
+  plus the generation-level fake in `test_package_evaluation.py`. The
+  operations suites' fake package door now declares `empkg-v1.1` and
+  reads statuses with the real parser (it would otherwise have fallen
+  silently to LEGACY_LEXICAL).
+- **THE D33 ADVERSARIAL PROOF, per workbench** (`test_support.
+  d33_adversarial_proof`, wired into all six refusal-backed suites):
+  *scoped* — every REFUSED answer rewritten as PARTIAL with NO marker
+  anywhere, every ANSWERED one given a mid-text marker → **exactly the
+  baseline refusal-backed findings**, each carrying the declared scope,
+  none extra; *headless* — status lines stripped → **zero**
+  refusal-backed findings, every answer UNDETERMINED. 13 findings
+  reproduced (customer-ops 4, compliance 2, executive 3, finance 1,
+  procurement 1, operations 2). CI can now tell detection rules apart —
+  option (b) or the shipped substring rule would fail these.
+- **`test_structured_refusal.py`** grows Part 4 (consume() fields; a
+  headless real-model shape is UNDETERMINED) and Part 5 (evaluation never
+  claim-judges PARTIAL / UNDETERMINED / REFUSED; ANSWERED is; legacy
+  keeps startswith).
+- **Found by the posture guards on the way (fixed):** the executive
+  briefing's UNSOURCED SENTENCE guard rejected a PARTIAL gap line — a
+  declared `STATUS: PARTIAL` is now a governed source token exactly as
+  the refusal marker is.
+- **Regression:** full harness 93 passed; customer-ops gate 6
+  proposals, compliance gate 20 (both byte-identical across runs).
+  Zero schema (28/305); D19 unchanged; Guard 5 swept the runner edits
+  and the new common.py ledger with zero guard edits; no new guard
+  family.
+
+**For ratification (choices made in WS2, not pre-ruled):** the
+evaluation semantics (PARTIAL / UNDETERMINED fail, never judged); the
+executive source token; `answer_body`.
+
+**The gate:** ratify WS2; WS3 (the real-model proof: 5 runs × 2
+corpora, planted gaps 5/5, covered controls silent 5/5,
+UNDETERMINED = 0) then runs.
+
 ## Explicitly out of scope
 
 Changing any finding kind, contract, or corpus beyond the fixtures

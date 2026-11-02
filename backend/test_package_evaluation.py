@@ -50,10 +50,10 @@ class FakeConsumerEngine:
     def __call__(self, model, system, user, max_tokens):
         self.calls.append({"model": model, "user": user})
         if "France" in user:
-            return ("INSUFFICIENT EVIDENCE - this question is outside the "
+            return ("STATUS: REFUSED\nINSUFFICIENT EVIDENCE - this question is outside the "
                     "governed knowledge of this expert package.")
         match = re.search(r"\[asset_id (\d+)\][^\n]*\n  Content: ([^\n]+)", system)
-        return match.group(2).strip()
+        return "STATUS: ANSWERED\n" + match.group(2).strip()
 
 
 def make_asset(session, project, doc, name, text, idx=0):

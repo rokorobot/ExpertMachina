@@ -146,7 +146,7 @@ def make_answerer(loaded_package):
     def answer(question):
         sel = package_consumer.retrieve(loaded_package, question,
                                         top_k=8)["selected"]
-        return {"answer": "INSUFFICIENT EVIDENCE - the governed corpus offers "
+        return {"answer": "STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed corpus offers "
                           "no covering procedure for this question.",
                 "cited_asset_ids": [], "evidence": sel}
     return answer

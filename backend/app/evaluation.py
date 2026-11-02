@@ -237,20 +237,32 @@ def _package_answer(session: Session, db_run, file_path: str, question: str):
     } for e in result["evidence"]]
 
     answer = result["answer"]
-    if answer.startswith("INSUFFICIENT EVIDENCE"):
+    # D33 (v2.5.0): the answer's status is the one the answering model
+    # declared in the required status line (consume() reads it). Legacy
+    # (pre-empkg-v1.1) packages keep this path's shipped rule unchanged:
+    # a refusal is an answer that starts with the marker.
+    status = result.get("answer_status")
+    if result.get("status_source") == "LEGACY_LEXICAL" or status is None:
+        status = "REFUSED" if answer.startswith("INSUFFICIENT EVIDENCE") else "ANSWERED"
+    not_judged = {"coverage_score": 0.0, "unsupported_claims": [],
+                  "contradicted_claims": [], "claim_mappings": []}
+    if status == "REFUSED":
         # The packaged answering policy's refusal contract. A refusal is
         # policy compliance, not a knowledge claim - judging its sentence
         # against evidence would persist junk verdicts (D12).
-        verification = {
-            "coverage_score": 0.0,
-            "verification_status": "INSUFFICIENT_EVIDENCE",
-            "unsupported_claims": [],
-            "contradicted_claims": [],
-            "claim_mappings": [],
-            "verifier": {"method": "REFUSAL_RECOGNIZED", "engine_version": "none"},
-        }
+        verification = dict(not_judged, verification_status="INSUFFICIENT_EVIDENCE",
+                            verifier={"method": "REFUSAL_RECOGNIZED", "engine_version": "none"})
+    elif status in ("PARTIAL", "UNDETERMINED"):
+        # Never judged as a full claim: a PARTIAL answer declares what it
+        # could not answer (its refused scope stays in the answer text);
+        # an UNDETERMINED one broke the binding contract. Neither is the
+        # full answer or the full refusal a benchmark expects.
+        verification = dict(not_judged, verification_status=status,
+                            verifier={"method": f"{status}_RECOGNIZED", "engine_version": "none"})
     else:
-        verification = query_engine.verify_answer_claims(session, answer, citations)
+        # Judge the answer's body, never its D33 status line.
+        verification = query_engine.verify_answer_claims(
+            session, result.get("answer_body") or answer, citations)
     return answer, citations, verification
 
 
@@ -342,7 +354,9 @@ def run_evaluation_batch(session: Session, run_id: int):
 
             # Determine pass/fail based on user metrics rules
             passed = False
-            if verification_status == "INSUFFICIENT_EVIDENCE" or final_answer == "INSUFFICIENT EVIDENCE":
+            if verification_status in ("PARTIAL", "UNDETERMINED"):
+                passed = False  # D33: neither a full answer nor a full refusal
+            elif verification_status == "INSUFFICIENT_EVIDENCE" or final_answer == "INSUFFICIENT EVIDENCE":
                 if b.expected_answer_type == "REFUSAL":
                     passed = True
                 else:

@@ -37,6 +37,69 @@ def import_package_consumer(backend_dir=None):
     return package_consumer
 
 
+# ------------------------------------------- D33 - the structured refusal
+# A refusal is declared by the model that read the evidence, in the
+# required status line - never inferred from prose (D33, v2.5.0). Every
+# refusal-backed walk reads the answer's status through this one ledger,
+# so the six runners cannot drift apart on what counts as a refusal.
+
+GAP_STATUSES = ("REFUSED", "PARTIAL")   # ruling 3: not fully ANSWERED
+
+
+class StatusLedger:
+    """Reads and tallies answer statuses for one run.
+
+    consume() results carry `answer_status` already; an injected answerer
+    (the CI contract-follower) returns answer text, which is read through
+    the SAME parser consume() uses (package_consumer.parse_answer_status),
+    under the package's declared format. Never guesses: a missing or
+    malformed status line is UNDETERMINED and produces no finding."""
+
+    def __init__(self, package_consumer, package):
+        self._pc = package_consumer
+        self._format = (package.get("manifest") or {}).get("package_format")
+        self.counts = {}
+
+    def read(self, result):
+        if not isinstance(result, dict):
+            result = {"answer": str(result)}
+        if result.get("answer_status"):
+            status = {"answer_status": result["answer_status"],
+                      "refused_scope": result.get("refused_scope"),
+                      "status_source": result.get("status_source")}
+        else:
+            status = self._pc.parse_answer_status(result.get("answer"),
+                                                  self._format)
+        key = status["answer_status"]
+        self.counts[key] = self.counts.get(key, 0) + 1
+        return status
+
+    def summary(self):
+        return dict(sorted(self.counts.items()))
+
+
+def is_gap(status):
+    return status["answer_status"] in GAP_STATUSES
+
+
+def undetermined_reason(question):
+    return (f"the answer to \"{question}\" carries no valid D33 status "
+            f"line - UNDETERMINED, never guessed; no finding")
+
+
+def status_evidence_lines(question, status, refused_line):
+    """The evidence lines for a refusal-backed finding. REFUSED keeps the
+    runner's own refusal line verbatim; PARTIAL states what the contract
+    returned and carries the refused scope in the answering model's own
+    words, so the human at the gate sees exactly where the gap is."""
+    if status["answer_status"] == "PARTIAL":
+        return [f"Reproducible partial answer: \"{question}\" -> the packaged "
+                f"answering contract returned STATUS: PARTIAL",
+                f"Refused scope, in the answering model's own words: "
+                f"\"{status['refused_scope']}\""]
+    return [refused_line]
+
+
 # ------------------------------------------------------------- text helpers
 
 def tokens(text):

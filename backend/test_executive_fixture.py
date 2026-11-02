@@ -175,11 +175,11 @@ def make_answerer(loaded_package):
                                     or supplier.lower() in (e.get("content") or "").lower())),
                     None)
         if best:
-            text = (f"Per the governed evidence (asset_id {best[1]['asset_id']}): "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {best[1]['asset_id']}): "
                     f"{best[1].get('content')}")
             cited = [best[1]["asset_id"]]
         else:
-            text = ("INSUFFICIENT EVIDENCE - the governed evidence offered "
+            text = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered "
                     "does not contain the answer to this question.")
             cited = []
         return {"answer": text, "cited_asset_ids": cited, "evidence": sel}

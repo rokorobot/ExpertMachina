@@ -50,6 +50,10 @@ import os
 import re
 
 from ..common import (
+    StatusLedger as _StatusLedger,
+    is_gap as _is_gap,
+    undetermined_reason as _undetermined_reason,
+    status_evidence_lines as _status_evidence_lines,
     import_package_consumer as _import_package_consumer,
     excerpt as _excerpt,
     subject_tokens as _subject_tokens,
@@ -372,6 +376,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     pc = _import_package_consumer(backend_dir)
     package = pc.load_package(package_path)   # verifies the hash chain
+    ledger = _StatusLedger(pc, package)  # D33: statuses read, never inferred
     package_hash = package["package_hash"]
     knowledge = {e["asset_id"]: e for e in package["knowledge"]}
     narrator = narrator or default_narrator
@@ -589,10 +594,11 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
             rc = "spend_approval"
         if rc and rc in req_classes and rc not in seen_reqs:
             question = req_questions[rc]
-            ans = answerer(question)
-            answer_text = (ans.get("answer") if isinstance(ans, dict)
-                           else str(ans))
-            if REFUSAL_MARKER in (answer_text or ""):
+            status = ledger.read(answerer(question))
+            if status["answer_status"] == "UNDETERMINED":
+                skipped.append({"skill": skill,
+                                "reason": _undetermined_reason(question)})
+            if _is_gap(status):
                 seen_reqs.add(rc)
                 add_finding({
                     "skill": skill, "finding_kind": kind,
@@ -604,8 +610,9 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
                         f"Requirement excerpt (verbatim): {_cite(entry)} - "
                         f"\"{_excerpt(content)}\"",
                         f"Requirement class: {rc}",
-                        f"Reproducible refusal: \"{question}\" -> "
-                        f"{REFUSAL_MARKER}",
+                        *_status_evidence_lines(question, status,
+                            f"Reproducible refusal: \"{question}\" -> "
+                            f"{REFUSAL_MARKER}"),
                     ],
                 })
 
@@ -701,6 +708,7 @@ def run_diagnostic(package_path, vault_dir, project_id, agent_principal,
 
     return {"proposals": sorted(proposal_paths), "brief": brief_path,
             "pack": pack_path, "findings": findings, "skipped": skipped,
+            "answer_status_counts": ledger.summary(),
             "exclusions": exclusions, "as_of": str(as_of),
             "window_days": window_days,
             "contracts": {s: contracts[s]["path"] for s in ACTIVE_SKILLS}}

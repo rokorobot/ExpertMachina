@@ -9,6 +9,10 @@ Part 2: a freshly built package declares empkg-v1.1 and compiles the
         status-line answering policy; its hash chain verifies.
 Part 3: a legacy empkg-v1 package still loads and is read LEGACY_LEXICAL
         (D12 - no backfill).
+Part 4: consume() returns answer_status / refused_scope / status_source /
+        answer_body (v2.5 WS2).
+Part 5: evaluation.py never claim-judges a PARTIAL or UNDETERMINED answer
+        (v2.5 WS2).
 """
 import os
 import sys
@@ -135,16 +139,72 @@ def part2_and_3():
     fmt = old["manifest"]["package_format"]
     assert fmt == "empkg-v1", fmt
     assert status(REFUSAL, fmt)["status_source"] == "LEGACY_LEXICAL"
-    session.close()
     print("Part 3 passed: the empkg-v1 package verifies unchanged and its "
           "answers are labelled LEGACY_LEXICAL - no backfill.")
+    print("\n--- Part 4: consume() returns the declared status, read never inferred ---")
+    from app import llm
+    real_adapter = llm.ADAPTERS["OPENAI"]
+    try:
+        llm.ADAPTERS["OPENAI"] = lambda model, system, user, max_tokens: (
+            "**STATUS: PARTIAL**\nREFUSED_SCOPE: who approves the exception\n"
+            "Staff evacuate immediately [asset_id %d]." % a.id)
+        r = package_consumer.consume(pkg.file_path, "What is the procedure?")
+        assert (r["answer_status"], r["refused_scope"], r["status_source"]) == (
+            "PARTIAL", "who approves the exception", "HEADER"), r
+        assert r["answer_body"] == "Staff evacuate immediately [asset_id %d]." % a.id, r
+        llm.ADAPTERS["OPENAI"] = lambda *a_, **k: REAL_SCOPED_REFUSAL
+        r = package_consumer.consume(pkg.file_path, "What is the procedure?")
+        assert r["answer_status"] == "UNDETERMINED", r   # no header: never guessed
+    finally:
+        llm.ADAPTERS["OPENAI"] = real_adapter
+    print("Part 4 passed: consume() carries answer_status / refused_scope / "
+          "status_source / answer_body; a headerless real-model shape is "
+          "UNDETERMINED.")
+
+    print("\n--- Part 5: evaluation never claim-judges a PARTIAL (or UNDETERMINED) answer ---")
+    from types import SimpleNamespace
+    from app import evaluation, query_engine
+    judged = []
+    real_consume, real_verify = evaluation.package_consumer.consume, query_engine.verify_answer_claims
+    run = SimpleNamespace(package_hash=pkg.package_hash,
+                          consumer_model_provider="OPENAI", consumer_model_name="m")
+    def fake_consume(st, text, source="HEADER"):
+        return lambda *a_, **k: {
+            "answer": text, "answer_status": st, "status_source": source,
+            "refused_scope": None, "answer_body": text, "evidence": [],
+            "package": {"package_hash": pkg.package_hash},
+            "model": {"provider": "OPENAI", "model": "m"}}
+    try:
+        query_engine.verify_answer_claims = lambda *a_, **k: judged.append(1) or {
+            "coverage_score": 1.0, "verification_status": "VERIFIED",
+            "unsupported_claims": [], "contradicted_claims": [], "claim_mappings": []}
+        for st, want in (("PARTIAL", "PARTIAL"), ("UNDETERMINED", "UNDETERMINED"),
+                         ("REFUSED", "INSUFFICIENT_EVIDENCE")):
+            evaluation.package_consumer.consume = fake_consume(st, "STATUS: x\nbody")
+            _ans, _cit, v = evaluation._package_answer(session, run, "p", "q")
+            assert v["verification_status"] == want and v["coverage_score"] == 0.0, v
+        assert judged == [], "a non-ANSWERED answer must never reach the claim judge"
+        evaluation.package_consumer.consume = fake_consume("ANSWERED", "STATUS: ANSWERED\nbody")
+        evaluation._package_answer(session, run, "p", "q")
+        assert judged == [1], "an ANSWERED answer is judged"
+        # Legacy keeps this path's shipped rule (startswith), not the substring rule.
+        evaluation.package_consumer.consume = fake_consume(
+            "REFUSED", "Answered. Mentions INSUFFICIENT EVIDENCE mid-text.", "LEGACY_LEXICAL")
+        _ans, _cit, v = evaluation._package_answer(session, run, "p", "q")
+        assert v["verification_status"] == "VERIFIED" and judged == [1, 1], v
+    finally:
+        evaluation.package_consumer.consume, query_engine.verify_answer_claims = real_consume, real_verify
+    print("Part 5 passed: PARTIAL / UNDETERMINED / REFUSED are never claim-judged; "
+          "ANSWERED is; legacy keeps the path's own startswith rule.")
+
+    session.close()
 
 
 def main():
     part1()
     part2_and_3()
-    print("\n=== v2.5.0 WS1 passed: D33's contract, format rule, and "
-          "adversarial fixtures hold - before any runner change. ===")
+    print("\n=== v2.5.0 WS1+WS2 passed: D33 contract, format rule, consume() and "
+          "evaluation wiring, and adversarial fixtures hold. ===")
 
 
 if __name__ == "__main__":

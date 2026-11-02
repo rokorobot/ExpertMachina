@@ -158,11 +158,11 @@ def make_answerer(loaded_package):
                                     or supplier.lower() in (e.get("content") or "").lower())),
                     None)
         if best:
-            text = (f"Per the governed evidence (asset_id {best[1]['asset_id']}): "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {best[1]['asset_id']}): "
                     f"{best[1].get('content')}")
             cited = [best[1]["asset_id"]]
         else:
-            text = ("INSUFFICIENT EVIDENCE - the governed evidence offered "
+            text = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered "
                     "does not contain the answer to this question.")
             cited = []
         return {"answer": text, "cited_asset_ids": cited, "evidence": sel}
@@ -383,6 +383,18 @@ def main():
     finally:
         os.environ.pop("EM_AGENT_TOKEN", None)
     first, second = runs
+    # D33 (v2.5 WS2): the adversarial fixtures - scoped refusals with no
+    # marker reproduce every refusal-backed gap; mid-text mentions add none;
+    # headless answers mint none (UNDETERMINED, never guessed).
+    n_d33 = test_support.d33_adversarial_proof(
+        lambda ans, vd: runner.run_briefing(
+            fx["package"].file_path, vd, project.id,
+            agent_principal="executive-briefing", binding_id=fx["binding"].id,
+            graph_client=InProcessGraphClient(), as_of=AS_OF, since=fx["since"],
+            answerer=ans),
+        answerer, first, agent_token)
+    print(f"D33 adversarial proof passed: {n_d33} refusal-backed findings "
+          "reproduced under scoped refusals; none under headless answers.")
     assert first["as_of"] == AS_OF and first["since"] == fx["since"]
     assert first["briefing"] == second["briefing"], "byte-identical pack path"
     assert first["proposals"] == second["proposals"]

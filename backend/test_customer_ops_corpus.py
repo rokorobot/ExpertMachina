@@ -79,7 +79,7 @@ REPORTING_QUESTION = ("What is the approved procedure for producing the "
 CONTROL_QUESTION = ("May customers request a refund within days of delivery "
                     "under the refund policy?")
 OVERLAP_THRESHOLD = 6
-REFUSAL_TEXT = ("INSUFFICIENT EVIDENCE - the governed evidence offered does "
+REFUSAL_TEXT = ("STATUS: REFUSED\n" "INSUFFICIENT EVIDENCE - the governed evidence offered does "
                 "not contain the answer to this question.")
 
 
@@ -324,7 +324,7 @@ def main():
                         key=lambda t: (-t[0], t[1]["asset_id"]))
         if scored and scored[0][0] >= OVERLAP_THRESHOLD:
             score, e = scored[0]
-            text = (f"Per the governed evidence (asset_id {e['asset_id']}): "
+            text = ("STATUS: ANSWERED\n" f"Per the governed evidence (asset_id {e['asset_id']}): "
                     f"{e.get('content')}")
         else:
             text = REFUSAL_TEXT

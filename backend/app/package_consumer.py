@@ -182,6 +182,25 @@ def parse_answer_status(answer: str, package_format: str = None) -> dict:
     return {"answer_status": status, "refused_scope": scope, "status_source": "HEADER"}
 
 
+def answer_body(answer: str) -> str:
+    """The answer without its D33 status line (and PARTIAL's REFUSED_SCOPE
+    line) - the text a claim verifier may judge. Text without a valid
+    header is returned unchanged."""
+    lines = (answer or "").splitlines()
+    i = 0
+    while i < len(lines) and not _bare(lines[i]):
+        i += 1
+    if i < len(lines) and _STATUS_LINE.match(_bare(lines[i])):
+        i += 1
+        j = i
+        while j < len(lines) and not _bare(lines[j]):
+            j += 1
+        if j < len(lines) and _SCOPE_LINE.match(_bare(lines[j])):
+            i = j + 1
+        return "\n".join(lines[i:]).strip()
+    return answer or ""
+
+
 def consume(package_path: str, question: str, top_k: int = 8,
             session=None, max_tokens: int = 4096) -> dict:
     """Answer a question from a verified Expert Package: verify the hash
@@ -205,8 +224,16 @@ def consume(package_path: str, question: str, top_k: int = 8,
 
     manifest = package["manifest"]
     offered_ids = {entry["asset_id"] for entry in retrieval["selected"]}
+    # D33: the status the answering model declared, read under this
+    # package's compiled contract (LEGACY_LEXICAL for pre-v1.1 packages).
+    status = parse_answer_status(generation["text"], manifest.get("package_format"))
     return {
         "answer": generation["text"],
+        "answer_status": status["answer_status"],
+        "refused_scope": status["refused_scope"],
+        "status_source": status["status_source"],
+        "answer_body": (answer_body(generation["text"])
+                        if status["status_source"] == "HEADER" else generation["text"]),
         "cited_asset_ids": _cited_asset_ids(generation["text"], offered_ids),
         "evidence": [{
             "asset_id": entry["asset_id"],
