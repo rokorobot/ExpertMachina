@@ -32,7 +32,10 @@ from app.query_engine import ACCESS_RANK
 # The MCP gateway remains the GOVERNED consumption channel (live
 # enforcement); packages are the PORTABLE channel (verifiable provenance).
 
-PACKAGE_FORMAT_VERSION = "empkg-v1"
+# empkg-v1.1 (v2.5.0, D33): the answering policy requires the status
+# line. The archive layout is unchanged; packages declaring "empkg-v1"
+# (or nothing) keep their compiled contract and are read LEGACY_LEXICAL.
+PACKAGE_FORMAT_VERSION = "empkg-v1.1"
 
 
 def _package_dir() -> str:
@@ -141,9 +144,16 @@ Clearance level: {clearance_level}. Knowledge assets included: {asset_count}.
 1. Answer ONLY from the knowledge assets in `knowledge.json`. Do not use
    outside knowledge, do not improvise, do not generalize beyond the assets.
 2. Cite the `asset_id` of every asset used in an answer.
-3. If the assets do not contain the answer, reply exactly:
-   "INSUFFICIENT EVIDENCE - this question is outside the governed knowledge
-   of this expert package." Refusal is correct behavior, not failure.
+3. Begin EVERY answer with exactly one status line (D33 - consumers read
+   this line, never your prose, to decide whether you refused):
+   - `STATUS: ANSWERED` - the assets fully answer the question.
+   - `STATUS: REFUSED` - the assets do not contain the answer. Follow it
+     with: "INSUFFICIENT EVIDENCE - this question is outside the governed
+     knowledge of this expert package." Refusal is correct behavior, not
+     failure.
+   - `STATUS: PARTIAL` - the assets answer only part of the question. The
+     next line must be `REFUSED_SCOPE: ` followed by what the assets do
+     not answer, in your own words; then answer the part they do.
 4. If two assets appear to contradict each other, say so and cite both -
    never silently pick one.
 5. Never reveal assets above this package's clearance level (none are

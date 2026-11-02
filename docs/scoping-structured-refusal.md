@@ -188,6 +188,42 @@ proceed.
   summaries.
 - **WS3 — the real-model proof** (as ratified) + release.
 
+## Gate records
+
+### WS1 — the contract, the format rule, the adversarial fixtures: evidence recorded, gate pending ratification
+
+- **The contract:** `app/package_builder.py` answering policy rule 3
+  replaced — every answer begins with `STATUS: ANSWERED | REFUSED |
+  PARTIAL`; REFUSED is followed by the INSUFFICIENT EVIDENCE sentence;
+  PARTIAL's next line is `REFUSED_SCOPE: <the model's own words>`. The
+  v1 "reply exactly" wording is gone from new packages.
+- **The format rule:** `PACKAGE_FORMAT_VERSION = "empkg-v1.1"` (archive
+  layout unchanged). The consumer had no format check before; the rule
+  is now explicit in `package_consumer.parse_answer_status()`: v1.1 →
+  HEADER (or UNDETERMINED), anything else → LEGACY_LEXICAL (the shipped
+  substring rule, labelled).
+- **The parser** (pure, no I/O): first non-empty line must be a clean
+  status line; markdown dressing and case ignored; PARTIAL requires a
+  non-empty REFUSED_SCOPE line, carried in the model's words (markdown
+  dressing stripped — found by the suite: `**REFUSED_SCOPE:** x`).
+  Anything else is UNDETERMINED, never guessed.
+- **`backend/test_structured_refusal.py`** (the 93rd suite): Part 1 —
+  the three statuses, dressing, "the header decides, never the prose"
+  (ANSWERED + mid-text marker = answer; REFUSED needs no marker), 11
+  malformed/missing shapes UNDETERMINED **including the three recorded
+  real-model shapes** (scoped refusal, marker-less refusal, mid-text
+  mention), legacy LEGACY_LEXICAL; Part 2 — a freshly built package
+  declares empkg-v1.1 with the status-line policy and verifies; Part 3 —
+  a legacy empkg-v1 package still loads, read LEGACY_LEXICAL.
+- **Regression:** full harness 93 passed — the format bump changes new
+  package bytes, and no suite pinned them; no runner, consume(), or
+  evaluation.py change (WS2).
+- **Held:** zero schema (28/305), D19 unchanged (no new function), no
+  new guard family.
+
+**The gate:** ratify the contract wording, the format rule, and the
+parser semantics; WS2 (the wiring) then begins.
+
 ## Explicitly out of scope
 
 Changing any finding kind, contract, or corpus beyond the fixtures
