@@ -126,7 +126,8 @@ def part2_and_3():
     assert loaded["manifest"]["package_format"] == V11, loaded["manifest"]
     policy = loaded["instructions"]
     for required in ("STATUS: ANSWERED", "STATUS: REFUSED", "STATUS: PARTIAL",
-                     "REFUSED_SCOPE: ", "D33", REFUSAL.split(" - ")[0]):
+                     "REFUSED_SCOPE: ", "D33", REFUSAL.split(" - ")[0],
+                     "A contradiction is still an answer: use\n   `STATUS: ANSWERED`"):
         assert required in policy, required
     assert "reply exactly" not in policy, "the v1 rule 3 wording must be gone"
     print("Part 2 passed: built package declares empkg-v1.1, its hash chain "

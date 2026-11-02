@@ -293,7 +293,7 @@ executive source token; `answer_body`.
 **Verdict: v2.5.0 WS2 PASSED (2026-11-02, user-ratified).** WS3 may
 proceed.
 
-### WS3 — THE REAL-MODEL PROOF: evidence recorded, gate pending ratification
+### WS3 — THE REAL-MODEL PROOF: RATIFIED (2026-11-02, user)
 
 **Tool:** `tools/d33_real_model_proof.py` — reuses each corpus's own
 milestone-gate suite for the full governed setup (real pipeline, human
@@ -336,7 +336,12 @@ a PARTIAL fires a refusal-backed finding whenever the walk's evidence
 filters pass, so a contradiction could surface as a missing-evidence
 finding beside its conflict-backed one.
 
-**The gate:** ratify WS3; then release v2.5.0 (D16 regeneration + tag).
+**Owner ruling on the open question (2026-11-02): option (b)** — the
+answering policy is amended (rule 4): a contradiction is still an
+answer, `STATUS: ANSWERED`, citing both sides; conflicts stay with the
+conflict engine. Confirmation runs recorded below.
+
+**Verdict: v2.5.0 WS3 PASSED (2026-11-02, user-ratified).**
 
 ## Explicitly out of scope
 

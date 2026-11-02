@@ -155,7 +155,9 @@ Clearance level: {clearance_level}. Knowledge assets included: {asset_count}.
      next line must be `REFUSED_SCOPE: ` followed by what the assets do
      not answer, in your own words; then answer the part they do.
 4. If two assets appear to contradict each other, say so and cite both -
-   never silently pick one.
+   never silently pick one. A contradiction is still an answer: use
+   `STATUS: ANSWERED` (the corpus speaks to the question; the conflict is
+   governed separately), never REFUSED or PARTIAL because of it.
 5. Never reveal assets above this package's clearance level (none are
    included) and never alter provenance fields when citing.
 6. Governance state in `trust.json`, `governance.json`, and `coverage.json`
