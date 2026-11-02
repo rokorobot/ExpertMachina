@@ -152,9 +152,9 @@ new guard family.
    could not answer, verbatim. No new finding kinds.
 4. **Version:** v2.5.0; catalog #8's release becomes v2.6.0.
 
-### Remaining WS0 items — proposed, awaiting the WS0 gate
+### Remaining WS0 items — RATIFIED as written (2026-11-02, user)
 
-From the proposed rulings above, not yet ratified:
+All five ratified as written:
 - **(4) Malformed or missing header ⇒ UNDETERMINED**: skipped with that
   reason, never guessed; counted in the run summary.
 - **(5) Legacy packages** keep their compiled contract: the shipped
@@ -169,9 +169,24 @@ From the proposed rulings above, not yet ratified:
   gates still 6 / 20 proposals; legacy package consumes; evaluation.py
   never claim-judges a PARTIAL as a full claim).
 
-**The gate:** ratify the remaining items (or amend them); WS1 then
-begins — the contract amendment + format rule + CI fixtures, before any
-runner change.
+**Verdict: v2.5.0 WS0 PASSED (2026-11-02, user-ratified).** WS1 may
+proceed.
+
+## Workstreams
+
+- **WS1 — the contract + the format rule + the adversarial fixtures**
+  (no runner change): the amended answering policy (rule 3 → the status
+  line), `PACKAGE_FORMAT_VERSION = "empkg-v1.1"`, the pure
+  `package_consumer.parse_answer_status()` (HEADER for v1.1 /
+  LEGACY_LEXICAL for v1 / UNDETERMINED for malformed), and
+  `backend/test_structured_refusal.py` proving it over the adversarial
+  fixtures, a freshly built v1.1 package, and a legacy v1 package.
+- **WS2 — the wiring:** `consume()` returns `answer_status` /
+  `refused_scope` / `status_source`; the six runners and
+  `evaluation.py` read the field; every CI answerer emits the status;
+  per-workbench adversarial fixtures; UNDETERMINED counted in run
+  summaries.
+- **WS3 — the real-model proof** (as ratified) + release.
 
 ## Explicitly out of scope
 
