@@ -57,3 +57,10 @@ Corpus dir naming follows the newest shipped convention (finance uses
   acceptance suite (an execution record cannot exist in a
   process-document corpus by accident — it must be injected), mirroring
   the finance INVOICE PLANT fixture discipline.
+
+## v2.6 WS1 amendment (2026-11-03)
+
+The corpus text was amended (meaning preserved) so every plant survives
+the real pipeline's rule-based extraction as a governed fact - see
+docs/operations-process-v2.6.md, WS1. Proven by
+`backend/test_operations_pipeline_corpus.py`.
