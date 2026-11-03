@@ -7,8 +7,8 @@ All content is illustrative and fictional.
 ## Authorization requirement
 
 Every production change must be approved by the Change Advisory Board
-before it is deployed. No production change may be deployed on the
-authority of a single approver.
+before it is deployed. Under this policy, no production change may be
+deployed on the authority of a single approver.
 
 ## Emergency changes
 

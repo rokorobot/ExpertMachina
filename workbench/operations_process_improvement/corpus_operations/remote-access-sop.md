@@ -1,6 +1,6 @@
 # Remote Access SOP
 
-Meridian Operations Ltd — Standard Operating Procedure OPS-RA-04.
+Meridian Operations Ltd — Standard Operating Procedure OPS-RA-04 for the remote access process.
 This SOP describes how staff obtain remote access to Meridian systems.
 All content is illustrative and fictional.
 
@@ -16,7 +16,7 @@ team VPN credential from the IT team and uses it to connect.
 
 ## Process steps
 
-Step 1. The staff member requests remote access from the IT team. On
+Step 1: The staff member requests remote access from the IT team. On
 completion the IT team issues the shared team VPN credential.
 
-Step 2. The staff member connects using the shared team VPN credential.
+Step 2: The staff member connects using the shared team VPN credential.

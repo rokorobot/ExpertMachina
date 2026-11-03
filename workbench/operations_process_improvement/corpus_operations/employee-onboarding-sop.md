@@ -1,6 +1,6 @@
 # Employee Onboarding SOP
 
-Meridian Operations Ltd — Standard Operating Procedure OPS-ON-01.
+Meridian Operations Ltd — Standard Operating Procedure OPS-ON-01 for the employee onboarding process.
 This document describes the standard onboarding process for new hires.
 All content is illustrative and fictional.
 
@@ -11,19 +11,19 @@ signed offer to first productive day.
 
 ## Process steps
 
-Step 1. The People team creates the employee record. On completion the
+Step 1: The People team creates the employee record. On completion the
 People team hands off to the IT team to provision accounts.
 
-Step 2. The IT team provisions the laptop and core accounts. When the
+Step 2: The IT team provisions the laptop and core accounts. When the
 accounts are ready the IT team notifies the hiring manager to begin
 workspace setup.
 
-Step 3. The hiring manager completes workspace setup and equipment
+Step 3: The hiring manager completes workspace setup and equipment
 allocation. Once workspace setup is complete, the onboarding buddy
 programme begins.
 
-Step 4. The onboarding buddy programme runs for the first two weeks.
-The onboarding buddy programme is complete after the two-week period.
+Step 4: The onboarding buddy programme runs for the first two weeks.
+The onboarding buddy programme step is complete after the two-week period.
 
 ## Access provisioning
 
